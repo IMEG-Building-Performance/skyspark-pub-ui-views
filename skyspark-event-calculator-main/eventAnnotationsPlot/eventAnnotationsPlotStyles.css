@@ -1,0 +1,421 @@
+/**
+ * eventAnnotationsPlotStyles.css
+ *
+ * All styles for the Event Annotations Plot app.
+ * Scoped with .edb- prefix for the Events Database panel.
+ * Injected via eventAnnotationsPlotUI.js as a <link> tag.
+ */
+
+/* ── Events Database (edb-) ──────────────────────────────────────── */
+
+.edb-container {
+  font-family: "Inter", "Segoe UI", Arial, sans-serif;
+  background: #f0f2f5;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.edb-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background: white;
+  border-bottom: 1px solid #e0e0e0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  flex-shrink: 0;
+}
+
+.edb-header h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #1565c0;
+}
+
+.edb-back-btn {
+  padding: 8px 18px;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  background: white;
+  color: #495057;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.edb-back-btn:hover {
+  background: #e8f4fd;
+  border-color: #1565c0;
+  color: #1565c0;
+}
+
+.edb-content {
+  display: flex;
+  flex: 1;
+  gap: 20px;
+  padding: 20px 24px;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.edb-table-panel {
+  flex: 2;
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  overflow: hidden;
+  min-width: 0;
+}
+
+.edb-filter-bar {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  padding: 16px 20px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+  align-items: end;
+}
+
+.edb-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.edb-filter-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.edb-filter-input {
+  padding: 7px 10px;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.edb-filter-input:focus {
+  border-color: #1565c0;
+  box-shadow: 0 0 0 2px rgba(21,101,192,0.15);
+}
+
+.edb-clear-btn {
+  padding: 7px 14px;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  background: white;
+  color: #dc3545;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.edb-clear-btn:hover {
+  background: #fff5f5;
+  border-color: #dc3545;
+}
+
+.edb-table-wrap {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+}
+
+.edb-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.edb-table thead th {
+  position: sticky;
+  top: 0;
+  background: #1565c0;
+  color: white;
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  z-index: 2;
+  cursor: pointer;
+  user-select: none;
+}
+
+.edb-table thead th:hover {
+  background: #1976d2;
+}
+
+.edb-table tbody tr {
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.edb-table tbody tr:hover {
+  background: #e8f4fd;
+}
+
+.edb-table tbody tr.edb-selected {
+  background: #bbdefb;
+}
+
+.edb-table tbody td {
+  padding: 10px 12px;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+.edb-table tbody td.edb-cost-cell {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.edb-table tbody td.edb-number-cell {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.edb-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  border-top: 1px solid #e9ecef;
+  background: #f8f9fa;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.edb-pagination-info {
+  font-size: 13px;
+  color: #6c757d;
+}
+
+.edb-pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.edb-page-btn {
+  padding: 6px 14px;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  background: white;
+  color: #495057;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.edb-page-btn:hover:not(:disabled) {
+  background: #e8f4fd;
+  border-color: #1565c0;
+  color: #1565c0;
+}
+
+.edb-page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.edb-page-size-select {
+  padding: 5px 8px;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: inherit;
+  outline: none;
+  background: white;
+}
+
+.edb-summary-panel {
+  flex: 1;
+  max-width: 380px;
+  min-width: 300px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.edb-summary-placeholder {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #adb5bd;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.edb-summary-placeholder-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+
+.edb-summary-header {
+  text-align: center;
+  padding: 24px 16px 20px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.edb-summary-event-name {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: #6c757d;
+  margin-bottom: 6px;
+}
+
+.edb-summary-total-cost {
+  font-size: 42px;
+  font-weight: 900;
+  color: #17a2b8;
+  line-height: 1.1;
+  margin-bottom: 4px;
+}
+
+.edb-summary-total-label {
+  font-size: 13px;
+  color: #6c757d;
+}
+
+.edb-summary-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.edb-summary-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.edb-summary-info-item {
+  text-align: center;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.edb-summary-info-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #6c757d;
+  margin-bottom: 2px;
+}
+
+.edb-summary-info-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.edb-chart-section {
+  margin-top: 4px;
+}
+
+.edb-chart-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #495057;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+
+.edb-loading {
+  text-align: center;
+  padding: 60px 20px;
+  color: #6c757d;
+  font-size: 15px;
+}
+
+.edb-spinner {
+  display: inline-block;
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e9ecef;
+  border-top-color: #1565c0;
+  border-radius: 50%;
+  animation: edb-spin 0.8s linear infinite;
+  margin-bottom: 12px;
+}
+
+@keyframes edb-spin {
+  to { transform: rotate(360deg); }
+}
+
+.edb-empty-msg {
+  text-align: center;
+  padding: 60px 20px;
+  color: #adb5bd;
+}
+
+/* ── Event Detail slide-in animation ─────────────────────────────── */
+
+@keyframes slideIn {
+  from { transform: translateX(30px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+/* ── Expand view animations ──────────────────────────────────────── */
+
+@keyframes expandFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes expandSlideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* ── Responsive ──────────────────────────────────────────────────── */
+
+@media (max-width: 1024px) {
+  .edb-content {
+    flex-direction: column;
+  }
+  .edb-summary-panel {
+    max-width: 100%;
+    min-width: 0;
+  }
+}
