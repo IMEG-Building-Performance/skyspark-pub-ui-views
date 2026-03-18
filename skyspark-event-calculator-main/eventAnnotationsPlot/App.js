@@ -78,7 +78,7 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
   var chartH = Math.max(400, Math.min(Math.round(window.innerHeight * 0.65), 800));
   var chartPad = Math.round(12 + 8 * rs.vhScale);
   var chartContainer = document.createElement('div');
-  chartContainer.style.cssText = 'flex:2;min-width:500px;min-height:400px;height:' + chartH + 'px;box-sizing:border-box;background:white;padding:' + chartPad + 'px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1);position:relative;display:flex;flex-direction:column;';
+  chartContainer.style.cssText = 'flex:2;min-width:500px;min-height:400px;height:' + chartH + 'px;box-sizing:border-box;background:white;padding:' + chartPad + 'px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1);position:relative;display:flex;flex-direction:column;transition:flex 0.2s ease;';
   layoutContainer.appendChild(chartContainer);
 
   // Utility toggle
@@ -105,13 +105,24 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
     sidebarBtn.textContent = state.filterSidebarHidden ? '\u25C0' : '\u25B6';
     sidebarBtn.title = state.filterSidebarHidden ? 'Show event filter panel' : 'Hide event filter panel';
     eventsContainer.style.display = state.filterSidebarHidden ? 'none' : 'flex';
+
+    // Let the layout reflow, then resize chart + overlays to fill new space
+    setTimeout(function() {
+      if (state.chartInstance) {
+        state.chartInstance.resize();
+      }
+      if (state._syncOverlaySize) state._syncOverlaySize();
+      var currentEvents = state.currentEvents || [];
+      if (state._resizeTimelineForEvents) state._resizeTimelineForEvents(currentEvents);
+      if (state.chartInstance && state.overlayCanvas) {
+        annotations.drawAnnotationOverlay(state.chartInstance, state.overlayCanvas, currentEvents);
+      }
+      if (state.chartInstance && state.timelineCanvas) {
+        timeline.drawTimeline(state.timelineCanvas, state.chartInstance, currentEvents);
+      }
+    }, 50);
   };
   btnGroup.appendChild(sidebarBtn);
-
-  // Apply initial sidebar state
-  if (state.filterSidebarHidden) {
-    eventsContainer.style.display = 'none';
-  }
 
   // Expand button (top-right of chart)
   var expandBtn = document.createElement('button');
@@ -148,6 +159,11 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
   var eventsContainer = document.createElement('div');
   eventsContainer.style.cssText = 'flex:1;min-width:280px;max-width:400px;height:' + chartH + 'px;display:flex;flex-direction:column;position:relative;z-index:10;';
   layoutContainer.appendChild(eventsContainer);
+
+  // Apply initial sidebar state (must be after eventsContainer is created)
+  if (state.filterSidebarHidden) {
+    eventsContainer.style.display = 'none';
+  }
 
   // Loading message
   var loadingMsg = document.createElement('div');
