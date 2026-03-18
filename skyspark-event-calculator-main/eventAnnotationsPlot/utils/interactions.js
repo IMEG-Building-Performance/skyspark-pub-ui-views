@@ -101,6 +101,11 @@ window.EventAnnotationsPlot.interactions.createEventList = function(container, e
   title.style.fontSize = '16px';
   title.style.fontWeight = '700';
 
+  var headerButtons = document.createElement('div');
+  headerButtons.style.display = 'flex';
+  headerButtons.style.alignItems = 'center';
+  headerButtons.style.gap = '2px';
+
   var collapseButton = document.createElement('button');
   collapseButton.textContent = window.EventAnnotationsPlot.state.filterPanelCollapsed ? '\u25B6' : '\u25BC';
   collapseButton.style.border = 'none';
@@ -111,8 +116,38 @@ window.EventAnnotationsPlot.interactions.createEventList = function(container, e
   collapseButton.style.color = '#1565c0';
   collapseButton.style.transition = 'transform 0.2s';
 
+  var hideButton = document.createElement('button');
+  hideButton.textContent = '\u00D7';
+  hideButton.title = 'Hide event filter panel';
+  hideButton.style.cssText = 'border:none;background:transparent;font-size:18px;cursor:pointer;padding:2px 6px;color:#adb5bd;transition:color 0.2s;line-height:1;';
+  hideButton.onmouseover = function() { hideButton.style.color = '#d32f2f'; };
+  hideButton.onmouseout = function() { hideButton.style.color = '#adb5bd'; };
+  hideButton.onclick = function(e) {
+    e.stopPropagation();
+    var st = window.EventAnnotationsPlot.state;
+    st.filterSidebarHidden = true;
+    container.style.display = 'none';
+    if (st._showSidebarBtn) st._showSidebarBtn.style.display = 'block';
+    // Resize chart to fill space
+    setTimeout(function() {
+      if (st.chartInstance) st.chartInstance.resize();
+      if (st._syncOverlaySize) st._syncOverlaySize();
+      var currentEvents = st.currentEvents || [];
+      if (st._resizeTimelineForEvents) st._resizeTimelineForEvents(currentEvents);
+      if (st.chartInstance && st.overlayCanvas) {
+        window.EventAnnotationsPlot.annotations.drawAnnotationOverlay(st.chartInstance, st.overlayCanvas, currentEvents);
+      }
+      if (st.chartInstance && st.timelineCanvas) {
+        window.EventAnnotationsPlot.timeline.drawTimeline(st.timelineCanvas, st.chartInstance, currentEvents);
+      }
+    }, 50);
+  };
+
+  headerButtons.appendChild(collapseButton);
+  headerButtons.appendChild(hideButton);
+
   header.appendChild(title);
-  header.appendChild(collapseButton);
+  header.appendChild(headerButtons);
   listContainer.appendChild(header);
 
   // Content container (collapsible)

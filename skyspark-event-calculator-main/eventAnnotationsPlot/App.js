@@ -88,60 +88,10 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
   });
   chartContainer.appendChild(utilityToggleBar);
 
-  // Top-right button group (sidebar toggle + expand)
+  // Top-right button group (expand only)
   var btnGroup = document.createElement('div');
   btnGroup.style.cssText = 'position:absolute;top:12px;right:12px;z-index:20;display:flex;gap:6px;';
   chartContainer.appendChild(btnGroup);
-
-  // Sidebar toggle button
-  var sidebarBtn = document.createElement('button');
-  sidebarBtn.title = 'Toggle event filter panel';
-  sidebarBtn.textContent = state.filterSidebarHidden ? '\u25C0' : '\u25B6';
-  sidebarBtn.style.cssText = 'width:32px;height:32px;border:1px solid #dee2e6;border-radius:6px;background:white;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;color:#6c757d;box-shadow:0 1px 3px rgba(0,0,0,0.08);';
-  sidebarBtn.onmouseover = function() { sidebarBtn.style.backgroundColor = '#e8f4fd'; sidebarBtn.style.color = '#1565c0'; sidebarBtn.style.borderColor = '#1565c0'; };
-  sidebarBtn.onmouseout = function() { sidebarBtn.style.backgroundColor = 'white'; sidebarBtn.style.color = '#6c757d'; sidebarBtn.style.borderColor = '#dee2e6'; };
-  sidebarBtn.onclick = function() {
-    state.filterSidebarHidden = !state.filterSidebarHidden;
-    sidebarBtn.textContent = state.filterSidebarHidden ? '\u25C0' : '\u25B6';
-    sidebarBtn.title = state.filterSidebarHidden ? 'Show event filter panel' : 'Hide event filter panel';
-    eventsContainer.style.display = state.filterSidebarHidden ? 'none' : 'flex';
-
-    // Let the layout reflow, then resize chart + overlays to fill new space
-    setTimeout(function() {
-      if (state.chartInstance) {
-        state.chartInstance.resize();
-      }
-      if (state._syncOverlaySize) state._syncOverlaySize();
-      var currentEvents = state.currentEvents || [];
-      if (state._resizeTimelineForEvents) state._resizeTimelineForEvents(currentEvents);
-      if (state.chartInstance && state.overlayCanvas) {
-        annotations.drawAnnotationOverlay(state.chartInstance, state.overlayCanvas, currentEvents);
-      }
-      if (state.chartInstance && state.timelineCanvas) {
-        timeline.drawTimeline(state.timelineCanvas, state.chartInstance, currentEvents);
-      }
-    }, 50);
-  };
-  btnGroup.appendChild(sidebarBtn);
-
-  // Timeline toggle button
-  var timelineBtn = document.createElement('button');
-  timelineBtn.title = state.timelineHidden ? 'Show event timeline' : 'Hide event timeline';
-  timelineBtn.innerHTML = state.timelineHidden
-    ? '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="5" height="2.5" rx="0.5"/><rect x="4" y="7" width="7" height="2.5" rx="0.5"/><rect x="8" y="3" width="5" height="2.5" rx="0.5"/></svg>'
-    : '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="1" y1="3" x2="13" y2="3"/><rect x="1" y="5" width="5" height="2" rx="0.5" opacity="0.3"/><rect x="4" y="8" width="7" height="2" rx="0.5" opacity="0.3"/><line x1="1" y1="12" x2="13" y2="12"/></svg>';
-  timelineBtn.style.cssText = 'width:32px;height:32px;border:1px solid #dee2e6;border-radius:6px;background:white;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;color:#6c757d;box-shadow:0 1px 3px rgba(0,0,0,0.08);';
-  timelineBtn.onmouseover = function() { timelineBtn.style.backgroundColor = '#e8f4fd'; timelineBtn.style.color = '#1565c0'; timelineBtn.style.borderColor = '#1565c0'; };
-  timelineBtn.onmouseout = function() { timelineBtn.style.backgroundColor = 'white'; timelineBtn.style.color = '#6c757d'; timelineBtn.style.borderColor = '#dee2e6'; };
-  timelineBtn.onclick = function() {
-    state.timelineHidden = !state.timelineHidden;
-    timelineBtn.title = state.timelineHidden ? 'Show event timeline' : 'Hide event timeline';
-    timelineBtn.innerHTML = state.timelineHidden
-      ? '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="5" height="2.5" rx="0.5"/><rect x="4" y="7" width="7" height="2.5" rx="0.5"/><rect x="8" y="3" width="5" height="2.5" rx="0.5"/></svg>'
-      : '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="1" y1="3" x2="13" y2="3"/><rect x="1" y="5" width="5" height="2" rx="0.5" opacity="0.3"/><rect x="4" y="8" width="7" height="2" rx="0.5" opacity="0.3"/><line x1="1" y1="12" x2="13" y2="12"/></svg>';
-    timelineContainer.style.display = state.timelineHidden ? 'none' : 'block';
-  };
-  btnGroup.appendChild(timelineBtn);
 
   // Expand button (top-right of chart)
   var expandBtn = document.createElement('button');
@@ -167,26 +117,99 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
   canvas.id = 'eventAnnotationsChart';
   canvasWrapper.appendChild(canvas);
 
-  // Timeline container - dynamic height based on event lanes
+  // Timeline wrapper with header bar and collapsible content
   var timelineMinH = Math.round(60 + 60 * rs.vhScale);
   var timelineMaxH = Math.round(160 + 80 * rs.vhScale);
-  var timelineContainer = document.createElement('div');
-  timelineContainer.style.cssText = 'width:100%;height:' + timelineMinH + 'px;max-height:' + timelineMaxH + 'px;margin-top:4px;position:relative;overflow-y:auto;overflow-x:hidden;flex-shrink:0;';
-  chartContainer.appendChild(timelineContainer);
+  var timelineWrapper = document.createElement('div');
+  timelineWrapper.style.cssText = 'width:100%;margin-top:4px;flex-shrink:0;';
+  chartContainer.appendChild(timelineWrapper);
 
-  // Apply initial timeline state
-  if (state.timelineHidden) {
-    timelineContainer.style.display = 'none';
+  // Timeline header bar with label and close button
+  var timelineHeader = document.createElement('div');
+  timelineHeader.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:2px 4px;cursor:pointer;';
+  timelineWrapper.appendChild(timelineHeader);
+
+  var timelineLabel = document.createElement('span');
+  timelineLabel.textContent = 'Event Timeline';
+  timelineLabel.style.cssText = 'font-size:10px;font-weight:600;color:#adb5bd;text-transform:uppercase;letter-spacing:0.5px;';
+  timelineHeader.appendChild(timelineLabel);
+
+  var timelineToggleBtn = document.createElement('button');
+  timelineToggleBtn.style.cssText = 'border:none;background:transparent;cursor:pointer;font-size:11px;color:#adb5bd;padding:2px 6px;transition:color 0.2s;';
+  timelineToggleBtn.onmouseover = function() { timelineToggleBtn.style.color = '#1565c0'; };
+  timelineToggleBtn.onmouseout = function() { timelineToggleBtn.style.color = '#adb5bd'; };
+  timelineHeader.appendChild(timelineToggleBtn);
+
+  // Timeline content container
+  var timelineContainer = document.createElement('div');
+  timelineContainer.style.cssText = 'width:100%;height:' + timelineMinH + 'px;max-height:' + timelineMaxH + 'px;position:relative;overflow-y:auto;overflow-x:hidden;';
+  timelineWrapper.appendChild(timelineContainer);
+
+  // Toggle logic
+  function applyTimelineToggle() {
+    timelineContainer.style.display = state.timelineHidden ? 'none' : 'block';
+    timelineToggleBtn.textContent = state.timelineHidden ? 'Show' : 'Hide';
   }
+  applyTimelineToggle();
+
+  timelineHeader.onclick = function() {
+    state.timelineHidden = !state.timelineHidden;
+    applyTimelineToggle();
+    // Redraw overlays after toggling so chart resizes correctly
+    setTimeout(function() {
+      if (state.chartInstance) state.chartInstance.resize();
+      if (state._syncOverlaySize) state._syncOverlaySize();
+      var currentEvents = state.currentEvents || [];
+      if (state.chartInstance && state.overlayCanvas) {
+        annotations.drawAnnotationOverlay(state.chartInstance, state.overlayCanvas, currentEvents);
+      }
+      if (!state.timelineHidden && state.chartInstance && state.timelineCanvas) {
+        if (state._resizeTimelineForEvents) state._resizeTimelineForEvents(currentEvents);
+        timeline.drawTimeline(state.timelineCanvas, state.chartInstance, currentEvents);
+      }
+    }, 50);
+  };
 
   // Events sidebar - responsive height matching chart
   var eventsContainer = document.createElement('div');
   eventsContainer.style.cssText = 'flex:1;min-width:280px;max-width:400px;height:' + chartH + 'px;display:flex;flex-direction:column;position:relative;z-index:10;';
   layoutContainer.appendChild(eventsContainer);
 
+  // Sidebar re-show button (appears on chart edge when sidebar is hidden)
+  var showSidebarBtn = document.createElement('button');
+  showSidebarBtn.title = 'Show event filter panel';
+  showSidebarBtn.textContent = 'Event Filter \u25B6';
+  showSidebarBtn.style.cssText = 'position:absolute;top:50%;right:-1px;transform:translateY(-50%);z-index:15;padding:8px 6px;border:1px solid #dee2e6;border-right:none;border-radius:6px 0 0 6px;background:white;cursor:pointer;font-size:10px;font-weight:600;color:#6c757d;box-shadow:-2px 0 4px rgba(0,0,0,0.08);transition:all 0.2s;writing-mode:vertical-lr;letter-spacing:0.5px;';
+  showSidebarBtn.onmouseover = function() { showSidebarBtn.style.backgroundColor = '#e8f4fd'; showSidebarBtn.style.color = '#1565c0'; showSidebarBtn.style.borderColor = '#1565c0'; };
+  showSidebarBtn.onmouseout = function() { showSidebarBtn.style.backgroundColor = 'white'; showSidebarBtn.style.color = '#6c757d'; showSidebarBtn.style.borderColor = '#dee2e6'; };
+  showSidebarBtn.onclick = function() {
+    state.filterSidebarHidden = false;
+    eventsContainer.style.display = 'flex';
+    showSidebarBtn.style.display = 'none';
+    setTimeout(function() {
+      if (state.chartInstance) state.chartInstance.resize();
+      if (state._syncOverlaySize) state._syncOverlaySize();
+      var currentEvents = state.currentEvents || [];
+      if (state._resizeTimelineForEvents) state._resizeTimelineForEvents(currentEvents);
+      if (state.chartInstance && state.overlayCanvas) {
+        annotations.drawAnnotationOverlay(state.chartInstance, state.overlayCanvas, currentEvents);
+      }
+      if (state.chartInstance && state.timelineCanvas) {
+        timeline.drawTimeline(state.timelineCanvas, state.chartInstance, currentEvents);
+      }
+    }, 50);
+  };
+  chartContainer.appendChild(showSidebarBtn);
+
+  // Store ref so interactions.js can toggle it when hiding the sidebar
+  state._showSidebarBtn = showSidebarBtn;
+
   // Apply initial sidebar state (must be after eventsContainer is created)
   if (state.filterSidebarHidden) {
     eventsContainer.style.display = 'none';
+    showSidebarBtn.style.display = 'block';
+  } else {
+    showSidebarBtn.style.display = 'none';
   }
 
   // Loading message
