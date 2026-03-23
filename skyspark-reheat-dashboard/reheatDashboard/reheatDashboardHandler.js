@@ -201,7 +201,9 @@ window.reheatDashboardApp = window.reheatDashboardApp || {};
   function toY(v, H) { return M.top + (1 - (v - YD[0]) / (YD[1] - YD[0])) * (H - M.top - M.bottom); }
 
   function renderScatter(svgEl, tipEl, vavData, selectedId) {
-    var rect = svgEl.getBoundingClientRect();
+    // Read size from parent container, not the SVG itself, to avoid feedback loops
+    var parent = svgEl.parentElement;
+    var rect = parent ? parent.getBoundingClientRect() : svgEl.getBoundingClientRect();
     var W = Math.max(rect.width || 600, 380);
     var H = Math.max(rect.height || 420, 320);
     svgEl.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
