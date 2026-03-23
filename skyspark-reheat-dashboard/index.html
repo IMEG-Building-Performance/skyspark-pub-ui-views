@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VAV Reheat Diagnostic — Standalone Demo</title>
+<link rel="stylesheet" href="reheatDashboard/reheatDashboardStyles.css">
+</head>
+<body>
+<!--
+  Standalone demo page for local development/testing.
+  Loads modules in dependency order (same as reheatDashboardEntry.js).
+  In production, SkySpark's entry file handles this loading sequence.
+-->
+<div id="reheatDashboard"></div>
+
+<!-- Load modules in dependency order -->
+<script src="reheatDashboard/constants/fields.js"></script>
+<script src="reheatDashboard/utils/classify.js"></script>
+<script src="reheatDashboard/utils/demoData.js"></script>
+<script src="reheatDashboard/utils/svg.js"></script>
+<script src="reheatDashboard/components/KpiRow.js"></script>
+<script src="reheatDashboard/components/ScatterChart.js"></script>
+<script src="reheatDashboard/components/VavTable.js"></script>
+<script src="reheatDashboard/App.js"></script>
+<script src="reheatDashboard/reheatDashboardUI.js"></script>
+
+<script>
+(function () {
+  // Mock SkySpark view object for standalone testing
+  var mockView = {
+    removeAll: function () {
+      var container = document.getElementById('reheatDashboard');
+      container.innerHTML = '';
+    },
+    session: function () {
+      return {
+        attestKey: function () { return 'demo-attest-key'; },
+        proj: function () { return { name: function () { return 'demo'; } }; }
+      };
+    }
+  };
+
+  var mockElem = document.getElementById('reheatDashboard');
+
+  // Simulate SkySpark calling onUpdate
+  if (window.reheatDashboardApp && typeof window.reheatDashboardApp.onUpdate === 'function') {
+    window.reheatDashboardApp.onUpdate({ view: mockView, elem: mockElem });
+  } else {
+    console.error('[demo] reheatDashboardApp not loaded');
+  }
+})();
+</script>
+</body>
+</html>
