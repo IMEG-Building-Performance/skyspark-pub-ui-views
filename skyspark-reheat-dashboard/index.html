@@ -9,12 +9,22 @@
 <body>
 <!--
   Standalone demo page for local development/testing.
-  In production, the SkySpark pub UI entry file (reheatDashboardEntry.js)
-  loads the handler dynamically and SkySpark calls onUpdate().
-  This page simulates that lifecycle with a mock view/elem.
+  Loads modules in dependency order (same as reheatDashboardEntry.js).
+  In production, SkySpark's entry file handles this loading sequence.
 -->
 <div id="reheatDashboard"></div>
-<script src="reheatDashboard/reheatDashboardHandler.js"></script>
+
+<!-- Load modules in dependency order -->
+<script src="reheatDashboard/constants/fields.js"></script>
+<script src="reheatDashboard/utils/classify.js"></script>
+<script src="reheatDashboard/utils/demoData.js"></script>
+<script src="reheatDashboard/utils/svg.js"></script>
+<script src="reheatDashboard/components/KpiRow.js"></script>
+<script src="reheatDashboard/components/ScatterChart.js"></script>
+<script src="reheatDashboard/components/VavTable.js"></script>
+<script src="reheatDashboard/App.js"></script>
+<script src="reheatDashboard/reheatDashboardUI.js"></script>
+
 <script>
 (function () {
   // Mock SkySpark view object for standalone testing
