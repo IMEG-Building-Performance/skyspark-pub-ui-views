@@ -127,11 +127,6 @@ window.reheatDashboard = window.reheatDashboard || {};
       });
     }
 
-    // Resize handler
-    window.addEventListener('resize', function () {
-      NS.ScatterChart.render(svgEl, tipEl, vavData, state.selectedId, selectVAV);
-    });
-
     // Initial render
     refresh();
   };

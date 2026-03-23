@@ -8,19 +8,17 @@ window.reheatDashboard = window.reheatDashboard || {};
   var dotFill = NS.svg.dotFill;
   var dotStroke = NS.svg.dotStroke;
 
+  // Fixed coordinate system — SVG scales to fill container via CSS
+  var W = 800, H = 500;
   var M = { top: 20, right: 32, bottom: 44, left: 52 };
   var XD = [50, 100], YD = [0, 100];
 
-  function toX(v, W) { return M.left + (v - XD[0]) / (XD[1] - XD[0]) * (W - M.left - M.right); }
-  function toY(v, H) { return M.top + (1 - (v - YD[0]) / (YD[1] - YD[0])) * (H - M.top - M.bottom); }
+  function toX(v) { return M.left + (v - XD[0]) / (XD[1] - XD[0]) * (W - M.left - M.right); }
+  function toY(v) { return M.top + (1 - (v - YD[0]) / (YD[1] - YD[0])) * (H - M.top - M.bottom); }
 
   NS.ScatterChart = {};
 
   NS.ScatterChart.render = function (svgEl, tipEl, vavData, selectedId, onSelect) {
-    // Use parent's layout size (stable, not affected by SVG content)
-    var parent = svgEl.parentElement;
-    var W = Math.max((parent ? parent.clientWidth : 600) - 0, 380);
-    var H = Math.max((parent ? parent.clientHeight : 420) - 0, 320);
     svgEl.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
     svgEl.setAttribute('preserveAspectRatio', 'xMidYMid meet');
     svgEl.innerHTML = '';
@@ -32,16 +30,16 @@ window.reheatDashboard = window.reheatDashboard || {};
     svgCreate('rect', { x: M.left, y: M.top, width: plotW, height: plotH, fill: '#fafbfc' }, svgEl);
 
     // Zone: faulty reheat (top-left)
-    var fx = toX(68, W);
-    var fy60 = toY(60, H);
+    var fx = toX(68);
+    var fy60 = toY(60);
     svgCreate('rect', {
       x: M.left, y: M.top, width: fx - M.left, height: fy60 - M.top,
       fill: '#fde8e8', opacity: 0.35, stroke: '#ef444428', 'stroke-width': 1
     }, svgEl);
 
     // Zone: leaking valve (bottom-right)
-    var lx = toX(75, W);
-    var ly30 = toY(30, H);
+    var lx = toX(75);
+    var ly30 = toY(30);
     svgCreate('rect', {
       x: lx, y: ly30, width: W - M.right - lx, height: H - M.bottom - ly30,
       fill: '#ede9fe', opacity: 0.35, stroke: '#8b5cf628', 'stroke-width': 1
@@ -49,7 +47,7 @@ window.reheatDashboard = window.reheatDashboard || {};
 
     // Grid lines
     [0, 20, 40, 60, 80, 100].forEach(function (v) {
-      var y = toY(v, H);
+      var y = toY(v);
       svgCreate('line', {
         x1: M.left, x2: W - M.right, y1: y, y2: y,
         stroke: v === 0 || v === 100 ? '#c8cdd2' : '#e4e7ea', 'stroke-width': 1
@@ -61,7 +59,7 @@ window.reheatDashboard = window.reheatDashboard || {};
     });
 
     [50, 60, 70, 80, 90, 100].forEach(function (v) {
-      var x = toX(v, W);
+      var x = toX(v);
       svgCreate('line', {
         x1: x, x2: x, y1: M.top, y2: H - M.bottom,
         stroke: v === 50 || v === 100 ? '#c8cdd2' : '#e4e7ea', 'stroke-width': 1
@@ -89,7 +87,7 @@ window.reheatDashboard = window.reheatDashboard || {};
 
     // Reference diagonal
     svgCreate('line', {
-      x1: toX(50, W), y1: toY(0, H), x2: toX(100, W), y2: toY(100, H),
+      x1: toX(50), y1: toY(0), x2: toX(100), y2: toY(100),
       stroke: '#e05252', 'stroke-width': 1.5, 'stroke-dasharray': '5,4', opacity: 0.45
     }, svgEl);
 
@@ -122,7 +120,7 @@ window.reheatDashboard = window.reheatDashboard || {};
     var tipCls = NS.fields.tipCls;
 
     groups.forEach(function (d) {
-      var cx = toX(d.dat, W), cy = toY(d.rh, H);
+      var cx = toX(d.dat), cy = toY(d.rh);
       var isSel = d.id === selectedId;
       var c = svgCreate('circle', {
         cx: cx, cy: cy,
