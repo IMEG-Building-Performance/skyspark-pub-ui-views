@@ -37,17 +37,17 @@ window.reheatDashboard = window.reheatDashboard || {};
         var rows = grid.rows || [];
 
         console.log('[reheatDashboard] Grid cols:', cols, '| rows:', rows.length);
+        if (rows.length > 0) console.log('[reheatDashboard] Sample row:', JSON.stringify(rows[0]));
 
         return rows.map(function (row, idx) {
+          var dat = parseFloat(api.extractValue(row.vav_SupplyAirTemperature)) || 0;
+          var rh  = parseFloat(api.extractValue(row.vav_HeatingValveOutput))   || 0;
           return {
             id:   idx,
             name: api.extractValue(row.navName || row.dis || row.name || row.equipRef) || ('VAV-' + idx),
-            dat:  parseFloat(api.extractValue(row.avgDat || row.dat || row.avgDischargeAirTemp)) || 0,
-            rh:   parseFloat(api.extractValue(row.avgRh || row.rh || row.avgReheatValve || row.avgReheatValveOutput)) || 0,
-            flag: NS.classify(
-              parseFloat(api.extractValue(row.avgDat || row.dat || row.avgDischargeAirTemp)) || 0,
-              parseFloat(api.extractValue(row.avgRh || row.rh || row.avgReheatValve || row.avgReheatValveOutput)) || 0
-            )
+            dat:  dat,
+            rh:   rh,
+            flag: NS.classify(dat, rh)
           };
         });
       });
