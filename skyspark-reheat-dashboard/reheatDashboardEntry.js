@@ -13,6 +13,8 @@ var reheatDashboardHandler = {};
     'utils/classify.js',
     'utils/demoData.js',
     'utils/svg.js',
+    'utils/api.js',
+    'evals/loadReheatData.js',
     'components/KpiRow.js',
     'components/ScatterChart.js',
     'components/VavTable.js',
