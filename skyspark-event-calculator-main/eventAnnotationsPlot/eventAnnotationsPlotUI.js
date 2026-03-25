@@ -53,6 +53,7 @@
     'components/EventDetail.js',
     'components/ExpandView.js',
     'components/EventsDatabase.js',
+    'components/Documentation.js',
 
     // Sample data (used for dev/testing)
     'fixtures/generators.js',
