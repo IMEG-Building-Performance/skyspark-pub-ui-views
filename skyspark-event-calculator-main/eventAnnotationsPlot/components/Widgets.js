@@ -13,6 +13,7 @@ window.EventAnnotationsPlot.widgets.createSummaryWidgets = function (container) 
 
   var summaryContainer = document.createElement('div');
   summaryContainer.style.display = 'flex';
+  summaryContainer.style.flexWrap = 'wrap';
   summaryContainer.style.gap = containerGap + 'px';
   summaryContainer.style.marginBottom = containerPad + 'px';
   summaryContainer.style.justifyContent = 'flex-end';
