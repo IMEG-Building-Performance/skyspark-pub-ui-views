@@ -22,6 +22,7 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
   var widgets = window.EventAnnotationsPlot.widgets;
   var eventDetail = window.EventAnnotationsPlot.eventDetail;
   var eventsDatabase = window.EventAnnotationsPlot.eventsDatabase;
+  var documentation = window.EventAnnotationsPlot.documentation;
   var skyspark = window.EventAnnotationsPlot.skyspark;
 
   // ── Clear existing content ───────────────────────────────────────────
@@ -67,6 +68,25 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
     };
     // Insert after titleDiv (before cost widgets)
     widgetRefs.summaryContainer.insertBefore(viewEventsBtn, titleDiv.nextSibling);
+  }
+
+  // "Documentation" button — inserted into summary bar after "View All Events"
+  if (documentation) {
+    var docBtn = document.createElement('button');
+    docBtn.textContent = 'Documentation';
+    docBtn.style.cssText = 'padding:8px 18px;border:1px solid #43a047;border-radius:6px;background:#43a047;color:white;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;white-space:nowrap;';
+    docBtn.onmouseover = function() { docBtn.style.background = '#4caf50'; };
+    docBtn.onmouseout = function() { docBtn.style.background = '#43a047'; };
+    docBtn.onclick = function() {
+      documentation.openPanel(mainContainer);
+    };
+    // Insert after viewEventsBtn (or after titleDiv if no viewEventsBtn)
+    var insertAfter = viewEventsBtn || titleDiv;
+    if (insertAfter && insertAfter.nextSibling) {
+      widgetRefs.summaryContainer.insertBefore(docBtn, insertAfter.nextSibling);
+    } else {
+      widgetRefs.summaryContainer.appendChild(docBtn);
+    }
   }
 
   // Layout container
