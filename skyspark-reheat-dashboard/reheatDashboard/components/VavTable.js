@@ -16,6 +16,10 @@ window.reheatDashboard = window.reheatDashboard || {};
     });
     rows.sort(function (a, b) {
       var av = a[sortCol], bv = b[sortCol];
+      // Push nulls (sensor errors) to the bottom regardless of sort direction
+      if (av === null && bv === null) return 0;
+      if (av === null) return 1;
+      if (bv === null) return -1;
       return (typeof av === 'string' ? av.localeCompare(bv) : av - bv) * sortDir;
     });
 
@@ -27,8 +31,8 @@ window.reheatDashboard = window.reheatDashboard || {};
     tbody.innerHTML = rows.map(function (d) {
       return '<tr data-id="' + d.id + '" class="' + (d.id === selectedId ? 'selected' : '') + '">' +
         '<td class="name-cell">' + d.name + '</td>' +
-        '<td>' + d.dat + ' \u00B0F</td>' +
-        '<td>' + d.rh + '%</td>' +
+        '<td>' + (d.dat !== null ? d.dat + ' \u00B0F' : '—') + '</td>' +
+        '<td>' + (d.rh !== null ? d.rh + '%' : '—') + '</td>' +
         '<td><span class="' + badgeCls[d.flag] + '">' + tipLabels[d.flag] + '</span></td>' +
         '</tr>';
     }).join('');

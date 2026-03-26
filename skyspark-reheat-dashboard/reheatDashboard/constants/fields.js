@@ -19,7 +19,8 @@ window.reheatDashboard = window.reheatDashboard || {};
       faulty: 'Faulty Reheat',
       leaking: 'Leaking Valve',
       watch: 'Watch',
-      ok: 'Normal'
+      ok: 'Normal',
+      sensor: 'Faulty DAT Sensor'
     },
 
     // Tooltip flag CSS classes
@@ -27,7 +28,8 @@ window.reheatDashboard = window.reheatDashboard || {};
       faulty: 'flag-faulty',
       leaking: 'flag-leaking',
       watch: 'flag-watch',
-      ok: 'flag-ok'
+      ok: 'flag-ok',
+      sensor: 'flag-sensor'
     },
 
     // Table badge CSS classes
@@ -35,7 +37,8 @@ window.reheatDashboard = window.reheatDashboard || {};
       faulty: 'badge badge-faulty',
       leaking: 'badge badge-leaking',
       ok: 'badge badge-ok',
-      watch: 'badge badge-watch'
+      watch: 'badge badge-watch',
+      sensor: 'badge badge-sensor'
     }
   };
 })(window.reheatDashboard);

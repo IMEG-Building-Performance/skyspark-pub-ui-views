@@ -51,7 +51,7 @@
 /* ── KPI row ── */
 #reheatDashboard .kpi-row {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 12px;
   padding: 14px 16px 2px;
   flex-shrink: 0;
@@ -85,6 +85,7 @@
 #reheatDashboard .kpi-card .value.red    { color: #c0392b; }
 #reheatDashboard .kpi-card .value.amber  { color: #d97706; }
 #reheatDashboard .kpi-card .value.blue   { color: #1d6fa4; }
+#reheatDashboard .kpi-card .value.gray   { color: #475569; }
 
 /* ── Main body ── */
 #reheatDashboard .main-body {
@@ -200,6 +201,7 @@
 #reheatDashboard .badge-leaking { background: #ede9fe; color: #5b21b6; }
 #reheatDashboard .badge-ok      { background: #d1fae5; color: #065f46; }
 #reheatDashboard .badge-watch   { background: #fef3c7; color: #92400e; }
+#reheatDashboard .badge-sensor  { background: #f1f5f9; color: #475569; }
 
 /* ── Chart panel ── */
 #reheatDashboard .chart-inner {
@@ -258,6 +260,7 @@
 #reheatDashboard .rd-tooltip .flag-leaking { color: #7c3aed; }
 #reheatDashboard .rd-tooltip .flag-ok      { color: #065f46; }
 #reheatDashboard .rd-tooltip .flag-watch   { color: #92400e; }
+#reheatDashboard .rd-tooltip .flag-sensor  { color: #475569; }
 
 /* ── Icon buttons ── */
 #reheatDashboard .icon-btn {
