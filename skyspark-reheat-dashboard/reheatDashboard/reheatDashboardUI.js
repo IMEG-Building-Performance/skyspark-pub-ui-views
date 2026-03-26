@@ -1,6 +1,6 @@
 // reheatDashboardUI.js
 // UI module — loads CSS, reads SkySpark variables, fetches live data,
-// falls back to demo data, and initializes the app.
+// and initializes the app. Prompts for site selection when variables are missing.
 window.reheatDashboard = window.reheatDashboard || {};
 
 (function (NS) {
@@ -32,12 +32,27 @@ window.reheatDashboard = window.reheatDashboard || {};
       var s;
       try { s = typeof val.toStr === 'function' ? val.toStr() : String(val); }
       catch (e) { s = String(val); }
-      // Fantom Ref display: [nav:equip.all] → @nav:equip.all
+
+      // Bracket-wrapped value: single ref [id:display] or list [ref1, ref2, ...]
       if (s.charAt(0) === '[' && s.charAt(s.length - 1) === ']') {
-        return '@' + s.slice(1, -1);
+        var inner = s.slice(1, -1);
+        // List of refs (comma-separated) → Axon list [@ref1, @ref2]
+        if (inner.indexOf(',') !== -1) {
+          var parts = inner.split(',').map(function (p) {
+            p = p.trim();
+            return p.charAt(0) === '@' ? p : '@' + p;
+          });
+          return '[' + parts.join(', ') + ']';
+        }
+        // Single ref
+        return '@' + inner;
       }
       // Fantom Ref bare ID: nav:equip.all → @nav:equip.all
       if (/^[a-z][a-z0-9]*:[a-z]/i.test(s)) {
+        return '@' + s;
+      }
+      // Base64-encoded Haystack ref ID (e.g. aWQ6QHA6...) — prefix with @
+      if (/^[A-Za-z0-9+/=]{16,}$/.test(s) && !/\s/.test(s)) {
         return '@' + s;
       }
       // Fantom DateSpan comma form: 2026-02-01,2026-03-01 → 2026-02-01..2026-03-01
@@ -47,6 +62,36 @@ window.reheatDashboard = window.reheatDashboard || {};
       return s;
     } catch (e) { /* variable not set */ }
     return null;
+  }
+
+  // ── Render "select a site" prompt when variables are missing ──
+  function renderSitePrompt(container, attestKey, targets, dates) {
+    var missing = [];
+    if (!targets) missing.push('targets (site/equip selection)');
+    if (!dates)   missing.push('dates (date range)');
+    if (!attestKey) missing.push('SkySpark session');
+
+    container.innerHTML = [
+      '<div class="page-header">',
+      '  <h1>Reheat KPI Scatter Plot</h1>',
+      '</div>',
+      '<div style="display:flex;align-items:center;justify-content:center;flex:1;padding:3rem 1rem">',
+      '  <div style="text-align:center;max-width:420px">',
+      '    <svg width="48" height="48" fill="none" stroke="#94a3b8" stroke-width="1.5" viewBox="0 0 24 24" style="margin-bottom:1rem">',
+      '      <path d="M3 21V7l9-4 9 4v14"/>',
+      '      <path d="M9 21V11h6v10"/>',
+      '      <rect x="10" y="13" width="4" height="3" fill="#cbd5e1" stroke="none"/>',
+      '    </svg>',
+      '    <h2 style="margin:0 0 0.5rem;font-size:1.1rem;color:#334155">No Site Selected</h2>',
+      '    <p style="margin:0 0 1rem;color:#64748b;font-size:0.875rem;line-height:1.5">',
+      '      Select a site and date range from the navigation panel to load reheat diagnostics.',
+      '    </p>',
+      '    <div style="color:#94a3b8;font-size:0.8rem">',
+      '      Missing: ' + missing.join(', '),
+      '    </div>',
+      '  </div>',
+      '</div>'
+    ].join('\n');
   }
 
   // ── onUpdate — called by the entry file's handler on each view refresh ──
@@ -73,7 +118,7 @@ window.reheatDashboard = window.reheatDashboard || {};
       attestKey   = session.attestKey();
       projectName = session.proj().name();
     } catch (e) {
-      console.warn('[reheatDashboard] No SkySpark session — using demo data.');
+      console.warn('[reheatDashboard] No SkySpark session.');
       attestKey = null;
     }
 
@@ -103,18 +148,14 @@ window.reheatDashboard = window.reheatDashboard || {};
           if (gen !== _fetchGen) return;
           console.error('[reheatDashboard] Error:', err);
           container.innerHTML = '';
-          // Show error then fall back to demo data
           var errEl = document.createElement('div');
-          errEl.style.cssText = 'padding:0.5rem 1rem;color:#b91c1c;background:#fef2f2;border-radius:6px;margin-bottom:1rem;font-size:0.85rem';
-          errEl.textContent = 'Live data error: ' + err.message + ' — showing demo data.';
+          errEl.style.cssText = 'padding:0.5rem 1rem;color:#b91c1c;background:#fef2f2;border-radius:6px;margin:1rem;font-size:0.85rem';
+          errEl.textContent = 'Data load error: ' + err.message;
           container.appendChild(errEl);
-          var inner = document.createElement('div');
-          container.appendChild(inner);
-          NS.App.init(inner, NS.generateDemoData());
         });
     } else {
-      // No session or variables — use demo data
-      NS.App.init(container, NS.generateDemoData());
+      // No session or missing variables — prompt user to select a site
+      renderSitePrompt(container, attestKey, targets, dates);
     }
   };
 

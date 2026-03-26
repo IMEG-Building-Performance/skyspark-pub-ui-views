@@ -40,14 +40,17 @@ window.reheatDashboard = window.reheatDashboard || {};
         if (rows.length > 0) console.log('[reheatDashboard] Sample row:', JSON.stringify(rows[0]));
 
         return rows.map(function (row, idx) {
-          var dat = Math.round(parseFloat(api.extractValue(row.vav_SupplyAirTemperature)) || 0);
-          var rh  = Math.round(parseFloat(api.extractValue(row.vav_HeatingValveOutput))   || 0);
+          var rawDAT = api.extractValue(row.vav_SupplyAirTemperature);
+          var rawRH  = api.extractValue(row.vav_HeatingValveOutput);
+          var dat = parseFloat(rawDAT);
+          var rh  = parseFloat(rawRH);
+          var sensorErr = isNaN(dat) || isNaN(rh);
           return {
             id:   idx,
             name: api.extractValue(row.targetRef) || ('VAV-' + idx),
-            dat:  dat,
-            rh:   rh,
-            flag: NS.classify(dat, rh)
+            dat:  sensorErr ? null : Math.round(dat),
+            rh:   sensorErr ? null : Math.round(rh),
+            flag: sensorErr ? 'sensor' : NS.classify(Math.round(dat), Math.round(rh))
           };
         });
       });

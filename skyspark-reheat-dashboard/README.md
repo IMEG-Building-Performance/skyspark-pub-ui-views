@@ -77,7 +77,7 @@ The dashboard calls `view_reheatReport_pubUI(targets, dates)` and expects a grid
 
 ## Local Development
 
-Open `index.html` in a browser — no build step or server required. It loads all modules in dependency order and renders with 200 synthetic demo data points. No SkySpark session is needed.
+Open `index.html` in a browser — no build step or server required. It loads all modules in dependency order and renders the "select a site" prompt (since no SkySpark session or view variables are available).
 
 ## Data Flow
 
@@ -87,10 +87,10 @@ Open `index.html` in a browser — no build step or server required. It loads al
 4. `loadReheatData.js` evals the Axon function via the Haystack API
 5. Results are mapped to `{ id, name, dat, rh, flag }` objects (rounded to integers)
 6. `App.js` builds the DOM and wires up KPIs, scatter chart, and table
-7. If the API call fails or no session exists, demo data is used as a fallback
+7. If no session or variables are set, a "select a site" prompt is shown instead
 
 ## Fallback Behavior
 
-- **No SkySpark session or missing variables** — renders with demo data
-- **API error** — shows an error banner at the top, then falls back to demo data
+- **No SkySpark session or missing variables** — shows a prompt to select a site and date range
+- **API error** — shows an error banner with the failure message
 - **Stale responses** — a generation counter discards in-flight responses that arrive after a newer request

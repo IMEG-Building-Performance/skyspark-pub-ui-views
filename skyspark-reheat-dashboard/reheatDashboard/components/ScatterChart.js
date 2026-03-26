@@ -11,10 +11,7 @@ window.reheatDashboard = window.reheatDashboard || {};
   // Fixed coordinate system — wider aspect ratio to match container shape
   var W = 1200, H = 420;
   var M = { top: 20, right: 32, bottom: 44, left: 52 };
-  var XD = [50, 100], YD = [0, 100];
-
-  function toX(v) { return M.left + (v - XD[0]) / (XD[1] - XD[0]) * (W - M.left - M.right); }
-  function toY(v) { return M.top + (1 - (v - YD[0]) / (YD[1] - YD[0])) * (H - M.top - M.bottom); }
+  var YD = [0, 100];
 
   NS.ScatterChart = {};
 
@@ -22,6 +19,19 @@ window.reheatDashboard = window.reheatDashboard || {};
     svgEl.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
     svgEl.setAttribute('preserveAspectRatio', 'xMidYMid meet');
     svgEl.innerHTML = '';
+
+    // Filter out sensor-error units — they can't be plotted
+    var plotData = vavData.filter(function (d) { return d.flag !== 'sensor'; });
+
+    // Dynamic X-axis: 50°F min, max based on data (capped at 200°F)
+    var maxDAT = 100;
+    plotData.forEach(function (d) { if (d.dat > maxDAT) maxDAT = d.dat; });
+    // Round up to next multiple of 10 for clean ticks, cap at 200
+    maxDAT = Math.min(200, Math.ceil(maxDAT / 10) * 10);
+    var XD = [50, maxDAT];
+
+    function toX(v) { return M.left + (v - XD[0]) / (XD[1] - XD[0]) * (W - M.left - M.right); }
+    function toY(v) { return M.top + (1 - (v - YD[0]) / (YD[1] - YD[0])) * (H - M.top - M.bottom); }
 
     var plotW = W - M.left - M.right;
     var plotH = H - M.top - M.bottom;
@@ -45,7 +55,7 @@ window.reheatDashboard = window.reheatDashboard || {};
       fill: '#ede9fe', opacity: 0.35, stroke: '#8b5cf628', 'stroke-width': 1
     }, svgEl);
 
-    // Grid lines
+    // Grid lines — Y axis
     [0, 20, 40, 60, 80, 100].forEach(function (v) {
       var y = toY(v);
       svgCreate('line', {
@@ -58,11 +68,15 @@ window.reheatDashboard = window.reheatDashboard || {};
       }, svgEl);
     });
 
-    [50, 60, 70, 80, 90, 100].forEach(function (v) {
+    // Grid lines — X axis (dynamic ticks every 10°F)
+    var xTicks = [];
+    for (var t = 50; t <= maxDAT; t += 10) xTicks.push(t);
+
+    xTicks.forEach(function (v) {
       var x = toX(v);
       svgCreate('line', {
         x1: x, x2: x, y1: M.top, y2: H - M.bottom,
-        stroke: v === 50 || v === 100 ? '#c8cdd2' : '#e4e7ea', 'stroke-width': 1
+        stroke: v === 50 || v === maxDAT ? '#c8cdd2' : '#e4e7ea', 'stroke-width': 1
       }, svgEl);
       svgText(v + '\u00B0F', {
         x: x, y: H - M.bottom + 14, 'text-anchor': 'middle',
@@ -85,9 +99,9 @@ window.reheatDashboard = window.reheatDashboard || {};
       'font-size': 10, fill: '#6b6b6b', 'letter-spacing': '0.04em'
     }, svgEl);
 
-    // Reference diagonal
+    // Reference diagonal (from origin to 1:1 at min of axis limits)
     svgCreate('line', {
-      x1: toX(50), y1: toY(0), x2: toX(100), y2: toY(100),
+      x1: toX(50), y1: toY(0), x2: toX(Math.min(maxDAT, 150)), y2: toY(100),
       stroke: '#e05252', 'stroke-width': 1.5, 'stroke-dasharray': '5,4', opacity: 0.45
     }, svgEl);
 
@@ -107,12 +121,12 @@ window.reheatDashboard = window.reheatDashboard || {};
     var order = ['ok', 'watch', 'faulty', 'leaking'];
     var groups = [];
     order.forEach(function (f) {
-      vavData.forEach(function (d) {
+      plotData.forEach(function (d) {
         if (d.flag === f && d.id !== selectedId) groups.push(d);
       });
     });
     if (selectedId !== null) {
-      var sel = vavData.find(function (d) { return d.id === selectedId; });
+      var sel = plotData.find(function (d) { return d.id === selectedId; });
       if (sel) groups.push(sel);
     }
 
