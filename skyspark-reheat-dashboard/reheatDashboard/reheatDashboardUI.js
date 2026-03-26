@@ -32,9 +32,19 @@ window.reheatDashboard = window.reheatDashboard || {};
       var s;
       try { s = typeof val.toStr === 'function' ? val.toStr() : String(val); }
       catch (e) { s = String(val); }
-      // Fantom Ref display: [nav:equip.all] → @nav:equip.all
+      // Bracket-wrapped value: single ref [id:display] or list [ref1, ref2, ...]
       if (s.charAt(0) === '[' && s.charAt(s.length - 1) === ']') {
-        return '@' + s.slice(1, -1);
+        var inner = s.slice(1, -1);
+        // List of refs (comma-separated) → Axon list [@ref1, @ref2]
+        if (inner.indexOf(',') !== -1) {
+          var parts = inner.split(',').map(function (p) {
+            p = p.trim();
+            return p.charAt(0) === '@' ? p : '@' + p;
+          });
+          return '[' + parts.join(', ') + ']';
+        }
+        // Single ref
+        return '@' + inner;
       }
       // Fantom Ref bare ID: nav:equip.all → @nav:equip.all
       if (/^[a-z][a-z0-9]*:[a-z]/i.test(s)) {
