@@ -29,6 +29,12 @@ window.mbcxDashboard.components.AHU = {
       '      </div>',
       '      <div><div class="equip-title">Air Handling Units</div><div class="equip-meta">' + d.ahu.unitCount + ' AHUs</div></div>',
       '    </div>',
+      '    <button class="ahu-fs-btn" id="mbcxAhuFsBtn" title="Toggle fullscreen">',
+      '      <svg id="mbcxAhuFsIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">',
+      '        <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>',
+      '        <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>',
+      '      </svg>',
+      '    </button>',
       '  </div>',
       '  <div id="mbcxAhuContent">',
       '    <div class="ahu-loading">Loading AHU data\u2026</div>',
@@ -47,6 +53,26 @@ window.mbcxDashboard.components.AHU = {
       return;
     }
 
+    // Wire fullscreen button (exists in static render shell)
+    var fsBtn   = container.querySelector('#mbcxAhuFsBtn');
+    var section = container.querySelector('#mbcxAhuSection');
+    var fsIcon  = container.querySelector('#mbcxAhuFsIcon');
+    if (fsBtn && section) {
+      fsBtn.addEventListener('click', function () {
+        if (!document.fullscreenElement) {
+          section.requestFullscreen && section.requestFullscreen();
+          if (fsIcon) fsIcon.innerHTML =
+            '<polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/>' +
+            '<line x1="10" y1="14" x2="3" y2="21"/><line x1="21" y1="3" x2="14" y2="10"/>';
+        } else {
+          document.exitFullscreen && document.exitFullscreen();
+          if (fsIcon) fsIcon.innerHTML =
+            '<polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>' +
+            '<line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>';
+        }
+      });
+    }
+
     window.mbcxDashboard.evals.loadAllAhuMetrics(ctx.attestKey, ctx.projectName, ctx.siteRef)
       .then(function (results) {
         self._renderAll(contentEl, results);
@@ -63,7 +89,7 @@ window.mbcxDashboard.components.AHU = {
     var C    = window.Chart;
 
     // Toggle bar
-    var toggleHtml = '<div class="ahu-toggle" id="mbcxAhuToggle">' +
+    var toggleHtml = '<div class="ahu-toggle" id="mbcxAhuToggle" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;">' +
       results.map(function (r, i) {
         var active = i === 0 ? ' ahu-toggle-btn--active' : '';
         return '<button class="ahu-toggle-btn' + active + '" data-ahu-metric="' + r.metric.id + '">'
@@ -71,7 +97,7 @@ window.mbcxDashboard.components.AHU = {
       }).join('') +
     '</div>';
 
-    // Metric blocks
+    // Metric blocks — chart left, table right
     var blocksHtml = results.map(function (r, i) {
       var canvasId = 'mbcxAhuChart-' + r.metric.id;
       var tParsed  = HP.parseGrid(r.tableGrid);

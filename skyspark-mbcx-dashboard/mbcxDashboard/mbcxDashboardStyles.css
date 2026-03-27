@@ -411,3 +411,31 @@
   background: var(--imeg-blue); color: #fff; border-color: var(--imeg-blue);
 }
 #mbcxDashboard .ahu-metric-block--hidden { display: none; }
+
+/* ── AHU side-by-side layout ── */
+#mbcxDashboard .ahu-metric-block {
+  display: flex; gap: 20px; align-items: flex-start;
+}
+#mbcxDashboard .ahu-metric-block .ahu-chart-wrap {
+  flex: 1; min-width: 0; position: relative; height: 260px;
+}
+#mbcxDashboard .ahu-metric-block .ahu-table-wrap {
+  width: 420px; flex-shrink: 0; overflow-x: auto; max-height: 280px; overflow-y: auto;
+}
+
+/* ── AHU fullscreen button ── */
+#mbcxDashboard .ahu-fs-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; border-radius: 6px; border: 1px solid var(--gray-200);
+  background: var(--gray-50); color: var(--gray-500); cursor: pointer;
+  flex-shrink: 0; transition: background 0.15s, color 0.15s;
+}
+#mbcxDashboard .ahu-fs-btn:hover { background: var(--gray-100); color: var(--gray-700); }
+
+/* Fullscreen mode — give the section a white background and padding */
+#mbcxAhuSection:fullscreen {
+  background: #fff; padding: 24px; overflow-y: auto;
+}
+#mbcxAhuSection:-webkit-full-screen {
+  background: #fff; padding: 24px; overflow-y: auto;
+}
