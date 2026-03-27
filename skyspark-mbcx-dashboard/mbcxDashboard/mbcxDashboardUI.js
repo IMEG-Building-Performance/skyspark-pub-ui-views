@@ -31,6 +31,20 @@ window.mbcxDashboard = window.mbcxDashboard || {};
     ].join('\n');
   }
 
+  // If toAxon() returns a nav: URI (@nav:site.site.<base64>), decode the base64
+  // to extract the underlying plain ref (@p:proj:r:xxx).
+  function _resolveNavRef(axon) {
+    var m = axon && axon.match(/^@nav:[^.]+\.[^.]+\.(.+)$/);
+    if (!m) return axon;
+    try {
+      var decoded = atob(m[1]);
+      // decoded looks like "id:@p:saintFrancisHealthSystem:r:3120b1ad-815b8812"
+      var refM = decoded.match(/@[a-zA-Z0-9:._\-]+/);
+      if (refM) return refM[0];
+    } catch (e) { /* atob failed — leave as-is */ }
+    return axon;
+  }
+
   NS.onUpdate = function (arg) {
     var view = arg.view;
     var elem = arg.elem;
@@ -60,21 +74,21 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       try {
         var siteVal = view.var('site');
         if (siteVal != null) {
-          // Preferred: toAxon() returns proper Axon ref literal like @p:proj:r:xxx
+          var axonStr;
           if (typeof siteVal.toAxon === 'function') {
-            siteRef = siteVal.toAxon();
+            axonStr = siteVal.toAxon();
           } else {
-            // Fall back: toStr() on a Ref returns the bare ID; prefix with @
             var s;
             try { s = typeof siteVal.toStr === 'function' ? siteVal.toStr() : String(siteVal); }
             catch (e2) { s = String(siteVal); }
-            // Fantom display form [id] → @id
-            if (s.charAt(0) === '[' && s.charAt(s.length - 1) === ']') {
-              siteRef = '@' + s.slice(1, -1);
-            } else {
-              siteRef = s.charAt(0) === '@' ? s : '@' + s;
-            }
+            axonStr = (s.charAt(0) === '[' && s.charAt(s.length - 1) === ']')
+              ? '@' + s.slice(1, -1)
+              : (s.charAt(0) === '@' ? s : '@' + s);
           }
+          // toAxon() may return a nav: URI like @nav:site.site.<base64>
+          // The base64 encodes "id:@p:proj:r:xxx" — extract the plain ref.
+          siteRef = _resolveNavRef(axonStr);
+          console.log('[mbcxDashboard] siteRef resolved:', siteRef);
         }
       } catch (e) {
         console.warn('[mbcxDashboard] Could not read site var:', e);

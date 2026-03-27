@@ -18,6 +18,7 @@ window.mbcxDashboard.api = window.mbcxDashboard.api || {};
     var body = 'ver: "3.0"\nexpr\n"' + axonExpr.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
     return fetch('/api/' + projectName + '/eval', {
       method: 'POST',
+      credentials: 'same-origin',
       headers: {
         'Content-Type': 'text/zinc',
         'Accept': 'application/json',
