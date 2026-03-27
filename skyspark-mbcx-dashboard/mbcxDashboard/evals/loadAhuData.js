@@ -11,6 +11,7 @@ window.mbcxDashboard.evals = window.mbcxDashboard.evals || {};
     var API = window.mbcxDashboard.api;
     var plotExpr  = 'view_pub_mbcxDashboard_AHUs(' + siteRef + ',1,false,false)';
     var tableExpr = 'view_pub_mbcxDashboard_AHUs(' + siteRef + ',1,false,true)';
+    console.log('[mbcxDashboard] AHU plot expr:', plotExpr);
 
     return Promise.all([
       API.evalAxon(attestKey, projectName, plotExpr),

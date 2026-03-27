@@ -25,7 +25,11 @@ window.mbcxDashboard.api = window.mbcxDashboard.api || {};
       },
       body: body
     }).then(function (r) {
-      if (!r.ok) throw new Error('HTTP ' + r.status + ': ' + r.statusText);
+      if (!r.ok) {
+        return r.text().then(function (body) {
+          throw new Error('HTTP ' + r.status + ' — ' + body.slice(0, 300));
+        });
+      }
       return r.json();
     }).then(function (grid) {
       return API.unwrapGrid(grid);
