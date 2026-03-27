@@ -1,0 +1,15 @@
+// Copy this file into your SkySpark project to register the view.
+// After copying, restart SkySpark and navigate to the view.
+//
+// Deployment checklist:
+//   1. Copy mbcxDashboardEntry.js  →  {var}/pub/ui/
+//   2. Copy mbcxDashboard/         →  {var}/pub/ui/mbcxDashboard/  (preserve sub-structure)
+//   3. Import this trio file into the SkySpark project database
+//   4. Restart SkySpark
+
+dis: "MBCX FDD Dashboard"
+appName: "mbcxDashboard"
+view: "mbcxDashboardView"
+src:
+  view:      { inherit:"js" }
+  jsHandler: { var defVal:"mbcxDashboardHandler" }
