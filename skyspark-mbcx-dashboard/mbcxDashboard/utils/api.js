@@ -14,27 +14,35 @@ window.mbcxDashboard.api = window.mbcxDashboard.api || {};
    * @returns {Promise<object>}  - Resolves with the parsed JSON response (Haystack grid)
    */
   API.evalAxon = function (attestKey, projectName, axonExpr) {
-    return new Promise(function (resolve, reject) {
-      var url = '/api/' + projectName + '/eval';
-      var xhr = new XMLHttpRequest();
-      xhr.open('POST', url, true);
-      xhr.setRequestHeader('Content-Type', 'text/zinc; charset=utf-8');
-      xhr.setRequestHeader('X-Auth-Token', attestKey);
-      xhr.setRequestHeader('Accept', 'application/json');
-      xhr.onload = function () {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          try {
-            resolve(JSON.parse(xhr.responseText));
-          } catch (e) {
-            reject(new Error('JSON parse error: ' + e.message));
-          }
-        } else {
-          reject(new Error('HTTP ' + xhr.status + ': ' + xhr.statusText));
-        }
-      };
-      xhr.onerror = function () { reject(new Error('Network error')); };
-      xhr.send(axonExpr);
+    // SkySpark eval endpoint expects a Zinc grid with an "expr" column
+    var body = 'ver: "3.0"\nexpr\n"' + axonExpr.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+    return fetch('/api/' + projectName + '/eval', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/zinc',
+        'Accept': 'application/json',
+        'Attest-Key': attestKey
+      },
+      body: body
+    }).then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status + ': ' + r.statusText);
+      return r.json();
+    }).then(function (grid) {
+      return API.unwrapGrid(grid);
     });
+  };
+
+  // The eval endpoint wraps results in a single-row grid with a 'val' column.
+  API.unwrapGrid = function (data) {
+    if (
+      data.rows && data.rows.length === 1 &&
+      data.cols && data.cols.length === 1 &&
+      data.cols[0].name === 'val'
+    ) {
+      var inner = data.rows[0].val;
+      if (inner && inner.rows && inner.cols) return inner;
+    }
+    return data;
   };
 
 })(window.mbcxDashboard.api);
