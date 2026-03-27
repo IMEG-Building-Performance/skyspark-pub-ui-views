@@ -6,13 +6,6 @@ window.mbcxDashboard.components.HealthBanner = {
   render: function (d) {
     var hb = d.healthBanner;
     return [
-      '<div class="page-titlebar">',
-      '  <div>',
-      '    <div class="page-title">' + d.meta.title + '</div>',
-      '    <div class="page-subtitle">' + d.meta.subtitle + '</div>',
-      '  </div>',
-      '  <div class="badge"><span class="badge-dot"></span>' + hb.critical + ' Critical Faults Active</div>',
-      '</div>',
       '<div class="health-banner">',
       '  <div>',
       '    <div class="hb-label">Health Score</div>',
