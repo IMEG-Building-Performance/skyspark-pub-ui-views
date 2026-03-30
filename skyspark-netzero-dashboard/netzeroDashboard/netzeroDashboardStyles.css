@@ -40,19 +40,21 @@
 
 /* ── Page shell ────────────────────────────────────── */
 .nz-page-narrow {
-  max-width: 1080px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 56px 44px 0;
+  padding: 0 48px;
 }
 
 .nz-page-full {
-  padding: 0 44px;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 48px;
 }
 
 .nz-page-narrow-bottom {
-  max-width: 1080px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 0 44px 72px;
+  padding: 0 48px 56px;
 }
 
 /* ── No-site prompt ────────────────────────────────── */
@@ -81,23 +83,45 @@
   font-size: 10.5px;
 }
 
+/* ── Site title bar ────────────────────────────────── */
+.nz-title-bar {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 48px 0;
+}
+.nz-title-site {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--nz-ink);
+  letter-spacing: -0.01em;
+}
+.nz-title-dates {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--nz-faint);
+  margin-top: 2px;
+  letter-spacing: 0.02em;
+}
+
 /* ── Header ────────────────────────────────────────── */
 .nz-page-header {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  padding-bottom: 22px;
+  padding-bottom: 20px;
   border-bottom: 2px solid var(--nz-ink);
-  margin-bottom: 40px;
+  margin-top: 20px;
+  margin-bottom: 32px;
   gap: 24px;
   flex-wrap: wrap;
 }
 
 .nz-page-title {
   font-family: 'Playfair Display', serif;
-  font-size: 32px;
+  font-size: 28px;
   font-weight: 400;
-  line-height: 1.1;
+  line-height: 1.15;
   letter-spacing: -0.015em;
   color: var(--nz-ink);
 }
@@ -112,7 +136,7 @@
   font-family: 'IBM Plex Mono', monospace;
   font-size: 10.5px;
   color: var(--nz-mid);
-  padding: 4px 12px;
+  padding: 5px 14px;
   border-right: 1px solid var(--nz-rule);
   white-space: nowrap;
   letter-spacing: 0.02em;
@@ -123,23 +147,24 @@ select.nz-meta-item {
   cursor: pointer;
   appearance: none;
   border: none;
-  padding-right: 24px;
+  padding-right: 26px;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%235c5c58'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 8px center;
+  background-position: right 10px center;
 }
 
 /* ── KPI strip ─────────────────────────────────────── */
 .nz-kpi-strip {
   display: grid;
-  grid-template-columns: 1fr 1fr 1.4fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1.4fr 0.9fr 1.1fr;
   border-bottom: 1px solid var(--nz-rule);
-  margin-bottom: 28px;
+  margin-bottom: 24px;
+  padding-bottom: 24px;
 }
 .nz-kpi {
-  padding: 0 32px 28px 0;
+  padding: 0 24px 0 0;
   border-right: 1px solid var(--nz-rule);
-  margin-right: 32px;
+  margin-right: 24px;
 }
 .nz-kpi:last-child { border-right: none; margin-right: 0; padding-right: 0; }
 .nz-kpi-label {
@@ -148,7 +173,7 @@ select.nz-meta-item {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--nz-faint);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 .nz-kpi-num {
   font-family: 'IBM Plex Mono', monospace;
@@ -156,19 +181,19 @@ select.nz-meta-item {
   line-height: 1;
   color: var(--nz-ink);
 }
-.nz-kpi:nth-child(1) .nz-kpi-num { font-size: 36px; }
-.nz-kpi:nth-child(2) .nz-kpi-num { font-size: 34px; color: var(--nz-green); }
-.nz-kpi:nth-child(3) .nz-kpi-num { font-size: 28px; color: var(--nz-red); }
-.nz-kpi:nth-child(4) .nz-kpi-num { font-size: 28px; color: var(--nz-mid); }
+.nz-kpi:nth-child(1) .nz-kpi-num { font-size: 32px; }
+.nz-kpi:nth-child(2) .nz-kpi-num { font-size: 30px; color: var(--nz-green); }
+.nz-kpi:nth-child(3) .nz-kpi-num { font-size: 26px; color: var(--nz-red); }
+.nz-kpi:nth-child(4) .nz-kpi-num { font-size: 26px; color: var(--nz-mid); }
 .nz-kpi-unit {
   margin-top: 5px;
-  font-size: 11px;
+  font-size: 10.5px;
   color: var(--nz-faint);
   font-family: 'IBM Plex Mono', monospace;
 }
 .nz-kpi-note {
-  margin-top: 6px;
-  font-size: 11px;
+  margin-top: 5px;
+  font-size: 10.5px;
   color: var(--nz-mid);
 }
 .nz-kpi-note strong { font-weight: 500; color: var(--nz-red); }
@@ -176,21 +201,21 @@ select.nz-meta-item {
 /* Source mix donut */
 .nz-kpi-donut-wrap {
   position: relative;
-  width: 52px;
-  height: 52px;
+  width: 48px;
+  height: 48px;
   flex-shrink: 0;
 }
 .nz-kpi-donut-wrap canvas { display: block; }
 .nz-kpi-with-donut {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 .nz-kpi-donut-legend {
-  margin-top: 6px;
+  margin-top: 0;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
 }
 .nz-kpi-donut-legend-item {
   display: flex;
@@ -213,22 +238,21 @@ select.nz-meta-item {
   grid-template-columns: repeat(4, 1fr);
   border-top: 1px solid var(--nz-rule);
   border-bottom: 1px solid var(--nz-rule);
-  margin-bottom: 52px;
-  margin-top: -36px;
-  padding: 18px 0;
+  margin-bottom: 40px;
+  padding: 16px 0;
   gap: 0;
 }
 .nz-equiv-cell {
-  padding: 0 24px 0 0;
+  padding: 0 20px 0 0;
   border-right: 1px solid var(--nz-rule);
-  margin-right: 24px;
+  margin-right: 20px;
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: 10px;
 }
 .nz-equiv-cell:last-child { border-right: none; margin-right: 0; padding-right: 0; }
 .nz-equiv-icon {
-  font-size: 20px;
+  font-size: 18px;
   line-height: 1;
   flex-shrink: 0;
   margin-top: 2px;
@@ -240,44 +264,44 @@ select.nz-meta-item {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--nz-faint);
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 .nz-equiv-primary {
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 300;
   color: var(--nz-green);
   line-height: 1;
 }
 .nz-equiv-secondary {
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 10.5px;
+  font-size: 10px;
   color: var(--nz-faint);
   margin-top: 3px;
 }
 .nz-equiv-sub {
-  font-size: 10px;
+  font-size: 9.5px;
   color: var(--nz-faint);
   margin-top: 2px;
 }
 
 /* ── Charts ────────────────────────────────────────── */
-.nz-chart-section { margin-bottom: 52px; }
-.nz-chart-row { margin-bottom: 40px; }
+.nz-chart-section { margin-bottom: 40px; }
+.nz-chart-row { margin-bottom: 32px; }
 .nz-chart-row:last-child { margin-bottom: 0; }
 .nz-chart-header {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  margin-bottom: 14px;
+  margin-bottom: 10px;
 }
 .nz-chart-name {
   font-family: 'Playfair Display', serif;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 400;
   color: var(--nz-ink);
 }
-.nz-legend { display: flex; gap: 18px; }
+.nz-legend { display: flex; gap: 16px; }
 .nz-legend-item {
   display: flex;
   align-items: center;
@@ -288,15 +312,15 @@ select.nz-meta-item {
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
-.nz-legend-swatch { width: 20px; height: 3px; }
+.nz-legend-swatch { width: 18px; height: 3px; }
 .nz-chart-wrap {
   position: relative;
-  height: 240px;
+  height: 200px;
   border-bottom: 1px solid var(--nz-rule);
 }
 
 /* ── Detail tables ─────────────────────────────────── */
-.nz-tables-section { margin-bottom: 52px; }
+.nz-tables-section { margin-bottom: 40px; }
 .nz-section-rule {
   font-size: 10px;
   font-weight: 500;
@@ -305,18 +329,18 @@ select.nz-meta-item {
   color: var(--nz-faint);
   padding-bottom: 10px;
   border-bottom: 1px solid var(--nz-rule);
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 .nz-tables-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 28px 56px;
+  gap: 24px 48px;
 }
 .nz-tbl-name {
   font-size: 11px;
   font-weight: 500;
   color: var(--nz-mid);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 /* shared table base */
@@ -360,7 +384,7 @@ select.nz-meta-item {
 .nz-pos { color: var(--nz-green) !important; }
 
 /* ── Meter breakdown table ─────────────────────────── */
-.nz-meter-section { margin-bottom: 52px; }
+.nz-meter-section { margin-bottom: 40px; }
 
 .nz-meter-scroll {
   overflow-x: auto;
@@ -374,9 +398,9 @@ select.nz-meta-item {
   table-layout: fixed;
 }
 
-.nz-meter-table .nz-col-label { width: 148px; }
+.nz-meter-table .nz-col-label { width: 180px; }
 .nz-meter-table .nz-col-month { width: 62px; }
-.nz-meter-table .nz-col-total { width: 76px; }
+.nz-meter-table .nz-col-total { width: 80px; }
 
 .nz-meter-table thead th {
   font-family: 'IBM Plex Mono', monospace;
@@ -465,7 +489,7 @@ select.nz-meta-item {
 
 /* ── Footer ────────────────────────────────────────── */
 .nz-page-footer {
-  padding-top: 18px;
+  padding-top: 16px;
   border-top: 1px solid var(--nz-rule);
   display: flex;
   align-items: center;

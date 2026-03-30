@@ -101,6 +101,7 @@ window.netzeroDashboard = window.netzeroDashboard || {};
     } catch (e) { /* not set */ }
 
     // No site configured — fall through to demo data instead of blocking
+    // siteName defaults to null; App.js shows "Demo Site" when null
     var ctx = { attestKey: attestKey, projectName: projectName, siteRef: siteRef,
                 datesStart: datesStart, datesEnd: datesEnd, siteName: null };
 

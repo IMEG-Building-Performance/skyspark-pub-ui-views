@@ -7,7 +7,16 @@ window.netzeroDashboard = window.netzeroDashboard || {};
     init: function (container, data, ctx) {
       var co = NS.components;
 
+      var siteName = (ctx && ctx.siteName) ? ctx.siteName : 'Demo Site';
+      var dateStr = '';
+      if (ctx && ctx.datesStart && ctx.datesEnd) dateStr = ctx.datesStart + '\u2009\u2013\u2009' + ctx.datesEnd;
+      else if (ctx && ctx.datesStart) dateStr = ctx.datesStart;
+
       container.innerHTML = [
+        '<div class="nz-title-bar">',
+        '  <div class="nz-title-site" id="nzTitleSite">' + siteName + '</div>',
+        dateStr ? '  <div class="nz-title-dates">' + dateStr + '</div>' : '',
+        '</div>',
         '<div class="nz-page-narrow">',
         co.Header.render(data),
         co.KpiStrip.render(data),
