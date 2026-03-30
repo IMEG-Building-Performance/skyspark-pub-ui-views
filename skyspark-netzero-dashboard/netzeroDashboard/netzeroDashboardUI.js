@@ -100,12 +100,7 @@ window.netzeroDashboard = window.netzeroDashboard || {};
       if (deVal != null) datesEnd = typeof deVal.toStr === 'function' ? deVal.toStr() : String(deVal);
     } catch (e) { /* not set */ }
 
-    // No site configured — show prompt
-    if (attestKey && !siteRef) {
-      renderNoSite(container);
-      return;
-    }
-
+    // No site configured — fall through to demo data instead of blocking
     var ctx = { attestKey: attestKey, projectName: projectName, siteRef: siteRef,
                 datesStart: datesStart, datesEnd: datesEnd, siteName: null };
 
@@ -130,7 +125,7 @@ window.netzeroDashboard = window.netzeroDashboard || {};
       }
     }
 
-    if (attestKey && projectName) {
+    if (attestKey && projectName && siteRef) {
       var gen = ++_fetchGen;
       container.innerHTML = '<div style="padding:2rem;color:#888">Loading\u2026</div>';
       NS.evals.loadData(attestKey, projectName)
