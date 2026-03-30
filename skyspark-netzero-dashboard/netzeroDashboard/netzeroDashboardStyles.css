@@ -66,14 +66,14 @@
 }
 
 /* ── Page ──────────────────────────────────────────── */
-.nz-page { width: 100%; padding: 32px 28px 80px; }
+.nz-page { width: 100%; padding: 32px 28px 80px !important; }
 
 /* ── Page title bar ────────────────────────────────── */
 .nz-page-titlebar {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  margin-bottom: 32px;
+  margin-bottom: 32px !important;
   flex-wrap: wrap;
   gap: 12px;
 }
@@ -116,28 +116,28 @@ select.nz-meta-item {
 
 /* ── Section cards (exact mbcx equip-section pattern) ── */
 .nz-section {
-  background: var(--nz-white);
-  border: 1px solid var(--nz-200);
-  border-radius: 10px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-  margin-bottom: 40px;
-  overflow: hidden;
+  background: var(--nz-white) !important;
+  border: 1px solid var(--nz-200) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06) !important;
+  margin-bottom: 40px !important;
+  overflow: hidden !important;
 }
 
 /* Collapsible sections get a colored left accent border */
 .nz-section--collapsible {
-  border-left: 4px solid var(--nz-300);
+  border-left: 4px solid var(--nz-300) !important;
 }
 
 .nz-section-hdr {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 22px 28px;
-  background: var(--nz-50);
-  border-bottom: 1px solid var(--nz-200);
-  gap: 12px;
-  margin-bottom: 0;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 22px 28px !important;
+  background: var(--nz-50) !important;
+  border-bottom: 1px solid var(--nz-200) !important;
+  gap: 12px !important;
+  margin-bottom: 0 !important;
 }
 .nz-section-hdr-left {
   display: flex;
@@ -161,7 +161,7 @@ select.nz-meta-item {
 }
 
 /* Section body — matches mbcx equip-body padding */
-.nz-section-body { padding: 20px; }
+.nz-section-body { padding: 20px !important; }
 
 /* ── Internal divider (for merged cards) ──────────── */
 .nz-section-divider {
