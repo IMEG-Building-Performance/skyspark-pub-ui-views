@@ -11,7 +11,6 @@ window.netzeroDashboard.evals = window.netzeroDashboard.evals || {};
 
   /**
    * Build the Axon expression for a Monthly Trends eval.
-   * Pattern: view_pubUI_Source_netZeroDashboard(siteRef, dateRange, view_pubUI_netZeroMonthly, "category")
    */
   function _monthlyExpr(siteRef, dateRange, category) {
     return 'view_pubUI_Source_netZeroDashboard(' + siteRef + ', ' + dateRange + ', view_pubUI_netZeroMonthly, "' + category + '")';
@@ -19,9 +18,6 @@ window.netzeroDashboard.evals = window.netzeroDashboard.evals || {};
 
   /**
    * Build an Axon date range expression from start/end date strings.
-   * If both are present: start..end
-   * If only start: start..today()
-   * Fallback: thisYear()
    */
   function _dateRange(ctx) {
     if (ctx.datesStart && ctx.datesEnd) return ctx.datesStart + '..' + ctx.datesEnd;
@@ -30,49 +26,86 @@ window.netzeroDashboard.evals = window.netzeroDashboard.evals || {};
   }
 
   /**
-   * Parse a Monthly Trends grid into chart + detail arrays.
-   * Expected grid columns: month (or similar), actual, model
-   * Returns { months, actual, model } arrays or null on failure.
+   * Parse a transposed Monthly Trends grid.
+   *
+   * Grid format (from SkySpark):
+   *   cols: [dis, v0, v1, v2, ...]  where cols[n].meta.dis = "Jan-2026" etc.
+   *   rows: [
+   *     { dis: "Actual",     v0: {_kind:"number", val:X}, v1: ... },
+   *     { dis: "Model",      v0: {_kind:"number", val:X}, v1: ... },
+   *     { dis: "Difference", v0: {_kind:"number", val:X}, v1: ... }
+   *   ]
+   *
+   * Returns { months, actual, model, diff } arrays or null on failure.
    */
-  function _parseMonthlyGrid(grid) {
-    if (!grid || !grid.cols || !grid.rows || grid.rows.length === 0) return null;
-    var parsed = HP.parseGrid(grid);
-    if (!parsed.rows.length) return null;
+  function _parseMonthlyGrid(rawGrid) {
+    if (!rawGrid || !rawGrid.cols || !rawGrid.rows || rawGrid.rows.length === 0) return null;
 
-    var cols = parsed.cols;
-    var rows = parsed.rows;
-
-    // Try to identify columns — look for month, actual, model columns
-    var monthCol = null, actualCol = null, modelCol = null;
-    for (var i = 0; i < cols.length; i++) {
-      var c = cols[i].toLowerCase();
-      if (c === 'month' || c === 'ts' || c === 'date' || c === 'dis') monthCol = cols[i];
-      else if (c === 'actual' || c === 'val' || c === 'actualval') actualCol = cols[i];
-      else if (c === 'model' || c === 'modelval' || c === 'modeled') modelCol = cols[i];
+    // Extract month labels from column meta.dis (skip first col which is "dis"/row label)
+    var months = [];
+    var valueCols = [];
+    for (var c = 0; c < rawGrid.cols.length; c++) {
+      var col = rawGrid.cols[c];
+      if (col.name === 'dis') continue;
+      valueCols.push(col.name);
+      // Month display name from meta.dis, e.g. "Jan-2026" -> "Jan"
+      var monthDis = (col.meta && col.meta.dis) ? col.meta.dis : col.name;
+      // Shorten "Jan-2026" to "Jan" for chart labels
+      var shortMonth = monthDis.split('-')[0];
+      months.push(shortMonth);
     }
 
-    // If we can't identify columns, try positional: first=label, second=actual, third=model
-    if (!monthCol && cols.length >= 1) monthCol = cols[0];
-    if (!actualCol && cols.length >= 2) actualCol = cols[1];
-    if (!modelCol && cols.length >= 3) modelCol = cols[2];
+    if (months.length === 0) return null;
 
-    if (!monthCol || !actualCol) return null;
+    // Find rows by dis label
+    var actualRow = null, modelRow = null, diffRow = null;
+    for (var r = 0; r < rawGrid.rows.length; r++) {
+      var row = rawGrid.rows[r];
+      var label = (row.dis || '').toLowerCase();
+      if (label === 'actual') actualRow = row;
+      else if (label === 'model') modelRow = row;
+      else if (label === 'difference' || label === 'diff') diffRow = row;
+    }
 
-    var months = [];
-    var actual = [];
-    var model = [];
-    var diff = [];
+    if (!actualRow) return null;
 
-    for (var r = 0; r < rows.length; r++) {
-      var row = rows[r];
-      var m = row[monthCol];
-      var a = typeof row[actualCol] === 'number' ? row[actualCol] : parseFloat(row[actualCol]) || 0;
-      var mod = modelCol && row[modelCol] != null ? (typeof row[modelCol] === 'number' ? row[modelCol] : parseFloat(row[modelCol]) || 0) : 0;
+    // Extract numeric values from each value column
+    function extractValues(row) {
+      if (!row) return null;
+      var vals = [];
+      for (var i = 0; i < valueCols.length; i++) {
+        var cell = row[valueCols[i]];
+        if (cell === null || cell === undefined) {
+          vals.push(0);
+        } else if (typeof cell === 'object' && cell._kind === 'number') {
+          vals.push(cell.val || 0);
+        } else if (typeof cell === 'number') {
+          vals.push(cell);
+        } else {
+          vals.push(parseFloat(cell) || 0);
+        }
+      }
+      return vals;
+    }
 
-      months.push(m != null ? String(m) : '');
-      actual.push(a);
-      model.push(mod);
-      diff.push(a - mod);
+    var actual = extractValues(actualRow);
+    var model = extractValues(modelRow);
+    var diff = extractValues(diffRow);
+
+    // If no diff row, compute from actual - model
+    if (!diff && model) {
+      diff = [];
+      for (var d = 0; d < actual.length; d++) {
+        diff.push(actual[d] - (model[d] || 0));
+      }
+    }
+
+    // If no model row, fill zeros
+    if (!model) {
+      model = actual.map(function () { return 0; });
+    }
+    if (!diff) {
+      diff = actual.map(function () { return 0; });
     }
 
     return { months: months, actual: actual, model: model, diff: diff };
@@ -80,11 +113,6 @@ window.netzeroDashboard.evals = window.netzeroDashboard.evals || {};
 
   /**
    * Load all dashboard data for the given SkySpark project.
-   *
-   * @param {string} attestKey   - SkySpark session attest key
-   * @param {string} projectName - SkySpark project name
-   * @param {object} ctx         - Context with siteRef, datesStart, datesEnd
-   * @returns {Promise<object>}  - Resolves with a data object matching the demoData contract
    */
   NS.loadData = function (attestKey, projectName, ctx) {
     var dateRange = _dateRange(ctx);
@@ -96,39 +124,38 @@ window.netzeroDashboard.evals = window.netzeroDashboard.evals || {};
     var netZeroP  = api.evalAxon(attestKey, projectName, _monthlyExpr(siteRef, dateRange, 'Net Zero')).catch(function () { return null; });
 
     return Promise.all([buildingP, solarP, netZeroP]).then(function (results) {
-      var buildingGrid = _parseMonthlyGrid(results[0]);
-      var solarGrid    = _parseMonthlyGrid(results[1]);
-      var netZeroGrid  = _parseMonthlyGrid(results[2]);
+      var buildingData = _parseMonthlyGrid(results[0]);
+      var solarData    = _parseMonthlyGrid(results[1]);
+      var netZeroData  = _parseMonthlyGrid(results[2]);
 
       // Start with demo data as the base, override sections that have live data
       var data = JSON.parse(JSON.stringify(demo));
 
-      // Override charts if we have live monthly data
-      if (buildingGrid) {
-        data.charts.months = buildingGrid.months;
-        data.charts.building = { actual: buildingGrid.actual, model: buildingGrid.model };
-        data.detail.months = buildingGrid.months;
-        data.detail.buildingConsumption = { actual: buildingGrid.actual, model: buildingGrid.model, diff: buildingGrid.diff };
+      // Override charts + detail tables if we have live monthly data
+      if (buildingData) {
+        data.charts.months = buildingData.months;
+        data.charts.building = { actual: buildingData.actual, model: buildingData.model };
+        data.detail.months = buildingData.months;
+        data.detail.buildingConsumption = { actual: buildingData.actual, model: buildingData.model, diff: buildingData.diff };
       }
 
-      if (solarGrid) {
-        if (!buildingGrid) data.charts.months = solarGrid.months;
-        data.charts.solar = { actual: solarGrid.actual, model: solarGrid.model };
-        if (!buildingGrid) data.detail.months = solarGrid.months;
-        data.detail.solarGeneration = { actual: solarGrid.actual, model: solarGrid.model, diff: solarGrid.diff };
+      if (solarData) {
+        if (!buildingData) data.charts.months = solarData.months;
+        data.charts.solar = { actual: solarData.actual, model: solarData.model };
+        if (!buildingData) data.detail.months = solarData.months;
+        data.detail.solarGeneration = { actual: solarData.actual, model: solarData.model, diff: solarData.diff };
       }
 
-      if (netZeroGrid) {
-        // Net zero grid may have actual net and modeled net
+      if (netZeroData) {
         data.detail.actualNetZero = {
-          building: buildingGrid ? buildingGrid.actual : data.detail.actualNetZero.building,
-          solar: solarGrid ? solarGrid.actual : data.detail.actualNetZero.solar,
-          net: netZeroGrid.actual
+          building: buildingData ? buildingData.actual : data.detail.actualNetZero.building,
+          solar: solarData ? solarData.actual : data.detail.actualNetZero.solar,
+          net: netZeroData.actual
         };
         data.detail.modeledNetZero = {
-          building: buildingGrid ? buildingGrid.model : data.detail.modeledNetZero.building,
-          solar: solarGrid ? solarGrid.model : data.detail.modeledNetZero.solar,
-          net: netZeroGrid.model
+          building: buildingData ? buildingData.model : data.detail.modeledNetZero.building,
+          solar: solarData ? solarData.model : data.detail.modeledNetZero.solar,
+          net: netZeroData.model
         };
       }
 
