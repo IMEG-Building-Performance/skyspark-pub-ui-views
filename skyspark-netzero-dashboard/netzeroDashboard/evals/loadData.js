@@ -119,12 +119,21 @@ window.netzeroDashboard.evals = window.netzeroDashboard.evals || {};
     var siteRef = ctx.siteRef;
 
     // Fire Monthly Trends evals in parallel
-    var buildingP = api.evalAxon(attestKey, projectName, _monthlyExpr(siteRef, dateRange, 'Building')).catch(function () { return null; });
-    var solarP    = api.evalAxon(attestKey, projectName, _monthlyExpr(siteRef, dateRange, 'Solar')).catch(function () { return null; });
-    var netZeroP  = api.evalAxon(attestKey, projectName, _monthlyExpr(siteRef, dateRange, 'Net Zero')).catch(function () { return null; });
+    console.log('[nzDiag] loadData — siteRef:', siteRef, 'dateRange:', dateRange);
+    var buildingExpr = _monthlyExpr(siteRef, dateRange, 'Building');
+    console.log('[nzDiag] building expr:', buildingExpr);
+
+    var buildingP = api.evalAxon(attestKey, projectName, buildingExpr).catch(function (e) { console.log('[nzDiag] building eval FAILED:', e.message || e); return null; });
+    var solarP    = api.evalAxon(attestKey, projectName, _monthlyExpr(siteRef, dateRange, 'Solar')).catch(function (e) { console.log('[nzDiag] solar eval FAILED:', e.message || e); return null; });
+    var netZeroP  = api.evalAxon(attestKey, projectName, _monthlyExpr(siteRef, dateRange, 'Net Zero')).catch(function (e) { console.log('[nzDiag] netzero eval FAILED:', e.message || e); return null; });
 
     return Promise.all([buildingP, solarP, netZeroP]).then(function (results) {
+      console.log('[nzDiag] building raw grid:', JSON.stringify(results[0]).substring(0, 500));
+      console.log('[nzDiag] solar raw grid:', results[1] ? JSON.stringify(results[1]).substring(0, 200) : 'null');
+      console.log('[nzDiag] netzero raw grid:', results[2] ? JSON.stringify(results[2]).substring(0, 200) : 'null');
+
       var buildingData = _parseMonthlyGrid(results[0]);
+      console.log('[nzDiag] buildingData parsed:', buildingData ? { months: buildingData.months, actualLen: buildingData.actual.length, firstActual: buildingData.actual[0] } : 'null');
       var solarData    = _parseMonthlyGrid(results[1]);
       var netZeroData  = _parseMonthlyGrid(results[2]);
 
