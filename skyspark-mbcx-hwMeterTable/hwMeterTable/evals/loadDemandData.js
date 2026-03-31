@@ -1,12 +1,12 @@
-// earlhamHWTable/evals/loadDemandData.js
+// hwMeterTable/evals/loadDemandData.js
 // Axon eval wrapper — fetches 95th-percentile HW demand values for all sites,
 // plus the pre-calculated campus-wide totals row (mode 2).
 
-window.earlhamHWTable = window.earlhamHWTable || {};
-window.earlhamHWTable.evals = window.earlhamHWTable.evals || {};
+window.hwMeterTable = window.hwMeterTable || {};
+window.hwMeterTable.evals = window.hwMeterTable.evals || {};
 
 (function (evals) {
-  var utils = window.earlhamHWTable.utils;
+  var utils = window.hwMeterTable.utils;
 
   /**
    * Unwrap and validate a grid returned from evalAxon.
@@ -46,8 +46,8 @@ window.earlhamHWTable.evals = window.earlhamHWTable.evals || {};
     var siteAxon   = 'report_demandValCalcs_allSites(' + targets + ', ' + dates + ')';
     var totalsAxon = 'report_demandValCalcs_allSites(' + targets + ', ' + dates + ', 2)';
 
-    console.log('[earlhamHWTable] Eval (site):', siteAxon);
-    console.log('[earlhamHWTable] Eval (totals):', totalsAxon);
+    console.log('[hwMeterTable] Eval (site):', siteAxon);
+    console.log('[hwMeterTable] Eval (totals):', totalsAxon);
 
     return Promise.all([
       utils.evalAxon(siteAxon,   attestKey, projectName),
@@ -56,13 +56,13 @@ window.earlhamHWTable.evals = window.earlhamHWTable.evals || {};
       var siteGrid   = unwrapAndCheck(results[0], 'siteGrid');
       var totalsGrid = unwrapAndCheck(results[1], 'totalsGrid');
 
-      console.log('[earlhamHWTable] Site grid cols:',
+      console.log('[hwMeterTable] Site grid cols:',
         (siteGrid.cols || []).map(function (c) { return c.name; }),
         '| rows:', (siteGrid.rows || []).length);
-      console.log('[earlhamHWTable] Totals row:', totalsGrid.rows && totalsGrid.rows[0]);
+      console.log('[hwMeterTable] Totals row:', totalsGrid.rows && totalsGrid.rows[0]);
 
       return { siteGrid: siteGrid, totalsGrid: totalsGrid };
     });
   };
 
-})(window.earlhamHWTable.evals);
+})(window.hwMeterTable.evals);

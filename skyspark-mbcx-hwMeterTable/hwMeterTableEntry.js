@@ -1,23 +1,25 @@
-// earlhamHWTableEntry.js
+// hwMeterTableEntry.js
 //
 // Deploy to: {var}/pub/ui/ ROOT on every server (local and cloud)
 // SkySpark only auto-discovers JS at pub/ui/ root — subdirs are ignored.
 // Modules are loaded dynamically so they can live in a subdirectory on the cloud.
 //
-// View record (trio) jsHandler should point to: earlhamHWTableHandler
+// View record (trio) jsHandler should point to: hwMeterTableHandler
 
-console.log('[earlhamHWTable] Entry file parsed.');
+console.log('[hwMeterTable] Entry file parsed.');
 
-var earlhamHWTableHandler = {};
+var hwMeterTableHandler = {};
 
 (function () {
-  var BASE_URL = '/pub/ui/earlhamHWTable/';
-  var VERSION  = '22';  // bump this when deploying updated module files
+  var BASE_URL = '/pub/ui/hwMeterTable/';
+  var VERSION  = '23';  // bump this when deploying updated module files
   var modules = [
     'utils/api.js',
     'evals/loadDemandData.js',
+    'evals/loadSiteHistory.js',
     'components/SiteTable.js',
-    'earlhamHWTableHandler.js'
+    'components/SiteDetail.js',
+    'hwMeterTableHandler.js'
   ];
   var loaded = false;
   var loading = false;
@@ -32,7 +34,7 @@ var earlhamHWTableHandler = {};
       s.src = url;
       s.onload = function () { i++; next(); };
       s.onerror = function () {
-        console.error('[earlhamHWTable] Failed to load module:', url);
+        console.error('[hwMeterTable] Failed to load module:', url);
         i++;
         next();
       };
@@ -41,10 +43,10 @@ var earlhamHWTableHandler = {};
     next();
   }
 
-  earlhamHWTableHandler.onUpdate = function (arg) {
+  hwMeterTableHandler.onUpdate = function (arg) {
     if (loaded) {
-      if (window.earlhamHWTableApp && typeof window.earlhamHWTableApp.onUpdate === 'function') {
-        window.earlhamHWTableApp.onUpdate(arg);
+      if (window.hwMeterTableApp && typeof window.hwMeterTableApp.onUpdate === 'function') {
+        window.hwMeterTableApp.onUpdate(arg);
       }
       return;
     }
@@ -55,8 +57,8 @@ var earlhamHWTableHandler = {};
         loaded = true;
         loading = false;
         pendingCalls.forEach(function (a) {
-          if (window.earlhamHWTableApp && typeof window.earlhamHWTableApp.onUpdate === 'function') {
-            window.earlhamHWTableApp.onUpdate(a);
+          if (window.hwMeterTableApp && typeof window.hwMeterTableApp.onUpdate === 'function') {
+            window.hwMeterTableApp.onUpdate(a);
           }
         });
         pendingCalls = [];

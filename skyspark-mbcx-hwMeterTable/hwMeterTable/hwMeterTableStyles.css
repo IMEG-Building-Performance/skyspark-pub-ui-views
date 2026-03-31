@@ -1,11 +1,11 @@
-/* earlhamHWTable/earlhamHWTableStyles.css
-   Styles for the Earlham Hot Water Meter — Site Table view
-   Scoped under #earlhamHWTable-root to avoid conflicts with other pub/ui views
+/* hwMeterTable/hwMeterTableStyles.css
+   Styles for the HW Meter Table view
+   Scoped under #hwMeterTable-root to avoid conflicts with other pub/ui views
    Brand colors: IMEG Orient Blue #01538b | IMEG Orange #ed9a30 | IMEG Red #cf2e2e */
 
 /* ── Root container ──────────────────────────────────────── */
 
-#earlhamHWTable-root {
+#hwMeterTable-root {
   font-family: 'Calibri', 'Segoe UI', Arial, sans-serif;
   padding: 20px 24px;
   background: #ffffff;
@@ -23,7 +23,7 @@
 
 /* ── Title ───────────────────────────────────────────────── */
 
-#earlhamHWTable-root .hw-table-title {
+#hwMeterTable-root .hw-table-title {
   font-size: 15px;
   font-weight: 700;
   color: #01538b;
@@ -37,13 +37,13 @@
 
 /* ── Status messages ─────────────────────────────────────── */
 
-#earlhamHWTable-root .hw-table-loading {
+#hwMeterTable-root .hw-table-loading {
   color: #01538b;
   padding: 8px 0;
   font-size: 13px;
 }
 
-#earlhamHWTable-root .hw-table-error {
+#hwMeterTable-root .hw-table-error {
   color: #cf2e2e;
   padding: 8px 12px;
   background: #fdecea;
@@ -55,7 +55,7 @@
 
 /* ── KPI summary cards ───────────────────────────────────── */
 
-#earlhamHWTable-root .hw-kpi-strip {
+#hwMeterTable-root .hw-kpi-strip {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
@@ -63,7 +63,7 @@
   flex-shrink: 0;
 }
 
-#earlhamHWTable-root .hw-kpi-card {
+#hwMeterTable-root .hw-kpi-card {
   background: #f0f5f9;
   border: 1px solid #8a9ba8;
   border-top: 3px solid #01538b;
@@ -73,7 +73,7 @@
   text-align: center;
 }
 
-#earlhamHWTable-root .hw-kpi-value {
+#hwMeterTable-root .hw-kpi-value {
   font-size: 20px;
   font-weight: 700;
   color: #01538b;
@@ -81,7 +81,7 @@
   line-height: 1.2;
 }
 
-#earlhamHWTable-root .hw-kpi-label {
+#hwMeterTable-root .hw-kpi-label {
   font-size: 11px;
   color: #555;
   text-transform: uppercase;
@@ -92,7 +92,7 @@
 
 /* ── Table scroll wrapper ────────────────────────────────── */
 
-#earlhamHWTable-root .hw-table-scroll-wrapper {
+#hwMeterTable-root .hw-table-scroll-wrapper {
   overflow: auto;
   flex: 1 1 0;
   min-height: 0; /* critical: allows flex child to scroll rather than expand */
@@ -100,15 +100,15 @@
 
 /* ── Table shell ─────────────────────────────────────────── */
 
-#earlhamHWTable-root .hw-site-table {
+#hwMeterTable-root .hw-site-table {
   border-collapse: collapse;
   width: 100%;
   background: #ffffff;
   font-size: 13px;
 }
 
-#earlhamHWTable-root .hw-site-table th,
-#earlhamHWTable-root .hw-site-table td {
+#hwMeterTable-root .hw-site-table th,
+#hwMeterTable-root .hw-site-table td {
   border: 1px solid #8a9ba8;
   padding: 7px 10px;
   text-align: center;
@@ -117,7 +117,7 @@
 
 /* ── Header — IMEG Orient Blue, sticky on scroll ─────────── */
 
-#earlhamHWTable-root .hw-site-table thead th {
+#hwMeterTable-root .hw-site-table thead th {
   background-color: #01538b;
   color: #ffffff;
   font-weight: 700;
@@ -136,12 +136,12 @@
 
 /* ── Emphasis column — orange bottom accent on header ────── */
 
-#earlhamHWTable-root .hw-site-table thead th.hw-col-emphasis {
+#hwMeterTable-root .hw-site-table thead th.hw-col-emphasis {
   border-bottom: 3px solid #ed9a30;
 }
 
 /* Emphasis data cells — slightly bolder to match heading weight */
-#earlhamHWTable-root .hw-site-table tbody td.hw-col-emphasis-cell {
+#hwMeterTable-root .hw-site-table tbody td.hw-col-emphasis-cell {
   font-weight: 600;
 }
 
@@ -149,7 +149,7 @@
 /* Tooltip is rendered via a JS portal appended to <body>;  */
 /* no CSS hover logic needed here.                          */
 
-#earlhamHWTable-root .hw-col-info {
+#hwMeterTable-root .hw-col-info {
   display: inline-block;
   margin-left: 5px;
   cursor: help;
@@ -162,7 +162,7 @@
   line-height: 1;
 }
 
-#earlhamHWTable-root .hw-col-info:hover {
+#hwMeterTable-root .hw-col-info:hover {
   opacity: 1;
 }
 
@@ -189,7 +189,7 @@
 
 /* ── Table container — flex child holding KPI strip + scroll wrapper ── */
 
-#earlhamHWTable-root .hw-table-container {
+#hwMeterTable-root .hw-table-container {
   display: flex;
   flex-direction: column;
   flex: 1 1 0;
@@ -199,43 +199,204 @@
 
 /* ── Data rows — alternating stripes ─────────────────────── */
 
-#earlhamHWTable-root .hw-site-table tbody tr:nth-child(odd) {
+#hwMeterTable-root .hw-site-table tbody tr:nth-child(odd) {
   background-color: #ffffff;
 }
 
-#earlhamHWTable-root .hw-site-table tbody tr:nth-child(even) {
+#hwMeterTable-root .hw-site-table tbody tr:nth-child(even) {
   background-color: #f0f5f9;
 }
 
-#earlhamHWTable-root .hw-site-table tbody td {
+#hwMeterTable-root .hw-site-table tbody td {
   color: #1a1a1a;
 }
 
 /* Tabular numbers for numeric cells */
-#earlhamHWTable-root .hw-site-table tbody td.hw-cell-number {
+#hwMeterTable-root .hw-site-table tbody td.hw-cell-number {
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
 
 /* Hover — light IMEG blue tint */
-#earlhamHWTable-root .hw-site-table tbody tr:hover {
+#hwMeterTable-root .hw-site-table tbody tr:hover {
   background-color: #cce0ef;
 }
 
 /* ── Totals footer — IMEG Orient Blue ───────────────────── */
 
-#earlhamHWTable-root .hw-site-table tfoot tr {
+#hwMeterTable-root .hw-site-table tfoot tr {
   background-color: #01538b;
   color: #ffffff;
   font-weight: 700;
   font-size: 13px;
 }
 
-#earlhamHWTable-root .hw-site-table tfoot td {
+#hwMeterTable-root .hw-site-table tfoot td {
   border-top: 2px solid #003d68;
 }
 
-#earlhamHWTable-root .hw-site-table tfoot td.hw-total-value {
+#hwMeterTable-root .hw-site-table tfoot td.hw-total-value {
   text-align: center;
   font-variant-numeric: tabular-nums;
+}
+
+/* ── Clickable table rows ─────────────────────────────────── */
+
+#hwMeterTable-root .hw-site-table tbody tr.hw-row-clickable {
+  cursor: pointer;
+}
+
+/* ── Detail container ────────────────────────────────────── */
+
+#hwMeterTable-root .hw-detail-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ── Detail header: back button + site name ──────────────── */
+
+#hwMeterTable-root .hw-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 16px;
+  background: #f0f5f9;
+  border-bottom: 1px solid #c6d4df;
+  flex-shrink: 0;
+}
+
+#hwMeterTable-root .hw-back-btn {
+  background: #01538b;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  flex-shrink: 0;
+  letter-spacing: 0.2px;
+}
+
+#hwMeterTable-root .hw-back-btn:hover {
+  background: #013d6a;
+}
+
+#hwMeterTable-root .hw-detail-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #01538b;
+}
+
+/* ── Chart section (fills remaining height) ──────────────── */
+
+#hwMeterTable-root .hw-chart-section {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+  padding: 0 20px 16px;
+}
+
+#hwMeterTable-root .hw-chart-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #56657a;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 10px 0 6px;
+  flex-shrink: 0;
+}
+
+#hwMeterTable-root .hw-chart-area {
+  flex: 1 1 0;
+  min-height: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+#hwMeterTable-root .hw-chart-empty {
+  color: #56657a;
+  font-size: 14px;
+  padding: 40px;
+  text-align: center;
+}
+
+/* ── SVG chart element ───────────────────────────────────── */
+
+#hwMeterTable-root .hw-chart-svg {
+  width: 100%;
+  height: 100%;
+  min-height: 200px;
+  display: block;
+}
+
+/* ── SVG internals (not scoped to #root — SVG namespace) ─── */
+
+.hw-chart-grid line {
+  stroke: #dde4ec;
+  stroke-width: 1;
+}
+
+.hw-chart-axis {
+  stroke: #aab4c0;
+  stroke-width: 1.5;
+}
+
+.hw-chart-y-labels text,
+.hw-chart-x-labels text {
+  font-size: 11px;
+  fill: #56657a;
+  font-family: 'Calibri', 'Segoe UI', Arial, sans-serif;
+}
+
+.hw-chart-unit-label {
+  font-size: 11px;
+  fill: #56657a;
+  font-family: 'Calibri', 'Segoe UI', Arial, sans-serif;
+}
+
+.hw-chart-line {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.hw-chart-crosshair {
+  stroke: #8a9ba8;
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+  pointer-events: none;
+}
+
+.hw-chart-overlay {
+  cursor: crosshair;
+}
+
+.hw-chart-legend-text {
+  font-size: 12px;
+  fill: #1a2a3a;
+  font-family: 'Calibri', 'Segoe UI', Arial, sans-serif;
+}
+
+/* ── Floating chart tooltip (HTML, position:absolute) ───── */
+
+#hwMeterTable-root .hw-chart-tooltip {
+  position: absolute;
+  background: rgba(12, 28, 46, 0.92);
+  color: #ffffff;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-family: 'Calibri', 'Segoe UI', Arial, sans-serif;
+  pointer-events: none;
+  z-index: 10;
+  white-space: nowrap;
+  line-height: 1.7;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
 }

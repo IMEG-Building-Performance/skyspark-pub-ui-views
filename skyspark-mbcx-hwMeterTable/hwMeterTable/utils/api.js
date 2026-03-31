@@ -1,8 +1,8 @@
-// earlhamHWTable/utils/api.js
+// hwMeterTable/utils/api.js
 // Utility functions for SkySpark Haystack API calls
 
-window.earlhamHWTable = window.earlhamHWTable || {};
-window.earlhamHWTable.utils = window.earlhamHWTable.utils || {};
+window.hwMeterTable = window.hwMeterTable || {};
+window.hwMeterTable.utils = window.hwMeterTable.utils || {};
 
 (function (utils) {
 
@@ -64,4 +64,4 @@ window.earlhamHWTable.utils = window.earlhamHWTable.utils || {};
     return val;
   };
 
-})(window.earlhamHWTable.utils);
+})(window.hwMeterTable.utils);

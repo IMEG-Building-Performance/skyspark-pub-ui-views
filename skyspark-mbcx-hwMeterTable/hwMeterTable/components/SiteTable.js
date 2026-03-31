@@ -1,4 +1,4 @@
-// earlhamHWTable/components/SiteTable.js
+// hwMeterTable/components/SiteTable.js
 // Renders the demand data grid as a dynamic multi-column table.
 // Columns and their display names are driven by grid metadata.
 //
@@ -15,11 +15,11 @@
 // Both Haystack Number objects and pre-formatted strings ("1,667") are parsed
 // for numeric operations (KPI totals).
 
-window.earlhamHWTable = window.earlhamHWTable || {};
-window.earlhamHWTable.components = window.earlhamHWTable.components || {};
+window.hwMeterTable = window.hwMeterTable || {};
+window.hwMeterTable.components = window.hwMeterTable.components || {};
 
 (function (components) {
-  var utils = window.earlhamHWTable.utils;
+  var utils = window.hwMeterTable.utils;
 
   /** Returns true if a column's meta carries the {hidden} marker. */
   function isHidden(colMeta) {
@@ -263,8 +263,11 @@ window.earlhamHWTable.components = window.earlhamHWTable.components || {};
    * @param {HTMLElement} container   - DOM element to render into
    * @param {Object}      gridData    - Per-site Haystack grid returned by loadDemandData
    * @param {Object}      totalsGrid  - Campus totals grid (mode 2) for KPI cards
+   * @param {Object}      [opts]      - Optional config
+   *   @param {Function}  [opts.onSiteClick] - Called when a row is clicked with
+   *                                           { siteId, siteName, rowData, visibleCols }
    */
-  components.renderSiteTable = function (container, gridData, totalsGrid) {
+  components.renderSiteTable = function (container, gridData, totalsGrid, opts) {
     container.innerHTML = '';
 
     var cols = gridData.cols || [];
@@ -281,7 +284,7 @@ window.earlhamHWTable.components = window.earlhamHWTable.components || {};
     var cellColors = buildCellColors(gridData);
 
     // Diagnostic: log visible columns and active meta flags
-    console.log('[earlhamHWTable] Visible columns:',
+    console.log('[hwMeterTable] Visible columns:',
       visibleCols.map(function (col) {
         var flags = [];
         if (hasTotal(col.meta))           flags.push('total');
@@ -379,6 +382,28 @@ window.earlhamHWTable.components = window.earlhamHWTable.components || {};
           tr.appendChild(td);
         });
 
+        // Wire click-to-detail if a handler was provided
+        if (opts && typeof opts.onSiteClick === 'function') {
+          tr.classList.add('hw-row-clickable');
+          (function (capturedRow) {
+            tr.addEventListener('click', function () {
+              var idVal    = capturedRow['id'];
+              var siteId   = null;
+              var siteName = null;
+              if (idVal && typeof idVal === 'object' && idVal._kind === 'ref') {
+                siteId   = '@' + idVal.val;
+                siteName = idVal.dis || idVal.val;
+              }
+              opts.onSiteClick({
+                siteId:      siteId,
+                siteName:    siteName,
+                rowData:     capturedRow,
+                visibleCols: visibleCols
+              });
+            });
+          })(row);
+        }
+
         tbody.appendChild(tr);
       });
     }
@@ -389,4 +414,4 @@ window.earlhamHWTable.components = window.earlhamHWTable.components || {};
     // The tfoot CSS rules remain available for optional use.
   };
 
-})(window.earlhamHWTable.components);
+})(window.hwMeterTable.components);
