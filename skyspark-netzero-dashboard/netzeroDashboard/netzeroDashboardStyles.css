@@ -1,0 +1,522 @@
+/* netzeroDashboardStyles.css
+   Matches the equip-section card pattern from mbcxDashboard. */
+
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --nz-bg:         #F9FAFB;
+  --nz-white:      #fff;
+  --nz-ink:        #111827;
+  --nz-700:        #374151;
+  --nz-600:        #4B5563;
+  --nz-500:        #6B7280;
+  --nz-400:        #9CA3AF;
+  --nz-300:        #D1D5DB;
+  --nz-200:        #E5E7EB;
+  --nz-100:        #F3F4F6;
+  --nz-50:         #F9FAFB;
+  --nz-blue:       #4A6FA5;
+  --nz-blue-lt:    #EBF0F8;
+  --nz-red:        #9B2335;
+  --nz-red-lt:     #FEF2F2;
+  --nz-green:      #8FB574;
+  --nz-green-lt:   #F0F7EB;
+  --nz-amber:      #D97706;
+  --nz-amber-lt:   #FFFBEB;
+  --nz-purple:     #6366F1;
+  --nz-purple-lt:  #EDE9FE;
+  --nz-bar-ink:    #2e3a4e;
+  --nz-bar-ghost:  #dde8f0;
+}
+
+/* ── Reset ─────────────────────────────────────────── */
+#netzeroDashboard *, #netzeroDashboard *::before, #netzeroDashboard *::after {
+  box-sizing: border-box;
+}
+#netzeroDashboard {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: var(--nz-bg);
+  color: var(--nz-ink);
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  width: 100%;
+  min-height: 100%;
+}
+
+/* ── Title bar ─────────────────────────────────────── */
+.nz-title-bar {
+  background: var(--nz-blue);
+  color: #fff;
+  padding: 12px 32px;
+  display: flex;
+  align-items: baseline;
+  gap: 20px;
+  flex-shrink: 0;
+}
+.nz-title-site {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.nz-title-dates {
+  font-size: 12px;
+  opacity: 0.78;
+  font-weight: 400;
+}
+
+/* ── Page ──────────────────────────────────────────── */
+.nz-page { width: 100%; padding: 32px 28px 80px !important; }
+
+/* ── Page title bar ────────────────────────────────── */
+.nz-page-titlebar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 32px !important;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.nz-page-title {
+  font-size: 21px;
+  font-weight: 700;
+  color: var(--nz-blue);
+  letter-spacing: -0.02em;
+}
+.nz-page-subtitle {
+  font-size: 11.5px;
+  color: var(--nz-400);
+  margin-top: 3px;
+}
+.nz-page-meta {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--nz-200);
+  border-radius: 5px;
+  overflow: hidden;
+}
+.nz-meta-item {
+  font-size: 12px;
+  color: var(--nz-600);
+  padding: 5px 14px;
+  border-right: 1px solid var(--nz-200);
+  white-space: nowrap;
+  background: var(--nz-50);
+}
+.nz-meta-item:last-child { border-right: none; }
+select.nz-meta-item {
+  cursor: pointer;
+  appearance: none;
+  border: none;
+  padding-right: 26px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%239CA3AF'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 9px center;
+}
+
+/* ── Section cards (exact mbcx equip-section pattern) ── */
+.nz-section {
+  background: var(--nz-white) !important;
+  border: 1px solid var(--nz-200) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06) !important;
+  margin-bottom: 40px !important;
+  overflow: hidden !important;
+}
+
+/* Collapsible sections get a colored left accent border */
+.nz-section--collapsible {
+  border-left: 4px solid var(--nz-300) !important;
+}
+
+.nz-section-hdr {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 22px 28px !important;
+  background: var(--nz-50) !important;
+  border-bottom: 1px solid var(--nz-200) !important;
+  gap: 12px !important;
+  margin-bottom: 0 !important;
+}
+.nz-section-hdr-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.nz-section-icon {
+  width: 32px; height: 32px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.nz-section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--nz-700);
+  letter-spacing: -0.01em;
+}
+.nz-section-meta {
+  font-size: 11px;
+  color: var(--nz-400);
+  margin-top: 1px;
+}
+
+/* Section body — matches mbcx equip-body padding */
+.nz-section-body { padding: 20px !important; }
+
+/* ── Internal divider (for merged cards) ──────────── */
+.nz-section-divider {
+  border: none;
+  border-top: 1px solid var(--nz-200);
+  margin: 20px 0;
+}
+
+/* ── Collapsible sections (exact mbcx pattern) ─────── */
+.nz-section--collapsible .nz-section-hdr {
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: background 0.12s;
+  border-bottom-color: transparent;
+}
+.nz-section--collapsible .nz-section-hdr:hover {
+  background: var(--nz-100);
+}
+.nz-section--open .nz-section-hdr {
+  border-bottom-color: var(--nz-200);
+}
+.nz-section--collapsible .nz-section-body {
+  display: none;
+}
+.nz-section--collapsible.nz-section--open .nz-section-body {
+  display: block;
+}
+
+/* Collapse button (visible rounded container for chevron) */
+.nz-collapse-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  color: var(--nz-400);
+  flex-shrink: 0;
+}
+.nz-chevron {
+  width: 16px; height: 16px;
+  transition: transform 0.2s ease;
+}
+.nz-section--open .nz-chevron {
+  transform: rotate(180deg);
+}
+
+/* ── KPI strip ─────────────────────────────────────── */
+.nz-kpi-strip {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.4fr 0.9fr 1.1fr;
+  gap: 0;
+}
+.nz-kpi {
+  padding: 0 24px 0 0;
+  border-right: 1px solid var(--nz-100);
+  margin-right: 24px;
+}
+.nz-kpi:last-child { border-right: none; margin-right: 0; padding-right: 0; }
+.nz-kpi-label {
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.09em; text-transform: uppercase;
+  color: var(--nz-400); margin-bottom: 10px;
+}
+.nz-kpi-num {
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 300; line-height: 1; color: var(--nz-ink);
+}
+.nz-kpi:nth-child(1) .nz-kpi-num { font-size: 32px; }
+.nz-kpi:nth-child(2) .nz-kpi-num { font-size: 30px; color: var(--nz-green); }
+.nz-kpi:nth-child(3) .nz-kpi-num { font-size: 24px; color: var(--nz-red); }
+.nz-kpi:nth-child(4) .nz-kpi-num { font-size: 24px; color: var(--nz-500); }
+.nz-kpi-unit {
+  margin-top: 8px; font-size: 10.5px; color: var(--nz-400);
+  font-family: 'IBM Plex Mono', monospace;
+}
+.nz-kpi-note { margin-top: 6px; font-size: 10.5px; color: var(--nz-500); }
+
+/* Source mix donut */
+.nz-kpi-donut-wrap { position: relative; width: 48px; height: 48px; flex-shrink: 0; }
+.nz-kpi-donut-wrap canvas { display: block; }
+.nz-kpi-with-donut { display: flex; align-items: center; gap: 10px; }
+.nz-kpi-donut-legend { display: flex; flex-direction: column; gap: 2px; }
+.nz-kpi-donut-legend-item {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 10px; color: var(--nz-400);
+}
+.nz-kpi-donut-swatch { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+/* ── Environmental equivalency ─────────────────────── */
+.nz-equiv-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+}
+.nz-equiv-cell {
+  padding: 0 20px 0 0;
+  border-right: 1px solid var(--nz-100);
+  margin-right: 20px;
+  display: flex; align-items: flex-start; gap: 10px;
+}
+.nz-equiv-cell:last-child { border-right: none; margin-right: 0; padding-right: 0; }
+.nz-equiv-icon { font-size: 18px; line-height: 1; flex-shrink: 0; margin-top: 2px; opacity: 0.7; }
+.nz-equiv-label {
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.09em; text-transform: uppercase;
+  color: var(--nz-400); margin-bottom: 6px;
+}
+.nz-equiv-primary {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 17px; font-weight: 300; color: var(--nz-green); line-height: 1;
+}
+.nz-equiv-secondary {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; color: var(--nz-400); margin-top: 5px;
+}
+.nz-equiv-sub { font-size: 9.5px; color: var(--nz-400); margin-top: 3px; }
+
+/* ── Data status badges ───────────────────────────── */
+.nz-status-badge {
+  display: inline-block !important;
+  font-size: 9px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.05em !important;
+  text-transform: uppercase !important;
+  padding: 1px 6px !important;
+  border-radius: 3px !important;
+  margin-left: 8px !important;
+  vertical-align: middle !important;
+}
+.nz-status-badge--demo {
+  background: var(--nz-200) !important;
+  color: var(--nz-500) !important;
+}
+.nz-status-badge--wip {
+  background: var(--nz-amber) !important;
+  color: #fff !important;
+}
+
+/* ── Toggle bar (matches mbcx toggle-bar) ─────────── */
+.nz-toggle-bar {
+  display: flex !important;
+  gap: 0 !important;
+  margin-bottom: 20px !important;
+  border: 1px solid var(--nz-200) !important;
+  border-radius: 6px !important;
+  overflow: hidden !important;
+  width: fit-content !important;
+}
+.nz-toggle-btn {
+  font-size: 11.5px !important;
+  font-weight: 500 !important;
+  color: var(--nz-500) !important;
+  background: #fff !important;
+  border: none !important;
+  border-right: 1px solid var(--nz-200) !important;
+  padding: 6px 18px !important;
+  cursor: pointer !important;
+  transition: all 0.15s !important;
+  white-space: nowrap !important;
+}
+.nz-toggle-btn:last-child { border-right: none !important; }
+.nz-toggle-btn:hover { background: var(--nz-50) !important; color: var(--nz-700) !important; }
+.nz-toggle-btn--active { background: var(--nz-blue) !important; color: #fff !important; }
+
+/* ── Trend tabs (show/hide) ───────────────────────── */
+.nz-trend-tab { display: none; }
+.nz-trend-tab--active { display: block !important; }
+.nz-trend-detail { margin-top: 20px !important; }
+
+/* ── Charts ────────────────────────────────────────── */
+.nz-charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px !important;
+}
+.nz-chart-card {
+  background: var(--nz-50) !important;
+  border: 1px solid var(--nz-200) !important;
+  border-radius: 8px !important;
+  padding: 16px 20px 20px !important;
+}
+.nz-chart-header {
+  display: flex; align-items: baseline; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.nz-chart-name { font-size: 13px; font-weight: 600; color: var(--nz-700); }
+.nz-legend { display: flex; gap: 12px; }
+.nz-legend-item {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 10px; color: var(--nz-400);
+  text-transform: uppercase; letter-spacing: 0.03em;
+}
+.nz-legend-swatch { width: 14px; height: 3px; border-radius: 2px; }
+.nz-chart-wrap { position: relative; height: 220px; }
+
+/* ── Detail tables ─────────────────────────────────── */
+.nz-detail-label {
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--nz-400); margin-bottom: 14px;
+}
+.nz-tables-grid {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 24px !important;
+}
+.nz-tbl-name { font-size: 11px !important; font-weight: 600 !important; color: var(--nz-ink) !important; margin-bottom: 6px !important; }
+
+#netzeroDashboard table { width: 100% !important; border-collapse: collapse !important; table-layout: fixed !important; }
+#netzeroDashboard table col.nz-col-label { width: 60px !important; }
+#netzeroDashboard thead th {
+  font-size: 9px !important; font-weight: 600 !important; color: var(--nz-500) !important;
+  letter-spacing: 0.04em !important; text-transform: uppercase !important;
+  text-align: right !important; padding: 0 2px 4px !important;
+  border-bottom: 1px solid var(--nz-200) !important;
+  white-space: nowrap !important;
+}
+#netzeroDashboard thead th:first-child { text-align: left !important; padding-left: 0 !important; }
+#netzeroDashboard tbody td {
+  font-size: 11px !important; padding: 4px 2px !important;
+  border-bottom: 1px solid var(--nz-100) !important;
+  text-align: right !important; font-variant-numeric: tabular-nums !important;
+  color: var(--nz-ink) !important; white-space: nowrap !important;
+}
+#netzeroDashboard tbody td:first-child {
+  text-align: left !important; color: var(--nz-ink) !important;
+  display: flex !important; align-items: center !important; gap: 4px !important;
+  padding-left: 0 !important; font-size: 10px !important;
+}
+.nz-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+.nz-dot-a { background: var(--nz-bar-ink); }
+.nz-dot-m { background: var(--nz-green); }
+.nz-dot-d { background: var(--nz-400); }
+#netzeroDashboard tr.nz-diff-row td {
+  font-size: 10px !important; color: var(--nz-500) !important; border-bottom: none !important;
+}
+#netzeroDashboard tr.nz-diff-row td:first-child { color: var(--nz-500) !important; }
+.nz-neg { color: var(--nz-red) !important; font-weight: 600; }
+.nz-pos { color: var(--nz-green) !important; font-weight: 600; }
+
+/* ── Meter breakdown table ─────────────────────────── */
+.nz-meter-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.nz-meter-table { width: 100%; min-width: 960px; border-collapse: collapse; table-layout: fixed; }
+.nz-meter-table .nz-col-label { width: 200px; }
+.nz-meter-table .nz-col-month { width: 62px; }
+.nz-meter-table .nz-col-total { width: 80px; }
+
+.nz-meter-table thead th {
+  font-size: 10px; font-weight: 600; color: var(--nz-400);
+  letter-spacing: 0.06em; text-transform: uppercase;
+  text-align: right; padding: 0 6px 7px;
+  border-bottom: 2px solid var(--nz-200); white-space: nowrap;
+}
+.nz-meter-table thead th:first-child { text-align: left; padding-left: 0; }
+.nz-meter-table thead th.nz-col-total { color: var(--nz-600); }
+
+.nz-meter-table tbody td {
+  font-size: 11.5px; color: var(--nz-700);
+  text-align: right; padding: 7px 6px;
+  border-bottom: 1px solid var(--nz-100);
+  white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+.nz-meter-table tbody td:first-child {
+  text-align: left; color: var(--nz-600);
+  padding-left: 0; display: table-cell;
+}
+.nz-meter-table tbody tr:hover { background: var(--nz-50); }
+
+/* subtotal rows */
+.nz-meter-table tr.nz-subtotal td {
+  font-weight: 600; background: var(--nz-100);
+  color: var(--nz-ink); border-bottom: 1px solid var(--nz-200);
+}
+.nz-meter-table tr.nz-subtotal td:first-child { color: var(--nz-ink); }
+
+/* net performance row */
+.nz-meter-table tr.nz-net-row td {
+  font-weight: 600; color: var(--nz-ink);
+  border-top: 2px solid var(--nz-ink); border-bottom: none;
+}
+.nz-meter-table tr.nz-net-row td:first-child { color: var(--nz-ink); }
+.nz-meter-table tr.nz-net-row td.nz-heat-neg { background: var(--nz-red-lt); color: var(--nz-red); }
+.nz-meter-table tr.nz-net-row td.nz-heat-pos { background: var(--nz-green-lt); color: var(--nz-green); }
+
+/* totals column */
+.nz-meter-table td.nz-col-total,
+.nz-meter-table th.nz-col-total { border-left: 1px solid var(--nz-200); }
+
+/* spacer row */
+.nz-meter-table tr.nz-spacer td { padding: 8px 0; border-bottom: none; border-top: none; background: transparent; }
+
+/* ── Footer ────────────────────────────────────────── */
+.nz-page-footer {
+  border-top: 1px solid var(--nz-200); background: var(--nz-white);
+  padding: 13px 20px; display: flex; align-items: center;
+  justify-content: space-between; flex-wrap: wrap; gap: 8px;
+  font-size: 11.5px; color: var(--nz-400);
+  border-radius: 0 0 10px 10px;
+}
+.nz-footer-links { display: flex; gap: 20px; }
+.nz-footer-links a { color: var(--nz-400); text-decoration: none; }
+.nz-footer-links a:hover { color: var(--nz-blue); }
+
+/* ── No-site prompt ────────────────────────────────── */
+/* ── No-data placeholder (inside section cards) ──── */
+.nz-no-data {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 48px 24px !important;
+  text-align: center !important;
+  color: var(--nz-400) !important;
+  gap: 8px !important;
+}
+.nz-no-data svg { color: var(--nz-300); margin-bottom: 4px; }
+.nz-no-data-label {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  color: var(--nz-600) !important;
+}
+.nz-no-data-sub {
+  font-size: 13px !important;
+  color: var(--nz-400) !important;
+  max-width: 300px !important;
+  line-height: 1.5 !important;
+}
+
+.nz-no-site-screen {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 60vh; gap: 16px; text-align: center; padding: 2rem;
+}
+.nz-no-site-icon { color: var(--nz-300); margin-bottom: 8px; }
+.nz-no-site-title { font-size: 20px; font-weight: 600; color: var(--nz-700); }
+.nz-no-site-body { font-size: 14px; color: var(--nz-400); max-width: 340px; line-height: 1.6; }
+.nz-no-site-hint {
+  font-size: 12px; color: var(--nz-400); margin-top: 4px;
+  background: var(--nz-50); border: 1px solid var(--nz-200);
+  border-radius: 6px; padding: 8px 16px;
+}
+.nz-no-site-hint code { font-family: monospace; color: var(--nz-blue); }
+
+/* ── Responsive ────────────────────────────────────── */
+@media (max-width: 900px) {
+  .nz-kpi-strip { grid-template-columns: 1fr 1fr; gap: 16px; }
+  .nz-kpi { border-right: none; margin-right: 0; padding-right: 0; margin-bottom: 12px; }
+  .nz-equiv-strip { grid-template-columns: 1fr 1fr; gap: 16px; }
+  .nz-equiv-cell { border-right: none; margin-right: 0; padding-right: 0; margin-bottom: 12px; }
+  .nz-charts-grid { grid-template-columns: 1fr; }
+  .nz-tables-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .nz-page { padding: 16px 14px 60px; }
+  .nz-kpi-strip { grid-template-columns: 1fr; }
+  .nz-equiv-strip { grid-template-columns: 1fr; }
+}

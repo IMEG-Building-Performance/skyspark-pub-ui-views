@@ -1,0 +1,18 @@
+// Copy this file into your SkySpark project to register the view.
+// After copying, restart SkySpark and navigate to the view.
+//
+// Deployment checklist:
+//   1. Copy netzeroDashboardEntry.js  ->  {var}/pub/ui/
+//   2. Copy netzeroDashboard/         ->  {var}/pub/ui/netzeroDashboard/  (preserve sub-structure)
+//   3. Import this trio file into the SkySpark project database
+//   4. Restart SkySpark
+
+dis: "Net Zero Dashboard"
+appName: "netzeroDashboard"
+view: "netzeroDashboardView"
+src:
+  view:      { inherit:"js" }
+  jsHandler: { var defVal:"netzeroDashboardHandler" }
+  site:       { var kind:"Ref" }
+  datesStart: { var kind:"Date" }
+  datesEnd:   { var kind:"Date" }
