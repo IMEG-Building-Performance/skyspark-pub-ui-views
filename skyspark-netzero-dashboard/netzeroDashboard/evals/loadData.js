@@ -142,6 +142,9 @@ window.netzeroDashboard.evals = window.netzeroDashboard.evals || {};
       // Start with demo data as the base, override sections that have live data
       var data = JSON.parse(JSON.stringify(demo));
 
+      // Track which sections have live data (vs no data returned)
+      data._live = { building: !!buildingData, solar: !!solarData, netZero: !!netZeroData };
+
       // Override charts + detail tables if we have live monthly data
       if (buildingData) {
         data.charts.months = buildingData.months;
