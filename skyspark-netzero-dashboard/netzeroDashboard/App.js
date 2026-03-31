@@ -91,7 +91,7 @@ window.netzeroDashboard = window.netzeroDashboard || {};
 
         // Performance Overview (merged KPIs + Equiv) — collapsible, default open
         section(ICONS.kpi, 'var(--nz-blue)', 'Performance Overview',
-          'YTD key metrics \u00b7 environmental equivalents <span class="nz-status-badge nz-status-badge--demo">Demo</span>',
+          'YTD key metrics \u00b7 environmental equivalents <span class="nz-status-badge nz-status-badge--wip">In Progress</span>',
           overviewBody,
           { collapsible: true, open: true, accentColor: '#4A6FA5' }),
 

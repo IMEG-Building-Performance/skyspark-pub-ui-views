@@ -17,6 +17,35 @@ window.netzeroDashboard.evals = window.netzeroDashboard.evals || {};
   }
 
   /**
+   * Build the Axon expression for the KPI eval.
+   */
+  function _kpiExpr(siteRef, dateRange) {
+    return 'view_pubUI_Source_netZeroDashboard(' + siteRef + ', ' + dateRange + ', "view_pubUI_netZeroKpis")';
+  }
+
+  /**
+   * Parse the KPI grid: single row with buildingUsage and solarGeneration columns.
+   */
+  function _parseKpiGrid(rawGrid) {
+    if (!rawGrid || !rawGrid.rows || rawGrid.rows.length === 0) return null;
+    if (rawGrid.meta && rawGrid.meta.err) return null;
+    var row = rawGrid.rows[0];
+    if (!row) return null;
+
+    function numVal(cell) {
+      if (cell === null || cell === undefined) return null;
+      if (typeof cell === 'object' && cell._kind === 'number') return cell.val || 0;
+      if (typeof cell === 'number') return cell;
+      return parseFloat(cell) || null;
+    }
+
+    var building = numVal(row.buildingUsage);
+    var solar = numVal(row.solarGeneration);
+    if (building === null && solar === null) return null;
+    return { buildingUsage: building, solarGeneration: solar };
+  }
+
+  /**
    * Build an Axon date range expression from start/end date strings.
    */
   function _dateRange(ctx) {
@@ -159,22 +188,38 @@ window.netzeroDashboard.evals = window.netzeroDashboard.evals || {};
     var buildingP = api.evalAxon(attestKey, projectName, buildingExpr).catch(function (e) { console.log('[nzDiag] building eval FAILED:', e.message || e); return null; });
     var solarP    = api.evalAxon(attestKey, projectName, _monthlyExpr(siteRef, dateRange, 'Solar')).catch(function (e) { console.log('[nzDiag] solar eval FAILED:', e.message || e); return null; });
     var netZeroP  = api.evalAxon(attestKey, projectName, _monthlyExpr(siteRef, dateRange, 'Net Zero')).catch(function (e) { console.log('[nzDiag] netzero eval FAILED:', e.message || e); return null; });
+    var kpiP      = api.evalAxon(attestKey, projectName, _kpiExpr(siteRef, dateRange)).catch(function (e) { console.log('[nzDiag] kpi eval FAILED:', e.message || e); return null; });
 
-    return Promise.all([buildingP, solarP, netZeroP]).then(function (results) {
+    return Promise.all([buildingP, solarP, netZeroP, kpiP]).then(function (results) {
       console.log('[nzDiag] building raw grid:', JSON.stringify(results[0]).substring(0, 500));
       console.log('[nzDiag] solar raw grid:', results[1] ? JSON.stringify(results[1]).substring(0, 200) : 'null');
       console.log('[nzDiag] netzero raw grid:', results[2] ? JSON.stringify(results[2]).substring(0, 200) : 'null');
+      console.log('[nzDiag] kpi raw grid:', results[3] ? JSON.stringify(results[3]).substring(0, 300) : 'null');
 
       var buildingData = _parseMonthlyGrid(results[0]);
       console.log('[nzDiag] buildingData parsed:', buildingData ? { months: buildingData.months, actualLen: buildingData.actual.length, firstActual: buildingData.actual[0] } : 'null');
       var solarData    = _parseMonthlyGrid(results[1]);
       var netZeroData  = _parseMonthlyGrid(results[2]);
+      var kpiData      = _parseKpiGrid(results[3]);
 
       // Start with demo data as the base, override sections that have live data
       var data = JSON.parse(JSON.stringify(demo));
 
       // Track which sections have live data (vs no data returned)
-      data._live = { building: !!buildingData, solar: !!solarData, netZero: !!netZeroData };
+      data._live = { building: !!buildingData, solar: !!solarData, netZero: !!netZeroData, kpi: !!kpiData };
+
+      // Override KPIs if we have live data
+      if (kpiData) {
+        var bldg = kpiData.buildingUsage || 0;
+        var sol  = kpiData.solarGeneration || 0;
+        var net  = bldg - sol;
+        var coverage = bldg > 0 ? Math.round((sol / bldg) * 100) : 0;
+        data.kpis.buildingUsage = Math.round(bldg);
+        data.kpis.solarGeneration = Math.round(sol);
+        data.kpis.netPerformance = Math.round(net);
+        data.kpis.coverageRatio = coverage;
+        data.kpis.surplusNote = net <= 0 ? 'Net zero achieved!' : '';
+      }
 
       // Override charts + detail tables if we have live monthly data
       if (buildingData) {
