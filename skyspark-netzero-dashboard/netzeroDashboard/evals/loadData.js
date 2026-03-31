@@ -13,7 +13,7 @@ window.netzeroDashboard.evals = window.netzeroDashboard.evals || {};
    * Build the Axon expression for a Monthly Trends eval.
    */
   function _monthlyExpr(siteRef, dateRange, category) {
-    return 'view_pubUI_Source_netZeroDashboard(' + siteRef + ', ' + dateRange + ', view_pubUI_netZeroMonthly, "' + category + '")';
+    return 'view_pubUI_Source_netZeroDashboard(' + siteRef + ', ' + dateRange + ', "view_pubUI_netZeroMonthly", "' + category + '")';
   }
 
   /**
