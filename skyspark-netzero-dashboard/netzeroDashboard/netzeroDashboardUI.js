@@ -127,7 +127,7 @@ window.netzeroDashboard = window.netzeroDashboard || {};
     if (attestKey && projectName && siteRef) {
       var gen = ++_fetchGen;
       container.innerHTML = '<div style="padding:2rem;color:#888">Loading\u2026</div>';
-      NS.evals.loadData(attestKey, projectName)
+      NS.evals.loadData(attestKey, projectName, ctx)
         .then(function (data) {
           if (gen !== _fetchGen) return;
           launch(data);
