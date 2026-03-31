@@ -67,17 +67,11 @@ window.netzeroDashboard.components.Charts = {
     // Net Zero content
     var netZeroContent;
     if (live.netZero) {
-      var netZeroTable = '<div class="nz-tables-grid">' +
-        DT._table('Actual net zero', d.months, [
-          DT._dataRow('nz-dot-a', 'Building', d.actualNetZero.building, DT._fmtAbs),
-          DT._dataRow('nz-dot-m', 'Solar',    d.actualNetZero.solar, DT._fmtAbs),
-          DT._diffRow('Net', d.actualNetZero.net)
-        ]) +
-        DT._table('Modeled net zero', d.months, [
-          DT._dataRow('nz-dot-a', 'Building', d.modeledNetZero.building, DT._fmtAbs),
-          DT._dataRow('nz-dot-m', 'Solar',    d.modeledNetZero.solar, DT._fmtAbs),
-          DT._diffRow('Net', d.modeledNetZero.net)
-        ]) + '</div>';
+      var netZeroTable = DT._table('Net zero', d.months, [
+        DT._dataRow('nz-dot-a', 'Actual', d.actualNetZero.net, DT._fmt),
+        DT._dataRow('nz-dot-m', 'Modeled', d.modeledNetZero.net, DT._fmt),
+        DT._diffRow('Diff', d.actualNetZero.net.map(function (v, i) { return v - (d.modeledNetZero.net[i] || 0); }))
+      ]);
       netZeroContent = [
         '<div class="nz-chart-card">',
         '  <div class="nz-chart-header">',
