@@ -114,6 +114,7 @@ window.netzeroDashboard.components.Charts = {
     return {
       responsive: true,
       maintainAspectRatio: false,
+      layout: { padding: { right: 0 } },
       plugins: {
         legend: { display: false },
         tooltip: {
@@ -142,7 +143,8 @@ window.netzeroDashboard.components.Charts = {
             maxTicksLimit: 5
           },
           grid: { color: '#F3F4F6' },
-          border: { display: false }
+          border: { display: false },
+          afterFit: function (axis) { axis.width = 60; }
         }
       }
     };

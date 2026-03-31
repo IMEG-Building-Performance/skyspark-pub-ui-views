@@ -370,28 +370,28 @@ select.nz-meta-item {
   grid-template-columns: 1fr !important;
   gap: 24px !important;
 }
-.nz-tbl-name { font-size: 12px !important; font-weight: 600 !important; color: var(--nz-ink) !important; margin-bottom: 8px !important; }
+.nz-tbl-name { font-size: 11px !important; font-weight: 600 !important; color: var(--nz-ink) !important; margin-bottom: 6px !important; }
 
 #netzeroDashboard table { width: 100% !important; border-collapse: collapse !important; table-layout: fixed !important; }
-#netzeroDashboard table col.nz-col-label { width: 70px !important; }
+#netzeroDashboard table col.nz-col-label { width: 60px !important; }
 #netzeroDashboard thead th {
-  font-size: 10px !important; font-weight: 600 !important; color: var(--nz-500) !important;
-  letter-spacing: 0.06em !important; text-transform: uppercase !important;
-  text-align: right !important; padding: 0 4px 5px !important;
+  font-size: 9px !important; font-weight: 600 !important; color: var(--nz-500) !important;
+  letter-spacing: 0.04em !important; text-transform: uppercase !important;
+  text-align: right !important; padding: 0 2px 4px !important;
   border-bottom: 1px solid var(--nz-200) !important;
   white-space: nowrap !important;
 }
 #netzeroDashboard thead th:first-child { text-align: left !important; padding-left: 0 !important; }
 #netzeroDashboard tbody td {
-  font-size: 11px !important; padding: 5px 4px !important;
+  font-size: 11px !important; padding: 4px 2px !important;
   border-bottom: 1px solid var(--nz-100) !important;
   text-align: right !important; font-variant-numeric: tabular-nums !important;
   color: var(--nz-ink) !important; white-space: nowrap !important;
 }
 #netzeroDashboard tbody td:first-child {
   text-align: left !important; color: var(--nz-ink) !important;
-  display: flex !important; align-items: center !important; gap: 5px !important;
-  padding-left: 0 !important;
+  display: flex !important; align-items: center !important; gap: 4px !important;
+  padding-left: 0 !important; font-size: 10px !important;
 }
 .nz-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
 .nz-dot-a { background: var(--nz-bar-ink); }
