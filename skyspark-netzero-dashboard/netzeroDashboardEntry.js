@@ -28,7 +28,7 @@ var netzeroDashboardHandler = {};
     { src: 'netzeroDashboardUI.js' }
   ];
 
-  var loaded = false, loading = false, pendingCalls = [];
+  var loading = false;
 
   function loadModules(cb) {
     var i = 0;
@@ -51,19 +51,13 @@ var netzeroDashboardHandler = {};
   }
 
   netzeroDashboardHandler.onUpdate = function (arg) {
-    if (loaded) {
+    if (loading) return;
+    loading = true;
+    // Always reload modules so site/date changes pick up fresh code + data
+    BUST = '?_v=' + Date.now();
+    loadModules(function () {
+      loading = false;
       window.netzeroDashboardApp.onUpdate(arg);
-      return;
-    }
-    pendingCalls.push(arg);
-    if (!loading) {
-      loading = true;
-      loadModules(function () {
-        loaded = true;
-        loading = false;
-        pendingCalls.forEach(function (a) { window.netzeroDashboardApp.onUpdate(a); });
-        pendingCalls = [];
-      });
-    }
+    });
   };
 })();
