@@ -46,8 +46,15 @@ window.hwMeterTable.evals = window.hwMeterTable.evals || {};
           var msg = grid.meta.dis ? String(grid.meta.dis) : 'SkySpark error grid';
           throw new Error('[loadDetailPage/' + mode + '] ' + msg);
         }
-        // Detect unwrapped-but-still-empty: cols:[] means unwrapGrid got a 0-row wrapper
-        if (!grid.cols || grid.cols.length === 0) {
+        // Detect missing/empty grid in two forms:
+        //   (a) cols:[]          — unwrapGrid normalised a 0-row wrapper
+        //   (b) cols:[{name:"val"}] — wrapper leaked through (0 rows, different runtime)
+        var noGrid = (
+          !grid.cols || grid.cols.length === 0 ||
+          (grid.cols.length === 1 && grid.cols[0].name === 'val' &&
+           (!grid.rows || grid.rows.length === 0))
+        );
+        if (noGrid) {
           throw new Error(
             '[loadDetailPage/' + mode + '] view_pubUI_helper_DetailPage returned no grid — ' +
             'verify the function exists on the server and accepts (ref, dateRange, str) parameters'
