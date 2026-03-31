@@ -12,11 +12,13 @@ var hwMeterTableHandler = {};
 
 (function () {
   var BASE_URL = '/pub/ui/hwMeterTable/';
-  var VERSION  = '22';  // bump this when deploying updated module files
+  var VERSION  = '23';  // bump this when deploying updated module files
   var modules = [
     'utils/api.js',
     'evals/loadDemandData.js',
+    'evals/loadSiteHistory.js',
     'components/SiteTable.js',
+    'components/SiteDetail.js',
     'hwMeterTableHandler.js'
   ];
   var loaded = false;

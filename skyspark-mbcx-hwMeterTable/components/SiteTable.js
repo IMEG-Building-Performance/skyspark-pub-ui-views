@@ -263,8 +263,11 @@ window.hwMeterTable.components = window.hwMeterTable.components || {};
    * @param {HTMLElement} container   - DOM element to render into
    * @param {Object}      gridData    - Per-site Haystack grid returned by loadDemandData
    * @param {Object}      totalsGrid  - Campus totals grid (mode 2) for KPI cards
+   * @param {Object}      [opts]      - Optional config
+   *   @param {Function}  [opts.onSiteClick] - Called when a row is clicked with
+   *                                           { siteId, siteName, rowData, visibleCols }
    */
-  components.renderSiteTable = function (container, gridData, totalsGrid) {
+  components.renderSiteTable = function (container, gridData, totalsGrid, opts) {
     container.innerHTML = '';
 
     var cols = gridData.cols || [];
@@ -378,6 +381,28 @@ window.hwMeterTable.components = window.hwMeterTable.components || {};
 
           tr.appendChild(td);
         });
+
+        // Wire click-to-detail if a handler was provided
+        if (opts && typeof opts.onSiteClick === 'function') {
+          tr.classList.add('hw-row-clickable');
+          (function (capturedRow) {
+            tr.addEventListener('click', function () {
+              var idVal    = capturedRow['id'];
+              var siteId   = null;
+              var siteName = null;
+              if (idVal && typeof idVal === 'object' && idVal._kind === 'ref') {
+                siteId   = '@' + idVal.val;
+                siteName = idVal.dis || idVal.val;
+              }
+              opts.onSiteClick({
+                siteId:      siteId,
+                siteName:    siteName,
+                rowData:     capturedRow,
+                visibleCols: visibleCols
+              });
+            });
+          })(row);
+        }
 
         tbody.appendChild(tr);
       });

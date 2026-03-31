@@ -1,17 +1,29 @@
 // hwMeterTable/hwMeterTableHandler.js
 //
 // Main handler module — orchestrates stylesheet injection, variable reading,
-// data loading, and table rendering. Loaded dynamically by hwMeterTableEntry.js.
+// data loading, table rendering, and site detail navigation.
+// Loaded dynamically by hwMeterTableEntry.js.
 //
 // At startup this file exposes window.hwMeterTableApp, which the entry
 // file delegates to. The name MUST differ from the entry file's jsHandler
 // global ("hwMeterTableHandler") to avoid collision.
 //
-// Re-render behaviour:
-//   onUpdate is called by SkySpark on every view refresh (including variable
-//   changes). The DOM scaffold is built once; refreshData is called on every
-//   onUpdate so variable changes always trigger a new fetch. A fetch-generation
-//   counter ensures stale in-flight responses are silently discarded.
+// ── Navigation ──────────────────────────────────────────────────────────────
+// Two views share the same #hwMeterTable-root container; only one is shown
+// at a time using display:none toggling:
+//
+//   #hwMeterTable-root
+//   ├─ .hw-table-title      (hidden in detail view)
+//   ├─ .hw-table-container  (hidden in detail view)
+//   └─ .hw-detail-container (hidden in table view)
+//
+// Clicking a site row calls _showDetail(); the back button calls _showTable().
+//
+// ── Re-render behaviour ──────────────────────────────────────────────────────
+// onUpdate is called by SkySpark on every view refresh. The DOM scaffold is
+// built once; refreshData is called on every onUpdate so variable changes
+// always trigger a new fetch. A fetch-generation counter ensures stale
+// in-flight responses are silently discarded.
 
 window.hwMeterTable = window.hwMeterTable || {};
 
@@ -24,11 +36,21 @@ window.hwMeterTable = window.hwMeterTable || {};
   var CSS_ID   = 'hwMeterTable-styles';
   var CSS_PATH = '/pub/ui/hwMeterTable/hwMeterTableStyles.css';
 
-  // Incremented on every new fetch; callbacks compare against this to discard
-  // responses that were superseded by a later variable change.
-  var _fetchGen = 0;
+  // ── Module-level state ─────────────────────────────────────────────────
+  // Persists across onUpdate calls so the detail view's back button and
+  // onSiteClick can always use up-to-date session values.
 
-  // ── Private helpers ────────────────────────────────────────────────────────
+  var _fetchGen     = 0;   // incremented on every new fetch
+  var _attestKey    = '';
+  var _projectName  = '';
+  var _dates        = '';
+
+  // DOM handles — set once when the scaffold is built
+  var _titleEl;
+  var _tableContainer;
+  var _detailContainer;
+
+  // ── Private helpers ────────────────────────────────────────────────────
 
   /** Inject the stylesheet once, idempotently. */
   function loadStyles() {
@@ -53,28 +75,48 @@ window.hwMeterTable = window.hwMeterTable || {};
     try {
       var val = view.var(varName);
       if (val == null) return null;
-      // Preferred: toAxon() gives proper Axon-encoded string (@nav:equip.all)
       if (typeof val.toAxon === 'function') return val.toAxon();
-      // Get string form — prefer toStr() but fall back to String()
       var s;
       try { s = typeof val.toStr === 'function' ? val.toStr() : String(val); }
       catch (e) { s = String(val); }
-      // Fantom Ref display form:  [nav:equip.all] → @nav:equip.all
-      if (s.charAt(0) === '[' && s.charAt(s.length - 1) === ']') {
-        return '@' + s.slice(1, -1);
-      }
-      // Fantom Ref bare ID form:  nav:equip.all  → @nav:equip.all
-      // (toStr() on a Ref returns the ID without brackets or @ prefix)
-      if (/^[a-z][a-z0-9]*:[a-z]/i.test(s)) {
-        return '@' + s;
-      }
-      // Fantom DateSpan comma form: 2026-02-01,2026-03-01 → 2026-02-01..2026-03-01
-      if (/^\d{4}-\d{2}-\d{2},\d{4}-\d{2}-\d{2}$/.test(s)) {
-        return s.replace(',', '..');
-      }
+      if (s.charAt(0) === '[' && s.charAt(s.length - 1) === ']') return '@' + s.slice(1, -1);
+      if (/^[a-z][a-z0-9]*:[a-z]/i.test(s)) return '@' + s;
+      if (/^\d{4}-\d{2}-\d{2},\d{4}-\d{2}-\d{2}$/.test(s)) return s.replace(',', '..');
       return s;
     } catch (e) { /* variable not set or not found */ }
     return null;
+  }
+
+  /** Switch to the table view (hide detail, show table + title). */
+  function _showTable() {
+    _detailContainer.style.display = 'none';
+    _titleEl.style.display         = '';
+    _tableContainer.style.display  = '';
+  }
+
+  /**
+   * Switch to the detail view for a clicked site row.
+   *
+   * @param {Object} info - { siteId, siteName, rowData, visibleCols }
+   */
+  function _showDetail(info) {
+    _titleEl.style.display        = 'none';
+    _tableContainer.style.display = 'none';
+    _detailContainer.style.display = '';
+
+    components.renderSiteDetail(
+      _detailContainer,
+      {
+        siteId:      info.siteId,
+        siteName:    info.siteName,
+        rowData:     info.rowData,
+        visibleCols: info.visibleCols,
+        attestKey:   _attestKey,
+        projectName: _projectName,
+        dates:       _dates
+      },
+      _showTable  // back button callback
+    );
   }
 
   /**
@@ -103,7 +145,12 @@ window.hwMeterTable = window.hwMeterTable || {};
       .then(function (result) {
         if (gen !== _fetchGen) return; // superseded — discard
         tableContainer.removeChild(loadingEl);
-        components.renderSiteTable(tableContainer, result.siteGrid, result.totalsGrid);
+        components.renderSiteTable(
+          tableContainer,
+          result.siteGrid,
+          result.totalsGrid,
+          { onSiteClick: _showDetail }
+        );
       })
       .catch(function (err) {
         if (gen !== _fetchGen) return;
@@ -116,16 +163,15 @@ window.hwMeterTable = window.hwMeterTable || {};
       });
   }
 
-  // ── Public handler ─────────────────────────────────────────────────────────
+  // ── Public handler ─────────────────────────────────────────────────────
 
   /**
    * Entry point called by SkySpark (via the entry file stub) on each view update.
    * Called on first load and whenever any view variable changes.
    *
-   * The scaffold (title + tableContainer) is built once on the first call.
-   * refreshData is called on every onUpdate so that variable changes always
-   * trigger a re-fetch. The _fetchGen counter in refreshData discards any
-   * in-flight responses that were superseded by a later call.
+   * The scaffold (title + tableContainer + detailContainer) is built once on
+   * the first call. refreshData is called on every onUpdate so variable changes
+   * always trigger a re-fetch.
    *
    * @param {Object} arg - SkySpark view argument ({ view, elem })
    */
@@ -135,48 +181,49 @@ window.hwMeterTable = window.hwMeterTable || {};
 
     loadStyles();
 
-    // Force elem to fill the SkySpark view pane
     elem.style.width  = '100%';
     elem.style.height = '100%';
 
-    // ── Session credentials ──────────────────────────────────────────────────
-    var session     = view.session();
-    var attestKey   = session.attestKey();
-    var projectName = session.proj().name();
+    // ── Session credentials ──────────────────────────────────────────────
+    var session    = view.session();
+    _attestKey     = session.attestKey();
+    _projectName   = session.proj().name();
 
-    // ── View variables ───────────────────────────────────────────────────────
-    // targets: equipment set ref (e.g. "@nav:equip.all")
-    // dates:   date range expression (e.g. "pastMonth" or "2025-01-01..2025-01-31")
+    // ── View variables ───────────────────────────────────────────────────
     var parentView = null;
     try { parentView = view.parent(); } catch (e) {}
 
     var targets = tryReadVar(view, 'targets') || (parentView && tryReadVar(parentView, 'targets')) || '@nav:equip.all';
-    var dates   = tryReadVar(view, 'dates')   || (parentView && tryReadVar(parentView, 'dates'))   || 'pastMonth';
+    _dates      = tryReadVar(view, 'dates')   || (parentView && tryReadVar(parentView, 'dates'))   || 'pastMonth';
 
-    console.log('[hwMeterTable] onUpdate — targets:', targets, '| dates:', dates);
+    console.log('[hwMeterTable] onUpdate — targets:', targets, '| dates:', _dates);
 
-    // ── Build scaffold once, then always refresh data ─────────────────────────
+    // ── Build scaffold once ──────────────────────────────────────────────
     var root = elem.querySelector('#' + APP_ID);
-    var tableContainer;
 
     if (!root) {
       root    = document.createElement('div');
       root.id = APP_ID;
       elem.appendChild(root);
 
-      var title = document.createElement('div');
-      title.className   = 'hw-table-title';
-      title.textContent = 'Hot Water Meter \u2014 95% Demand Values';
-      root.appendChild(title);
+      _titleEl = document.createElement('div');
+      _titleEl.className   = 'hw-table-title';
+      _titleEl.textContent = 'Hot Water Meter \u2014 95% Demand Values';
+      root.appendChild(_titleEl);
 
-      tableContainer = document.createElement('div');
-      tableContainer.className = 'hw-table-container';
-      root.appendChild(tableContainer);
-    } else {
-      tableContainer = root.querySelector('.hw-table-container');
+      _tableContainer = document.createElement('div');
+      _tableContainer.className = 'hw-table-container';
+      root.appendChild(_tableContainer);
+
+      _detailContainer = document.createElement('div');
+      _detailContainer.className = 'hw-detail-container';
+      _detailContainer.style.display = 'none';
+      root.appendChild(_detailContainer);
     }
 
-    refreshData(tableContainer, attestKey, projectName, targets, dates);
+    // Always return to the table view when variables change
+    _showTable();
+    refreshData(_tableContainer, _attestKey, _projectName, targets, _dates);
   };
 
 })(window.hwMeterTable);
