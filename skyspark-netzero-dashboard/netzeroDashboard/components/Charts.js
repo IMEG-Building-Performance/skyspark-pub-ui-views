@@ -204,11 +204,18 @@ window.netzeroDashboard.components.Charts = {
     if (live.netZero) {
       var nEl = container.querySelector('#nzNetZeroChart');
       if (nEl) {
-        var actualNet = [];
-        var modeledNet = [];
-        for (var i = 0; i < months.length; i++) {
-          actualNet.push(data.charts.building.actual[i] - data.charts.solar.actual[i]);
-          modeledNet.push(data.charts.building.model[i] - data.charts.solar.model[i]);
+        // Use direct net zero values from eval if available, else compute from building-solar
+        var actualNet, modeledNet;
+        if (data.charts.netZero) {
+          actualNet = data.charts.netZero.actual;
+          modeledNet = data.charts.netZero.model;
+        } else {
+          actualNet = [];
+          modeledNet = [];
+          for (var i = 0; i < months.length; i++) {
+            actualNet.push(data.charts.building.actual[i] - data.charts.solar.actual[i]);
+            modeledNet.push(data.charts.building.model[i] - data.charts.solar.model[i]);
+          }
         }
         new C(nEl, {
           type: 'bar',

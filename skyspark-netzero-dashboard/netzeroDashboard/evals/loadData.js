@@ -64,8 +64,8 @@ window.netzeroDashboard.evals = window.netzeroDashboard.evals || {};
     for (var r = 0; r < rawGrid.rows.length; r++) {
       var row = rawGrid.rows[r];
       var label = (row.dis || '').toLowerCase();
-      if (label === 'actual') actualRow = row;
-      else if (label === 'model') modelRow = row;
+      if (label === 'actual' || label === 'nzactual') actualRow = row;
+      else if (label === 'model' || label === 'nzmodel') modelRow = row;
       else if (label === 'difference' || label === 'diff') diffRow = row;
     }
 
@@ -161,6 +161,8 @@ window.netzeroDashboard.evals = window.netzeroDashboard.evals || {};
       }
 
       if (netZeroData) {
+        // Store net zero values for chart (actual=nzActual, model=nzModel)
+        data.charts.netZero = { actual: netZeroData.actual, model: netZeroData.model };
         data.detail.actualNetZero = {
           building: buildingData ? buildingData.actual : data.detail.actualNetZero.building,
           solar: solarData ? solarData.actual : data.detail.actualNetZero.solar,
