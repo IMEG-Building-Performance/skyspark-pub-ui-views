@@ -63,29 +63,45 @@ window.netzeroDashboard = window.netzeroDashboard || {};
       var session = view.session();
       attestKey   = session.attestKey();
       projectName = session.proj().name();
+      console.log('[nzDiag] session OK, attestKey:', !!attestKey, 'project:', projectName);
     } catch (e) {
-      // No SkySpark session — will use demo data
+      console.log('[nzDiag] no session:', e.message || e);
     }
 
     // Read site view variable (Ref)
     if (attestKey) {
       try {
         var siteVal = view.var('site');
+        console.log('[nzDiag] raw site var:', siteVal, 'type:', typeof siteVal);
         if (siteVal != null) {
+          // Log available methods
+          var methods = [];
+          if (typeof siteVal.toAxon === 'function') methods.push('toAxon');
+          if (typeof siteVal.toStr === 'function') methods.push('toStr');
+          if (typeof siteVal.toString === 'function') methods.push('toString');
+          console.log('[nzDiag] site methods:', methods.join(', '));
+
           var axonStr;
           if (typeof siteVal.toAxon === 'function') {
             axonStr = siteVal.toAxon();
+            console.log('[nzDiag] toAxon() =', axonStr);
           } else {
             var s;
             try { s = typeof siteVal.toStr === 'function' ? siteVal.toStr() : String(siteVal); }
             catch (e2) { s = String(siteVal); }
+            console.log('[nzDiag] fallback string =', s);
             axonStr = (s.charAt(0) === '[' && s.charAt(s.length - 1) === ']')
               ? '@' + s.slice(1, -1)
               : (s.charAt(0) === '@' ? s : '@' + s);
           }
+          console.log('[nzDiag] axonStr before resolve:', axonStr);
           siteRef = _resolveNavRef(axonStr);
+          console.log('[nzDiag] siteRef resolved:', siteRef);
+        } else {
+          console.log('[nzDiag] site var is null/undefined');
         }
       } catch (e) {
+        console.log('[nzDiag] site var error:', e.message || e);
       }
     }
 
@@ -93,10 +109,14 @@ window.netzeroDashboard = window.netzeroDashboard || {};
     var datesStart = null, datesEnd = null;
     try {
       var dsVal = view.var('datesStart');
-      if (dsVal != null) datesStart = typeof dsVal.toStr === 'function' ? dsVal.toStr() : String(dsVal);
       var deVal = view.var('datesEnd');
+      if (dsVal != null) datesStart = typeof dsVal.toStr === 'function' ? dsVal.toStr() : String(dsVal);
       if (deVal != null) datesEnd = typeof deVal.toStr === 'function' ? deVal.toStr() : String(deVal);
+      console.log('[nzDiag] dates:', datesStart, datesEnd);
     } catch (e) { /* not set */ }
+
+    console.log('[nzDiag] FINAL — attestKey:', !!attestKey, 'project:', projectName, 'siteRef:', siteRef, 'dates:', datesStart, datesEnd);
+    console.log('[nzDiag] Will use live data:', !!(attestKey && projectName && siteRef));
 
     // No site configured — fall through to demo data instead of blocking
     // siteName defaults to null; App.js shows "Demo Site" when null
