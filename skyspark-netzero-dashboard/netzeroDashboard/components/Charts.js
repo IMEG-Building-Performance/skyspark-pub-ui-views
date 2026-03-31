@@ -172,8 +172,8 @@ window.netzeroDashboard.components.Charts = {
           data: {
             labels: months,
             datasets: [
-              { label: 'Actual', data: data.charts.building.actual, backgroundColor: '#2e3a4e', borderRadius: 2, barPercentage: 0.75, categoryPercentage: 0.8 },
-              { label: 'Model',  data: data.charts.building.model,  backgroundColor: greenColor, borderRadius: 2, barPercentage: 0.75, categoryPercentage: 0.8 }
+              { label: 'Actual', data: data.charts.building.actual, backgroundColor: '#2e3a4e', borderRadius: 2, barPercentage: 0.9, categoryPercentage: 0.65 },
+              { label: 'Model',  data: data.charts.building.model,  backgroundColor: greenColor, borderRadius: 2, barPercentage: 0.9, categoryPercentage: 0.65 }
             ]
           },
           options: opts
@@ -190,8 +190,8 @@ window.netzeroDashboard.components.Charts = {
           data: {
             labels: months,
             datasets: [
-              { label: 'Actual', data: data.charts.solar.actual, backgroundColor: '#2e3a4e', borderRadius: 2, barPercentage: 0.75, categoryPercentage: 0.8 },
-              { label: 'Model',  data: data.charts.solar.model,  backgroundColor: greenColor, borderRadius: 2, barPercentage: 0.75, categoryPercentage: 0.8 }
+              { label: 'Actual', data: data.charts.solar.actual, backgroundColor: '#2e3a4e', borderRadius: 2, barPercentage: 0.9, categoryPercentage: 0.65 },
+              { label: 'Model',  data: data.charts.solar.model,  backgroundColor: greenColor, borderRadius: 2, barPercentage: 0.9, categoryPercentage: 0.65 }
             ]
           },
           options: opts
@@ -214,8 +214,8 @@ window.netzeroDashboard.components.Charts = {
           data: {
             labels: months,
             datasets: [
-              { label: 'Actual Net', data: actualNet, backgroundColor: '#2e3a4e', borderRadius: 2, barPercentage: 0.75, categoryPercentage: 0.8 },
-              { label: 'Modeled Net', data: modeledNet, backgroundColor: greenColor, borderRadius: 2, barPercentage: 0.75, categoryPercentage: 0.8 }
+              { label: 'Actual Net', data: actualNet, backgroundColor: '#2e3a4e', borderRadius: 2, barPercentage: 0.9, categoryPercentage: 0.65 },
+              { label: 'Modeled Net', data: modeledNet, backgroundColor: greenColor, borderRadius: 2, barPercentage: 0.9, categoryPercentage: 0.65 }
             ]
           },
           options: self._makeOpts()

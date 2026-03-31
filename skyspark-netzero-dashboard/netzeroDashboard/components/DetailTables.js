@@ -6,13 +6,13 @@ window.netzeroDashboard.components.DetailTables = {
 
   _fmt: function (n) {
     if (n === null || n === undefined) return '\u2014';
-    var s = Math.abs(n).toLocaleString('en-US');
+    var s = Math.abs(Math.round(n)).toLocaleString('en-US');
     return n < 0 ? '\u2212' + s : (n > 0 ? '+' + s : s);
   },
 
   _fmtAbs: function (n) {
     if (n === null || n === undefined) return '\u2014';
-    return Math.abs(n).toLocaleString('en-US');
+    return Math.round(Math.abs(n)).toLocaleString('en-US');
   },
 
   _diffCls: function (n) {

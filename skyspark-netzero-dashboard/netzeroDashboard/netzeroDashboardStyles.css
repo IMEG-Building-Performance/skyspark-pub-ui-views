@@ -370,24 +370,24 @@ select.nz-meta-item {
   grid-template-columns: 1fr 1fr;
   gap: 32px 48px;
 }
-.nz-tbl-name { font-size: 11.5px; font-weight: 600; color: var(--nz-600); margin-bottom: 8px; }
+.nz-tbl-name { font-size: 13px; font-weight: 600; color: var(--nz-ink); margin-bottom: 8px; }
 
 #netzeroDashboard table { width: 100%; border-collapse: collapse; }
 #netzeroDashboard thead th {
-  font-size: 10px; font-weight: 600; color: var(--nz-400);
+  font-size: 11px; font-weight: 600; color: var(--nz-600);
   letter-spacing: 0.06em; text-transform: uppercase;
   text-align: right; padding: 0 0 6px;
   border-bottom: 1px solid var(--nz-200);
 }
 #netzeroDashboard thead th:first-child { text-align: left; }
 #netzeroDashboard tbody td {
-  font-size: 11.5px; padding: 6px 0;
+  font-size: 13px; padding: 7px 0;
   border-bottom: 1px solid var(--nz-100);
   text-align: right; font-variant-numeric: tabular-nums;
-  color: var(--nz-700);
+  color: var(--nz-ink);
 }
 #netzeroDashboard tbody td:first-child {
-  text-align: left; color: var(--nz-600);
+  text-align: left; color: var(--nz-ink);
   display: flex; align-items: center; gap: 6px;
 }
 .nz-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
@@ -395,9 +395,9 @@ select.nz-meta-item {
 .nz-dot-m { background: var(--nz-green); }
 .nz-dot-d { background: var(--nz-400); }
 #netzeroDashboard tr.nz-diff-row td {
-  font-size: 11px; color: var(--nz-400); border-bottom: none;
+  font-size: 12px; color: var(--nz-600); border-bottom: none;
 }
-#netzeroDashboard tr.nz-diff-row td:first-child { color: var(--nz-400); }
+#netzeroDashboard tr.nz-diff-row td:first-child { color: var(--nz-600); }
 .nz-neg { color: var(--nz-red) !important; font-weight: 600; }
 .nz-pos { color: var(--nz-green) !important; font-weight: 600; }
 
