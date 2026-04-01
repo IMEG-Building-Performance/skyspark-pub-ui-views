@@ -502,6 +502,13 @@
   flex-direction: column;
 }
 
+/* Inside a card the area has no flex parent with a defined height,
+   so override the flex-grow/min-height-0 from the legacy chart section */
+#hwMeterTable-root .hw-chart-card .hw-chart-area {
+  flex: none;
+  min-height: 260px;
+}
+
 #hwMeterTable-root .hw-chart-card-title {
   font-size: 12px;
   font-weight: 700;
