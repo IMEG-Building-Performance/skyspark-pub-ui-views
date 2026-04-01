@@ -101,12 +101,6 @@ window.netzeroDashboard = window.netzeroDashboard || {};
           co.Charts.render(data),
           { collapsible: true, open: true, accentColor: '#2e3a4e' }),
 
-        // Meter breakdown — collapsible, default collapsed
-        section(ICONS.meter, 'var(--nz-amber)', 'Meter Breakdown',
-          'Individual meter readings \u00b7 12-month view <span class="nz-status-badge nz-status-badge--demo">Demo</span>',
-          co.MeterBreakdown.render(data),
-          { collapsible: true, open: false, accentColor: '#D97706' }),
-
         // Footer
         co.Footer.render(),
 

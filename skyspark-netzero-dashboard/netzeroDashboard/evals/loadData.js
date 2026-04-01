@@ -221,7 +221,7 @@ window.netzeroDashboard.evals = window.netzeroDashboard.evals || {};
       if (kpiData) {
         var bldg = kpiData.buildingUsage || 0;
         var sol  = kpiData.solarGeneration || 0;
-        var net  = bldg - sol;
+        var net  = sol - bldg;
         var coverage = bldg > 0 ? Math.round((sol / bldg) * 100) : 0;
         data.kpis.buildingUsage = Math.round(bldg);
         data.kpis.solarGeneration = Math.round(sol);

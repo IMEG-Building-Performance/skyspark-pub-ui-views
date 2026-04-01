@@ -32,11 +32,11 @@ window.netzeroDashboard.components.KpiStrip = {
       '    <div class="nz-kpi-unit">kWh \u00b7 YTD actual</div>',
       '  </div>',
 
-      // 3 — Net Building Performance
+      // 3 — Building Net Zero
       '  <div class="nz-kpi">',
-      '    <div class="nz-kpi-label">Net Building Performance</div>',
+      '    <div class="nz-kpi-label">Building Net Zero</div>',
       '    <div class="nz-kpi-num">' + fmt(k.netPerformance) + '</div>',
-      '    <div class="nz-kpi-unit">kWh \u00b7 grid dependent</div>',
+      '    <div class="nz-kpi-unit">kWh \u00b7 solar \u2212 usage</div>',
       '    <div class="nz-kpi-note">' + (k.surplusNote || '') + '</div>',
       '  </div>',
 

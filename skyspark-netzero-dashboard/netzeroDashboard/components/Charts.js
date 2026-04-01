@@ -18,6 +18,7 @@ window.netzeroDashboard.components.Charts = {
   render: function (data) {
     var d = data.detail;
     var DT = window.netzeroDashboard.components.DetailTables;
+    var MB = window.netzeroDashboard.components.MeterBreakdown;
     var live = data._live || {};
 
     // Building content
@@ -36,7 +37,8 @@ window.netzeroDashboard.components.Charts = {
         '  </div>',
         '  <div class="nz-chart-wrap"><canvas id="nzBuildingChart"></canvas></div>',
         '</div>',
-        '<div class="nz-trend-detail">' + buildingTable + '</div>'
+        '<div class="nz-trend-detail">' + buildingTable + '</div>',
+        MB.render(data)
       ].join('\n');
     } else {
       buildingContent = this._noData('Building');
