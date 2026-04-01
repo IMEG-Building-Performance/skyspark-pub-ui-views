@@ -217,6 +217,27 @@ window.netzeroDashboard.evals = window.netzeroDashboard.evals || {};
       data.kpis.sourceMix = { water: null, wind: null, fossil: null };
       data.equiv = { trees: { total: null, unit: '', monthly: null }, water: { total: null, unit: '', monthly: null }, gas: { total: null, unit: '', monthly: null }, methane: { total: null, unit: '', monthly: null } };
 
+      // Clear meter breakdown demo data — load nulls until live func is ready
+      var nullMonths = [null,null,null,null,null,null,null,null,null,null,null,null];
+      var ALL_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      data.meterBreakdown = {
+        months: ALL_MONTHS,
+        consumption: [
+          { name: 'HVAC', values: nullMonths.slice() },
+          { name: 'Plug & Process', values: nullMonths.slice() },
+          { name: 'Ext. Lighting', values: nullMonths.slice() },
+          { name: 'Int. Lighting', values: nullMonths.slice() },
+          { name: 'DHW', values: nullMonths.slice() }
+        ],
+        consumptionTotal: { name: 'Consumption', values: nullMonths.slice() },
+        generation: [
+          { name: 'Solar Meter', values: nullMonths.slice() },
+          { name: 'Solar PV', values: nullMonths.slice() }
+        ],
+        generationTotal: { name: 'Generation', values: nullMonths.slice() },
+        netPerformance: { name: 'Net Zero', values: nullMonths.slice() }
+      };
+
       // Fill in KPIs from live data
       if (kpiData) {
         var bldg = kpiData.buildingUsage || 0;

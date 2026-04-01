@@ -22,21 +22,21 @@ window.netzeroDashboard.components.KpiStrip = {
       '  <div class="nz-kpi">',
       '    <div class="nz-kpi-label">Building Usage</div>',
       '    <div class="nz-kpi-num">' + fmt(k.buildingUsage) + '</div>',
-      '    <div class="nz-kpi-unit">kWh \u00b7 YTD actual</div>',
+      '    <div class="nz-kpi-unit">kWh</div>',
       '  </div>',
 
       // 2 — Solar Generation
       '  <div class="nz-kpi">',
       '    <div class="nz-kpi-label">Solar Generation</div>',
       '    <div class="nz-kpi-num">' + fmt(k.solarGeneration) + '</div>',
-      '    <div class="nz-kpi-unit">kWh \u00b7 YTD actual</div>',
+      '    <div class="nz-kpi-unit">kWh</div>',
       '  </div>',
 
       // 3 — Building Net Zero
       '  <div class="nz-kpi">',
       '    <div class="nz-kpi-label">Building Net Zero</div>',
       '    <div class="nz-kpi-num">' + fmt(k.netPerformance) + '</div>',
-      '    <div class="nz-kpi-unit">kWh \u00b7 solar \u2212 usage</div>',
+      '    <div class="nz-kpi-unit">kWh</div>',
       '    <div class="nz-kpi-note">' + (k.surplusNote || '') + '</div>',
       '  </div>',
 
@@ -44,7 +44,7 @@ window.netzeroDashboard.components.KpiStrip = {
       '  <div class="nz-kpi">',
       '    <div class="nz-kpi-label">Coverage ratio</div>',
       '    <div class="nz-kpi-num">' + (k.coverageRatio !== null ? k.coverageRatio + '%' : '\u2014') + '</div>',
-      '    <div class="nz-kpi-unit">solar / building usage</div>',
+      '    <div class="nz-kpi-unit">%</div>',
       '  </div>',
 
       // 5 — Source mix (donut rendered after DOM insert)

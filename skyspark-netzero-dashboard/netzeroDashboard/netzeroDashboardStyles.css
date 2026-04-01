@@ -406,55 +406,57 @@ select.nz-meta-item {
 .nz-pos { color: var(--nz-green) !important; font-weight: 600; }
 
 /* ── Meter breakdown table ─────────────────────────── */
-.nz-meter-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-.nz-meter-table { width: 100%; min-width: 960px; border-collapse: collapse; table-layout: fixed; }
-.nz-meter-table .nz-col-label { width: 200px; }
-.nz-meter-table .nz-col-month { width: 62px; }
-.nz-meter-table .nz-col-total { width: 80px; }
+.nz-section-rule {
+  font-size: 11px !important; font-weight: 600 !important; color: var(--nz-ink) !important;
+  margin: 20px 0 6px !important; padding-top: 16px !important;
+  border-top: 1px solid var(--nz-200) !important;
+}
+.nz-meter-scroll { overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
+.nz-meter-table { width: 100% !important; border-collapse: collapse !important; table-layout: fixed !important; }
+.nz-meter-table .nz-col-label { width: 60px !important; }
 
 .nz-meter-table thead th {
-  font-size: 10px; font-weight: 600; color: var(--nz-400);
-  letter-spacing: 0.06em; text-transform: uppercase;
-  text-align: right; padding: 0 6px 7px;
-  border-bottom: 2px solid var(--nz-200); white-space: nowrap;
+  font-size: 9px !important; font-weight: 600 !important; color: var(--nz-500) !important;
+  letter-spacing: 0.04em !important; text-transform: uppercase !important;
+  text-align: right !important; padding: 0 2px 4px !important;
+  border-bottom: 2px solid var(--nz-200) !important; white-space: nowrap !important;
 }
-.nz-meter-table thead th:first-child { text-align: left; padding-left: 0; }
-.nz-meter-table thead th.nz-col-total { color: var(--nz-600); }
+.nz-meter-table thead th:first-child { text-align: left !important; padding-left: 0 !important; }
+.nz-meter-table thead th.nz-col-total { color: var(--nz-600) !important; }
 
 .nz-meter-table tbody td {
-  font-size: 11.5px; color: var(--nz-700);
-  text-align: right; padding: 7px 6px;
-  border-bottom: 1px solid var(--nz-100);
-  white-space: nowrap; font-variant-numeric: tabular-nums;
+  font-size: 11px !important; color: var(--nz-ink) !important;
+  text-align: right !important; padding: 4px 2px !important;
+  border-bottom: 1px solid var(--nz-100) !important;
+  white-space: nowrap !important; font-variant-numeric: tabular-nums !important;
+  overflow: hidden !important; text-overflow: ellipsis !important;
 }
 .nz-meter-table tbody td:first-child {
-  text-align: left; color: var(--nz-600);
-  padding-left: 0; display: table-cell;
+  text-align: left !important; color: var(--nz-ink) !important;
+  padding-left: 0 !important; display: table-cell !important;
+  font-size: 10px !important; overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 .nz-meter-table tbody tr:hover { background: var(--nz-50); }
 
 /* subtotal rows */
 .nz-meter-table tr.nz-subtotal td {
-  font-weight: 600; background: var(--nz-100);
-  color: var(--nz-ink); border-bottom: 1px solid var(--nz-200);
+  font-weight: 600 !important; background: var(--nz-100) !important;
+  color: var(--nz-ink) !important; border-bottom: 1px solid var(--nz-200) !important;
 }
-.nz-meter-table tr.nz-subtotal td:first-child { color: var(--nz-ink); }
+.nz-meter-table tr.nz-subtotal td:first-child { color: var(--nz-ink) !important; }
 
 /* net performance row */
 .nz-meter-table tr.nz-net-row td {
-  font-weight: 600; color: var(--nz-ink);
-  border-top: 2px solid var(--nz-ink); border-bottom: none;
+  font-weight: 600 !important; color: var(--nz-ink) !important;
+  border-top: 2px solid var(--nz-ink) !important; border-bottom: none !important;
 }
-.nz-meter-table tr.nz-net-row td:first-child { color: var(--nz-ink); }
-.nz-meter-table tr.nz-net-row td.nz-heat-neg { background: var(--nz-red-lt); color: var(--nz-red); }
-.nz-meter-table tr.nz-net-row td.nz-heat-pos { background: var(--nz-green-lt); color: var(--nz-green); }
-
-/* totals column */
-.nz-meter-table td.nz-col-total,
-.nz-meter-table th.nz-col-total { border-left: 1px solid var(--nz-200); }
+.nz-meter-table tr.nz-net-row td:first-child { color: var(--nz-ink) !important; }
+.nz-meter-table tr.nz-net-row td.nz-heat-neg { background: var(--nz-red-lt) !important; color: var(--nz-red) !important; }
+.nz-meter-table tr.nz-net-row td.nz-heat-pos { background: var(--nz-green-lt) !important; color: var(--nz-green) !important; }
 
 /* spacer row */
-.nz-meter-table tr.nz-spacer td { padding: 8px 0; border-bottom: none; border-top: none; background: transparent; }
+.nz-meter-table tr.nz-spacer td { padding: 8px 0 !important; border-bottom: none !important; border-top: none !important; background: transparent !important; }
 
 /* ── Footer ────────────────────────────────────────── */
 .nz-page-footer {
