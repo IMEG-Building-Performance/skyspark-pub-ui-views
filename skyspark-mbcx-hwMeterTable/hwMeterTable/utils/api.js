@@ -36,15 +36,20 @@ window.hwMeterTable.utils = window.hwMeterTable.utils || {};
    * @returns {Object}    - Unwrapped Haystack grid
    */
   utils.unwrapGrid = function (data) {
-    if (
-      data.rows && data.rows.length === 1 &&
+    var isWrapper = (
       data.cols && data.cols.length === 1 &&
       data.cols[0].name === 'val'
-    ) {
-      var inner = data.rows[0].val;
-      if (inner && inner.rows && inner.cols) {
-        return inner;
+    );
+    if (isWrapper) {
+      // 1-row wrapper: extract the inner grid
+      if (data.rows && data.rows.length === 1) {
+        var inner = data.rows[0].val;
+        if (inner && inner.rows && inner.cols) {
+          return inner;
+        }
       }
+      // 0-row wrapper: eval returned null/empty — return normalised empty grid
+      return { cols: [], rows: [], meta: data.meta || {} };
     }
     return data;
   };

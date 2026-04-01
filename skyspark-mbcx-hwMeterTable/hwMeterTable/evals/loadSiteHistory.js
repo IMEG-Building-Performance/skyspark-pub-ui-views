@@ -3,15 +3,10 @@
 // Fetches raw time-series history for a single site's hot water meter points.
 //
 // ── Axon expression ────────────────────────────────────────────────────────
-// Default:
-//   readAll(hotWaterMeter and siteRef == @siteId).hisRead(dates)
+//   view_pubUI_Source_hwMeterTable(siteId, dates, "Detail Page")
 //
-// This is the standard SkySpark pattern for reading history from all points
-// tagged {hotWaterMeter} that belong to the given site. Each point becomes
-// one value column in the returned grid (ts + v0, v1, …).
-//
-// If your project uses a different tagging scheme or a custom Axon function,
-// edit the `axon` variable in `evals.loadSiteHistory` below.
+// The siteId ref (from the clicked table row) is passed as the `targets`
+// argument so the function can filter to a single site.
 // ── ────────────────────────────────────────────────────────────────────────
 
 window.hwMeterTable = window.hwMeterTable || {};
@@ -23,12 +18,10 @@ window.hwMeterTable.evals = window.hwMeterTable.evals || {};
   /**
    * Load raw hot water meter history for a single site.
    *
-   * Returns a Haystack grid where:
+   * Calls view_pubUI_Source_hwMeterTable with the site ref as `targets` and
+   * mode "Detail Page". Returns a Haystack grid where:
    *   - The first column is `ts` (DateTime values)
-   *   - Remaining columns are one per matched point (Number values with units)
-   *
-   * If no hotWaterMeter points are tagged for the site, the grid will have
-   * no value columns or no rows — the chart will display "No history data found".
+   *   - Remaining columns are the history series for the site
    *
    * @param {string} attestKey   - Session attest key
    * @param {string} projectName - SkySpark project name
@@ -37,8 +30,7 @@ window.hwMeterTable.evals = window.hwMeterTable.evals || {};
    * @returns {Promise<Object>}  - Resolved Haystack grid
    */
   evals.loadSiteHistory = function (attestKey, projectName, siteId, dates) {
-    // TODO: replace with your project-specific Axon function if needed.
-    var axon = 'readAll(hotWaterMeter and siteRef == ' + siteId + ').hisRead(' + dates + ')';
+    var axon = 'view_pubUI_Source_hwMeterTable(' + siteId + ', ' + dates + ', "Detail Page")';
 
     console.log('[hwMeterTable] loadSiteHistory eval:', axon);
 

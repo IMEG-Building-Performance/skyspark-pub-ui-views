@@ -28,10 +28,10 @@ window.hwMeterTable.evals = window.hwMeterTable.evals || {};
   /**
    * Fetch hot water demand stats for all sites.
    *
-   * Makes two parallel eval calls:
-   *   1. report_demandValCalcs_allSites(targets, dates)
+   * Makes two parallel eval calls to the shared SkySpark source function:
+   *   1. view_pubUI_Source_hwMeterTable(targets, dates, "Table")
    *      → per-site detail rows
-   *   2. report_demandValCalcs_allSites(targets, dates, 2)
+   *   2. view_pubUI_Source_hwMeterTable(targets, dates, "KPIs")
    *      → single-row campus totals grid with columns:
    *        totalMeasuredMaxLoad, totalEstimatedMaximumLoad,
    *        totalActualHwFlow, totalEstimatedHwFlow
@@ -43,8 +43,8 @@ window.hwMeterTable.evals = window.hwMeterTable.evals || {};
    * @returns {Promise<{siteGrid: Object, totalsGrid: Object}>}
    */
   evals.loadDemandData = function (attestKey, projectName, targets, dates) {
-    var siteAxon   = 'report_demandValCalcs_allSites(' + targets + ', ' + dates + ')';
-    var totalsAxon = 'report_demandValCalcs_allSites(' + targets + ', ' + dates + ', 2)';
+    var siteAxon   = 'view_pubUI_Source_hwMeterTable(' + targets + ', ' + dates + ', "Table")';
+    var totalsAxon = 'view_pubUI_Source_hwMeterTable(' + targets + ', ' + dates + ', "KPIs")';
 
     console.log('[hwMeterTable] Eval (site):', siteAxon);
     console.log('[hwMeterTable] Eval (totals):', totalsAxon);
