@@ -44,7 +44,7 @@ window.netzeroDashboard.components.KpiStrip = {
       '  <div class="nz-kpi">',
       '    <div class="nz-kpi-label">Coverage ratio</div>',
       '    <div class="nz-kpi-num">' + (k.coverageRatio !== null ? k.coverageRatio + '%' : '\u2014') + '</div>',
-      '    <div class="nz-kpi-unit">%</div>',
+      '    <div class="nz-kpi-unit"></div>',
       '  </div>',
 
       // 5 — Source mix (donut rendered after DOM insert)
