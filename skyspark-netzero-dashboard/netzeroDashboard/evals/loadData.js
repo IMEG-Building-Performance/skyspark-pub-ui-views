@@ -121,6 +121,30 @@ window.netzeroDashboard.evals = window.netzeroDashboard.evals || {};
   }
 
   /**
+   * Calculate carbon equivalencies from solar generation kWh.
+   * Based on EPA Greenhouse Gas Equivalencies Calculator:
+   *   https://www.epa.gov/energy/greenhouse-gas-equivalencies-calculator
+   *
+   * Factors:
+   *   - CO2 avoided:      0.000709 metric tons per kWh (eGRID national avg)
+   *   - Trees equivalent:  0.06 MT CO2 sequestered per tree per year (10-yr seedling)
+   *   - Gasoline gallons:  0.008887 MT CO2 per gallon combusted
+   *   - Homes powered:     10,500 kWh per US household per year (EIA)
+   *   - Miles driven:      0.0004035 MT CO2 per mile (avg passenger vehicle)
+   */
+  function _calcEquivalencies(solarKWh) {
+    if (!solarKWh || solarKWh <= 0) return null;
+    var co2MT = solarKWh * 0.000709;
+    return {
+      co2AvoidedMT:    co2MT,
+      trees:           co2MT / 0.06,
+      gasolineGallons: co2MT / 0.008887,
+      homesPowered:    solarKWh / 10500,
+      milesDriven:     co2MT / 0.0004035
+    };
+  }
+
+  /**
    * Build an Axon date range expression from start/end date strings.
    */
   function _dateRange(ctx) {
@@ -293,7 +317,7 @@ window.netzeroDashboard.evals = window.netzeroDashboard.evals || {};
       data.kpis.coverageRatio = null;
       data.kpis.surplusNote = '';
       data.kpis.sourceMix = { water: null, wind: null, fossil: null };
-      data.equiv = { trees: { total: null, unit: '', monthly: null }, water: { total: null, unit: '', monthly: null }, gas: { total: null, unit: '', monthly: null }, methane: { total: null, unit: '', monthly: null } };
+      data.equiv = { co2AvoidedMT: null, trees: null, gasolineGallons: null, homesPowered: null, milesDriven: null };
 
       // Clear meter breakdown demo data — load nulls until live eval returns data
       data.meterBreakdown = {
@@ -312,6 +336,10 @@ window.netzeroDashboard.evals = window.netzeroDashboard.evals || {};
         data.kpis.netPerformance = Math.round(net);
         data.kpis.coverageRatio = coverage;
         data.kpis.surplusNote = net <= 0 ? 'Net zero achieved!' : '';
+
+        // Calculate carbon equivalencies from solar generation
+        var equiv = _calcEquivalencies(sol);
+        if (equiv) data.equiv = equiv;
       }
 
       // Override charts + detail tables if we have live monthly data
