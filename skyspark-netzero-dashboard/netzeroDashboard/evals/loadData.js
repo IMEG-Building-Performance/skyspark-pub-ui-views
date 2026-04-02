@@ -9,6 +9,20 @@ window.netzeroDashboard.evals = window.netzeroDashboard.evals || {};
   var HP  = window.netzeroDashboard.haystackParser;
   var demo = window.netzeroDashboard.demoData;
 
+  // Map full or abbreviated month names to 3-letter short form
+  var MONTH_MAP = {
+    'january': 'Jan', 'february': 'Feb', 'march': 'Mar', 'april': 'Apr',
+    'may': 'May', 'june': 'Jun', 'july': 'Jul', 'august': 'Aug',
+    'september': 'Sep', 'october': 'Oct', 'november': 'Nov', 'december': 'Dec',
+    'jan': 'Jan', 'feb': 'Feb', 'mar': 'Mar', 'apr': 'Apr',
+    'jun': 'Jun', 'jul': 'Jul', 'aug': 'Aug', 'sep': 'Sep',
+    'oct': 'Oct', 'nov': 'Nov', 'dec': 'Dec'
+  };
+  function _shortMonth(dis) {
+    var raw = dis.split('-')[0].toLowerCase();
+    return MONTH_MAP[raw] || dis.split('-')[0];
+  }
+
   /**
    * Build the Axon expression for a Monthly Trends eval.
    */
@@ -137,8 +151,7 @@ window.netzeroDashboard.evals = window.netzeroDashboard.evals || {};
       // Month display name from meta.dis, e.g. "Jan-2026" -> "Jan"
       var monthDis = (col.meta && col.meta.dis) ? col.meta.dis : col.name;
       // Shorten "Jan-2026" to "Jan" for chart labels
-      var shortMonth = monthDis.split('-')[0];
-      months.push(shortMonth);
+      months.push(_shortMonth(monthDis));
     }
 
     if (months.length === 0) return null;
@@ -276,25 +289,10 @@ window.netzeroDashboard.evals = window.netzeroDashboard.evals || {};
       data.kpis.sourceMix = { water: null, wind: null, fossil: null };
       data.equiv = { trees: { total: null, unit: '', monthly: null }, water: { total: null, unit: '', monthly: null }, gas: { total: null, unit: '', monthly: null }, methane: { total: null, unit: '', monthly: null } };
 
-      // Clear meter breakdown demo data — load nulls until live func is ready
-      var nullMonths = [null,null,null,null,null,null,null,null,null,null,null,null];
-      var ALL_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      // Clear meter breakdown demo data — load nulls until live eval returns data
       data.meterBreakdown = {
-        months: ALL_MONTHS,
-        consumption: [
-          { name: 'HVAC', values: nullMonths.slice() },
-          { name: 'Plug & Process', values: nullMonths.slice() },
-          { name: 'Ext. Lighting', values: nullMonths.slice() },
-          { name: 'Int. Lighting', values: nullMonths.slice() },
-          { name: 'DHW', values: nullMonths.slice() }
-        ],
-        consumptionTotal: { name: 'Consumption', values: nullMonths.slice() },
-        generation: [
-          { name: 'Solar Meter', values: nullMonths.slice() },
-          { name: 'Solar PV', values: nullMonths.slice() }
-        ],
-        generationTotal: { name: 'Generation', values: nullMonths.slice() },
-        netPerformance: { name: 'Net Zero', values: nullMonths.slice() }
+        months: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+        rows: []
       };
 
       // Fill in KPIs from live data
@@ -342,15 +340,9 @@ window.netzeroDashboard.evals = window.netzeroDashboard.evals || {};
 
       // Override meter breakdown if we have live data
       if (meterData && meterData.rows.length > 0) {
-        // Map rows directly — each row from the grid becomes a meter row
-        var meterRows = meterData.rows;
         data.meterBreakdown = {
           months: meterData.months,
-          consumption: meterRows,
-          consumptionTotal: { name: 'Total', values: meterData.months.map(function () { return null; }) },
-          generation: [],
-          generationTotal: { name: 'Generation', values: meterData.months.map(function () { return null; }) },
-          netPerformance: { name: 'Net', values: meterData.months.map(function () { return null; }) }
+          rows: meterData.rows
         };
       }
 
