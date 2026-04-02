@@ -78,6 +78,10 @@ window.netzeroDashboard.evals = window.netzeroDashboard.evals || {};
       months.push(_shortMonth(monthDis));
     }
     if (months.length === 0) return null;
+    console.log('[nzDiag] _parseMeterGrid — months:', JSON.stringify(months), 'valueCols:', JSON.stringify(valueCols));
+    // Log raw values before padding
+    var rawFirst = rawGrid.rows[0];
+    console.log('[nzDiag] _parseMeterGrid — raw row0 v0:', JSON.stringify(rawFirst.v0), 'v1:', JSON.stringify(rawFirst.v1));
 
     function extractValues(row) {
       var vals = [];
@@ -96,11 +100,13 @@ window.netzeroDashboard.evals = window.netzeroDashboard.evals || {};
       var row = rawGrid.rows[r];
       rows.push({ name: row.dis || ('Row ' + r), values: extractValues(row) });
     }
+    console.log('[nzDiag] _parseMeterGrid — row0 extracted:', JSON.stringify(rows[0]));
 
     // Pad to 12 months
     var ALL_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     var lookup = {};
     for (var m = 0; m < months.length; m++) lookup[months[m]] = m;
+    console.log('[nzDiag] _parseMeterGrid — lookup:', JSON.stringify(lookup));
 
     var paddedRows = rows.map(function (row) {
       var padded = [];
