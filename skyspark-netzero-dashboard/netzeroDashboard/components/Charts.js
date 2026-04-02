@@ -166,7 +166,7 @@ window.netzeroDashboard.components.Charts = {
     if (live.building) {
       var bEl = container.querySelector('#nzBuildingChart');
       if (bEl) {
-        var bChart = new C(bEl, {
+        new C(bEl, {
           type: 'bar',
           data: {
             labels: months,
@@ -177,39 +177,6 @@ window.netzeroDashboard.components.Charts = {
           },
           options: opts
         });
-        // Diagnostic: log chart plot area vs table column positions
-        setTimeout(function () {
-          var area = bChart.chartArea;
-          console.log('[nzAlign] chart canvas width:', bEl.clientWidth);
-          console.log('[nzAlign] chart area left:', area.left, 'right:', area.right, 'plotWidth:', area.right - area.left);
-          var chartWrap = bEl.closest('.nz-chart-wrap');
-          var card = bEl.closest('.nz-chart-card');
-          var panel = bEl.closest('[data-nz-panel]');
-          if (chartWrap) console.log('[nzAlign] chart-wrap offsetLeft:', chartWrap.offsetLeft, 'clientWidth:', chartWrap.clientWidth);
-          if (card) console.log('[nzAlign] chart-card offsetLeft:', card.offsetLeft, 'clientWidth:', card.clientWidth, 'paddingLeft:', getComputedStyle(card).paddingLeft);
-          if (panel) {
-            var table = panel.querySelector('table');
-            if (table) {
-              var firstTh = table.querySelector('thead th:nth-child(2)');
-              var lastTh = table.querySelector('thead th:last-child');
-              if (firstTh) console.log('[nzAlign] table 1st data col offsetLeft:', firstTh.offsetLeft, 'width:', firstTh.clientWidth);
-              if (lastTh) console.log('[nzAlign] table last data col offsetLeft:', lastTh.offsetLeft, 'right:', lastTh.offsetLeft + lastTh.clientWidth);
-              console.log('[nzAlign] table offsetLeft:', table.offsetLeft, 'clientWidth:', table.clientWidth);
-            }
-          }
-          // Absolute positions relative to section body
-          if (chartWrap && panel) {
-            var chartPlotAbsLeft = chartWrap.getBoundingClientRect().left + area.left;
-            var table2 = panel.querySelector('table');
-            if (table2) {
-              var firstDataCol = table2.querySelector('thead th:nth-child(2)');
-              if (firstDataCol) {
-                var tableDataAbsLeft = firstDataCol.getBoundingClientRect().left;
-                console.log('[nzAlign] ABSOLUTE chart plot left:', chartPlotAbsLeft, 'table data left:', tableDataAbsLeft, 'diff:', chartPlotAbsLeft - tableDataAbsLeft, 'px');
-              }
-            }
-          }
-        }, 100);
       }
     }
 

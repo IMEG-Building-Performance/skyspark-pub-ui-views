@@ -271,7 +271,7 @@ window.netzeroDashboard.evals = window.netzeroDashboard.evals || {};
       var netZeroData  = _parseMonthlyGrid(results[2]);
       var meterData    = _parseMeterGrid(results[4]);
       console.log('[nzDiag] meter raw grid:', results[4] ? JSON.stringify(results[4]).substring(0, 500) : 'null');
-      console.log('[nzDiag] meterData parsed:', meterData ? { rowCount: meterData.rows.length, names: meterData.rows.map(function(r){return r.name}) } : 'null');
+      console.log('[nzDiag] meterData parsed:', meterData ? { rowCount: meterData.rows.length, names: meterData.rows.map(function(r){return r.name}), firstRowValues: meterData.rows[0] ? meterData.rows[0].values.slice(0,4) : 'none' } : 'null');
       var kpiData      = _parseKpiGrid(results[3]);
 
       // Start with demo data as the base, override sections that have live data
@@ -340,10 +340,13 @@ window.netzeroDashboard.evals = window.netzeroDashboard.evals || {};
 
       // Override meter breakdown if we have live data
       if (meterData && meterData.rows.length > 0) {
+        console.log('[nzDiag] meter override — first row:', meterData.rows[0].name, 'vals:', meterData.rows[0].values.slice(0, 5));
         data.meterBreakdown = {
           months: meterData.months,
           rows: meterData.rows
         };
+      } else {
+        console.log('[nzDiag] meter override SKIPPED — meterData:', meterData);
       }
 
       return data;
