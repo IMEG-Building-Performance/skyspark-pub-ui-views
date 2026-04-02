@@ -46,6 +46,61 @@ window.netzeroDashboard.evals = window.netzeroDashboard.evals || {};
   }
 
   /**
+   * Parse a Meter Breakdown grid.
+   * Same transposed format — each row is a meter/category, columns are months.
+   * Returns { months, rows: [{ name, values }] } or null.
+   */
+  function _parseMeterGrid(rawGrid) {
+    if (!rawGrid || !rawGrid.cols || !rawGrid.rows || rawGrid.rows.length === 0) return null;
+    if (rawGrid.meta && rawGrid.meta.err) return null;
+
+    var months = [];
+    var valueCols = [];
+    for (var c = 0; c < rawGrid.cols.length; c++) {
+      var col = rawGrid.cols[c];
+      if (col.name === 'dis') continue;
+      valueCols.push(col.name);
+      var monthDis = (col.meta && col.meta.dis) ? col.meta.dis : col.name;
+      months.push(monthDis.split('-')[0]);
+    }
+    if (months.length === 0) return null;
+
+    function extractValues(row) {
+      var vals = [];
+      for (var i = 0; i < valueCols.length; i++) {
+        var cell = row[valueCols[i]];
+        if (cell === null || cell === undefined) vals.push(null);
+        else if (typeof cell === 'object' && cell._kind === 'number') vals.push(cell.val || 0);
+        else if (typeof cell === 'number') vals.push(cell);
+        else vals.push(parseFloat(cell) || null);
+      }
+      return vals;
+    }
+
+    var rows = [];
+    for (var r = 0; r < rawGrid.rows.length; r++) {
+      var row = rawGrid.rows[r];
+      rows.push({ name: row.dis || ('Row ' + r), values: extractValues(row) });
+    }
+
+    // Pad to 12 months
+    var ALL_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var lookup = {};
+    for (var m = 0; m < months.length; m++) lookup[months[m]] = m;
+
+    var paddedRows = rows.map(function (row) {
+      var padded = [];
+      for (var j = 0; j < ALL_MONTHS.length; j++) {
+        var idx = lookup[ALL_MONTHS[j]];
+        padded.push(idx !== undefined ? row.values[idx] : null);
+      }
+      return { name: row.name, values: padded };
+    });
+
+    return { months: ALL_MONTHS, rows: paddedRows };
+  }
+
+  /**
    * Build an Axon date range expression from start/end date strings.
    */
   function _dateRange(ctx) {
@@ -189,8 +244,9 @@ window.netzeroDashboard.evals = window.netzeroDashboard.evals || {};
     var solarP    = api.evalAxon(attestKey, projectName, _monthlyExpr(siteRef, dateRange, 'Solar')).catch(function (e) { console.log('[nzDiag] solar eval FAILED:', e.message || e); return null; });
     var netZeroP  = api.evalAxon(attestKey, projectName, _monthlyExpr(siteRef, dateRange, 'Net Zero')).catch(function (e) { console.log('[nzDiag] netzero eval FAILED:', e.message || e); return null; });
     var kpiP      = api.evalAxon(attestKey, projectName, _kpiExpr(siteRef, dateRange)).catch(function (e) { console.log('[nzDiag] kpi eval FAILED:', e.message || e); return null; });
+    var meterP    = api.evalAxon(attestKey, projectName, _monthlyExpr(siteRef, dateRange, 'Meter Breakdown')).catch(function (e) { console.log('[nzDiag] meter eval FAILED:', e.message || e); return null; });
 
-    return Promise.all([buildingP, solarP, netZeroP, kpiP]).then(function (results) {
+    return Promise.all([buildingP, solarP, netZeroP, kpiP, meterP]).then(function (results) {
       console.log('[nzDiag] building raw grid:', JSON.stringify(results[0]).substring(0, 500));
       console.log('[nzDiag] solar raw grid:', results[1] ? JSON.stringify(results[1]).substring(0, 200) : 'null');
       console.log('[nzDiag] netzero raw grid:', results[2] ? JSON.stringify(results[2]).substring(0, 200) : 'null');
@@ -200,6 +256,9 @@ window.netzeroDashboard.evals = window.netzeroDashboard.evals || {};
       console.log('[nzDiag] buildingData parsed:', buildingData ? { months: buildingData.months, actualLen: buildingData.actual.length, firstActual: buildingData.actual[0] } : 'null');
       var solarData    = _parseMonthlyGrid(results[1]);
       var netZeroData  = _parseMonthlyGrid(results[2]);
+      var meterData    = _parseMeterGrid(results[4]);
+      console.log('[nzDiag] meter raw grid:', results[4] ? JSON.stringify(results[4]).substring(0, 500) : 'null');
+      console.log('[nzDiag] meterData parsed:', meterData ? { rowCount: meterData.rows.length, names: meterData.rows.map(function(r){return r.name}) } : 'null');
       var kpiData      = _parseKpiGrid(results[3]);
 
       // Start with demo data as the base, override sections that have live data
@@ -278,6 +337,20 @@ window.netzeroDashboard.evals = window.netzeroDashboard.evals || {};
           building: buildingData ? buildingData.model : data.detail.modeledNetZero.building,
           solar: solarData ? solarData.model : data.detail.modeledNetZero.solar,
           net: netZeroData.model
+        };
+      }
+
+      // Override meter breakdown if we have live data
+      if (meterData && meterData.rows.length > 0) {
+        // Map rows directly — each row from the grid becomes a meter row
+        var meterRows = meterData.rows;
+        data.meterBreakdown = {
+          months: meterData.months,
+          consumption: meterRows,
+          consumptionTotal: { name: 'Total', values: meterData.months.map(function () { return null; }) },
+          generation: [],
+          generationTotal: { name: 'Generation', values: meterData.months.map(function () { return null; }) },
+          netPerformance: { name: 'Net', values: meterData.months.map(function () { return null; }) }
         };
       }
 

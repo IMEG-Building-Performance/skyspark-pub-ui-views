@@ -116,7 +116,7 @@ window.netzeroDashboard.components.Charts = {
     return {
       responsive: true,
       maintainAspectRatio: false,
-      layout: { padding: { right: 0 } },
+      layout: { padding: { left: 0, right: 0, top: 0, bottom: 0 } },
       plugins: {
         legend: { display: false },
         tooltip: {
@@ -142,11 +142,11 @@ window.netzeroDashboard.components.Charts = {
           ticks: {
             font: { size: 10 }, color: '#9CA3AF',
             callback: function (v) { return (v / 1000).toFixed(0) + 'k'; },
-            maxTicksLimit: 5
+            maxTicksLimit: 5, mirror: true, padding: 4
           },
           grid: { color: '#F3F4F6' },
           border: { display: false },
-          afterFit: function (axis) { axis.width = 60; }
+          afterFit: function (axis) { axis.width = 0; }
         }
       }
     };

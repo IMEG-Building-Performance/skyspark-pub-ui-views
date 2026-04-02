@@ -344,10 +344,9 @@ select.nz-meta-item {
   background: var(--nz-50) !important;
   border: 1px solid var(--nz-200) !important;
   border-radius: 8px !important;
-  padding: 16px 0 20px !important;
+  padding: 16px 20px 20px !important;
 }
 .nz-chart-header {
-  padding: 0 20px !important;
   display: flex; align-items: baseline; justify-content: space-between;
   margin-bottom: 10px;
 }
@@ -359,7 +358,7 @@ select.nz-meta-item {
   text-transform: uppercase; letter-spacing: 0.03em;
 }
 .nz-legend-swatch { width: 14px; height: 3px; border-radius: 2px; }
-.nz-chart-wrap { position: relative; height: 220px; }
+.nz-chart-wrap { position: relative !important; height: 220px !important; margin-left: 40px !important; margin-right: -20px !important; }
 
 /* ── Detail tables ─────────────────────────────────── */
 .nz-detail-label {
