@@ -28,7 +28,7 @@ window.netzeroDashboard.components.MeterBreakdown = {
     }).join('');
 
     return [
-      '<div class="nz-section-rule">Meter breakdown</div>',
+      '<div class="nz-section-rule">Meter breakdown (kWh)</div>',
       '<table class="nz-meter-table">',
       '<col class="nz-col-label">',
       thead,

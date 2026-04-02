@@ -24,7 +24,7 @@ window.netzeroDashboard.components.Charts = {
     // Building content
     var buildingContent;
     if (live.building) {
-      var buildingTable = DT._table('Building consumption', d.months, [
+      var buildingTable = DT._table('Building consumption (kWh)', d.months, [
         DT._dataRow('nz-dot-a', 'Actual', d.buildingConsumption.actual, DT._fmtAbs),
         DT._dataRow('nz-dot-m', 'Model',  d.buildingConsumption.model, DT._fmtAbs),
         DT._diffRow('Diff', d.buildingConsumption.diff)

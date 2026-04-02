@@ -358,7 +358,7 @@ select.nz-meta-item {
   text-transform: uppercase; letter-spacing: 0.03em;
 }
 .nz-legend-swatch { width: 14px; height: 3px; border-radius: 2px; }
-.nz-chart-wrap { position: relative !important; height: 220px !important; margin-left: 40px !important; margin-right: -20px !important; }
+.nz-chart-wrap { position: relative !important; height: 220px !important; margin-left: 80px !important; margin-right: -20px !important; }
 
 /* ── Detail tables ─────────────────────────────────── */
 .nz-detail-label {
@@ -374,7 +374,7 @@ select.nz-meta-item {
 .nz-tbl-name { font-size: 11px !important; font-weight: 600 !important; color: var(--nz-ink) !important; margin-bottom: 6px !important; }
 
 #netzeroDashboard table { width: 100% !important; border-collapse: collapse !important; table-layout: fixed !important; }
-#netzeroDashboard table col.nz-col-label { width: 60px !important; }
+#netzeroDashboard table col.nz-col-label { width: 100px !important; }
 #netzeroDashboard thead th {
   font-size: 9px !important; font-weight: 600 !important; color: var(--nz-500) !important;
   letter-spacing: 0.04em !important; text-transform: uppercase !important;
@@ -413,7 +413,7 @@ select.nz-meta-item {
 }
 .nz-meter-scroll { overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
 .nz-meter-table { width: 100% !important; border-collapse: collapse !important; table-layout: fixed !important; }
-.nz-meter-table .nz-col-label { width: 60px !important; }
+.nz-meter-table .nz-col-label { width: 100px !important; }
 
 .nz-meter-table thead th {
   font-size: 9px !important; font-weight: 600 !important; color: var(--nz-500) !important;
