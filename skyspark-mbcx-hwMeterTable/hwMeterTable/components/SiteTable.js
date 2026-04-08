@@ -147,6 +147,66 @@ window.hwMeterTable.components = window.hwMeterTable.components || {};
     totalEstimatedHwFlow:      'Estimated HW Flow'
   };
 
+  // TEAM_001: Default to a reduced column set on open and persist user preference.
+  var COL_MODE_STORAGE_KEY = 'hwMeterTable.colMode';
+  var COL_MODE_REDUCED = 'reduced';
+  var COL_MODE_ALL = 'all';
+
+  var REDUCED_COL_RULES = [
+    { names: ['id'], labels: ['Site'] },
+    { names: ['remarks', 'hwMonitoringRemarks'], labels: ['Remarks'] },
+    { names: ['area', 'buildingArea', 'bldgArea'], labels: ['Building Area (ft²)', 'Building Area (ft2)'] },
+    { names: ['point1BtuPerSF', 'measuredMaxLoad'], labels: ['Measured Max Load'] },
+    { names: ['avgMeasuredCampusMax', 'avgBtuperSF'], labels: ['Avg Measured Campus Max', 'Campus Avg MBH/SF'] },
+    { names: ['maxMeasuredLoadVsAvgBldg'], labels: ['Max Measured Load Vs. Campus Average Building (%)', 'vs Avg Bldg'] }
+  ];
+
+  function normalizeLabel(text) {
+    return String(text || '').toLowerCase().replace(/\s+/g, ' ').trim();
+  }
+
+  function readColMode() {
+    try {
+      var mode = window.localStorage.getItem(COL_MODE_STORAGE_KEY);
+      return (mode === COL_MODE_ALL) ? COL_MODE_ALL : COL_MODE_REDUCED;
+    } catch (e) {
+      return COL_MODE_REDUCED;
+    }
+  }
+
+  function writeColMode(mode) {
+    try {
+      window.localStorage.setItem(COL_MODE_STORAGE_KEY, mode);
+    } catch (e) {}
+  }
+
+  function matchesReducedRule(col, rule) {
+    if (!col) return false;
+    var dis = normalizeLabel(col.meta && col.meta.dis);
+    if (rule.names && rule.names.indexOf(col.name) >= 0) return true;
+    if (rule.labels) {
+      for (var j = 0; j < rule.labels.length; j++) {
+        if (dis === normalizeLabel(rule.labels[j])) return true;
+      }
+    }
+    return false;
+  }
+
+  function selectReducedCols(allVisibleCols) {
+    var selected = [];
+    REDUCED_COL_RULES.forEach(function (rule) {
+      for (var i = 0; i < allVisibleCols.length; i++) {
+        var col = allVisibleCols[i];
+        if (selected.indexOf(col) >= 0) continue;
+        if (matchesReducedRule(col, rule)) {
+          selected.push(col);
+          break;
+        }
+      }
+    });
+    return selected;
+  }
+
   /**
    * Render KPI summary cards from the pre-calculated campus totals grid
    * (report_demandValCalcs_allSites called with mode 2).
@@ -400,30 +460,42 @@ window.hwMeterTable.components = window.hwMeterTable.components || {};
 
     var cols = gridData.cols || [];
     var rows = gridData.rows || [];
+    var colMode = readColMode();
 
     // Filter hidden columns, then augment each col with effective (real + placeholder) meta
-    var visibleCols = cols.filter(function (col) {
+    var allVisibleCols = cols.filter(function (col) {
       return !isHidden(col.meta);
     }).map(function (col) {
       return { name: col.name, meta: effectiveMeta(col) };
     });
 
+    var reducedCols = selectReducedCols(allVisibleCols);
+    var visibleCols = (colMode === COL_MODE_REDUCED)
+      ? (reducedCols.length ? reducedCols : allVisibleCols)
+      : allVisibleCols;
+
     // Build per-cell background color map from presentation metadata
     var cellColors = buildCellColors(gridData);
 
-    // Diagnostic: log visible columns and active meta flags
-    console.log('[hwMeterTable] Visible columns:',
-      visibleCols.map(function (col) {
-        var flags = [];
-        if (hasTotal(col.meta))           flags.push('total');
-        if (isEmphasis(col.meta))         flags.push('emphasis');
-        if (col.meta && col.meta.doc)     flags.push('doc');
-        return col.name + ':' + ((col.meta && col.meta.dis) || '?') +
-               (flags.length ? ' [' + flags.join(',') + ']' : '');
-      }));
-
     // ── KPI cards (campus-wide totals strip) ─────────────────────────────────
     renderKpiCards(container, totalsGrid);
+
+    // TEAM_001: Allow switching between reduced/open column sets, persisted in localStorage.
+    var controlsRow = document.createElement('div');
+    controlsRow.className = 'hw-table-controls';
+
+    var colToggleBtn = document.createElement('button');
+    colToggleBtn.type = 'button';
+    colToggleBtn.className = 'hw-col-toggle-btn';
+    colToggleBtn.textContent = (colMode === COL_MODE_REDUCED) ? 'Show all columns' : 'Show fewer columns';
+    colToggleBtn.addEventListener('click', function () {
+      var nextMode = (colMode === COL_MODE_REDUCED) ? COL_MODE_ALL : COL_MODE_REDUCED;
+      writeColMode(nextMode);
+      components.renderSiteTable(container, gridData, totalsGrid, opts);
+    });
+
+    controlsRow.appendChild(colToggleBtn);
+    container.appendChild(controlsRow);
 
     // ── Scrollable wrapper (title + KPI strip stay pinned above) ────────────
     var scrollWrapper = document.createElement('div');
@@ -542,7 +614,10 @@ window.hwMeterTable.components = window.hwMeterTable.components || {};
             // Find the remarks column index
             var remarksIdx = -1;
             for (var ri = 0; ri < visibleCols.length; ri++) {
-              if (visibleCols[ri].name === 'hwMonitoringRemarks') { remarksIdx = ri; break; }
+              if (visibleCols[ri].name === 'hwMonitoringRemarks' || visibleCols[ri].name === 'remarks') {
+                remarksIdx = ri;
+                break;
+              }
             }
 
             var idVal  = capturedRow['id'];

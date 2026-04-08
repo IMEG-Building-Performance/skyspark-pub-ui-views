@@ -56,11 +56,6 @@ window.hwMeterTable.evals = window.hwMeterTable.evals || {};
       var siteGrid   = unwrapAndCheck(results[0], 'siteGrid');
       var totalsGrid = unwrapAndCheck(results[1], 'totalsGrid');
 
-      console.log('[hwMeterTable] Site grid cols:',
-        (siteGrid.cols || []).map(function (c) { return c.name; }),
-        '| rows:', (siteGrid.rows || []).length);
-      console.log('[hwMeterTable] Totals row:', totalsGrid.rows && totalsGrid.rows[0]);
-
       return { siteGrid: siteGrid, totalsGrid: totalsGrid };
     });
   };
