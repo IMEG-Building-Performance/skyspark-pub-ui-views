@@ -32,10 +32,11 @@ window.netzeroDashboard.components.KpiStrip = {
       '  </div>',
 
       // 3 — Building Net Zero
-      '  <div class="nz-kpi">',
+      '  <div class="nz-kpi" title="Net Zero = Solar Generation \u2212 Building Usage. Positive values mean the building generated more energy than it consumed.">',
       '    <div class="nz-kpi-label">Building Net Zero</div>',
       '    <div class="nz-kpi-num">' + fmt(k.netPerformance) + '</div>',
       '    <div class="nz-kpi-unit">kWh</div>',
+      '    <div class="nz-kpi-formula">Solar \u2212 Usage \u00b7 higher is better</div>',
       '  </div>',
 
       // 4 — Coverage ratio

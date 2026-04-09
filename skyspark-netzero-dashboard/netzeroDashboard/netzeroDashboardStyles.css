@@ -188,14 +188,15 @@ select.nz-meta-item {
 /* ── Environmental equivalency ─────────────────────── */
 .nz-equiv-strip {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 0;
 }
 .nz-equiv-cell {
-  padding: 0 20px 0 0;
+  padding: 0 16px 0 0;
   border-right: 1px solid var(--nz-100);
-  margin-right: 20px;
-  display: flex; align-items: flex-start; gap: 10px;
+  margin-right: 16px;
+  display: flex; align-items: flex-start; gap: 8px;
+  min-width: 0;
 }
 .nz-equiv-cell:last-child { border-right: none; margin-right: 0; padding-right: 0; }
 .nz-equiv-icon { font-size: 18px; line-height: 1; flex-shrink: 0; margin-top: 2px; opacity: 0.7; }
@@ -213,6 +214,27 @@ select.nz-meta-item {
   font-size: 11px; color: var(--nz-400); margin-top: 5px;
 }
 .nz-equiv-sub { font-size: 10.5px; color: var(--nz-400); margin-top: 3px; }
+
+/* Source link next to section labels */
+.nz-source-link {
+  font-size: 10px !important;
+  font-weight: 400 !important;
+  letter-spacing: 0.02em !important;
+  text-transform: none !important;
+  color: var(--nz-blue) !important;
+  text-decoration: none !important;
+  margin-left: 8px !important;
+}
+.nz-source-link:hover { text-decoration: underline !important; }
+
+/* KPI formula explanation (under unit) */
+.nz-kpi-formula {
+  margin-top: 6px;
+  font-size: 10.5px;
+  color: var(--nz-500);
+  font-family: 'IBM Plex Mono', monospace;
+  font-style: italic;
+}
 
 /* ── Data status badges ───────────────────────────── */
 .nz-status-badge {
@@ -442,16 +464,21 @@ select.nz-meta-item {
 .nz-no-site-hint code { font-family: monospace; color: var(--nz-blue); }
 
 /* ── Responsive ────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .nz-equiv-strip { grid-template-columns: repeat(5, 1fr); }
+  .nz-equiv-primary { font-size: 15px !important; }
+  .nz-equiv-label { font-size: 10px !important; }
+}
 @media (max-width: 900px) {
   .nz-kpi-strip { grid-template-columns: 1fr 1fr; gap: 16px; }
   .nz-kpi { border-right: none; margin-right: 0; padding-right: 0; margin-bottom: 12px; }
-  .nz-equiv-strip { grid-template-columns: 1fr 1fr; gap: 16px; }
-  .nz-equiv-cell { border-right: none; margin-right: 0; padding-right: 0; margin-bottom: 12px; }
+  .nz-equiv-strip { grid-template-columns: repeat(5, 1fr); }
   .nz-charts-grid { grid-template-columns: 1fr; }
   .nz-tables-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 600px) {
   .nz-page { padding: 16px 14px 60px; }
   .nz-kpi-strip { grid-template-columns: 1fr; }
-  .nz-equiv-strip { grid-template-columns: 1fr; }
+  .nz-equiv-strip { grid-template-columns: 1fr; gap: 12px; }
+  .nz-equiv-cell { border-right: none; margin-right: 0; padding-right: 0; margin-bottom: 8px; }
 }
