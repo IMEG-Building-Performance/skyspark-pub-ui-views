@@ -12,7 +12,7 @@ var hwMeterTableHandler = {};
 
 (function () {
   var BASE_URL = '/pub/ui/hwMeterTable/';
-  var VERSION  = '36';  // bump this when deploying updated module files
+  var VERSION  = '37';  // TEAM_001: bumped to force reload after column-toggle updates
 
   // Expose version so modules (handler) can append it to CSS/asset URLs
   window.hwMeterTable = window.hwMeterTable || {};

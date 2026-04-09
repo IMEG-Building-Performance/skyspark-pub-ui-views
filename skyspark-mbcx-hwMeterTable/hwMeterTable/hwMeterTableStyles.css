@@ -96,6 +96,30 @@
   margin-top: 4px;
 }
 
+/* TEAM_001: Column visibility controls for reduced/all table modes. */
+#hwMeterTable-root .hw-table-controls {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 0 10px;
+  flex-shrink: 0;
+}
+
+#hwMeterTable-root .hw-col-toggle-btn {
+  background: #ffffff;
+  color: #01538b;
+  border: 1px solid #01538b;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+#hwMeterTable-root .hw-col-toggle-btn:hover {
+  background: #eef4f9;
+}
+
 /* Samples-removed card: amber accent to signal data was modified */
 #hwMeterTable-root .hw-kpi-card-removed {
   border-top-color: #e07000;
