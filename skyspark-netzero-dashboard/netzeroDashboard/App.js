@@ -42,14 +42,18 @@ window.netzeroDashboard = window.netzeroDashboard || {};
         '  <div class="nz-section-title">Performance Overview</div>',
         '</div>',
 
+        // Two-column layout: KPIs (left) | Equivalencies (right)
+        '<div class="nz-overview-grid">',
+        '  <div class="nz-overview-col">',
+        '    <div class="nz-detail-label">Key Metrics</div>',
         co.KpiStrip.render(data),
-
-        '<hr class="nz-section-divider">',
-        '<div style="margin-top:4px">',
-        '  <div class="nz-detail-label">Environmental Equivalency',
-        '    <a class="nz-source-link" href="https://www.epa.gov/energy/greenhouse-gases-equivalencies-calculator-calculations-and-references" target="_blank" rel="noopener">Source: EPA Equivalencies Calculator</a>',
         '  </div>',
+        '  <div class="nz-overview-col">',
+        '    <div class="nz-detail-label">Environmental Equivalency',
+        '      <a class="nz-source-link" href="https://www.epa.gov/energy/greenhouse-gases-equivalencies-calculator-calculations-and-references" target="_blank" rel="noopener">Source: EPA</a>',
+        '    </div>',
         co.EquivStrip.render(data),
+        '  </div>',
         '</div>',
 
         // ── Monthly Trends ──
