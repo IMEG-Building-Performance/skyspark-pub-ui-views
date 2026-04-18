@@ -12,6 +12,7 @@ var siteSummaryHandler = {};
   var modules = [
     'utils/api.js',
     'evals/loadSites.js',
+    'evals/loadEquip.js',
     'App.js',
     'siteSummaryUI.js'
   ];
