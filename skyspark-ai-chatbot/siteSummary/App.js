@@ -1,5 +1,5 @@
 // App.js
-// Main UI component — site summary + equipment analysis panels.
+// Main UI component — topbar site selector, equipment analysis with chart + AI panel.
 window.siteSummary = window.siteSummary || {};
 
 (function (NS) {
@@ -12,105 +12,119 @@ window.siteSummary = window.siteSummary || {};
     NS.App._projectName  = projectName;
     NS.App._siteGenCtr   = 0;
     NS.App._equipGenCtr  = 0;
+    NS.App._chart        = null;
 
     container.innerHTML = [
-      '<div class="ss-wrap">',
-
-      // ── Header ──
-      '  <div class="ss-header">',
-      '    <h1 class="ss-title">Site AI Analysis</h1>',
-      '    <p class="ss-subtitle">AI-generated insights for facilities management</p>',
+      // ── Topbar ──
+      '<div class="ss-topbar">',
+      '  <span class="ss-topbar-logo">Site AI Analysis</span>',
+      '  <div class="ss-topbar-site">',
+      '    <select id="ss-site-select" class="ss-topbar-select" disabled>',
+      '      <option value="">Loading sites\u2026</option>',
+      '    </select>',
+      '    <button id="ss-generate-btn" class="ss-topbar-btn" disabled>Summary</button>',
       '  </div>',
-
-      // ── Site Summary section ──
-      '  <div class="ss-section-label">Site Summary</div>',
-      '  <div class="ss-card ss-controls">',
-      '    <label class="ss-label" for="ss-site-select">Select Site</label>',
-      '    <div class="ss-select-row">',
-      '      <select id="ss-site-select" class="ss-select" disabled>',
-      '        <option value="">Loading sites\u2026</option>',
-      '      </select>',
-      '      <button id="ss-generate-btn" class="ss-btn" disabled>Generate Summary</button>',
-      '    </div>',
+      '  <div class="ss-topbar-sep"></div>',
+      '  <div id="ss-topbar-loader" class="ss-topbar-loader ss-hidden">',
+      '    <div class="ss-topbar-spinner"></div>',
+      '    <span class="ss-topbar-loader-text">Generating\u2026</span>',
       '  </div>',
-      '  <div id="ss-result-panel" class="ss-card ss-result-panel ss-hidden">',
-      '    <div id="ss-loading" class="ss-loading ss-hidden">',
-      '      <div class="ss-spinner"></div>',
-      '      <span class="ss-loading-text">Generating summary\u2026</span>',
-      '    </div>',
-      '    <div id="ss-summary-content" class="ss-hidden">',
-      '      <div class="ss-result-header">',
-      '        <span class="ss-result-label">AI SUMMARY</span>',
-      '        <span id="ss-site-name" class="ss-site-name"></span>',
-      '      </div>',
-      '      <div id="ss-summary-text" class="ss-summary-text"></div>',
-      '    </div>',
-      '    <div id="ss-error" class="ss-error ss-hidden">',
-      '      <span class="ss-error-icon">&#9888;</span>',
-      '      <span id="ss-error-msg"></span>',
-      '    </div>',
+      '  <div id="ss-topbar-summary" class="ss-topbar-summary ss-hidden">',
+      '    <span class="ss-topbar-ai-label">AI</span>',
+      '    <span id="ss-topbar-text" class="ss-topbar-text"></span>',
       '  </div>',
+      '  <div id="ss-topbar-err" class="ss-topbar-err ss-hidden">',
+      '    <span id="ss-topbar-err-msg"></span>',
+      '  </div>',
+      '</div>',
 
-      // ── Equipment Analysis section ──
-      '  <div class="ss-section-label ss-section-label--gap">Equipment Analysis</div>',
-      '  <div class="ss-card ss-controls">',
-      '    <label class="ss-label" for="ss-equip-select">Select AHU / RTU</label>',
-      '    <div class="ss-select-row">',
+      // ── Main area ──
+      '<div class="ss-main">',
+
+      // Equipment bar
+      '  <div class="ss-card ss-equip-bar">',
+      '    <span class="ss-equip-bar-label">Equipment Analysis</span>',
+      '    <div class="ss-equip-bar-controls">',
       '      <select id="ss-equip-select" class="ss-select" disabled>',
       '        <option value="">Select a site first</option>',
       '      </select>',
       '      <button id="ss-equip-btn" class="ss-btn" disabled>Analyze Equipment</button>',
       '    </div>',
       '  </div>',
-      '  <div id="ss-equip-result-panel" class="ss-card ss-result-panel ss-hidden">',
-      '    <div id="ss-equip-loading" class="ss-loading ss-hidden">',
+
+      // Analysis area (hidden until first analysis)
+      '  <div id="ss-analysis-area" class="ss-hidden">',
+
+      '    <div id="ss-equip-loading-card" class="ss-card ss-equip-loading-card ss-hidden">',
       '      <div class="ss-spinner"></div>',
       '      <span class="ss-loading-text">Analyzing equipment\u2026</span>',
       '    </div>',
-      '    <div id="ss-equip-content" class="ss-hidden">',
-      '      <div class="ss-result-header">',
-      '        <span class="ss-result-label">AI ANALYSIS</span>',
-      '        <span id="ss-equip-name" class="ss-site-name"></span>',
+
+      '    <div id="ss-analysis-grid" class="ss-analysis-grid ss-hidden">',
+
+      // Chart panel
+      '      <div class="ss-card">',
+      '        <div class="ss-panel-header">',
+      '          <span class="ss-panel-label">24-Hour Trend</span>',
+      '          <span id="ss-chart-name" class="ss-panel-name"></span>',
+      '        </div>',
+      '        <div class="ss-chart-wrap">',
+      '          <canvas id="ss-chart-canvas"></canvas>',
+      '          <div id="ss-chart-empty" class="ss-chart-empty ss-hidden">No history data available</div>',
+      '        </div>',
       '      </div>',
-      '      <div id="ss-equip-text" class="ss-summary-text"></div>',
-      '    </div>',
-      '    <div id="ss-equip-error" class="ss-error ss-hidden">',
-      '      <span class="ss-error-icon">&#9888;</span>',
-      '      <span id="ss-equip-error-msg"></span>',
+
+      // AI panel
+      '      <div class="ss-card ss-ai-card">',
+      '        <div class="ss-panel-header">',
+      '          <span class="ss-panel-label">AI Analysis</span>',
+      '          <span id="ss-equip-name" class="ss-panel-name"></span>',
+      '        </div>',
+      '        <div id="ss-equip-text" class="ss-summary-text"></div>',
+      '        <div id="ss-equip-error" class="ss-error ss-hidden">',
+      '          <span class="ss-error-icon">&#9888;</span>',
+      '          <span id="ss-equip-error-msg"></span>',
+      '        </div>',
+      '      </div>',
+
       '    </div>',
       '  </div>',
 
       '</div>'
     ].join('\n');
 
-    // ── Cache DOM refs ──
-    NS.App._siteSelect      = container.querySelector('#ss-site-select');
-    NS.App._generateBtn     = container.querySelector('#ss-generate-btn');
-    NS.App._resultPanel     = container.querySelector('#ss-result-panel');
-    NS.App._loading         = container.querySelector('#ss-loading');
-    NS.App._summaryContent  = container.querySelector('#ss-summary-content');
-    NS.App._summaryText     = container.querySelector('#ss-summary-text');
-    NS.App._siteName        = container.querySelector('#ss-site-name');
-    NS.App._siteError       = container.querySelector('#ss-error');
-    NS.App._siteErrorMsg    = container.querySelector('#ss-error-msg');
+    // ── Cache DOM refs: topbar ──
+    NS.App._siteSelect     = container.querySelector('#ss-site-select');
+    NS.App._generateBtn    = container.querySelector('#ss-generate-btn');
+    NS.App._topbarLoader   = container.querySelector('#ss-topbar-loader');
+    NS.App._topbarSummary  = container.querySelector('#ss-topbar-summary');
+    NS.App._topbarText     = container.querySelector('#ss-topbar-text');
+    NS.App._topbarErr      = container.querySelector('#ss-topbar-err');
+    NS.App._topbarErrMsg   = container.querySelector('#ss-topbar-err-msg');
 
-    NS.App._equipSelect     = container.querySelector('#ss-equip-select');
-    NS.App._equipBtn        = container.querySelector('#ss-equip-btn');
-    NS.App._equipResultPanel= container.querySelector('#ss-equip-result-panel');
-    NS.App._equipLoading    = container.querySelector('#ss-equip-loading');
-    NS.App._equipContent    = container.querySelector('#ss-equip-content');
-    NS.App._equipText       = container.querySelector('#ss-equip-text');
-    NS.App._equipName       = container.querySelector('#ss-equip-name');
-    NS.App._equipError      = container.querySelector('#ss-equip-error');
-    NS.App._equipErrorMsg   = container.querySelector('#ss-equip-error-msg');
+    // ── Cache DOM refs: equipment bar ──
+    NS.App._equipSelect    = container.querySelector('#ss-equip-select');
+    NS.App._equipBtn       = container.querySelector('#ss-equip-btn');
+
+    // ── Cache DOM refs: analysis area ──
+    NS.App._analysisArea        = container.querySelector('#ss-analysis-area');
+    NS.App._equipLoadingCard    = container.querySelector('#ss-equip-loading-card');
+    NS.App._analysisGrid        = container.querySelector('#ss-analysis-grid');
+    NS.App._chartName           = container.querySelector('#ss-chart-name');
+    NS.App._chartCanvas         = container.querySelector('#ss-chart-canvas');
+    NS.App._chartEmpty          = container.querySelector('#ss-chart-empty');
+    NS.App._equipName           = container.querySelector('#ss-equip-name');
+    NS.App._equipText           = container.querySelector('#ss-equip-text');
+    NS.App._equipError          = container.querySelector('#ss-equip-error');
+    NS.App._equipErrorMsg       = container.querySelector('#ss-equip-error-msg');
 
     // ── Events ──
     NS.App._generateBtn.addEventListener('click', NS.App._onGenerate);
     NS.App._equipBtn.addEventListener('click', NS.App._onAnalyzeEquip);
 
     NS.App._siteSelect.addEventListener('change', function () {
-      NS.App._clearSiteResult();
-      NS.App._clearEquipResult();
+      NS.App._clearTopbar();
+      NS.App._clearAnalysis();
       var siteId = NS.App._siteSelect.value;
       if (siteId) {
         NS.App._loadEquipForSite(siteId);
@@ -120,7 +134,7 @@ window.siteSummary = window.siteSummary || {};
     });
 
     NS.App._equipSelect.addEventListener('change', function () {
-      NS.App._clearEquipResult();
+      NS.App._clearAnalysis();
     });
   };
 
@@ -135,8 +149,7 @@ window.siteSummary = window.siteSummary || {};
     }
     sel.appendChild(_opt('', '\u2014 Choose a site \u2014'));
     sites.forEach(function (s) {
-      var o = _opt(s.id, s.dis);
-      sel.appendChild(o);
+      sel.appendChild(_opt(s.id, s.dis));
     });
     sel.disabled = false;
     NS.App._generateBtn.disabled = false;
@@ -145,8 +158,8 @@ window.siteSummary = window.siteSummary || {};
   NS.App.showLoadError = function (msg) {
     NS.App._siteSelect.innerHTML = '';
     NS.App._siteSelect.appendChild(_opt('', 'Failed to load sites'));
-    NS.App._showSiteError('Could not load site list: ' + msg);
-    NS.App._resultPanel.classList.remove('ss-hidden');
+    NS.App._topbarErr.classList.remove('ss-hidden');
+    NS.App._topbarErrMsg.textContent = 'Could not load sites: ' + msg;
   };
 
   // ── Equipment populate ────────────────────────────────────────────────────
@@ -162,13 +175,13 @@ window.siteSummary = window.siteSummary || {};
     }
     sel.appendChild(_opt('', '\u2014 Choose equipment \u2014'));
     equipList.forEach(function (e) {
-      sel.appendChild(_opt(e.id, e.navName));
+      sel.appendChild(_opt(e.id, e.navName || e.dis));
     });
     sel.disabled = false;
     NS.App._equipBtn.disabled = false;
   };
 
-  // ── Private: equip loading ────────────────────────────────────────────────
+  // ── Private: equipment loading ────────────────────────────────────────────
 
   NS.App._loadEquipForSite = function (siteId) {
     NS.App._equipSelect.disabled = true;
@@ -194,42 +207,23 @@ window.siteSummary = window.siteSummary || {};
     NS.App._equipBtn.disabled = true;
   };
 
-  // ── Private: site summary handlers ───────────────────────────────────────
+  // ── Private: topbar site summary ──────────────────────────────────────────
 
-  NS.App._clearSiteResult = function () {
-    NS.App._resultPanel.classList.add('ss-hidden');
-    NS.App._loading.classList.add('ss-hidden');
-    NS.App._summaryContent.classList.add('ss-hidden');
-    NS.App._siteError.classList.add('ss-hidden');
-  };
-
-  NS.App._setSiteLoading = function (on) {
-    NS.App._resultPanel.classList.remove('ss-hidden');
-    if (on) {
-      NS.App._loading.classList.remove('ss-hidden');
-      NS.App._summaryContent.classList.add('ss-hidden');
-      NS.App._siteError.classList.add('ss-hidden');
-      NS.App._generateBtn.disabled = true;
-      NS.App._siteSelect.disabled = true;
-    } else {
-      NS.App._loading.classList.add('ss-hidden');
-      NS.App._generateBtn.disabled = false;
-      NS.App._siteSelect.disabled = false;
-    }
-  };
-
-  NS.App._showSiteError = function (msg) {
-    NS.App._siteError.classList.remove('ss-hidden');
-    NS.App._siteErrorMsg.textContent = msg;
+  NS.App._clearTopbar = function () {
+    NS.App._topbarLoader.classList.add('ss-hidden');
+    NS.App._topbarSummary.classList.add('ss-hidden');
+    NS.App._topbarErr.classList.add('ss-hidden');
   };
 
   NS.App._onGenerate = function () {
     var siteId = NS.App._siteSelect.value;
     if (!siteId) return;
-    var siteDis = NS.App._siteSelect.options[NS.App._siteSelect.selectedIndex].text;
     var gen = ++NS.App._siteGenCtr;
 
-    NS.App._setSiteLoading(true);
+    NS.App._clearTopbar();
+    NS.App._topbarLoader.classList.remove('ss-hidden');
+    NS.App._generateBtn.disabled = true;
+    NS.App._siteSelect.disabled  = true;
 
     NS.api.evalAxon('siteSummary(@' + siteId + ')', NS.App._attestKey, NS.App._projectName)
       .then(function (data) {
@@ -240,64 +234,141 @@ window.siteSummary = window.siteSummary || {};
         if (typeof text !== 'string' || !text.trim()) {
           throw new Error('siteSummary() returned an empty value.');
         }
-        NS.App._setSiteLoading(false);
-        NS.App._summaryContent.classList.remove('ss-hidden');
-        NS.App._summaryText.innerHTML = _renderMarkdown(text);
-        NS.App._siteName.textContent = siteDis;
+        NS.App._topbarLoader.classList.add('ss-hidden');
+        NS.App._generateBtn.disabled = false;
+        NS.App._siteSelect.disabled  = false;
+        NS.App._topbarText.textContent = text;
+        NS.App._topbarText.title = text;
+        NS.App._topbarSummary.classList.remove('ss-hidden');
       })
       .catch(function (err) {
         if (gen !== NS.App._siteGenCtr) return;
-        NS.App._setSiteLoading(false);
-        NS.App._showSiteError(err.message || 'An unexpected error occurred.');
+        NS.App._topbarLoader.classList.add('ss-hidden');
+        NS.App._generateBtn.disabled = false;
+        NS.App._siteSelect.disabled  = false;
+        NS.App._topbarErrMsg.textContent = err.message || 'Error generating summary.';
+        NS.App._topbarErr.classList.remove('ss-hidden');
       });
   };
 
-  // ── Private: equipment analysis handlers ─────────────────────────────────
+  // ── Private: equipment analysis ───────────────────────────────────────────
 
-  NS.App._clearEquipResult = function () {
-    NS.App._equipResultPanel.classList.add('ss-hidden');
-    NS.App._equipLoading.classList.add('ss-hidden');
-    NS.App._equipContent.classList.add('ss-hidden');
-    NS.App._equipError.classList.add('ss-hidden');
-  };
-
-  NS.App._setEquipLoading = function (on) {
-    NS.App._equipResultPanel.classList.remove('ss-hidden');
-    if (on) {
-      NS.App._equipLoading.classList.remove('ss-hidden');
-      NS.App._equipContent.classList.add('ss-hidden');
-      NS.App._equipError.classList.add('ss-hidden');
-      NS.App._equipBtn.disabled = true;
-      NS.App._equipSelect.disabled = true;
-    } else {
-      NS.App._equipLoading.classList.add('ss-hidden');
-      NS.App._equipBtn.disabled = false;
-      NS.App._equipSelect.disabled = false;
+  NS.App._clearAnalysis = function () {
+    NS.App._analysisArea.classList.add('ss-hidden');
+    NS.App._equipLoadingCard.classList.add('ss-hidden');
+    NS.App._analysisGrid.classList.add('ss-hidden');
+    if (NS.App._chart) {
+      NS.App._chart.destroy();
+      NS.App._chart = null;
     }
   };
 
   NS.App._onAnalyzeEquip = function () {
-    var equipId = NS.App._equipSelect.value;
+    var equipId  = NS.App._equipSelect.value;
     if (!equipId) return;
     var equipDis = NS.App._equipSelect.options[NS.App._equipSelect.selectedIndex].text;
     var gen = ++NS.App._equipGenCtr;
 
-    NS.App._setEquipLoading(true);
+    // Show analysis area with loading card
+    NS.App._clearAnalysis();
+    NS.App._analysisArea.classList.remove('ss-hidden');
+    NS.App._equipLoadingCard.classList.remove('ss-hidden');
+    NS.App._equipBtn.disabled    = true;
+    NS.App._equipSelect.disabled = true;
 
-    NS.evals.analyzeEquip(equipId, NS.App._attestKey, NS.App._projectName)
-      .then(function (text) {
-        if (gen !== NS.App._equipGenCtr) return;
-        NS.App._setEquipLoading(false);
-        NS.App._equipContent.classList.remove('ss-hidden');
-        NS.App._equipText.innerHTML = _renderMarkdown(text);
-        NS.App._equipName.textContent = equipDis;
-      })
-      .catch(function (err) {
-        if (gen !== NS.App._equipGenCtr) return;
-        NS.App._setEquipLoading(false);
+    // Fire AI analysis and history fetch in parallel; handle each independently
+    var aiPromise = NS.evals.analyzeEquip(equipId, NS.App._attestKey, NS.App._projectName)
+      .then(function (text) { return { ok: true, text: text }; })
+      .catch(function (err) { return { ok: false, err: err }; });
+
+    var histPromise = NS.evals.loadEquipHistory(equipId, NS.App._attestKey, NS.App._projectName)
+      .then(function (data) { return { ok: true, data: data }; })
+      .catch(function (err) { return { ok: false, err: err }; });
+
+    Promise.all([aiPromise, histPromise]).then(function (results) {
+      if (gen !== NS.App._equipGenCtr) return;
+
+      var aiResult   = results[0];
+      var histResult = results[1];
+
+      NS.App._equipLoadingCard.classList.add('ss-hidden');
+      NS.App._equipBtn.disabled    = false;
+      NS.App._equipSelect.disabled = false;
+
+      NS.App._chartName.textContent = equipDis;
+      NS.App._equipName.textContent = equipDis;
+      NS.App._equipText.innerHTML   = '';
+      NS.App._equipError.classList.add('ss-hidden');
+
+      // Render chart
+      if (histResult.ok) {
+        NS.App._renderChart(histResult.data);
+      } else {
+        NS.App._chartEmpty.classList.remove('ss-hidden');
+        console.error('[siteSummary] History load failed:', histResult.err);
+      }
+
+      // Render AI text
+      if (aiResult.ok) {
+        NS.App._equipText.innerHTML = _renderMarkdown(aiResult.text);
+      } else {
+        NS.App._equipErrorMsg.textContent = aiResult.err.message || 'Analysis failed.';
         NS.App._equipError.classList.remove('ss-hidden');
-        NS.App._equipErrorMsg.textContent = err.message || 'An unexpected error occurred.';
-      });
+      }
+
+      NS.App._analysisGrid.classList.remove('ss-hidden');
+    });
+  };
+
+  // ── Private: chart rendering ──────────────────────────────────────────────
+
+  NS.App._renderChart = function (histData) {
+    NS.App._chartEmpty.classList.add('ss-hidden');
+
+    if (!window.Chart) {
+      NS.App._chartEmpty.textContent = 'Chart.js unavailable — unable to render trend.';
+      NS.App._chartEmpty.classList.remove('ss-hidden');
+      return;
+    }
+
+    if (!histData || !histData.labels || histData.labels.length === 0) {
+      NS.App._chartEmpty.classList.remove('ss-hidden');
+      return;
+    }
+
+    if (NS.App._chart) {
+      NS.App._chart.destroy();
+      NS.App._chart = null;
+    }
+
+    NS.App._chart = new window.Chart(NS.App._chartCanvas, {
+      type: 'line',
+      data: {
+        labels: histData.labels,
+        datasets: histData.datasets
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { boxWidth: 10, font: { size: 10 }, padding: 10 }
+          }
+        },
+        scales: {
+          x: {
+            ticks: { maxTicksLimit: 12, maxRotation: 0, font: { size: 10 } },
+            grid: { color: 'rgba(0,0,0,0.05)' }
+          },
+          y: {
+            ticks: { font: { size: 10 } },
+            grid: { color: 'rgba(0,0,0,0.05)' }
+          }
+        }
+      }
+    });
   };
 
   // ── Helpers ───────────────────────────────────────────────────────────────
@@ -306,7 +377,6 @@ window.siteSummary = window.siteSummary || {};
     if (typeof window.marked !== 'undefined') {
       return window.marked.parse(text);
     }
-    // Fallback: escape HTML and convert newlines
     return text
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
