@@ -16,16 +16,42 @@ window.siteSummary = window.siteSummary || {};
     document.head.appendChild(link);
   }
 
+  function loadMarked(cb) {
+    if (window.marked) { cb(); return; }
+    var s = document.createElement('script');
+    s.src = 'https://unpkg.com/marked@9/marked.min.js';
+    s.onload = cb;
+    s.onerror = function () {
+      console.warn('[siteSummary] marked.js failed to load — falling back to plain text.');
+      cb();
+    };
+    document.head.appendChild(s);
+  }
+
+  function loadChartJs(cb) {
+    if (window.Chart) { cb(); return; }
+    var s = document.createElement('script');
+    s.src = 'https://unpkg.com/chart.js@4/dist/chart.umd.min.js';
+    s.onload = cb;
+    s.onerror = function () {
+      console.warn('[siteSummary] Chart.js failed to load — charts will be unavailable.');
+      cb();
+    };
+    document.head.appendChild(s);
+  }
+
   NS.onUpdate = function (arg) {
     var view = arg.view;
     var elem = arg.elem;
     view.removeAll();
 
     loadStyles();
+    loadMarked(function () {});
+    loadChartJs(function () {});
 
     elem.style.width  = '100%';
     elem.style.height = '100%';
-    elem.style.overflow = 'auto';
+    elem.style.overflow = 'hidden';
 
     var container = document.createElement('div');
     container.id = 'siteSummary';
@@ -43,8 +69,8 @@ window.siteSummary = window.siteSummary || {};
 
     if (!attestKey || !projectName) {
       container.innerHTML = [
-        '<div class="ss-wrap">',
-        '  <div class="ss-card" style="text-align:center;padding:3rem 2rem;color:#8a8f96">',
+        '<div style="display:flex;align-items:center;justify-content:center;height:100%;background:#eef0f2">',
+        '  <div style="text-align:center;color:#8a8f96;padding:3rem 2rem">',
         '    <p style="margin:0;font-size:14px">No SkySpark session detected.</p>',
         '    <p style="margin:8px 0 0;font-size:13px">This view must be loaded inside a SkySpark project.</p>',
         '  </div>',
