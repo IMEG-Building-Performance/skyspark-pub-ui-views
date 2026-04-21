@@ -195,20 +195,21 @@ window.EventAnnotationsPlot.eventsDatabase._loadData = function(tablePanel, dbSt
   tableWrap.appendChild(loading);
 
   var siteRef = state._selectedSite;
-  var startDate = dbState.filters.dateStart;
-  var endDate = dbState.filters.dateEnd;
 
-  if (!siteRef || !startDate || !endDate) {
-    // Can't fetch without parameters — show empty state
+  if (!siteRef) {
     tableWrap.innerHTML = '';
     var emptyDiv = document.createElement('div');
     emptyDiv.className = 'edb-empty-msg';
     emptyDiv.innerHTML = '<div style="font-size:36px;margin-bottom:12px;">\uD83D\uDCCB</div>' +
-      '<div style="font-size:15px;font-weight:600;margin-bottom:4px;">Date Range Required</div>' +
-      '<div style="font-size:13px;">Please enter a start and end date in the filters above, then click Search.</div>';
+      '<div style="font-size:15px;font-weight:600;margin-bottom:4px;">No Site Selected</div>' +
+      '<div style="font-size:13px;">Select a site in SkySpark first, then return here.</div>';
     tableWrap.appendChild(emptyDiv);
     return;
   }
+
+  // Use filter dates if provided; otherwise query all-time so dates are truly optional
+  var startDate = dbState.filters.dateStart || '2000-01-01';
+  var endDate = dbState.filters.dateEnd || '2099-12-31';
 
   dbState._loadedDateStart = startDate;
   dbState._loadedDateEnd = endDate;
