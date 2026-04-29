@@ -240,6 +240,26 @@
   cursor: default;
 }
 
+.ss-date-input {
+  height: 34px;
+  padding: 0 8px;
+  border: 1px solid #d4d8dc;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 13px;
+  color: #2c2c2c;
+  background: #ffffff;
+  outline: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.ss-date-input:focus {
+  border-color: #1d6fa4;
+  box-shadow: 0 0 0 2px rgba(29, 111, 164, 0.15);
+}
+
 .ss-btn {
   height: 34px;
   padding: 0 18px;

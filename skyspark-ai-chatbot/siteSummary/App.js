@@ -48,6 +48,7 @@ window.siteSummary = window.siteSummary || {};
       '      <select id="ss-equip-select" class="ss-select" disabled>',
       '        <option value="">Select a site first</option>',
       '      </select>',
+      '      <input type="date" id="ss-date-select" class="ss-date-input">',
       '      <button id="ss-equip-btn" class="ss-btn" disabled>Analyze Equipment</button>',
       '    </div>',
       '  </div>',
@@ -105,6 +106,10 @@ window.siteSummary = window.siteSummary || {};
     // ── Cache DOM refs: equipment bar ──
     NS.App._equipSelect    = container.querySelector('#ss-equip-select');
     NS.App._equipBtn       = container.querySelector('#ss-equip-btn');
+    NS.App._dateSelect     = container.querySelector('#ss-date-select');
+
+    // Default date to today (local time)
+    NS.App._dateSelect.value = _todayStr();
 
     // ── Cache DOM refs: analysis area ──
     NS.App._analysisArea        = container.querySelector('#ss-analysis-area');
@@ -267,6 +272,7 @@ window.siteSummary = window.siteSummary || {};
     var equipId  = NS.App._equipSelect.value;
     if (!equipId) return;
     var equipDis = NS.App._equipSelect.options[NS.App._equipSelect.selectedIndex].text;
+    var dateStr  = NS.App._dateSelect.value || _todayStr();
     var gen = ++NS.App._equipGenCtr;
 
     // Show analysis area with loading card
@@ -277,11 +283,11 @@ window.siteSummary = window.siteSummary || {};
     NS.App._equipSelect.disabled = true;
 
     // Fire AI analysis and history fetch in parallel; handle each independently
-    var aiPromise = NS.evals.analyzeEquip(equipId, NS.App._attestKey, NS.App._projectName)
+    var aiPromise = NS.evals.analyzeEquip(equipId, NS.App._attestKey, NS.App._projectName, dateStr)
       .then(function (text) { return { ok: true, text: text }; })
       .catch(function (err) { return { ok: false, err: err }; });
 
-    var histPromise = NS.evals.loadEquipHistory(equipId, NS.App._attestKey, NS.App._projectName)
+    var histPromise = NS.evals.loadEquipHistory(equipId, NS.App._attestKey, NS.App._projectName, dateStr)
       .then(function (data) { return { ok: true, data: data }; })
       .catch(function (err) { return { ok: false, err: err }; });
 
@@ -382,6 +388,13 @@ window.siteSummary = window.siteSummary || {};
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/\n/g, '<br>');
+  }
+
+  function _todayStr() {
+    var d = new Date();
+    var mm = String(d.getMonth() + 1).padStart(2, '0');
+    var dd = String(d.getDate()).padStart(2, '0');
+    return d.getFullYear() + '-' + mm + '-' + dd;
   }
 
   function _opt(value, label) {
