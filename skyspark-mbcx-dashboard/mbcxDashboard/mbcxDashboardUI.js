@@ -112,38 +112,56 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       try { NS.App.init(container, data, ctx); }
       catch (e) { console.error('[mbcxDashboard] App.init failed:', e); throw e; }
       // Fetch site name in parallel; update title bar when ready
-      if (attestKey && siteRef) {
-        NS.api.evalAxon(attestKey, projectName, 'readById(' + siteRef + ').dis')
-          .then(function (grid) {
-            var HP = NS.haystackParser;
-            var parsed = HP.parseGrid(HP ? grid : grid);
-            if (parsed.rows.length) {
-              var row = parsed.rows[0];
-              var key = Object.keys(row)[0];
-              ctx.siteName = row[key] || null;
+      if (attestKey && ctx.siteRef) {
+        NS.api.evalAxonVal(attestKey, projectName, 'readById(' + ctx.siteRef + ').dis')
+          .then(function (val) {
+            var dis = val && (typeof val === 'string' ? val : val.val || null);
+            if (dis) {
+              ctx.siteName = dis;
+              var el = container.querySelector('#mbcxDashTitleSite');
+              if (el) el.textContent = dis;
             }
-            var el = container.querySelector('#mbcxDashTitleSite');
-            if (el && ctx.siteName) el.textContent = ctx.siteName;
           })
           .catch(function () {});
       }
     }
 
-    if (attestKey && projectName) {
-      var gen = ++_fetchGen;
-      container.innerHTML = '<div style="padding:2rem;color:#888">Loading\u2026</div>';
-      NS.evals.loadData(attestKey, projectName)
-        .then(function (data) {
-          if (gen !== _fetchGen) return;
-          launch(data);
+    function startLoad() {
+      if (attestKey && projectName) {
+        var gen = ++_fetchGen;
+        container.innerHTML = '<div style="padding:2rem;color:#888">Loading\u2026</div>';
+        NS.evals.loadData(attestKey, projectName)
+          .then(function (data) { if (gen !== _fetchGen) return; launch(data); })
+          .catch(function (err) {
+            if (gen !== _fetchGen) return;
+            console.warn('[mbcxDashboard] Live data failed, falling back to demo:', err);
+            launch(NS.demoData);
+          });
+      } else {
+        launch(NS.demoData);
+      }
+    }
+
+    // If the site ref is a nav ref (@nav:...), resolve it to a plain record
+    // ref before launching \u2014 Axon functions expect a concrete Ref, not a nav URI.
+    if (siteRef && siteRef.indexOf('@nav:') === 0 && attestKey && projectName) {
+      var navPath = siteRef.slice(5); // strip "@nav:" prefix
+      NS.api.evalAxonVal(attestKey, projectName, 'readByNavId("' + navPath + '").id')
+        .then(function (refVal) {
+          if (refVal && refVal.val) {
+            ctx.siteRef = '@' + refVal.val;
+            console.log('[mbcxDashboard] nav ref resolved to plain ref:', ctx.siteRef);
+          } else {
+            console.warn('[mbcxDashboard] nav ref resolution returned unexpected value:', refVal);
+          }
+          startLoad();
         })
-        .catch(function (err) {
-          if (gen !== _fetchGen) return;
-          console.warn('[mbcxDashboard] Live data failed, falling back to demo:', err);
-          launch(NS.demoData);
+        .catch(function (e) {
+          console.warn('[mbcxDashboard] nav ref resolution failed, using nav ref as-is:', e);
+          startLoad();
         });
     } else {
-      launch(NS.demoData);
+      startLoad();
     }
   };
 
