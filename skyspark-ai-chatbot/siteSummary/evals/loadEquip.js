@@ -22,8 +22,8 @@ window.siteSummary = window.siteSummary || {};
       });
   };
 
-  NS.evals.analyzeEquip = function (equipId, attestKey, projectName) {
-    return NS.api.evalAxon('equipTrend(@' + equipId + ')', attestKey, projectName)
+  NS.evals.analyzeEquip = function (equipId, attestKey, projectName, dateStr) {
+    return NS.api.evalAxon('equipTrend(@' + equipId + ', ' + dateStr + ')', attestKey, projectName)
       .then(function (data) {
         var rows = data && data.rows;
         var raw = rows && rows.length > 0 ? rows[0].val : null;
@@ -35,8 +35,8 @@ window.siteSummary = window.siteSummary || {};
       });
   };
 
-  NS.evals.loadEquipHistory = function (equipId, attestKey, projectName) {
-    var expr = 'hisRead(readAll(point and equipRef == @' + equipId + '), (now()-1day)..now()).table';
+  NS.evals.loadEquipHistory = function (equipId, attestKey, projectName, dateStr) {
+    var expr = 'hisRead(readAll(point and equipRef == @' + equipId + '), ' + dateStr + ').table';
     return NS.api.evalAxon(expr, attestKey, projectName)
       .then(function (data) {
         var grid = NS.api.unwrapGrid(data);
