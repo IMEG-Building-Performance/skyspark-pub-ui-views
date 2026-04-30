@@ -48,7 +48,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
   NS.App = {
     init: function (container, data, ctx) {
       // Resolve component refs (modules loaded after App.js is parsed)
-      NS.Components = {
+      var co = {
         Header:        window.mbcxDashboard.components.Header,
         HealthBanner:  window.mbcxDashboard.components.HealthBanner,
         BuildingMeters:window.mbcxDashboard.components.BuildingMeters,
@@ -58,11 +58,25 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         FaultList:     window.mbcxDashboard.components.FaultList,
         Footer:        window.mbcxDashboard.components.Footer
       };
+      NS.Components = co;
 
-      var co = NS.Components;
+      // Warn about any missing components so the console shows the real cause
+      ['Header','HealthBanner','BuildingMeters','CUP','AHU','TerminalUnits','FaultList','Footer'].forEach(function(name) {
+        if (!co[name]) console.warn('[mbcxDashboard] Component not loaded:', name);
+      });
+
       var dateStr = '';
       if (ctx && ctx.datesStart && ctx.datesEnd) dateStr = ctx.datesStart + '\u2009\u2013\u2009' + ctx.datesEnd;
       else if (ctx && ctx.datesStart) dateStr = ctx.datesStart;
+
+      var sections = [
+        co.HealthBanner  ? co.HealthBanner.render(data)  : '',
+        co.BuildingMeters? co.BuildingMeters.render(data) : '',
+        co.CUP           ? co.CUP.render(data)            : '',
+        co.AHU           ? co.AHU.render(data)            : '',
+        co.TerminalUnits ? co.TerminalUnits.render()      : '',
+        co.FaultList     ? co.FaultList.render()          : '',
+      ];
 
       container.innerHTML = [
         '<div class="dash-title-bar">',
@@ -71,26 +85,16 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         '  <a class="dash-title-link" href="/ui/mbcxTrendingView" target="_blank">Trends \u2192</a>',
         '</div>',
         '<div class="page">',
-        co.HealthBanner.render(data),
-        co.BuildingMeters.render(data),
-        co.CUP.render(data),
-        co.AHU.render(data),
-        co.TerminalUnits.render(),
-        co.FaultList.render(),
+        sections.join('\n'),
         '</div>'
       ].join('\n');
 
       initCharts(container, data);
       bindEvents(container, data);
 
-      // Kick off live AHU data fetch
-      co.AHU.initLive(container, ctx || null);
-
-      // Initialize Terminal Units charts (demo data)
-      co.TerminalUnits.initLive(container, ctx || null);
-
-      // Initialize Fault List with demo faults
-      co.FaultList.initLive(container, ctx || null);
+      if (co.AHU)          co.AHU.initLive(container, ctx || null);
+      if (co.TerminalUnits) co.TerminalUnits.initLive(container, ctx || null);
+      if (co.FaultList)    co.FaultList.initLive(container, ctx || null);
     }
   };
 

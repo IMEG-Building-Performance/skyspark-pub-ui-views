@@ -115,7 +115,8 @@ window.mbcxDashboard = window.mbcxDashboard || {};
 
     function launch(data) {
       container.innerHTML = '';
-      NS.App.init(container, data, ctx);
+      try { NS.App.init(container, data, ctx); }
+      catch (e) { console.error('[mbcxDashboard] App.init failed:', e); throw e; }
       // Fetch site name in parallel; update title bar when ready
       if (attestKey && siteRef) {
         NS.api.evalAxon(attestKey, projectName, 'readById(' + siteRef + ').dis')
