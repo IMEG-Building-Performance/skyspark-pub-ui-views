@@ -31,6 +31,30 @@ window.mbcxDashboard = window.mbcxDashboard || {};
     ].join('\n');
   }
 
+  // Nav refs (@nav:type.sub.BASE64) encode "id:@p:project:r:UUID" in base64.
+  // Axon functions expect a plain record ref — extract just @r:UUID which is
+  // always alphanumeric+hyphens and valid without quoting.
+  function _resolveNavRef(ref) {
+    if (!ref || ref.indexOf('@nav:') !== 0) return ref;
+    var parts = ref.slice(5).split('.'); // strip @nav: then split on dots
+    var b64 = parts[parts.length - 1];  // last segment is the base64 payload
+    try {
+      var decoded = atob(b64); // e.g. "id:@p:projectName:r:308c0427-5b3d45a7"
+      console.log('[mbcxDashboard] nav decoded:', decoded);
+      // r:UUID has no spaces — most reliable piece to extract
+      var m = decoded.match(/:r:([0-9a-fA-F]+-[0-9a-fA-F-]+)/);
+      if (m) return '@r:' + m[1];
+      // Fallback: take everything from the first @ to the first space
+      var atIdx = decoded.indexOf('@');
+      if (atIdx !== -1) {
+        var r = decoded.slice(atIdx);
+        var sp = r.indexOf(' ');
+        return sp !== -1 ? r.slice(0, sp) : r;
+      }
+    } catch (e) { console.warn('[mbcxDashboard] nav decode failed:', e); }
+    return ref;
+  }
+
   NS.onUpdate = function (arg) {
     var view = arg.view;
     var elem = arg.elem;
@@ -66,9 +90,8 @@ window.mbcxDashboard = window.mbcxDashboard || {};
           console.log('[mbcxDashboard] site toAxon:', _toAxon, '| toStr:', _toStr);
 
           if (_toAxon) {
-            // Use toAxon() output directly — nav refs (@nav:...) are valid Axon
-            // literals; SkySpark resolves them without any decoding needed.
-            siteRef = _toAxon;
+            // Decode @nav: refs to plain @r:uuid; pass other refs through unchanged.
+            siteRef = _resolveNavRef(_toAxon);
           } else {
             // Fallback: toStr() may return "@id", "id", or the dis name.
             // Strip the dis (anything after the first space) so we get a clean ref.
@@ -126,42 +149,18 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       }
     }
 
-    function startLoad() {
-      if (attestKey && projectName) {
-        var gen = ++_fetchGen;
-        container.innerHTML = '<div style="padding:2rem;color:#888">Loading\u2026</div>';
-        NS.evals.loadData(attestKey, projectName)
-          .then(function (data) { if (gen !== _fetchGen) return; launch(data); })
-          .catch(function (err) {
-            if (gen !== _fetchGen) return;
-            console.warn('[mbcxDashboard] Live data failed, falling back to demo:', err);
-            launch(NS.demoData);
-          });
-      } else {
-        launch(NS.demoData);
-      }
-    }
-
-    // If the site ref is a nav ref (@nav:...), resolve it to a plain record
-    // ref before launching \u2014 Axon functions expect a concrete Ref, not a nav URI.
-    if (siteRef && siteRef.indexOf('@nav:') === 0 && attestKey && projectName) {
-      var navPath = siteRef.slice(5); // strip "@nav:" prefix
-      NS.api.evalAxonVal(attestKey, projectName, 'readByNavId("' + navPath + '").id')
-        .then(function (refVal) {
-          if (refVal && refVal.val) {
-            ctx.siteRef = '@' + refVal.val;
-            console.log('[mbcxDashboard] nav ref resolved to plain ref:', ctx.siteRef);
-          } else {
-            console.warn('[mbcxDashboard] nav ref resolution returned unexpected value:', refVal);
-          }
-          startLoad();
-        })
-        .catch(function (e) {
-          console.warn('[mbcxDashboard] nav ref resolution failed, using nav ref as-is:', e);
-          startLoad();
+    if (attestKey && projectName) {
+      var gen = ++_fetchGen;
+      container.innerHTML = '<div style="padding:2rem;color:#888">Loading\u2026</div>';
+      NS.evals.loadData(attestKey, projectName)
+        .then(function (data) { if (gen !== _fetchGen) return; launch(data); })
+        .catch(function (err) {
+          if (gen !== _fetchGen) return;
+          console.warn('[mbcxDashboard] Live data failed, falling back to demo:', err);
+          launch(NS.demoData);
         });
     } else {
-      startLoad();
+      launch(NS.demoData);
     }
   };
 
