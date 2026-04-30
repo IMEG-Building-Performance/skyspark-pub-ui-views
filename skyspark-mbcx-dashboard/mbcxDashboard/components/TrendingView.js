@@ -193,9 +193,69 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     renderChart(root, equip);
   }
 
+  // ── Shared layout helpers ────────────────────────────────────────────────────
+  function buildLayout() {
+    return [
+      '<div class="tr-layout">',
+      '  <div class="tr-sidebar" id="trSidebar">',
+      '    <div class="tr-sidebar-label">Equipment</div>',
+      '    <div class="tr-equip-list" id="trEquipList"></div>',
+      '  </div>',
+      '  <div class="tr-main" id="trMain">',
+      '    <div class="tr-empty" id="trEmpty">',
+      '      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" stroke-width="1.5">',
+      '        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>',
+      '      </svg>',
+      '      <div>Select equipment from the sidebar to view trends</div>',
+      '    </div>',
+      '    <div class="tr-chart-area" id="trChartArea" style="display:none;">',
+      '      <div class="tr-chart-header">',
+      '        <div class="tr-chart-title" id="trChartTitle"></div>',
+      '        <div class="tr-point-chips" id="trPointChips"></div>',
+      '      </div>',
+      '      <div class="tr-chart-wrap">',
+      '        <canvas id="trCanvas"></canvas>',
+      '      </div>',
+      '    </div>',
+      '  </div>',
+      '</div>'
+    ].join('\n');
+  }
+
+  function wireSidebar(root) {
+    populateSidebar(root);
+    root.querySelector('#trEquipList').addEventListener('click', function (e) {
+      var item = e.target.closest('.tr-equip-item');
+      if (!item) return;
+      var id = item.getAttribute('data-id');
+      root.querySelectorAll('.tr-equip-item').forEach(function (el) { el.classList.remove('active'); });
+      item.classList.add('active');
+      _state.equipId = id;
+      _state.hiddenPoints = {};
+      showEquip(root, id);
+    });
+  }
+
   // ── Public API ───────────────────────────────────────────────────────────────
   NS.components.TrendingView = {
 
+    // Render into a content div (tab mode — no title bar, no back button)
+    showInContent: function (contentEl, ctx) {
+      loadStyles();
+      if (_chart) { _chart.destroy(); _chart = null; }
+      _state = { equipId: null, hiddenPoints: {} };
+
+      contentEl.innerHTML = '<div id="mbcxTrending"></div>';
+      var root = contentEl.querySelector('#mbcxTrending');
+      root.innerHTML = buildLayout();
+      wireSidebar(root);
+    },
+
+    destroy: function () {
+      if (_chart) { _chart.destroy(); _chart = null; }
+    },
+
+    // Legacy full-page takeover (kept for reference)
     show: function (container, ctx, onBack) {
       loadStyles();
       if (_chart) { _chart.destroy(); _chart = null; }

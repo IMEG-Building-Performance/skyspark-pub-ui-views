@@ -74,6 +74,38 @@ window.mbcxDashboard.components.FaultList = {
     ].join('\n');
   },
 
+  renderPage: function () {
+    return [
+      '<div class="fl-page">',
+      '  <div class="fl-page-header">',
+      '    <div class="fl-page-title">MBCx Fault List</div>',
+      '    <div class="fl-page-meta" id="flMeta">Active faults</div>',
+      '  </div>',
+
+      '  <div class="tu-kpi-strip fl-kpi-strip">',
+      '    <div class="tu-kpi"><div class="tu-kpi-label">Total Faults</div><div class="tu-kpi-val" id="flKpiTotal">&mdash;</div><div class="tu-kpi-unit">active</div></div>',
+      '    <div class="tu-kpi"><div class="tu-kpi-label">Critical</div><div class="tu-kpi-val fl-kpi-critical" id="flKpiCritical">&mdash;</div><div class="tu-kpi-unit">faults</div></div>',
+      '    <div class="tu-kpi"><div class="tu-kpi-label">Warnings</div><div class="tu-kpi-val fl-kpi-warning" id="flKpiWarning">&mdash;</div><div class="tu-kpi-unit">faults</div></div>',
+      '    <div class="tu-kpi"><div class="tu-kpi-label">AHU Faults</div><div class="tu-kpi-val" id="flKpiAhu">&mdash;</div><div class="tu-kpi-unit">units</div></div>',
+      '    <div class="tu-kpi"><div class="tu-kpi-label">VAV Faults</div><div class="tu-kpi-val" id="flKpiVav">&mdash;</div><div class="tu-kpi-unit">units</div></div>',
+      '    <div class="tu-kpi"><div class="tu-kpi-label">Acknowledged</div><div class="tu-kpi-val" id="flKpiAck">&mdash;</div><div class="tu-kpi-unit">faults</div></div>',
+      '  </div>',
+
+      '  <div class="tu-filter-bar">',
+      '    <input class="tu-filter-input" id="flFilterInput" type="text" placeholder="Filter faults…" autocomplete="off" />',
+      '    <span class="tu-filter-count" id="flFilterCount"></span>',
+      '  </div>',
+
+      '  <div style="overflow-x:auto;">',
+      '    <table class="tu-table fl-table">',
+      '      <thead id="flThead"></thead>',
+      '      <tbody id="flTbody"></tbody>',
+      '    </table>',
+      '  </div>',
+      '</div>'
+    ].join('\n');
+  },
+
   initLive: function (container, ctx) {
     var self = this;
     var faults = FL_DEMO_FAULTS;

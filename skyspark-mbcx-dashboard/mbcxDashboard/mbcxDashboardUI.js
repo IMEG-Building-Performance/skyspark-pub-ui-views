@@ -53,7 +53,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
 
     elem.style.width  = '100%';
     elem.style.height = '100%';
-    elem.style.overflow = 'auto';
+    elem.style.overflow = 'hidden';
 
     var container = document.createElement('div');
     container.id = 'mbcxDashboard';
