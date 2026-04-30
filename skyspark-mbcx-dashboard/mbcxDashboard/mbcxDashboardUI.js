@@ -32,24 +32,22 @@ window.mbcxDashboard = window.mbcxDashboard || {};
   }
 
   // Nav refs (@nav:type.sub.BASE64) encode "id:@p:project:r:UUID" in base64.
-  // Axon functions expect a plain record ref — extract just @r:UUID which is
-  // always alphanumeric+hyphens and valid without quoting.
+  // Extract the full project-qualified ref (@p:project:r:UUID) — that is
+  // what SkySpark Axon functions expect as a Ref argument.
   function _resolveNavRef(ref) {
     if (!ref || ref.indexOf('@nav:') !== 0) return ref;
     var parts = ref.slice(5).split('.'); // strip @nav: then split on dots
     var b64 = parts[parts.length - 1];  // last segment is the base64 payload
     try {
-      var decoded = atob(b64); // e.g. "id:@p:projectName:r:308c0427-5b3d45a7"
+      var decoded = atob(b64); // "id:@p:waubonseeCommunityCollege:r:308c0427-5b3d45a7"
       console.log('[mbcxDashboard] nav decoded:', decoded);
-      // r:UUID has no spaces — most reliable piece to extract
-      var m = decoded.match(/:r:([0-9a-fA-F]+-[0-9a-fA-F-]+)/);
-      if (m) return '@r:' + m[1];
-      // Fallback: take everything from the first @ to the first space
+      // Take everything from the first @ — that is the full Ref literal.
+      // Trim any trailing whitespace or dis suffix (space + display name).
       var atIdx = decoded.indexOf('@');
       if (atIdx !== -1) {
-        var r = decoded.slice(atIdx);
+        var r = decoded.slice(atIdx).trim();
         var sp = r.indexOf(' ');
-        return sp !== -1 ? r.slice(0, sp) : r;
+        return sp !== -1 ? r.slice(0, sp) : r; // "@p:project:r:uuid"
       }
     } catch (e) { console.warn('[mbcxDashboard] nav decode failed:', e); }
     return ref;
