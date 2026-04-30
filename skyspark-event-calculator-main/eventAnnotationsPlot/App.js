@@ -233,10 +233,17 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
     showSidebarBtn.style.display = 'none';
   }
 
-  // Loading message
+  // Loading animation
   var loadingMsg = document.createElement('div');
-  loadingMsg.textContent = 'Loading...';
   loadingMsg.style.cssText = 'text-align:center;padding:40px;color:#666;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);';
+  var loadingSpinner = document.createElement('div');
+  loadingSpinner.className = 'edb-spinner';
+  loadingSpinner.style.cssText += 'width:40px;height:40px;margin:0 auto 16px;';
+  loadingMsg.appendChild(loadingSpinner);
+  var loadingText = document.createElement('div');
+  loadingText.textContent = 'Loading…';
+  loadingText.style.cssText = 'font-size:15px;font-weight:600;';
+  loadingMsg.appendChild(loadingText);
   chartContainer.appendChild(loadingMsg);
 
   // ── Load Chart.js and initialize ─────────────────────────────────────
@@ -692,8 +699,14 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
       });
     }
 
-    // Initial load
-    loadDataForSite();
+    // If the Events Database was open before this refresh, re-open it.
+    // Clear stale saved content first (old DOM nodes were destroyed by view.removeAll())
+    if (eventsDatabase && state.eventsDatabaseState && state.eventsDatabaseState.isOpen) {
+      state.eventsDatabaseState._savedContent = null;
+      eventsDatabase.openPanel(mainContainer, state);
+    } else {
+      loadDataForSite();
+    }
 
     // Start polling for variable changes
     skyspark.startPolling(view, {
@@ -707,7 +720,11 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
       state._selectedSite = newSite;
       state._startDate = newStartDate;
       state._endDate = newEndDate;
-      loadDataForSite();
+
+      // If Events Database is open, stay in it (user can Search again)
+      if (!(eventsDatabase && state.eventsDatabaseState && state.eventsDatabaseState.isOpen)) {
+        loadDataForSite();
+      }
     });
   });
 };
