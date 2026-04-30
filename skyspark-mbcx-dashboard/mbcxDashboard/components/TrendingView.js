@@ -5,7 +5,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
 (function (NS) {
 
   var _chart = null;
-  var _state = { equipId: null, hiddenPoints: {} };
+  var _state = { equipId: null, hiddenPoints: {}, ctx: null, liveEquip: null };
 
   // ── Demo data ────────────────────────────────────────────────────────────────
   var _demo = (function () {
@@ -103,11 +103,12 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
   }
 
   // ── Sidebar ──────────────────────────────────────────────────────────────────
-  function populateSidebar(root) {
+  function populateSidebar(root, equipment) {
     var listEl = root.querySelector('#trEquipList');
     if (!listEl) return;
+    var list = equipment || _demo.equipment;
     var types = [], groups = {};
-    _demo.equipment.forEach(function (e) {
+    list.forEach(function (e) {
       if (!groups[e.type]) { groups[e.type] = []; types.push(e.type); }
       groups[e.type].push(e);
     });
@@ -236,6 +237,194 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     });
   }
 
+  // ── Live data helpers ────────────────────────────────────────────────────────
+  var TR_COLORS = ['#3b82f6','#ef4444','#10b981','#f97316','#8b5cf6','#06b6d4','#f59e0b','#ec4899'];
+
+  function _trFindCol(cols, patterns) {
+    for (var i = 0; i < patterns.length; i++)
+      for (var j = 0; j < cols.length; j++)
+        if (cols[j].toLowerCase().indexOf(patterns[i]) !== -1) return cols[j];
+    return null;
+  }
+
+  function _trGuessType(name) {
+    var s = String(name).toUpperCase();
+    if (s.indexOf('AHU') !== -1 || s.indexOf('FCU') !== -1 || s.indexOf('RTU') !== -1 || s.indexOf('MAU') !== -1) return 'AHU';
+    if (s.indexOf('VAV') !== -1 || s.indexOf('FPB') !== -1) return 'VAV';
+    if (s.indexOf('CHIL') !== -1 || s.indexOf('CUP') !== -1 || s.indexOf('BOIL') !== -1) return 'CUP';
+    return 'Other';
+  }
+
+  function _trGuessUnit(col) {
+    var c = col.toLowerCase();
+    if (c.indexOf('temp') !== -1 || c.indexOf('sat') !== -1 || c.indexOf('dat') !== -1 || c.indexOf('zone') !== -1) return '°F';
+    if (c.indexOf('flow') !== -1 || c.indexOf('cfm') !== -1) return 'CFM';
+    if (c.indexOf('valve') !== -1 || c.indexOf('damper') !== -1 || c.indexOf('speed') !== -1 || c.indexOf('vfd') !== -1 || c.indexOf('pct') !== -1 || c.indexOf('output') !== -1) return '%';
+    if (c.indexOf('kw') !== -1) return 'kW';
+    if (c.indexOf('press') !== -1) return 'inWC';
+    if (c.indexOf('humid') !== -1) return '%RH';
+    return '';
+  }
+
+  function _trFormatTs(ts) {
+    if (!ts) return '';
+    var m = String(ts).match(/\d{4}-(\d{2})-(\d{2})[T ](\d{2}:\d{2})/);
+    return m ? (m[1] + '/' + m[2] + ' ' + m[3]) : String(ts).slice(0, 16);
+  }
+
+  function _mapEquipList(rows, cols) {
+    var refCol  = _trFindCol(cols, ['equipref', 'ref', 'targetref', 'id']);
+    var nameCol = _trFindCol(cols, ['dis', 'name', 'equip']);
+    var typeCol = _trFindCol(cols, ['equiptype', 'type', 'kind']);
+    return rows.map(function (r, i) {
+      var ref  = refCol  ? r[refCol]  : null;
+      var refId = ref ? (typeof ref === 'object' ? (ref.id ? '@' + ref.id : null) : String(ref)) : null;
+      var name = nameCol ? (typeof r[nameCol] === 'object' ? (r[nameCol].dis || r[nameCol].id || '') : String(r[nameCol] || '')) : ('Equip-' + i);
+      var type = typeCol ? String(r[typeCol] || '').toUpperCase() : _trGuessType(name);
+      return { id: refId || ('equip-' + i), name: name || ('Equip-' + i), type: type || 'Other' };
+    });
+  }
+
+  function _mapHistoryData(rows, cols) {
+    var tsCol = _trFindCol(cols, ['ts']) || _trFindCol(cols, ['time', 'date']) || cols[0];
+    var dataCols = cols.filter(function (c) { return c !== tsCol; });
+    var labels = rows.map(function (r) { return _trFormatTs(String(r[tsCol] || '')); });
+    var points = dataCols.map(function (c, i) {
+      return {
+        key: c, label: c, unit: _trGuessUnit(c),
+        color: TR_COLORS[i % TR_COLORS.length],
+        data: rows.map(function (r) {
+          var v = r[c];
+          return (v === null || v === undefined) ? null : (typeof v === 'number' ? Math.round(v * 10) / 10 : parseFloat(v) || null);
+        })
+      };
+    });
+    return { labels: labels, points: points };
+  }
+
+  function _buildChartFromMapped(root, mapped) {
+    if (_chart) { _chart.destroy(); _chart = null; }
+    var canvas = root.querySelector('#trCanvas');
+    if (!canvas || !window.Chart) return;
+    _chart = new window.Chart(canvas, {
+      type: 'line',
+      data: {
+        labels: mapped.labels,
+        datasets: mapped.points.map(function (p) {
+          return { label: p.label, data: p.data, borderColor: p.color, backgroundColor: p.color + '18',
+            fill: false, hidden: !!_state.hiddenPoints[p.key], tension: 0.3 };
+        })
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, animation: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            mode: 'index', intersect: false,
+            backgroundColor: '#1F2937', titleFont:{size:11}, bodyFont:{size:11}, padding:10, cornerRadius:6,
+            callbacks: {
+              label: function (c) {
+                var pt = mapped.points.filter(function(p){return p.label===c.dataset.label;})[0];
+                return ' ' + c.dataset.label + ': ' + c.raw + (pt ? pt.unit : '');
+              }
+            }
+          }
+        },
+        scales: {
+          x: { ticks:{font:{size:10},color:'#9CA3AF',maxTicksLimit:14,maxRotation:0}, grid:{color:'#F3F4F6'} },
+          y: { ticks:{font:{size:10},color:'#9CA3AF'}, grid:{color:'#F3F4F6'} }
+        },
+        interaction: { mode:'index', intersect:false },
+        elements: { point:{radius:0,hoverRadius:4}, line:{borderWidth:2} }
+      }
+    });
+  }
+
+  function _showEquipLive(root, equipId, ctx) {
+    var equip = (_state.liveEquip || []).filter(function (e) { return e.id === equipId; })[0];
+    root.querySelector('#trEmpty').style.display = 'none';
+    root.querySelector('#trChartArea').style.display = '';
+    root.querySelector('#trChartTitle').textContent = equip ? equip.name : equipId;
+    root.querySelector('#trPointChips').innerHTML = '<span style="color:#9CA3AF;font-size:12px">Loading…</span>';
+    if (_chart) { _chart.destroy(); _chart = null; }
+
+    var API = window.mbcxDashboard.api;
+    var HP  = window.mbcxDashboard.haystackParser;
+    var dateArg = (ctx.datesStart && ctx.datesEnd) ? ctx.datesStart + '..' + ctx.datesEnd : 'today()';
+    var axon = 'view_cxAppSummary(' + ctx.siteRef + ', ' + dateArg + ', 4, ' + equipId + ', null)';
+
+    API.evalAxon(ctx.attestKey, ctx.projectName, axon)
+      .then(function (grid) {
+        var parsed = HP.parseGrid(grid);
+        console.log('[TrendingView] History cols:', parsed.cols, '(' + parsed.rows.length + ' rows)');
+        if (!parsed.rows.length) {
+          root.querySelector('#trPointChips').innerHTML = '<span style="color:#9CA3AF;font-size:12px">No history data returned</span>';
+          return;
+        }
+        var mapped = _mapHistoryData(parsed.rows, parsed.cols);
+        var chipsEl = root.querySelector('#trPointChips');
+        chipsEl.innerHTML = mapped.points.map(function (p) {
+          return '<button class="tr-chip tr-chip-active" data-key="' + p.key +
+            '" style="--chip-color:' + p.color + ';">' + p.label + '</button>';
+        }).join('');
+        chipsEl.querySelectorAll('.tr-chip').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var key = btn.getAttribute('data-key');
+            _state.hiddenPoints[key] = !_state.hiddenPoints[key];
+            btn.classList.toggle('tr-chip-active', !_state.hiddenPoints[key]);
+            btn.classList.toggle('tr-chip-off',    !!_state.hiddenPoints[key]);
+            if (_chart) {
+              mapped.points.forEach(function (p, i) { _chart.data.datasets[i].hidden = !!_state.hiddenPoints[p.key]; });
+              _chart.update('none');
+            }
+          });
+        });
+        _buildChartFromMapped(root, mapped);
+      })
+      .catch(function (err) {
+        console.error('[TrendingView] History fetch failed:', err);
+        root.querySelector('#trPointChips').innerHTML =
+          '<span style="color:#9B2335;font-size:12px">Failed to load: ' + (err && err.message ? err.message : 'see console') + '</span>';
+      });
+  }
+
+  function _fetchEquipList(root, ctx) {
+    var listEl = root.querySelector('#trEquipList');
+    if (listEl) listEl.innerHTML = '<div style="padding:12px;color:#9CA3AF;font-size:12px">Loading equipment…</div>';
+
+    var API = window.mbcxDashboard.api;
+    var HP  = window.mbcxDashboard.haystackParser;
+    var dateArg = (ctx.datesStart && ctx.datesEnd) ? ctx.datesStart + '..' + ctx.datesEnd : 'today()';
+    var axon = 'view_cxAppSummary(' + ctx.siteRef + ', ' + dateArg + ', 1, null, null)';
+
+    API.evalAxon(ctx.attestKey, ctx.projectName, axon)
+      .then(function (grid) {
+        var parsed = HP.parseGrid(grid);
+        console.log('[TrendingView] Equip list cols:', parsed.cols, '(' + parsed.rows.length + ' rows)');
+        if (!parsed.rows.length) {
+          if (listEl) listEl.innerHTML = '<div style="padding:12px;color:#9CA3AF;font-size:12px">No equipment found</div>';
+          return;
+        }
+        var equipment = _mapEquipList(parsed.rows, parsed.cols);
+        _state.liveEquip = equipment;
+        populateSidebar(root, equipment);
+        root.querySelector('#trEquipList').addEventListener('click', function (e) {
+          var item = e.target.closest('.tr-equip-item');
+          if (!item) return;
+          var id = item.getAttribute('data-id');
+          root.querySelectorAll('.tr-equip-item').forEach(function (el) { el.classList.remove('active'); });
+          item.classList.add('active');
+          _state.equipId = id;
+          _state.hiddenPoints = {};
+          _showEquipLive(root, id, ctx);
+        });
+      })
+      .catch(function (err) {
+        console.error('[TrendingView] Equip list fetch failed:', err);
+        if (listEl) listEl.innerHTML = '<div style="padding:12px;color:#9B2335;font-size:12px">Failed to load equipment</div>';
+      });
+  }
+
   // ── Public API ───────────────────────────────────────────────────────────────
   NS.components.TrendingView = {
 
@@ -243,12 +432,17 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     showInContent: function (contentEl, ctx) {
       loadStyles();
       if (_chart) { _chart.destroy(); _chart = null; }
-      _state = { equipId: null, hiddenPoints: {} };
+      _state = { equipId: null, hiddenPoints: {}, ctx: ctx || null, liveEquip: null };
 
       contentEl.innerHTML = '<div id="mbcxTrending"></div>';
       var root = contentEl.querySelector('#mbcxTrending');
       root.innerHTML = buildLayout();
-      wireSidebar(root);
+
+      if (ctx && ctx.attestKey && ctx.siteRef) {
+        _fetchEquipList(root, ctx);
+      } else {
+        wireSidebar(root);
+      }
     },
 
     destroy: function () {
