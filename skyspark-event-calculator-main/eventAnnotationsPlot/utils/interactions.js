@@ -515,7 +515,7 @@ window.EventAnnotationsPlot.interactions.createUtilityToggle = function(onSelect
   label.style.marginRight = '6px';
   bar.appendChild(label);
 
-  var utilityNames = ['Electric', 'CHW', 'Steam', 'Gas'];
+  var utilityNames = ['Electric', 'CHW', 'Steam', 'Gas', 'Water'];
   var buttons = {};
 
   function applyAllStyles() {

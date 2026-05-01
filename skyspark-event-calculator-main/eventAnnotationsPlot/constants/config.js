@@ -26,7 +26,8 @@ window.EventAnnotationsPlot.config = {
     Electric: { color: '#4CAF50', label: 'Electric', unit: 'kW',     yLabel: 'Power (kW)' },
     CHW:      { color: '#2196F3', label: 'CHW',      unit: 'Ton',    yLabel: 'Cooling (Ton)' },
     Steam:    { color: '#FF9800', label: 'Steam',    unit: 'Mlb/hr', yLabel: 'Steam (Mlb/hr)' },
-    Gas:      { color: '#F44336', label: 'Gas',      unit: 'Therms', yLabel: 'Gas (Therms)' }
+    Gas:      { color: '#F44336', label: 'Gas',      unit: 'Therms', yLabel: 'Gas (Therms)' },
+    Water:    { color: '#5DADE2', label: 'Water',    unit: 'ft³',  yLabel: 'Water (ft³)' }
   },
 
   // ── Detail panel utility colours ────────────────────────────────
@@ -36,6 +37,7 @@ window.EventAnnotationsPlot.config = {
     chw:      '#1abc9c',
     steam:    '#e74c3c',
     gas:      '#f39c12',
+    water:    '#5dade2',
     textDark: '#2c3e50',
     textMuted:'#6c757d',
     border:   '#e9ecef',
