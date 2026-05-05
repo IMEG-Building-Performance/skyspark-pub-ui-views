@@ -76,7 +76,11 @@ window.mbcxDashboard.components.TerminalUnits = {
       '    </div>',
 
       '    <div id="tuScatterView" style="display:none;">',
-      '      <div style="position:relative;height:360px;"><canvas id="tuScatterCanvas"></canvas></div>',
+      '      <div class="rs-legend" id="tuScatterLegend"></div>',
+      '      <div class="rs-summary" id="tuScatterSummary"></div>',
+      '      <div style="position:relative;">',
+      '        <svg class="rs-svg" id="tuScatterSvg"></svg>',
+      '      </div>',
       '    </div>',
 
       '  </div>',
@@ -146,11 +150,9 @@ window.mbcxDashboard.components.TerminalUnits = {
       btnScatter.addEventListener('click', function () {
         btnScatter.classList.add('active'); btnTable.classList.remove('active');
         tableView.style.display = 'none'; scatterView.style.display = '';
-        if (!scatterInited && self._state) {
+        if (!scatterInited) {
           scatterInited = true;
-          setTimeout(function () {
-            self._initScatter(container.querySelector('#tuScatterCanvas'), self._state.rows, self._state.cols);
-          }, 30);
+          setTimeout(function () { self._initScatter(container, ctx); }, 30);
         }
       });
     }
@@ -319,71 +321,88 @@ window.mbcxDashboard.components.TerminalUnits = {
     return rows;
   },
 
-  _initScatter: function (canvas, rows, cols) {
-    if (!canvas || !window.Chart) return;
+  _initScatter: function (container, ctx) {
+    var RS  = window.mbcxDashboard.components.ReheatScatter;
+    var API = window.mbcxDashboard.api;
+    var HP  = window.mbcxDashboard.haystackParser;
+    if (!RS) return;
 
-    var xCol    = _tuFindCol(cols, ['zonetemp', 'zone_temp']);
-    var yCol    = _tuFindCol(cols, ['reheat']);
-    var sizeCol = _tuFindCol(cols, ['airflow', 'cfm']);
-    var nameCol = _tuFindCol(cols, ['vav', 'name']);
+    var svgEl  = container.querySelector('#tuScatterSvg');
+    var legEl  = container.querySelector('#tuScatterLegend');
+    var sumEl  = container.querySelector('#tuScatterSummary');
+    var viewEl = container.querySelector('#tuScatterView');
+    if (!svgEl) return;
 
-    if (!xCol || !yCol) {
-      var wrap = canvas.parentElement;
-      if (wrap) wrap.innerHTML = '<div class="tu-loading">Reheat scatter requires zone temp and reheat valve columns.</div>';
-      return;
+    // Tooltip appended to body so it isn't clipped by any overflow:hidden ancestor
+    var tipEl = document.getElementById('tuScatterTip');
+    if (!tipEl) {
+      tipEl = document.createElement('div');
+      tipEl.id = 'tuScatterTip';
+      tipEl.className = 'rs-tooltip';
+      document.body.appendChild(tipEl);
     }
 
-    var points = rows.map(function (r) {
-      var rv  = +(r[yCol])  || 0;
-      var rad = sizeCol ? Math.max(5, Math.min(18, (+r[sizeCol] || 0) / 60)) : 7;
-      var bg  = rv >= 60 ? 'rgba(155,35,53,0.80)'
-              : rv >= 20 ? 'rgba(217,119,6,0.75)'
-              :            'rgba(74,111,165,0.60)';
-      return { x: +(r[xCol]) || 0, y: rv, r: rad, name: nameCol ? r[nameCol] : '', bg: bg, row: r };
-    });
-
-    new window.Chart(canvas, {
-      type: 'bubble',
-      data: {
-        datasets: [{
-          label: 'VAVs',
-          data: points.map(function (p) { return { x: p.x, y: p.y, r: p.r }; }),
-          backgroundColor: points.map(function (p) { return p.bg; }),
-          borderColor:     points.map(function (p) { return p.bg.replace(/[\d.]+\)$/, '1)'); }),
-          borderWidth: 1
-        }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            backgroundColor: '#1F2937', titleFont: { size: 12, weight: '600' },
-            bodyFont: { size: 11 }, padding: 10, cornerRadius: 6,
-            callbacks: {
-              title: function (items) { return points[items[0].dataIndex].name || 'VAV'; },
-              label: function (item) {
-                var p = points[item.dataIndex];
-                var lines = ['Zone Temp: ' + p.x + '\u00b0F', 'Reheat Valve: ' + p.y + '%'];
-                if (sizeCol) lines.push('Airflow: ' + (p.row[sizeCol] || '\u2014') + ' CFM');
-                return lines;
-              }
-            }
-          }
-        },
-        scales: {
-          x: {
-            title: { display: true, text: 'Zone Temp (\u00b0F)', font: { size: 11 }, color: '#9CA3AF' },
-            ticks: { font: { size: 10 }, color: '#9CA3AF' }, grid: { color: '#F3F4F6' }
-          },
-          y: {
-            min: 0, max: 100,
-            title: { display: true, text: 'Reheat Valve (%)', font: { size: 11 }, color: '#9CA3AF' },
-            ticks: { font: { size: 10 }, color: '#9CA3AF', callback: function (v) { return v + '%'; } },
-            grid: { color: '#F3F4F6' }
-          }
-        }
+    function renderData(data) {
+      if (legEl) legEl.innerHTML = RS.legendHTML();
+      if (sumEl) sumEl.innerHTML = RS.summaryHTML(data);
+      var selectedId = null;
+      function redraw() {
+        RS.render(svgEl, tipEl, data, selectedId, function (id) {
+          selectedId = id === selectedId ? null : id;
+          redraw();
+        });
       }
-    });
+      redraw();
+    }
+
+    function showError(msg) {
+      if (legEl) legEl.innerHTML = '';
+      if (sumEl) sumEl.innerHTML = '';
+      svgEl.innerHTML = '';
+      if (viewEl) {
+        var errDiv = viewEl.querySelector('.rs-error-screen');
+        if (!errDiv) { errDiv = document.createElement('div'); errDiv.className = 'rs-error-screen'; viewEl.appendChild(errDiv); }
+        errDiv.innerHTML =
+          '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#9B2335" stroke-width="1.5">' +
+          '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="16" r="1" fill="#9B2335"/></svg>' +
+          '<div class="rs-error-title">Unable to Load Reheat Data</div>' +
+          '<div class="rs-error-msg">' + msg + '</div>';
+      }
+    }
+
+    function clearError() {
+      if (viewEl) { var e = viewEl.querySelector('.rs-error-screen'); if (e) e.remove(); }
+    }
+
+    if (ctx && ctx.attestKey && ctx.siteRef) {
+      // Loading state
+      clearError();
+      if (legEl) legEl.innerHTML = '<span style="color:#9CA3AF;font-size:12px">Loading\u2026</span>';
+      if (sumEl) sumEl.innerHTML = '';
+      svgEl.innerHTML = '';
+
+      var dateArg = (ctx.datesStart && ctx.datesEnd)
+        ? ctx.datesStart + '..' + ctx.datesEnd
+        : 'today()';
+      var axon = 'view_reheatReport_pubUI(readAll(vav and siteRef==' + ctx.siteRef + '), ' + dateArg + ')';
+      console.log('[ReheatScatter] Axon:', axon);
+
+      API.evalAxon(ctx.attestKey, ctx.projectName, axon)
+        .then(function (grid) {
+          var parsed = HP.parseGrid(grid);
+          if (!parsed.rows.length) {
+            showError('No reheat data returned for this site and date range.');
+            return;
+          }
+          clearError();
+          renderData(RS.fromReheatGrid(parsed.rows));
+        })
+        .catch(function (err) {
+          console.error('[TU] Reheat scatter fetch failed:', err);
+          showError(err && err.message ? err.message : 'Failed to load reheat data. Check console for details.');
+        });
+    } else {
+      renderData(RS.generateDemo());
+    }
   }
 };

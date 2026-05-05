@@ -31,18 +31,26 @@ window.mbcxDashboard = window.mbcxDashboard || {};
     ].join('\n');
   }
 
-  // If toAxon() returns a nav: URI (@nav:site.site.<base64>), decode the base64
-  // to extract the underlying plain ref (@p:proj:r:xxx).
-  function _resolveNavRef(axon) {
-    var m = axon && axon.match(/^@nav:[^.]+\.[^.]+\.(.+)$/);
-    if (!m) return axon;
+  // Nav refs (@nav:type.sub.BASE64) encode "id:@p:project:r:UUID" in base64.
+  // Extract the full project-qualified ref (@p:project:r:UUID) — that is
+  // what SkySpark Axon functions expect as a Ref argument.
+  function _resolveNavRef(ref) {
+    if (!ref || ref.indexOf('@nav:') !== 0) return ref;
+    var parts = ref.slice(5).split('.'); // strip @nav: then split on dots
+    var b64 = parts[parts.length - 1];  // last segment is the base64 payload
     try {
-      var decoded = atob(m[1]);
-      // decoded looks like "id:@p:saintFrancisHealthSystem:r:3120b1ad-815b8812"
-      var refM = decoded.match(/@[a-zA-Z0-9:._\-]+/);
-      if (refM) return refM[0];
-    } catch (e) { /* atob failed — leave as-is */ }
-    return axon;
+      var decoded = atob(b64); // "id:@p:waubonseeCommunityCollege:r:308c0427-5b3d45a7"
+      console.log('[mbcxDashboard] nav decoded:', decoded);
+      // Take everything from the first @ — that is the full Ref literal.
+      // Trim any trailing whitespace or dis suffix (space + display name).
+      var atIdx = decoded.indexOf('@');
+      if (atIdx !== -1) {
+        var r = decoded.slice(atIdx).trim();
+        var sp = r.indexOf(' ');
+        return sp !== -1 ? r.slice(0, sp) : r; // "@p:project:r:uuid"
+      }
+    } catch (e) { console.warn('[mbcxDashboard] nav decode failed:', e); }
+    return ref;
   }
 
   NS.onUpdate = function (arg) {
@@ -53,7 +61,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
 
     elem.style.width  = '100%';
     elem.style.height = '100%';
-    elem.style.overflow = 'auto';
+    elem.style.overflow = 'hidden';
 
     var container = document.createElement('div');
     container.id = 'mbcxDashboard';
@@ -74,21 +82,29 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       try {
         var siteVal = view.var('site');
         if (siteVal != null) {
-          var axonStr;
-          if (typeof siteVal.toAxon === 'function') {
-            axonStr = siteVal.toAxon();
+          // Log raw values to aid diagnosis
+          var _toAxon = typeof siteVal.toAxon === 'function' ? siteVal.toAxon() : null;
+          var _toStr  = typeof siteVal.toStr  === 'function' ? siteVal.toStr()  : String(siteVal);
+          console.log('[mbcxDashboard] site toAxon:', _toAxon, '| toStr:', _toStr);
+
+          if (_toAxon) {
+            // Decode @nav: refs to plain @p:project:r:uuid; pass others through.
+            siteRef = _resolveNavRef(_toAxon);
           } else {
-            var s;
-            try { s = typeof siteVal.toStr === 'function' ? siteVal.toStr() : String(siteVal); }
-            catch (e2) { s = String(siteVal); }
-            axonStr = (s.charAt(0) === '[' && s.charAt(s.length - 1) === ']')
-              ? '@' + s.slice(1, -1)
-              : (s.charAt(0) === '@' ? s : '@' + s);
+            // Fallback: toStr() returns Fantom bracket form "[nav:...]", "@id",
+            // plain "id", or the dis name. Normalize to "@ref" then resolve.
+            var s = _toStr.trim();
+            // Fantom bracket notation "[nav:site.site.BASE64]" → "@nav:site.site.BASE64"
+            if (s.charAt(0) === '[' && s.charAt(s.length - 1) === ']') {
+              s = '@' + s.slice(1, s.length - 1);
+            } else if (s.charAt(0) !== '@') {
+              s = '@' + s;
+            }
+            var spaceIdx = s.indexOf(' ');
+            if (spaceIdx !== -1) s = s.slice(0, spaceIdx);
+            siteRef = _resolveNavRef(s);
           }
-          // toAxon() may return a nav: URI like @nav:site.site.<base64>
-          // The base64 encodes "id:@p:proj:r:xxx" — extract the plain ref.
-          siteRef = _resolveNavRef(axonStr);
-          console.log('[mbcxDashboard] siteRef resolved:', siteRef);
+          console.log('[mbcxDashboard] siteRef:', siteRef);
         }
       } catch (e) {
         console.warn('[mbcxDashboard] Could not read site var:', e);
@@ -112,23 +128,25 @@ window.mbcxDashboard = window.mbcxDashboard || {};
 
     var ctx = { attestKey: attestKey, projectName: projectName, siteRef: siteRef,
                 datesStart: datesStart, datesEnd: datesEnd, siteName: null };
+    console.log('[mbcxDashboard] ctx:', {
+      hasAttestKey: !!attestKey, projectName: projectName,
+      siteRef: siteRef, datesStart: datesStart, datesEnd: datesEnd
+    });
 
     function launch(data) {
       container.innerHTML = '';
-      NS.App.init(container, data, ctx);
+      try { NS.App.init(container, data, ctx); }
+      catch (e) { console.error('[mbcxDashboard] App.init failed:', e); throw e; }
       // Fetch site name in parallel; update title bar when ready
-      if (attestKey && siteRef) {
-        NS.api.evalAxon(attestKey, projectName, 'readById(' + siteRef + ').dis')
-          .then(function (grid) {
-            var HP = NS.haystackParser;
-            var parsed = HP.parseGrid(HP ? grid : grid);
-            if (parsed.rows.length) {
-              var row = parsed.rows[0];
-              var key = Object.keys(row)[0];
-              ctx.siteName = row[key] || null;
+      if (attestKey && ctx.siteRef) {
+        NS.api.evalAxonVal(attestKey, projectName, 'readById(' + ctx.siteRef + ').dis')
+          .then(function (val) {
+            var dis = val && (typeof val === 'string' ? val : val.val || null);
+            if (dis) {
+              ctx.siteName = dis;
+              var el = container.querySelector('#mbcxDashTitleSite');
+              if (el) el.textContent = dis;
             }
-            var el = container.querySelector('#mbcxDashTitleSite');
-            if (el && ctx.siteName) el.textContent = ctx.siteName;
           })
           .catch(function () {});
       }
@@ -138,10 +156,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       var gen = ++_fetchGen;
       container.innerHTML = '<div style="padding:2rem;color:#888">Loading\u2026</div>';
       NS.evals.loadData(attestKey, projectName)
-        .then(function (data) {
-          if (gen !== _fetchGen) return;
-          launch(data);
-        })
+        .then(function (data) { if (gen !== _fetchGen) return; launch(data); })
         .catch(function (err) {
           if (gen !== _fetchGen) return;
           console.warn('[mbcxDashboard] Live data failed, falling back to demo:', err);

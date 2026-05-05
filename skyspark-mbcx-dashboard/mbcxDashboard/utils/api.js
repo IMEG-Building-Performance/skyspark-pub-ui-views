@@ -5,16 +5,7 @@ window.mbcxDashboard.api = window.mbcxDashboard.api || {};
 
 (function (API) {
 
-  /**
-   * POST an Axon expression to the SkySpark REST eval endpoint.
-   *
-   * @param {string} attestKey   - Session attest key from view.session().attestKey()
-   * @param {string} projectName - Project name from view.session().proj().name()
-   * @param {string} axonExpr    - Axon expression to evaluate
-   * @returns {Promise<object>}  - Resolves with the parsed JSON response (Haystack grid)
-   */
-  API.evalAxon = function (attestKey, projectName, axonExpr) {
-    // SkySpark eval endpoint expects a Zinc grid with an "expr" column
+  function _doFetch(attestKey, projectName, axonExpr) {
     var body = 'ver: "3.0"\nexpr\n"' + axonExpr.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
     return fetch('/api/' + projectName + '/eval', {
       method: 'POST',
@@ -32,8 +23,31 @@ window.mbcxDashboard.api = window.mbcxDashboard.api || {};
         });
       }
       return r.json();
-    }).then(function (grid) {
-      return API.unwrapGrid(grid);
+    });
+  }
+
+  /**
+   * Evaluate an Axon expression that returns a grid.
+   * Resolves with a Haystack grid (unwrapped from the eval envelope).
+   */
+  API.evalAxon = function (attestKey, projectName, axonExpr) {
+    return _doFetch(attestKey, projectName, axonExpr).then(function (data) {
+      return API.unwrapGrid(data);
+    });
+  };
+
+  /**
+   * Evaluate an Axon expression that returns a scalar value (Ref, Number, Str…).
+   * Resolves with the raw Haystack JSON value (e.g. {_kind:"Ref", val:"xxx", dis:"…"}).
+   */
+  API.evalAxonVal = function (attestKey, projectName, axonExpr) {
+    return _doFetch(attestKey, projectName, axonExpr).then(function (data) {
+      if (data.rows && data.rows.length === 1 &&
+          data.cols && data.cols.length === 1 &&
+          data.cols[0].name === 'val') {
+        return data.rows[0].val;
+      }
+      return null;
     });
   };
 
@@ -46,6 +60,9 @@ window.mbcxDashboard.api = window.mbcxDashboard.api || {};
     ) {
       var inner = data.rows[0].val;
       if (inner && inner.rows && inner.cols) return inner;
+      // Axon function returned null or a non-grid scalar — treat as empty grid
+      console.warn('[mbcxDashboard] API: function returned null or non-grid value:', inner);
+      return { cols: [], rows: [] };
     }
     return data;
   };

@@ -1,0 +1,9 @@
+dis: "MBCX Trending"
+appName: "mbcxTrending"
+view: "mbcxTrendingView"
+src:
+  view:       { inherit:"js" }
+  jsHandler:  { var defVal:"mbcxTrendingHandler" }
+  site:       { var kind:"Ref" }
+  datesStart: { var kind:"Date" }
+  datesEnd:   { var kind:"Date" }

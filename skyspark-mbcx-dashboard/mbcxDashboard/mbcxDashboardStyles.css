@@ -36,7 +36,10 @@
   -webkit-font-smoothing: antialiased;
   box-sizing: border-box;
   width: 100%;
-  min-height: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 #mbcxDashboard *, #mbcxDashboard *::before, #mbcxDashboard *::after {
@@ -602,4 +605,254 @@
   font-size: 12px;
   opacity: 0.78;
   font-weight: 400;
+}
+/* ── Tab navigation ── */
+#mbcxDashboard .dash-tab-bar {
+  display: flex;
+  align-items: flex-end;
+  gap: 0;
+  background: var(--imeg-blue);
+  padding: 0 28px;
+  flex-shrink: 0;
+}
+#mbcxDashboard .dash-tab {
+  padding: 9px 22px 8px;
+  font-size: 13px; font-weight: 500;
+  color: rgba(255,255,255,0.65);
+  background: transparent;
+  border: none; border-bottom: 3px solid transparent;
+  cursor: pointer; transition: color 0.15s, background 0.15s;
+  border-radius: 4px 4px 0 0;
+  margin-bottom: 0;
+  letter-spacing: 0.01em;
+}
+#mbcxDashboard .dash-tab:hover { color: rgba(255,255,255,0.9); background: rgba(255,255,255,0.08); }
+#mbcxDashboard .dash-tab.active {
+  color: #fff; font-weight: 600;
+  border-bottom-color: #fff;
+  background: rgba(255,255,255,0.12);
+}
+
+/* ── Scrollable content area ── */
+#mbcxDashboard .dash-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  background: var(--gray-50);
+}
+#mbcxDashboard .dash-content--fixed { overflow: hidden; }
+
+/* ── Fault List full-page (fl-page) ── */
+#mbcxDashboard .fl-page { padding: 24px 32px 48px; }
+#mbcxDashboard .fl-page-header {
+  display: flex; align-items: baseline; gap: 16px;
+  margin-bottom: 20px;
+}
+#mbcxDashboard .fl-page-title {
+  font-size: 20px; font-weight: 700; color: var(--gray-900); letter-spacing: -0.01em;
+}
+#mbcxDashboard .fl-page-meta { font-size: 13px; color: var(--gray-400); }
+
+/* ── Reheat Scatter (rs-*) ── */
+#mbcxDashboard .rs-svg {
+  width: 100%; height: auto; display: block;
+  max-height: 440px;
+}
+#mbcxDashboard .rs-legend {
+  display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 8px; align-items: center;
+}
+#mbcxDashboard .rs-leg {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--gray-600);
+}
+#mbcxDashboard .rs-leg-dot {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+}
+#mbcxDashboard .rs-summary {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; align-items: center;
+}
+#mbcxDashboard .rs-sum { display: inline-flex; }
+#mbcxDashboard .rs-sum-total { font-size: 11px; color: var(--gray-400); margin-left: 4px; }
+
+/* Scatter badges */
+#mbcxDashboard .rs-badge {
+  display: inline-block; font-size: 11px; font-weight: 600; border-radius: 4px;
+  padding: 2px 8px; white-space: nowrap;
+}
+#mbcxDashboard .rs-badge-faulty  { background: #fee2e2; color: #991b1b; }
+#mbcxDashboard .rs-badge-leaking { background: #ede9fe; color: #5b21b6; }
+#mbcxDashboard .rs-badge-watch   { background: #fef3c7; color: #92400e; }
+#mbcxDashboard .rs-badge-ok      { background: #dbeafe; color: #1e40af; }
+#mbcxDashboard .rs-badge-sensor  { background: #f1f5f9; color: #475569; }
+
+/* Scatter tooltip (appended to body) */
+.rs-tooltip {
+  position: fixed; z-index: 9999; pointer-events: none;
+  background: #1F2937; color: #fff; border-radius: 7px;
+  padding: 10px 14px; font-size: 12px; font-family: inherit;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.22);
+  white-space: nowrap; opacity: 0; transition: opacity 0.1s;
+  min-width: 160px;
+}
+.rs-tooltip.visible { opacity: 1; }
+.rs-tip-row {
+  display: flex; justify-content: space-between; gap: 20px;
+  margin-top: 4px; font-size: 11px; color: rgba(255,255,255,0.75);
+}
+.rs-tip-val { font-weight: 600; color: #fff; }
+.rs-tip-flag {
+  margin-top: 6px; font-size: 11px; font-weight: 700;
+  padding: 2px 0; border-top: 1px solid rgba(255,255,255,0.12);
+}
+.rs-flag-faulty  { color: #fca5a5; }
+.rs-flag-leaking { color: #c4b5fd; }
+.rs-flag-watch   { color: #fde68a; }
+.rs-flag-ok      { color: #93c5fd; }
+.rs-flag-sensor  { color: #94a3b8; }
+
+/* ── Fault List (fl-*) ── */
+#mbcxDashboard .fl-kpi-strip {
+  grid-template-columns: repeat(6, 1fr) !important;
+}
+#mbcxDashboard .fl-kpi-critical { color: #9B2335; }
+#mbcxDashboard .fl-kpi-warning  { color: #D97706; }
+
+#mbcxDashboard .fl-badge {
+  display: inline-block; font-size: 11px; font-weight: 600;
+  border-radius: 4px; padding: 2px 8px; white-space: nowrap;
+}
+#mbcxDashboard .fl-badge-critical { background: #fee2e2; color: #991b1b; }
+#mbcxDashboard .fl-badge-warning  { background: #fef3c7; color: #92400e; }
+#mbcxDashboard .fl-badge-active   { background: #dbeafe; color: #1e40af; }
+#mbcxDashboard .fl-badge-ack      { background: #f1f5f9; color: #475569; }
+
+#mbcxDashboard .fl-table { width: 100%; }
+#mbcxDashboard .fl-th    { text-align: left; }
+#mbcxDashboard .fl-td-fault { max-width: 380px; white-space: normal; text-align: left; }
+#mbcxDashboard .fl-td-mono  { font-family: ui-monospace,'SFMono-Regular',Consolas,monospace; font-size: 11px; }
+#mbcxDashboard .fl-row-critical td { border-left: 3px solid #ef4444; }
+#mbcxDashboard .fl-row-warning  td { border-left: 3px solid #f59e0b; }
+#mbcxDashboard .fl-row-critical td:not(:first-child),
+#mbcxDashboard .fl-row-warning  td:not(:first-child) { border-left: none; }
+
+/* ── Reheat Scatter error screen ── */
+#mbcxDashboard .rs-error-screen {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 10px; padding: 48px 24px; text-align: center;
+}
+#mbcxDashboard .rs-error-title {
+  font-size: 14px; font-weight: 600; color: #9B2335;
+}
+#mbcxDashboard .rs-error-msg {
+  font-size: 12px; color: var(--gray-500); max-width: 360px; line-height: 1.6;
+}
+
+/* ── Fault Detail Page (fd-*) ────────────────────────────────────────────── */
+#mbcxDashboard .fd-page { display:flex; flex-direction:column; min-height:100%; background:var(--gray-50); }
+
+#mbcxDashboard .fd-hd {
+  display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+  background:#fff; border-bottom:1px solid #E5E7EB; padding:14px 28px; flex-shrink:0;
+}
+#mbcxDashboard .fd-back {
+  background:none; border:1px solid #D1D5DB; padding:6px 14px; border-radius:6px;
+  cursor:pointer; font-size:12px; font-weight:500; color:var(--gray-600); flex-shrink:0;
+  transition:background 0.15s, color 0.15s; font-family:inherit;
+}
+#mbcxDashboard .fd-back:hover { background:var(--gray-50); color:var(--gray-900); }
+#mbcxDashboard .fd-hd-center { flex:1; min-width:0; }
+#mbcxDashboard .fd-hd-equip {
+  font-size:11px; font-weight:600; color:var(--gray-400);
+  text-transform:uppercase; letter-spacing:0.05em; margin-bottom:2px;
+}
+#mbcxDashboard .fd-hd-fault { font-size:15px; font-weight:700; color:var(--gray-900); line-height:1.3; }
+#mbcxDashboard .fd-hd-badges { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+#mbcxDashboard .fd-dur { font-size:12px; color:var(--gray-500); }
+
+#mbcxDashboard .fd-body { padding:20px 28px 40px; display:flex; flex-direction:column; gap:16px; }
+
+#mbcxDashboard .fd-card {
+  background:#fff; border:1px solid #E5E7EB; border-radius:10px; padding:18px 20px;
+}
+#mbcxDashboard .fd-card-title {
+  font-size:13px; font-weight:700; color:var(--gray-900);
+  margin-bottom:14px; display:flex; align-items:baseline; gap:8px;
+}
+#mbcxDashboard .fd-card-sub { font-size:11px; font-weight:400; color:var(--gray-400); }
+
+/* Chart */
+#mbcxDashboard .fd-chips { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+#mbcxDashboard .fd-chip {
+  border:1.5px solid var(--chip-color,#9CA3AF); background:none;
+  color:var(--chip-color,#9CA3AF); padding:3px 10px; border-radius:20px;
+  font-size:11px; font-weight:500; cursor:pointer; font-family:inherit;
+  transition:background 0.15s, color 0.15s, opacity 0.15s;
+}
+#mbcxDashboard .fd-chip.fd-chip-active { background:var(--chip-color,#9CA3AF); color:#fff; }
+#mbcxDashboard .fd-chip.fd-chip-off { opacity:0.35; }
+#mbcxDashboard .fd-chart-wrap { height:260px; position:relative; }
+
+/* 3-column grid */
+#mbcxDashboard .fd-cols { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
+@media (max-width:960px) { #mbcxDashboard .fd-cols { grid-template-columns:1fr; } }
+
+/* Diagnostics */
+#mbcxDashboard .fd-diag-list { display:flex; flex-direction:column; gap:8px; }
+#mbcxDashboard .fd-diag-item {
+  padding:10px 12px; border-radius:6px;
+  border-left:3px solid #D1D5DB; background:var(--gray-50);
+}
+#mbcxDashboard .fd-diag-cause    { border-left-color:#9B2335; background:#FEF2F2; }
+#mbcxDashboard .fd-diag-critical { border-left-color:#EF4444; background:#FEF2F2; }
+#mbcxDashboard .fd-diag-warning  { border-left-color:#F59E0B; background:#FFFBEB; }
+#mbcxDashboard .fd-diag-info     { border-left-color:#3B82F6; background:#EFF6FF; }
+#mbcxDashboard .fd-diag-action   { border-left-color:#10B981; background:#F0FDF4; }
+#mbcxDashboard .fd-diag-label {
+  font-size:10px; font-weight:700; text-transform:uppercase;
+  letter-spacing:0.05em; color:var(--gray-500); margin-bottom:4px;
+}
+#mbcxDashboard .fd-diag-text { font-size:12px; color:var(--gray-700); line-height:1.5; }
+
+/* Related issues */
+#mbcxDashboard .fd-related { display:flex; flex-direction:column; gap:8px; }
+#mbcxDashboard .fd-related-item {
+  padding:10px 12px; border:1px solid #F3F4F6; border-radius:6px; background:var(--gray-50);
+}
+#mbcxDashboard .fd-related-fault { font-size:12px; color:var(--gray-700); display:block; margin:4px 0 2px; line-height:1.4; }
+#mbcxDashboard .fd-related-dur   { font-size:11px; color:var(--gray-400); }
+#mbcxDashboard .fd-empty { font-size:12px; color:var(--gray-400); padding:12px 0; }
+
+/* Comments */
+#mbcxDashboard .fd-comments { display:flex; flex-direction:column; gap:12px; margin-bottom:12px; }
+#mbcxDashboard .fd-comment-hd { display:flex; align-items:flex-start; gap:8px; margin-bottom:5px; }
+#mbcxDashboard .fd-avatar {
+  width:28px; height:28px; border-radius:50%; background:var(--imeg-blue);
+  color:#fff; font-size:10px; font-weight:700;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+#mbcxDashboard .fd-avatar-me { background:#10b981; }
+#mbcxDashboard .fd-comment-author { font-size:12px; font-weight:600; color:var(--gray-800); }
+#mbcxDashboard .fd-comment-date   { font-size:11px; color:var(--gray-400); }
+#mbcxDashboard .fd-comment-body   { font-size:12px; color:var(--gray-700); line-height:1.55; padding-left:36px; }
+#mbcxDashboard .fd-comment-new { animation:fdFadeIn 0.25s ease; }
+@keyframes fdFadeIn { from { opacity:0; transform:translateY(-5px); } to { opacity:1; transform:none; } }
+
+/* Add note */
+#mbcxDashboard .fd-note-area { display:flex; flex-direction:column; gap:6px; padding-top:12px; border-top:1px solid #F3F4F6; }
+#mbcxDashboard .fd-note-input {
+  width:100%; box-sizing:border-box; border:1px solid #E5E7EB; border-radius:6px;
+  padding:8px 10px; font-size:12px; font-family:inherit; resize:none;
+  color:var(--gray-800); background:var(--gray-50); transition:border-color 0.15s;
+}
+#mbcxDashboard .fd-note-input:focus { border-color:var(--imeg-blue); outline:none; background:#fff; }
+#mbcxDashboard .fd-note-btn {
+  align-self:flex-end; background:var(--imeg-blue); color:#fff; border:none;
+  padding:6px 16px; border-radius:6px; font-size:12px; font-weight:600;
+  cursor:pointer; font-family:inherit; transition:opacity 0.15s;
+}
+#mbcxDashboard .fd-note-btn:hover { opacity:0.88; }
+
+/* Clickable fault rows */
+#mbcxDashboard .fl-row-clickable { cursor:pointer; }
+#mbcxDashboard .fl-row-clickable:hover td { background:#F9FAFB; }
 }

@@ -8,9 +8,10 @@ var mbcxDashboardHandler = {};
 
 (function () {
   var BASE = '/pub/ui/mbcxDashboard/';
-  var BUST = '?_v=' + Date.now();
+  // Bump MODULE_VERSION whenever the module list changes — forces a fresh load
+  // even if SkySpark reuses this closure across navigations.
+  var MODULE_VERSION = 'v17';
 
-  // Chart.js loaded first (absolute URL), then local modules in dependency order
   var modules = [
     { src: 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js', abs: true },
     { src: 'constants/demoData.js' },
@@ -23,23 +24,27 @@ var mbcxDashboardHandler = {};
     { src: 'components/BuildingMeters.js' },
     { src: 'components/CUP.js' },
     { src: 'components/AHU.js' },
+    { src: 'components/ReheatScatter.js' },
     { src: 'components/TerminalUnits.js' },
+    { src: 'components/FaultList.js' },
+    { src: 'components/FaultDetail.js' },
+    { src: 'components/TrendingView.js' },
     { src: 'components/Footer.js' },
     { src: 'App.js' },
     { src: 'mbcxDashboardUI.js' }
   ];
 
-  var loaded = false, loading = false, pendingCalls = [];
+  var loadedVersion = null, loading = false, pendingCalls = [];
 
   function loadModules(cb) {
+    var bust = '?_v=' + MODULE_VERSION + '.' + Date.now();
     var i = 0;
     function next() {
       if (i >= modules.length) { cb(); return; }
       var m = modules[i];
-      // Skip Chart.js if already present on the page
       if (m.abs && window.Chart) { i++; next(); return; }
       var s = document.createElement('script');
-      s.src = m.abs ? m.src : (BASE + m.src + BUST);
+      s.src = m.abs ? m.src : (BASE + m.src + bust);
       s.async = false;
       s.onload = function () { i++; next(); };
       s.onerror = function () {
@@ -52,7 +57,7 @@ var mbcxDashboardHandler = {};
   }
 
   mbcxDashboardHandler.onUpdate = function (arg) {
-    if (loaded) {
+    if (loadedVersion === MODULE_VERSION) {
       window.mbcxDashboardApp.onUpdate(arg);
       return;
     }
@@ -60,9 +65,10 @@ var mbcxDashboardHandler = {};
     if (!loading) {
       loading = true;
       loadModules(function () {
-        loaded = true;
+        loadedVersion = MODULE_VERSION;
         loading = false;
-        console.log('[mbcxDashboard] All modules loaded.');
+        var comps = Object.keys((window.mbcxDashboard || {}).components || {});
+        console.log('[mbcxDashboard] ' + MODULE_VERSION + ' loaded. Components: ' + comps.join(', '));
         pendingCalls.forEach(function (a) { window.mbcxDashboardApp.onUpdate(a); });
         pendingCalls = [];
       });

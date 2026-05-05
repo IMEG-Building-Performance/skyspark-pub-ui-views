@@ -1,0 +1,122 @@
+/* mbcxTrendingStyles.css — scoped to #mbcxTrending */
+
+#mbcxTrending {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: #F9FAFB;
+  color: #111827;
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+#mbcxTrending *, #mbcxTrending *::before, #mbcxTrending *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* Title bar */
+#mbcxTrending .tr-title-bar {
+  background: #4A6FA5;
+  color: #fff;
+  padding: 12px 24px;
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  flex-shrink: 0;
+}
+#mbcxTrending .tr-title-site { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; flex: 1; min-width: 0; }
+#mbcxTrending .tr-title-dates { font-size: 12px; opacity: 0.78; flex-shrink: 0; }
+#mbcxTrending .tr-back-btn {
+  font-size: 12px; color: rgba(255,255,255,0.78); text-decoration: none;
+  border: 1px solid rgba(255,255,255,0.3); border-radius: 5px; padding: 4px 10px;
+  flex-shrink: 0; transition: background 0.12s;
+}
+#mbcxTrending .tr-back-btn:hover { background: rgba(255,255,255,0.15); }
+
+/* Layout */
+#mbcxTrending .tr-layout {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Sidebar */
+#mbcxTrending .tr-sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: #fff;
+  border-right: 1px solid #E5E7EB;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+#mbcxTrending .tr-sidebar-label {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+  color: #9CA3AF; padding: 14px 16px 8px;
+}
+#mbcxTrending .tr-group-label {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+  color: #6B7280; padding: 10px 16px 4px;
+}
+#mbcxTrending .tr-equip-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 16px; font-size: 12px; font-weight: 500;
+  color: #374151; cursor: pointer; transition: background 0.1s;
+  border-left: 3px solid transparent;
+}
+#mbcxTrending .tr-equip-item:hover { background: #F9FAFB; }
+#mbcxTrending .tr-equip-item.active { background: #EBF0F8; border-left-color: #4A6FA5; color: #1e3a5f; }
+#mbcxTrending .tr-equip-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+#mbcxTrending .tr-dot-ahu { background: #5C8A3C; }
+#mbcxTrending .tr-dot-vav { background: #C2410C; }
+
+/* Main area */
+#mbcxTrending .tr-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 20px 24px;
+}
+#mbcxTrending .tr-empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  flex: 1; gap: 12px; color: #9CA3AF; font-size: 14px; text-align: center;
+}
+#mbcxTrending .tr-chart-area { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+
+/* Chart header */
+#mbcxTrending .tr-chart-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 16px; margin-bottom: 14px; flex-wrap: wrap;
+}
+#mbcxTrending .tr-chart-title {
+  font-size: 16px; font-weight: 700; color: #1F2937; letter-spacing: -0.01em;
+}
+
+/* Point chips */
+#mbcxTrending .tr-point-chips {
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+#mbcxTrending .tr-chip {
+  font-size: 11px; font-weight: 500; border-radius: 20px; padding: 4px 12px; cursor: pointer;
+  border: 1.5px solid var(--chip-color, #9CA3AF);
+  background: var(--chip-color, #9CA3AF);
+  color: #fff;
+  transition: opacity 0.15s, background 0.15s;
+}
+#mbcxTrending .tr-chip.tr-chip-off {
+  background: transparent;
+  color: var(--chip-color, #9CA3AF);
+  opacity: 0.6;
+}
+
+/* Chart */
+#mbcxTrending .tr-chart-wrap {
+  flex: 1; min-height: 0; position: relative;
+  background: #fff; border: 1px solid #E5E7EB; border-radius: 8px;
+  padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+#mbcxTrending .tr-chart-wrap canvas { width: 100% !important; height: 100% !important; }
