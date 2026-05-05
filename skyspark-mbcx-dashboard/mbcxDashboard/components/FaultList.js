@@ -192,8 +192,9 @@ window.mbcxDashboard.components.FaultList = {
 
     API.evalAxon(ctx.attestKey, ctx.projectName, axon)
       .then(function (grid) {
+        console.log('[FaultList] Raw grid:', JSON.stringify(grid).slice(0, 400));
         var parsed = HP.parseGrid(grid);
-        console.log('[FaultList] Live cols:', parsed.cols);
+        console.log('[FaultList] Live cols:', parsed.cols.map(function(c){return typeof c==='string'?c:c.name;}), '(' + parsed.rows.length + ' rows)');
         if (!parsed.rows.length) {
           var tbody = container.querySelector('#flTbody');
           if (tbody) tbody.innerHTML = '<tr><td style="padding:24px;color:#9CA3AF;font-size:12px;text-align:center;">No faults returned for this site and date range.</td></tr>';

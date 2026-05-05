@@ -401,8 +401,9 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
 
     API.evalAxon(ctx.attestKey, ctx.projectName, axon)
       .then(function (grid) {
+        console.log('[TrendingView] Raw equip grid:', JSON.stringify(grid).slice(0, 400));
         var parsed = HP.parseGrid(grid);
-        console.log('[TrendingView] Equip list cols:', parsed.cols, '(' + parsed.rows.length + ' rows)');
+        console.log('[TrendingView] Equip list cols:', parsed.cols.map(function(c){return typeof c==='string'?c:c.name;}), '(' + parsed.rows.length + ' rows)');
         if (!parsed.rows.length) {
           if (listEl) listEl.innerHTML = '<div style="padding:12px;color:#9CA3AF;font-size:12px">No equipment found</div>';
           return;
