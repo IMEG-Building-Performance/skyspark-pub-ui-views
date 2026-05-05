@@ -855,4 +855,143 @@
 /* Clickable fault rows */
 #mbcxDashboard .fl-row-clickable { cursor:pointer; }
 #mbcxDashboard .fl-row-clickable:hover td { background:#F9FAFB; }
+
+/* Fault list agenda button column */
+#mbcxDashboard .fl-th-act { width:36px; }
+#mbcxDashboard .fl-td-act { width:36px; text-align:center; padding:6px 4px; }
+#mbcxDashboard .fl-agenda-btn {
+  width:24px; height:24px; border-radius:50%;
+  border:1.5px solid #D1D5DB; background:none;
+  font-size:13px; font-weight:700; color:#9CA3AF;
+  cursor:pointer; line-height:1; display:inline-flex;
+  align-items:center; justify-content:center;
+  transition:border-color 0.15s, color 0.15s, background 0.15s;
+}
+#mbcxDashboard .fl-agenda-btn:hover { border-color:var(--imeg-blue); color:var(--imeg-blue); }
+#mbcxDashboard .fl-agenda-btn.fl-agenda-btn-in { border-color:#10b981; color:#fff; background:#10b981; }
+
+/* FaultDetail — Add to Meeting toggle button */
+#mbcxDashboard .fd-agenda-toggle {
+  border:1px solid #D1D5DB; background:none; padding:5px 12px;
+  border-radius:6px; font-size:12px; font-weight:500;
+  color:var(--gray-600); cursor:pointer; font-family:inherit;
+  transition:border-color 0.15s, color 0.15s, background 0.15s;
+  white-space:nowrap;
+}
+#mbcxDashboard .fd-agenda-toggle:hover { border-color:var(--imeg-blue); color:var(--imeg-blue); }
+#mbcxDashboard .fd-agenda-toggle.fd-agenda-in { border-color:#10b981; background:#f0fdf4; color:#065f46; font-weight:600; }
+
+/* FaultDetail — Meeting presentation nav bar */
+#mbcxDashboard .fd-mtg-nav {
+  position:sticky; top:0; z-index:20;
+  display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+  background:var(--imeg-blue); color:#fff;
+  padding:10px 24px; flex-shrink:0;
+}
+#mbcxDashboard .fd-mtg-pos { font-size:13px; font-weight:600; margin-right:4px; }
+#mbcxDashboard .fd-mtg-arrows { display:flex; gap:6px; }
+#mbcxDashboard .fd-mtg-arrow {
+  background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3);
+  color:#fff; padding:5px 14px; border-radius:5px;
+  font-size:12px; font-weight:500; cursor:pointer; font-family:inherit;
+  transition:background 0.15s;
+}
+#mbcxDashboard .fd-mtg-arrow:hover:not(:disabled) { background:rgba(255,255,255,0.25); }
+#mbcxDashboard .fd-mtg-arrow:disabled { opacity:0.4; cursor:default; }
+#mbcxDashboard .fd-discuss-btn {
+  margin-left:auto; background:rgba(255,255,255,0.15);
+  border:1px solid rgba(255,255,255,0.35); color:#fff;
+  padding:6px 16px; border-radius:6px;
+  font-size:12px; font-weight:600; cursor:pointer; font-family:inherit;
+  transition:background 0.15s;
+}
+#mbcxDashboard .fd-discuss-btn:hover { background:rgba(255,255,255,0.25); }
+#mbcxDashboard .fd-discuss-btn.fd-discuss-done { background:#10b981; border-color:#10b981; }
+
+/* ── Meeting View (mtg-*) ────────────────────────────────────────────────── */
+#mbcxDashboard .mtg-page { padding:28px 32px 48px; min-height:100%; }
+
+#mbcxDashboard .mtg-empty {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:16px; padding:80px 24px; text-align:center;
+}
+#mbcxDashboard .mtg-empty-title {
+  font-size:16px; font-weight:700; color:var(--gray-700);
+}
+#mbcxDashboard .mtg-empty-body {
+  font-size:13px; color:var(--gray-500); max-width:380px; line-height:1.6;
+}
+#mbcxDashboard .mtg-inline-badge {
+  display:inline-flex; align-items:center; justify-content:center;
+  width:20px; height:20px; border-radius:50%;
+  border:1.5px solid var(--gray-400); font-size:12px; font-weight:700;
+  color:var(--gray-500); vertical-align:middle; margin:0 2px;
+}
+
+#mbcxDashboard .mtg-hd {
+  display:flex; align-items:flex-start; justify-content:space-between;
+  gap:16px; margin-bottom:16px;
+}
+#mbcxDashboard .mtg-hd-title {
+  font-size:20px; font-weight:700; color:var(--gray-900); letter-spacing:-0.01em;
+}
+#mbcxDashboard .mtg-hd-meta { font-size:13px; color:var(--gray-400); margin-top:2px; }
+#mbcxDashboard .mtg-clear-btn {
+  background:none; border:1px solid #E5E7EB; padding:6px 14px;
+  border-radius:6px; font-size:12px; font-weight:500; color:var(--gray-500);
+  cursor:pointer; font-family:inherit; transition:border-color 0.15s, color 0.15s; white-space:nowrap;
+}
+#mbcxDashboard .mtg-clear-btn:hover { border-color:#ef4444; color:#ef4444; }
+
+#mbcxDashboard .mtg-progress-track {
+  height:5px; background:#F3F4F6; border-radius:99px; margin-bottom:20px; overflow:hidden;
+}
+#mbcxDashboard .mtg-progress-fill {
+  height:100%; background:#10b981; border-radius:99px; transition:width 0.4s ease;
+}
+
+#mbcxDashboard .mtg-list { display:flex; flex-direction:column; gap:8px; }
+#mbcxDashboard .mtg-item {
+  display:flex; align-items:center; gap:14px;
+  background:#fff; border:1px solid #E5E7EB; border-radius:10px;
+  padding:14px 18px; cursor:pointer;
+  transition:box-shadow 0.15s, border-color 0.15s;
+}
+#mbcxDashboard .mtg-item:hover { border-color:#93c5fd; box-shadow:0 2px 8px rgba(0,0,0,0.06); }
+#mbcxDashboard .mtg-item.mtg-item-done { opacity:0.55; }
+#mbcxDashboard .mtg-item-num {
+  width:28px; height:28px; border-radius:50%;
+  background:var(--gray-100); color:var(--gray-500);
+  font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center;
+  flex-shrink:0;
+}
+#mbcxDashboard .mtg-item-done .mtg-item-num { background:#dcfce7; color:#16a34a; }
+#mbcxDashboard .mtg-item-body { flex:1; min-width:0; }
+#mbcxDashboard .mtg-item-equip {
+  font-size:11px; font-weight:600; color:var(--gray-400);
+  text-transform:uppercase; letter-spacing:0.04em; margin-bottom:2px;
+}
+#mbcxDashboard .mtg-item-fault {
+  font-size:13px; font-weight:500; color:var(--gray-800); line-height:1.4;
+}
+#mbcxDashboard .mtg-item-actions {
+  display:flex; align-items:center; gap:8px; flex-shrink:0;
+}
+#mbcxDashboard .mtg-disc-tag {
+  font-size:11px; font-weight:600; color:#16a34a;
+  background:#dcfce7; padding:2px 8px; border-radius:4px;
+}
+#mbcxDashboard .mtg-present-btn {
+  background:var(--imeg-blue); color:#fff; border:none;
+  padding:6px 14px; border-radius:6px;
+  font-size:12px; font-weight:600; cursor:pointer; font-family:inherit;
+  transition:opacity 0.15s;
+}
+#mbcxDashboard .mtg-present-btn:hover { opacity:0.85; }
+#mbcxDashboard .mtg-remove-btn {
+  background:none; border:none; color:var(--gray-400);
+  font-size:18px; line-height:1; cursor:pointer; padding:2px 6px;
+  border-radius:4px; transition:color 0.15s, background 0.15s;
+}
+#mbcxDashboard .mtg-remove-btn:hover { color:#ef4444; background:#fee2e2; }
 }
