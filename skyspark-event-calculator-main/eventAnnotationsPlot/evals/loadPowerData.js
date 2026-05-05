@@ -12,7 +12,13 @@ window.EventAnnotationsPlot.api.loadPowerData = function(siteRef, startDate, end
   var evalAxon    = window.EventAnnotationsPlot.evalAxon;
   var extractValue = window.EventAnnotationsPlot.extractValue;
   utilityType = utilityType || 'Electric';
-  var axonExpr = 'view_demandByMeter_plot(@' + siteRef + ', ' + startDate + '..' + endDate + ', "Combined Power", "' + utilityType + '")';
+
+  var axonExpr;
+  if (utilityType === 'Water') {
+    axonExpr = 'view_performanceImprovement_waterDashboard(@' + siteRef + ', ' + startDate + '..' + endDate + ', 4, "Combined Water").table';
+  } else {
+    axonExpr = 'view_demandByMeter_plot(@' + siteRef + ', ' + startDate + '..' + endDate + ', "Combined Power", "' + utilityType + '")';
+  }
 
   return evalAxon(axonExpr).then(function(data) {
     if (!data.rows || data.rows.length === 0) return [];
