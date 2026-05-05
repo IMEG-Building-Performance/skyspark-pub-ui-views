@@ -10,7 +10,7 @@ var mbcxDashboardHandler = {};
   var BASE = '/pub/ui/mbcxDashboard/';
   // Bump MODULE_VERSION whenever the module list changes — forces a fresh load
   // even if SkySpark reuses this closure across navigations.
-  var MODULE_VERSION = 'v19';
+  var MODULE_VERSION = 'v20';
 
   var modules = [
     { src: 'vendor/chart.umd.min.js' },
