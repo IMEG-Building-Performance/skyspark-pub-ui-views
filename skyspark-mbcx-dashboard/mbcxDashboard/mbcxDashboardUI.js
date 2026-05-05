@@ -88,16 +88,21 @@ window.mbcxDashboard = window.mbcxDashboard || {};
           console.log('[mbcxDashboard] site toAxon:', _toAxon, '| toStr:', _toStr);
 
           if (_toAxon) {
-            // Decode @nav: refs to plain @r:uuid; pass other refs through unchanged.
+            // Decode @nav: refs to plain @p:project:r:uuid; pass others through.
             siteRef = _resolveNavRef(_toAxon);
           } else {
-            // Fallback: toStr() may return "@id", "id", or the dis name.
-            // Strip the dis (anything after the first space) so we get a clean ref.
+            // Fallback: toStr() returns Fantom bracket form "[nav:...]", "@id",
+            // plain "id", or the dis name. Normalize to "@ref" then resolve.
             var s = _toStr.trim();
-            if (s.charAt(0) !== '@') s = '@' + s;
+            // Fantom bracket notation "[nav:site.site.BASE64]" → "@nav:site.site.BASE64"
+            if (s.charAt(0) === '[' && s.charAt(s.length - 1) === ']') {
+              s = '@' + s.slice(1, s.length - 1);
+            } else if (s.charAt(0) !== '@') {
+              s = '@' + s;
+            }
             var spaceIdx = s.indexOf(' ');
             if (spaceIdx !== -1) s = s.slice(0, spaceIdx);
-            siteRef = s;
+            siteRef = _resolveNavRef(s);
           }
           console.log('[mbcxDashboard] siteRef:', siteRef);
         }
