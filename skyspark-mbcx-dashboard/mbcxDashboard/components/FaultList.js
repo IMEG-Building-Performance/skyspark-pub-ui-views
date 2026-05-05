@@ -54,6 +54,7 @@ function _flFindCol(cols, patterns) {
 window.mbcxDashboard.components.FaultList = {
 
   _state: null,
+  onFaultClick: null,
 
   render: function () {
     return [
@@ -279,6 +280,19 @@ window.mbcxDashboard.components.FaultList = {
     });
 
     this._rebuildTbody(container);
+
+    var tbody = container.querySelector('#flTbody');
+    if (tbody) {
+      tbody.addEventListener('click', function (e) {
+        var tr = e.target.closest('tr[data-fid]');
+        if (!tr || !self.onFaultClick) return;
+        var fid = parseInt(tr.getAttribute('data-fid'), 10);
+        var row = self._state && self._state.rows
+          ? self._state.rows.filter(function (f) { return f.id === fid; })[0]
+          : null;
+        if (row) self.onFaultClick(row);
+      });
+    }
   },
 
   _rebuildTbody: function (container) {
@@ -312,7 +326,7 @@ window.mbcxDashboard.components.FaultList = {
       var statusBadge = r.status === 'Active'
         ? '<span class="fl-badge fl-badge-active">Active</span>'
         : '<span class="fl-badge fl-badge-ack">Ack</span>';
-      return '<tr class="fl-row fl-row-' + r.sev + '">' +
+      return '<tr class="fl-row fl-row-' + r.sev + ' fl-row-clickable" data-fid="' + r.id + '">' +
         '<td class="tu-td fl-td-mono">' + r.ts + '</td>' +
         '<td class="tu-td tu-td-name">' + r.equip + '</td>' +
         '<td class="tu-td">' + r.type + '</td>' +

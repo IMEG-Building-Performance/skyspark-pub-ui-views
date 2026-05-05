@@ -746,3 +746,113 @@
 #mbcxDashboard .rs-error-msg {
   font-size: 12px; color: var(--gray-500); max-width: 360px; line-height: 1.6;
 }
+
+/* ── Fault Detail Page (fd-*) ────────────────────────────────────────────── */
+#mbcxDashboard .fd-page { display:flex; flex-direction:column; min-height:100%; background:var(--gray-50); }
+
+#mbcxDashboard .fd-hd {
+  display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+  background:#fff; border-bottom:1px solid #E5E7EB; padding:14px 28px; flex-shrink:0;
+}
+#mbcxDashboard .fd-back {
+  background:none; border:1px solid #D1D5DB; padding:6px 14px; border-radius:6px;
+  cursor:pointer; font-size:12px; font-weight:500; color:var(--gray-600); flex-shrink:0;
+  transition:background 0.15s, color 0.15s; font-family:inherit;
+}
+#mbcxDashboard .fd-back:hover { background:var(--gray-50); color:var(--gray-900); }
+#mbcxDashboard .fd-hd-center { flex:1; min-width:0; }
+#mbcxDashboard .fd-hd-equip {
+  font-size:11px; font-weight:600; color:var(--gray-400);
+  text-transform:uppercase; letter-spacing:0.05em; margin-bottom:2px;
+}
+#mbcxDashboard .fd-hd-fault { font-size:15px; font-weight:700; color:var(--gray-900); line-height:1.3; }
+#mbcxDashboard .fd-hd-badges { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+#mbcxDashboard .fd-dur { font-size:12px; color:var(--gray-500); }
+
+#mbcxDashboard .fd-body { padding:20px 28px 40px; display:flex; flex-direction:column; gap:16px; }
+
+#mbcxDashboard .fd-card {
+  background:#fff; border:1px solid #E5E7EB; border-radius:10px; padding:18px 20px;
+}
+#mbcxDashboard .fd-card-title {
+  font-size:13px; font-weight:700; color:var(--gray-900);
+  margin-bottom:14px; display:flex; align-items:baseline; gap:8px;
+}
+#mbcxDashboard .fd-card-sub { font-size:11px; font-weight:400; color:var(--gray-400); }
+
+/* Chart */
+#mbcxDashboard .fd-chips { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+#mbcxDashboard .fd-chip {
+  border:1.5px solid var(--chip-color,#9CA3AF); background:none;
+  color:var(--chip-color,#9CA3AF); padding:3px 10px; border-radius:20px;
+  font-size:11px; font-weight:500; cursor:pointer; font-family:inherit;
+  transition:background 0.15s, color 0.15s, opacity 0.15s;
+}
+#mbcxDashboard .fd-chip.fd-chip-active { background:var(--chip-color,#9CA3AF); color:#fff; }
+#mbcxDashboard .fd-chip.fd-chip-off { opacity:0.35; }
+#mbcxDashboard .fd-chart-wrap { height:260px; position:relative; }
+
+/* 3-column grid */
+#mbcxDashboard .fd-cols { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
+@media (max-width:960px) { #mbcxDashboard .fd-cols { grid-template-columns:1fr; } }
+
+/* Diagnostics */
+#mbcxDashboard .fd-diag-list { display:flex; flex-direction:column; gap:8px; }
+#mbcxDashboard .fd-diag-item {
+  padding:10px 12px; border-radius:6px;
+  border-left:3px solid #D1D5DB; background:var(--gray-50);
+}
+#mbcxDashboard .fd-diag-cause    { border-left-color:#9B2335; background:#FEF2F2; }
+#mbcxDashboard .fd-diag-critical { border-left-color:#EF4444; background:#FEF2F2; }
+#mbcxDashboard .fd-diag-warning  { border-left-color:#F59E0B; background:#FFFBEB; }
+#mbcxDashboard .fd-diag-info     { border-left-color:#3B82F6; background:#EFF6FF; }
+#mbcxDashboard .fd-diag-action   { border-left-color:#10B981; background:#F0FDF4; }
+#mbcxDashboard .fd-diag-label {
+  font-size:10px; font-weight:700; text-transform:uppercase;
+  letter-spacing:0.05em; color:var(--gray-500); margin-bottom:4px;
+}
+#mbcxDashboard .fd-diag-text { font-size:12px; color:var(--gray-700); line-height:1.5; }
+
+/* Related issues */
+#mbcxDashboard .fd-related { display:flex; flex-direction:column; gap:8px; }
+#mbcxDashboard .fd-related-item {
+  padding:10px 12px; border:1px solid #F3F4F6; border-radius:6px; background:var(--gray-50);
+}
+#mbcxDashboard .fd-related-fault { font-size:12px; color:var(--gray-700); display:block; margin:4px 0 2px; line-height:1.4; }
+#mbcxDashboard .fd-related-dur   { font-size:11px; color:var(--gray-400); }
+#mbcxDashboard .fd-empty { font-size:12px; color:var(--gray-400); padding:12px 0; }
+
+/* Comments */
+#mbcxDashboard .fd-comments { display:flex; flex-direction:column; gap:12px; margin-bottom:12px; }
+#mbcxDashboard .fd-comment-hd { display:flex; align-items:flex-start; gap:8px; margin-bottom:5px; }
+#mbcxDashboard .fd-avatar {
+  width:28px; height:28px; border-radius:50%; background:var(--imeg-blue);
+  color:#fff; font-size:10px; font-weight:700;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+#mbcxDashboard .fd-avatar-me { background:#10b981; }
+#mbcxDashboard .fd-comment-author { font-size:12px; font-weight:600; color:var(--gray-800); }
+#mbcxDashboard .fd-comment-date   { font-size:11px; color:var(--gray-400); }
+#mbcxDashboard .fd-comment-body   { font-size:12px; color:var(--gray-700); line-height:1.55; padding-left:36px; }
+#mbcxDashboard .fd-comment-new { animation:fdFadeIn 0.25s ease; }
+@keyframes fdFadeIn { from { opacity:0; transform:translateY(-5px); } to { opacity:1; transform:none; } }
+
+/* Add note */
+#mbcxDashboard .fd-note-area { display:flex; flex-direction:column; gap:6px; padding-top:12px; border-top:1px solid #F3F4F6; }
+#mbcxDashboard .fd-note-input {
+  width:100%; box-sizing:border-box; border:1px solid #E5E7EB; border-radius:6px;
+  padding:8px 10px; font-size:12px; font-family:inherit; resize:none;
+  color:var(--gray-800); background:var(--gray-50); transition:border-color 0.15s;
+}
+#mbcxDashboard .fd-note-input:focus { border-color:var(--imeg-blue); outline:none; background:#fff; }
+#mbcxDashboard .fd-note-btn {
+  align-self:flex-end; background:var(--imeg-blue); color:#fff; border:none;
+  padding:6px 16px; border-radius:6px; font-size:12px; font-weight:600;
+  cursor:pointer; font-family:inherit; transition:opacity 0.15s;
+}
+#mbcxDashboard .fd-note-btn:hover { opacity:0.88; }
+
+/* Clickable fault rows */
+#mbcxDashboard .fl-row-clickable { cursor:pointer; }
+#mbcxDashboard .fl-row-clickable:hover td { background:#F9FAFB; }
+}

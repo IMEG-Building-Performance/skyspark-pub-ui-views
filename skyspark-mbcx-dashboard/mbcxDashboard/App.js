@@ -26,6 +26,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         AHU:           window.mbcxDashboard.components.AHU,
         TerminalUnits: window.mbcxDashboard.components.TerminalUnits,
         FaultList:     window.mbcxDashboard.components.FaultList,
+        FaultDetail:   window.mbcxDashboard.components.FaultDetail,
         TrendingView:  window.mbcxDashboard.components.TrendingView,
         Footer:        window.mbcxDashboard.components.Footer
       };
@@ -63,10 +64,30 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       NS.App._showTab(container, 'summary', co, data, ctx);
     },
 
+    showFaultDetail: function (container, fault, co) {
+      if (NS.App._activeTab === 'trends' && co.TrendingView) co.TrendingView.destroy();
+      if (NS.App._activeTab === 'fault-detail' && co.FaultDetail) co.FaultDetail.destroy();
+      NS.App._activeTab = 'fault-detail';
+      container.querySelectorAll('.dash-tab').forEach(function (btn) {
+        btn.classList.toggle('active', btn.getAttribute('data-tab') === 'faults');
+      });
+      var content = container.querySelector('#mbcxContent');
+      content.classList.remove('dash-content--fixed');
+      var allFaults = co.FaultList && co.FaultList._state ? co.FaultList._state.rows : [];
+      if (co.FaultDetail) {
+        co.FaultDetail.show(content, fault, allFaults, NS.App._lastCtx, function () {
+          NS.App._showTab(container, 'faults', co, NS.App._lastData, NS.App._lastCtx);
+        });
+      }
+    },
+
     _showTab: function (container, tab, co, data, ctx) {
       // Cleanup outgoing tab
       if (NS.App._activeTab === 'trends' && co.TrendingView && co.TrendingView.destroy) {
         co.TrendingView.destroy();
+      }
+      if (NS.App._activeTab === 'fault-detail' && co.FaultDetail && co.FaultDetail.destroy) {
+        co.FaultDetail.destroy();
       }
       NS.App._activeTab = tab;
 
@@ -92,7 +113,12 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       }
       else if (tab === 'faults') {
         content.innerHTML = co.FaultList ? co.FaultList.renderPage() : '<div class="tu-loading">Fault List not loaded.</div>';
-        if (co.FaultList) co.FaultList.initLive(container, ctx || null);
+        if (co.FaultList) {
+          co.FaultList.onFaultClick = function (fault) {
+            NS.App.showFaultDetail(container, fault, co);
+          };
+          co.FaultList.initLive(container, ctx || null);
+        }
       }
       else if (tab === 'trends') {
         if (co.TrendingView) co.TrendingView.showInContent(content, ctx || {});
