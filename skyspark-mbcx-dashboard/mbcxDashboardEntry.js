@@ -10,10 +10,10 @@ var mbcxDashboardHandler = {};
   var BASE = '/pub/ui/mbcxDashboard/';
   // Bump MODULE_VERSION whenever the module list changes — forces a fresh load
   // even if SkySpark reuses this closure across navigations.
-  var MODULE_VERSION = 'v18';
+  var MODULE_VERSION = 'v19';
 
   var modules = [
-    { src: 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js', abs: true },
+    { src: 'vendor/chart.umd.min.js' },
     { src: 'constants/demoData.js' },
     { src: 'utils/api.js' },
     { src: 'utils/haystackParser.js' },
@@ -43,9 +43,8 @@ var mbcxDashboardHandler = {};
     function next() {
       if (i >= modules.length) { cb(); return; }
       var m = modules[i];
-      if (m.abs && window.Chart) { i++; next(); return; }
       var s = document.createElement('script');
-      s.src = m.abs ? m.src : (BASE + m.src + bust);
+      s.src = BASE + m.src + bust;
       s.async = false;
       s.onload = function () { i++; next(); };
       s.onerror = function () {
