@@ -41,6 +41,9 @@ window.EventAnnotationsPlot.state = {
   filterSidebarHidden: false,
   timelineHidden: false,
 
+  // ── Active tab (persists through SkySpark refreshes) ──────────
+  activeTab: 'summary',
+
   // ── Active utility (single-select) ──────────────────────────────
   activeUtility: 'Electric',
 

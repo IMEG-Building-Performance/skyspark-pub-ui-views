@@ -278,6 +278,22 @@ window.EventAnnotationsPlot.documentation.openPanel = function(mainContainer) {
   container.appendChild(content);
 };
 
+// ── Render Tab (inline in tab panel, no full-screen takeover) ────────────
+
+window.EventAnnotationsPlot.documentation.renderTab = function(container) {
+  var doc = window.EventAnnotationsPlot.documentation;
+
+  var wrapper = document.createElement('div');
+  wrapper.className = 'doc-container';
+  wrapper.style.height = '100%';
+  container.appendChild(wrapper);
+
+  var content = document.createElement('div');
+  content.className = 'doc-content';
+  content.innerHTML = doc.getReadmeHTML();
+  wrapper.appendChild(content);
+};
+
 // ── Close Panel ──────────────────────────────────────────────────────────
 
 window.EventAnnotationsPlot.documentation.closePanel = function(mainContainer) {

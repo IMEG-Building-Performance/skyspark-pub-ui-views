@@ -1,8 +1,8 @@
 /**
  * App.js - Root Application
  *
- * Adds event detail slide-over panel.
- * 
+ * Tabbed interface: Summary | Event Lookup | Event Database | Documentation
+ * Page shell matches MBCx Dashboard styling with IMEG blue title bar.
  */
 
 window.EventAnnotationsPlot = window.EventAnnotationsPlot || {};
@@ -40,62 +40,216 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
   state._startDate = startDate;
   state._endDate = endDate;
 
-  // ── Compute responsive scaling on init ─────────────────────────────
+  // ── Compute responsive scaling ───────────────────────────────────────
   window.EventAnnotationsPlot.computeScaling();
   var rs = state.responsiveScaling;
 
-  // ── Build DOM layout ─────────────────────────────────────────────────
-  var mainPad = Math.round(12 + 8 * rs.vhScale);
-  var mainContainer = document.createElement('div');
-  mainContainer.style.cssText = 'padding:' + mainPad + 'px;font-family:Arial,sans-serif;width:100%;height:100%;overflow:auto;box-sizing:border-box;';
-  elem.appendChild(mainContainer);
+  // ══════════════════════════════════════════════════════════════════════
+  // ── PAGE SHELL
+  // ══════════════════════════════════════════════════════════════════════
 
-  // Summary widgets
-  var widgetRefs = widgets.createSummaryWidgets(mainContainer);
-  var titleDiv = widgetRefs.titleDiv;
-  var totalEventCostValueDiv = widgetRefs.totalEventCostValueDiv;
-  var utilityCostValueDiv = widgetRefs.utilityCostValueDiv;
+  var root = document.createElement('div');
+  root.className = 'eap-root';
+  elem.appendChild(root);
 
-  // "View All Events" button — inserted into summary bar after title
-  if (eventsDatabase) {
-    var viewEventsBtn = document.createElement('button');
-    viewEventsBtn.textContent = 'View All Events';
-    viewEventsBtn.style.cssText = 'padding:8px 18px;border:1px solid #1565c0;border-radius:6px;background:#1565c0;color:white;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;white-space:nowrap;';
-    viewEventsBtn.onmouseover = function() { viewEventsBtn.style.background = '#1976d2'; };
-    viewEventsBtn.onmouseout = function() { viewEventsBtn.style.background = '#1565c0'; };
-    viewEventsBtn.onclick = function() {
-      eventsDatabase.openPanel(mainContainer, state);
-    };
-    // Insert after titleDiv (before cost widgets)
-    widgetRefs.summaryContainer.insertBefore(viewEventsBtn, titleDiv.nextSibling);
+  // ── Title Bar (IMEG blue) ────────────────────────────────────────────
+  var titleBar = document.createElement('div');
+  titleBar.className = 'eap-title-bar';
+  root.appendChild(titleBar);
+
+  var titleSite = document.createElement('span');
+  titleSite.className = 'eap-title-site';
+  titleSite.textContent = 'Event Utility Cost Tracking';
+  titleBar.appendChild(titleSite);
+
+  var titleDates = document.createElement('span');
+  titleDates.className = 'eap-title-dates';
+  if (startDate && endDate) {
+    titleDates.textContent = startDate + ' – ' + endDate;
   }
+  titleBar.appendChild(titleDates);
 
-  // "Documentation" button — always added to summary bar
-  var docBtn = document.createElement('button');
-  docBtn.textContent = 'Documentation';
-  docBtn.style.cssText = 'padding:8px 18px;border:1px solid #43a047;border-radius:6px;background:#43a047;color:white;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;white-space:nowrap;flex-shrink:0;';
-  docBtn.onmouseover = function() { docBtn.style.background = '#4caf50'; };
-  docBtn.onmouseout = function() { docBtn.style.background = '#43a047'; };
-  docBtn.onclick = function() {
-    var doc = window.EventAnnotationsPlot.documentation;
-    if (doc) {
-      doc.openPanel(mainContainer);
+  // ── Tab Bar ──────────────────────────────────────────────────────────
+  var tabBar = document.createElement('div');
+  tabBar.className = 'eap-tab-bar';
+  root.appendChild(tabBar);
+
+  var TAB_IDS = ['summary', 'lookup', 'database', 'docs'];
+  var TAB_LABELS = ['Summary', 'Event Lookup', 'Event Database', 'Documentation'];
+  var tabBtns = {};
+  var tabPanels = {};
+  var initialTab = state.activeTab || 'summary';
+
+  TAB_IDS.forEach(function(id, i) {
+    var btn = document.createElement('button');
+    btn.className = 'eap-tab-btn' + (id === initialTab ? ' eap-tab-btn--active' : '');
+    btn.textContent = TAB_LABELS[i];
+    btn.setAttribute('data-tab', id);
+    tabBar.appendChild(btn);
+    tabBtns[id] = btn;
+  });
+
+  // ── Tab Content ──────────────────────────────────────────────────────
+  var tabContent = document.createElement('div');
+  tabContent.className = 'eap-tab-content';
+  root.appendChild(tabContent);
+
+  TAB_IDS.forEach(function(id) {
+    var panel = document.createElement('div');
+    panel.className = 'eap-tab-panel' + (id === initialTab ? ' eap-tab-panel--active' : '');
+    panel.setAttribute('data-tab-panel', id);
+    tabContent.appendChild(panel);
+    tabPanels[id] = panel;
+  });
+
+  // ── Tab Switching ────────────────────────────────────────────────────
+  state.activeTab = initialTab;
+  var tabInited = { summary: true, lookup: true, database: false, docs: false };
+
+  function switchTab(tabId) {
+    if (state.activeTab === tabId) return;
+    state.activeTab = tabId;
+
+    TAB_IDS.forEach(function(id) {
+      var isActive = id === tabId;
+      tabBtns[id].className = 'eap-tab-btn' + (isActive ? ' eap-tab-btn--active' : '');
+      tabPanels[id].className = 'eap-tab-panel' + (isActive ? ' eap-tab-panel--active' : '');
+    });
+
+    if (tabId === 'database' && !tabInited.database) {
+      tabInited.database = true;
+      if (eventsDatabase) eventsDatabase.renderTab(tabPanels.database, state);
     }
-  };
-  // Insert after viewEventsBtn (or after titleDiv if no viewEventsBtn)
-  var docInsertAfter = viewEventsBtn || titleDiv;
-  if (docInsertAfter && docInsertAfter.nextSibling) {
-    widgetRefs.summaryContainer.insertBefore(docBtn, docInsertAfter.nextSibling);
-  } else {
-    widgetRefs.summaryContainer.appendChild(docBtn);
+
+    if (tabId === 'docs' && !tabInited.docs) {
+      tabInited.docs = true;
+      if (documentation) documentation.renderTab(tabPanels.docs);
+    }
+
+    if (tabId === 'lookup') {
+      setTimeout(function() {
+        if (state.chartInstance) {
+          state.chartInstance.resize();
+          if (state._syncOverlaySize) state._syncOverlaySize();
+          var currentEvents = state.currentEvents || [];
+          if (state._resizeTimelineForEvents) state._resizeTimelineForEvents(currentEvents);
+          annotations.drawAnnotationOverlay(state.chartInstance, state.overlayCanvas, currentEvents);
+          timeline.drawTimeline(state.refs.timelineCanvas, state.chartInstance, currentEvents);
+        }
+      }, 50);
+    }
   }
 
-  // Layout container
+  tabBar.addEventListener('click', function(e) {
+    var btn = e.target.closest('.eap-tab-btn');
+    if (btn) switchTab(btn.getAttribute('data-tab'));
+  });
+
+  // Lazy-init persisted tabs on restore
+  if (initialTab === 'database') {
+    tabInited.database = true;
+    if (eventsDatabase) eventsDatabase.renderTab(tabPanels.database, state);
+  } else if (initialTab === 'docs') {
+    tabInited.docs = true;
+    if (documentation) documentation.renderTab(tabPanels.docs);
+  }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // ── TAB 1: SUMMARY
+  // ══════════════════════════════════════════════════════════════════════
+
+  var summaryPanel = tabPanels.summary;
+  summaryPanel.style.padding = '24px 28px';
+
+  var summaryLoading = document.createElement('div');
+  summaryLoading.style.cssText = 'text-align:center;padding:80px 20px;color:#6c757d;';
+  summaryLoading.innerHTML = '<div class="edb-spinner" style="width:32px;height:32px;margin:0 auto 12px;"></div><div style="font-size:14px;font-weight:600;">Loading summary data…</div>';
+  summaryPanel.appendChild(summaryLoading);
+
+  var summaryCards = document.createElement('div');
+  summaryCards.className = 'eap-summary-cards';
+  summaryCards.style.display = 'none';
+  summaryPanel.appendChild(summaryCards);
+
+  function createSummaryCard(label, value, color) {
+    var card = document.createElement('div');
+    card.className = 'eap-summary-card';
+    card.style.borderTopColor = color;
+    var lbl = document.createElement('div');
+    lbl.className = 'eap-summary-card-label';
+    lbl.textContent = label;
+    card.appendChild(lbl);
+    var val = document.createElement('div');
+    val.className = 'eap-summary-card-value';
+    val.textContent = value;
+    card.appendChild(val);
+    summaryCards.appendChild(card);
+    return val;
+  }
+
+  var summaryTotalCostVal = createSummaryCard('Total Event Cost', '—', '#1565c0');
+  var summaryUtilityCostVal = createSummaryCard('Utility Cost', '—', '#43a047');
+  var summaryEventCountVal = createSummaryCard('Events Tracked', '—', '#ff9800');
+
+  var summaryTableSection = document.createElement('div');
+  summaryTableSection.className = 'eap-summary-table-section';
+  summaryTableSection.style.display = 'none';
+  summaryPanel.appendChild(summaryTableSection);
+
+  var summaryTableTitle = document.createElement('h3');
+  summaryTableTitle.className = 'eap-summary-table-title';
+  summaryTableTitle.textContent = 'Event Summary';
+  summaryTableSection.appendChild(summaryTableTitle);
+
+  var summaryTableWrap = document.createElement('div');
+  summaryTableSection.appendChild(summaryTableWrap);
+
+  function updateSummaryTab(data) {
+    summaryLoading.style.display = 'none';
+    summaryCards.style.display = '';
+    summaryTableSection.style.display = '';
+
+    summaryTotalCostVal.textContent = '$' + Math.round(data.totalEventCost).toLocaleString();
+    summaryUtilityCostVal.textContent = '$' + Math.round(data.utilityCost).toLocaleString();
+    summaryEventCountVal.textContent = String(data.execSummary.events.length);
+
+    var events = data.execSummary.events;
+    if (events.length === 0) {
+      summaryTableWrap.innerHTML = '<div style="text-align:center;padding:40px;color:#6c757d;">No events found for this date range.</div>';
+      return;
+    }
+
+    var table = document.createElement('table');
+    table.className = 'eap-summary-table';
+    var thead = '<thead><tr><th>Event</th><th>Start</th><th>End</th><th>Sq Ft</th><th>Total Cost</th></tr></thead>';
+    var tbody = '<tbody>';
+    events.forEach(function(evt) {
+      var startStr = evt.eventStart ? new Date(evt.eventStart).toLocaleDateString() : '—';
+      var endStr = evt.eventEnd ? new Date(evt.eventEnd).toLocaleDateString() : '—';
+      var sfStr = evt.eventSF ? parseFloat(evt.eventSF).toLocaleString() : '—';
+      var costVal = parseFloat(evt.totalCost) || 0;
+      var costStr = '$' + costVal.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+      tbody += '<tr><td>' + (evt.event || 'Unnamed') + '</td><td>' + startStr + '</td><td>' + endStr + '</td><td>' + sfStr + '</td><td>' + costStr + '</td></tr>';
+    });
+    tbody += '</tbody>';
+    table.innerHTML = thead + tbody;
+    summaryTableWrap.innerHTML = '';
+    summaryTableWrap.appendChild(table);
+  }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // ── TAB 2: EVENT LOOKUP (Chart + Sidebar)
+  // ══════════════════════════════════════════════════════════════════════
+
+  var lookupPanel = tabPanels.lookup;
+  var lookupPad = Math.round(12 + 8 * rs.vhScale);
+  lookupPanel.style.padding = lookupPad + 'px';
+
   var layoutContainer = document.createElement('div');
   layoutContainer.style.cssText = 'display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;';
-  mainContainer.appendChild(layoutContainer);
+  lookupPanel.appendChild(layoutContainer);
 
-  // Chart container - responsive height with min/max constraints
+  // Chart container
   var chartH = Math.max(400, Math.min(Math.round(window.innerHeight * 0.65), 800));
   var chartPad = Math.round(12 + 8 * rs.vhScale);
   var chartContainer = document.createElement('div');
@@ -114,10 +268,9 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
   btnGroup.style.cssText = 'position:absolute;top:12px;right:12px;z-index:20;display:flex;gap:6px;';
   chartContainer.appendChild(btnGroup);
 
-  // Expand button (top-right of chart)
   var expandBtn = document.createElement('button');
   expandBtn.title = 'Expand chart';
-  expandBtn.textContent = '\u26F6';
+  expandBtn.textContent = '⛶';
   expandBtn.style.cssText = 'width:32px;height:32px;border:1px solid #dee2e6;border-radius:6px;background:white;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;color:#6c757d;box-shadow:0 1px 3px rgba(0,0,0,0.08);';
   expandBtn.onmouseover = function() { expandBtn.style.backgroundColor = '#e8f4fd'; expandBtn.style.color = '#1565c0'; expandBtn.style.borderColor = '#1565c0'; };
   expandBtn.onmouseout = function() { expandBtn.style.backgroundColor = 'white'; expandBtn.style.color = '#6c757d'; expandBtn.style.borderColor = '#dee2e6'; };
@@ -128,7 +281,7 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
   };
   btnGroup.appendChild(expandBtn);
 
-  // Canvas wrapper - flex-grow to fill available space
+  // Canvas wrapper
   var canvasMinH = Math.round(200 + 100 * rs.vhScale);
   var canvasWrapper = document.createElement('div');
   canvasWrapper.style.cssText = 'width:100%;flex:1;min-height:' + canvasMinH + 'px;position:relative;';
@@ -138,14 +291,13 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
   canvas.id = 'eventAnnotationsChart';
   canvasWrapper.appendChild(canvas);
 
-  // Timeline wrapper with header bar and collapsible content
+  // Timeline wrapper
   var timelineMinH = Math.round(60 + 60 * rs.vhScale);
   var timelineMaxH = Math.round(160 + 80 * rs.vhScale);
   var timelineWrapper = document.createElement('div');
   timelineWrapper.style.cssText = 'width:100%;margin-top:4px;flex-shrink:0;';
   chartContainer.appendChild(timelineWrapper);
 
-  // Timeline header bar with label and close button
   var timelineHeader = document.createElement('div');
   timelineHeader.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:2px 4px;cursor:pointer;';
   timelineWrapper.appendChild(timelineHeader);
@@ -161,12 +313,10 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
   timelineToggleBtn.onmouseout = function() { timelineToggleBtn.style.color = '#adb5bd'; };
   timelineHeader.appendChild(timelineToggleBtn);
 
-  // Timeline content container
   var timelineContainer = document.createElement('div');
   timelineContainer.style.cssText = 'width:100%;height:' + timelineMinH + 'px;max-height:' + timelineMaxH + 'px;position:relative;overflow-y:auto;overflow-x:hidden;';
   timelineWrapper.appendChild(timelineContainer);
 
-  // Toggle logic
   function applyTimelineToggle() {
     timelineContainer.style.display = state.timelineHidden ? 'none' : 'block';
     timelineToggleBtn.textContent = state.timelineHidden ? 'Show' : 'Hide';
@@ -176,7 +326,6 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
   timelineHeader.onclick = function() {
     state.timelineHidden = !state.timelineHidden;
     applyTimelineToggle();
-    // Redraw overlays after toggling so chart resizes correctly
     setTimeout(function() {
       if (state.chartInstance) state.chartInstance.resize();
       if (state._syncOverlaySize) state._syncOverlaySize();
@@ -191,15 +340,15 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
     }, 50);
   };
 
-  // Events sidebar - responsive height matching chart
+  // Events sidebar
   var eventsContainer = document.createElement('div');
   eventsContainer.style.cssText = 'flex:1;min-width:280px;max-width:400px;height:' + chartH + 'px;display:flex;flex-direction:column;position:relative;z-index:10;';
   layoutContainer.appendChild(eventsContainer);
 
-  // Sidebar re-show button (appears on chart edge when sidebar is hidden)
+  // Sidebar re-show button
   var showSidebarBtn = document.createElement('button');
   showSidebarBtn.title = 'Show event filter panel';
-  showSidebarBtn.textContent = 'Event Filter \u25B6';
+  showSidebarBtn.textContent = 'Event Filter ▶';
   showSidebarBtn.style.cssText = 'position:absolute;top:50%;right:-1px;transform:translateY(-50%);z-index:15;padding:8px 6px;border:1px solid #dee2e6;border-right:none;border-radius:6px 0 0 6px;background:white;cursor:pointer;font-size:10px;font-weight:600;color:#6c757d;box-shadow:-2px 0 4px rgba(0,0,0,0.08);transition:all 0.2s;writing-mode:vertical-lr;letter-spacing:0.5px;';
   showSidebarBtn.onmouseover = function() { showSidebarBtn.style.backgroundColor = '#e8f4fd'; showSidebarBtn.style.color = '#1565c0'; showSidebarBtn.style.borderColor = '#1565c0'; };
   showSidebarBtn.onmouseout = function() { showSidebarBtn.style.backgroundColor = 'white'; showSidebarBtn.style.color = '#6c757d'; showSidebarBtn.style.borderColor = '#dee2e6'; };
@@ -222,10 +371,8 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
   };
   chartContainer.appendChild(showSidebarBtn);
 
-  // Store ref so interactions.js can toggle it when hiding the sidebar
   state._showSidebarBtn = showSidebarBtn;
 
-  // Apply initial sidebar state (must be after eventsContainer is created)
   if (state.filterSidebarHidden) {
     eventsContainer.style.display = 'none';
     showSidebarBtn.style.display = 'block';
@@ -257,7 +404,6 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
     chartContainer.appendChild(placeholderMsg);
     state.placeholderMsg = placeholderMsg;
 
-    // Create empty chart (no date range yet)
     chart.createChart(canvas, [], [], null);
 
     // Overlay canvas
@@ -288,27 +434,18 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
 
     function updateTimelineSize() {
       var dpr = window.devicePixelRatio || 1;
-      // Timeline buffer must match the CHART canvas buffer width exactly
-      // so that chartArea.left/right coordinates align correctly
       var chartCanvas = state.refs && state.refs.canvas ? state.refs.canvas : canvas;
-      var bufferWidth = chartCanvas.width;  // Already DPR-scaled by Chart.js
-
-      // Get CSS height from container
+      var bufferWidth = chartCanvas.width;
       var timelineContainerRect = timelineContainer.getBoundingClientRect();
       var cssHeight = Math.round(timelineContainerRect.height) || 56;
-
-      // Set canvas pixel buffer size to match chart canvas width
       timelineCanvas.width = bufferWidth;
       timelineCanvas.height = cssHeight * dpr;
-
-      // CSS display size must match chart canvas CSS size
       var chartRect = chartCanvas.getBoundingClientRect();
       timelineCanvas.style.width = chartRect.width + 'px';
       timelineCanvas.style.height = cssHeight + 'px';
     }
     updateTimelineSize();
 
-    // Resize timeline container to fit event lanes
     function resizeTimelineForEvents(evts) {
       if (!evts || evts.length === 0) {
         timelineContainer.style.height = timelineMinH + 'px';
@@ -317,7 +454,7 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
       var laneInfo = timeline.calculateEventLanes(evts);
       var totalLanes = Math.max(laneInfo.totalLanes, 1);
       var sc = (state.responsiveScaling || {}).vhScale || 1.0;
-      var laneH = Math.round(20 + 8 * sc);  // desired height per lane
+      var laneH = Math.round(20 + 8 * sc);
       var pad = Math.round(4 + 4 * sc);
       var gap = 2;
       var needed = totalLanes * laneH + (totalLanes - 1) * gap + pad * 2;
@@ -331,10 +468,9 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
     timeline.drawTimeline(timelineCanvas, state.chartInstance, events);
     annotations.drawAnnotationOverlay(state.chartInstance, overlayCanvas, events);
 
-    // Resize handler — recompute scaling and update container sizes
+    // Resize handler
     window.addEventListener('resize', function() {
       window.EventAnnotationsPlot.computeScaling();
-      var newScale = state.responsiveScaling.vhScale;
       var newChartH = Math.max(400, Math.min(Math.round(window.innerHeight * 0.65), 800));
       chartContainer.style.height = newChartH + 'px';
       eventsContainer.style.height = newChartH + 'px';
@@ -378,7 +514,6 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
       timeline.drawTimeline(timelineCanvas, state.chartInstance, currentEvents);
     });
 
-    // Click handler for selecting/deselecting events on chart overlay
     overlayCanvas.addEventListener('click', function(e) {
       var rect = overlayCanvas.getBoundingClientRect();
       var mouseX = e.clientX - rect.left;
@@ -387,14 +522,12 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
       var clickResult = interactions.detectHover(mouseX, mouseY, currentEvents, state.chartInstance.scales.x, state.chartInstance.chartArea);
 
       if (clickResult) {
-        // Toggle selection: if already selected, deselect; otherwise select
         if (state.hoverState.selectedIndex === clickResult.index) {
           state.hoverState.selectedIndex = -1;
         } else {
           state.hoverState.selectedIndex = clickResult.index;
         }
       } else {
-        // Click on empty area deselects
         state.hoverState.selectedIndex = -1;
       }
 
@@ -402,7 +535,6 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
       timeline.drawTimeline(timelineCanvas, state.chartInstance, currentEvents);
     });
 
-    // Click handler for selecting/deselecting events on timeline
     timelineCanvas.addEventListener('click', function(e) {
       var rect = timelineCanvas.getBoundingClientRect();
       var mouseX = e.clientX - rect.left;
@@ -411,14 +543,12 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
       var clickedIndex = timeline.detectTimelineClick(mouseX, mouseY, currentEvents, state.chartInstance);
 
       if (clickedIndex >= 0) {
-        // Toggle selection: if already selected, deselect; otherwise select
         if (state.hoverState.selectedIndex === clickedIndex) {
           state.hoverState.selectedIndex = -1;
         } else {
           state.hoverState.selectedIndex = clickedIndex;
         }
       } else {
-        // Click on empty area deselects
         state.hoverState.selectedIndex = -1;
       }
 
@@ -426,7 +556,6 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
       timeline.drawTimeline(timelineCanvas, state.chartInstance, currentEvents);
     });
 
-    // Hover handler for timeline (show pointer cursor on event blocks)
     timelineCanvas.addEventListener('mousemove', function(e) {
       var rect = timelineCanvas.getBoundingClientRect();
       var mouseX = e.clientX - rect.left;
@@ -436,7 +565,6 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
 
       if (hoveredIndex >= 0) {
         timelineCanvas.style.cursor = 'pointer';
-        // Update hover state to sync with chart
         state.hoverState.hoveredIndex = hoveredIndex;
         state.hoverState.hoveredEvent = currentEvents[hoveredIndex];
       } else {
@@ -496,12 +624,9 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
         activeData[active] = state.utilityData[active];
       }
       var currentEvents = state.currentEvents || [];
-
-      // Pass date range to set explicit x-axis bounds
       var dateRange = state.currentDateRange || { startDate: startDate, endDate: endDate };
       chart.createChart(state.refs.canvas, activeData, currentEvents, dateRange);
       state.refs.timeSeriesData = activeData;
-
       syncOverlaySize();
       resizeTimelineForEvents(currentEvents);
       annotations.drawAnnotationOverlay(state.chartInstance, state.overlayCanvas, currentEvents);
@@ -512,14 +637,10 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
     function loadDataForSite() {
       state.utilityData = {};
 
-      if (!selectedSite || !startDate || !endDate) {
-        return;
-      }
+      if (!selectedSite || !startDate || !endDate) return;
 
       var activeUtility = state.activeUtility;
 
-      // Parallel API calls — each wrapped with .catch() so one failure
-      // doesn't prevent the rest of the view from rendering
       Promise.all([
         api.loadPowerData(selectedSite, startDate, endDate, activeUtility)
           .catch(function(err) { console.error('loadPowerData error:', err); return []; }),
@@ -538,12 +659,10 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
 
         state.utilityData[activeUtility] = powerData;
 
-        // Check if dates are already included in exec summary
         var hasInlineDates = execSummary.events.length > 0 &&
           (execSummary.events[0].eventStart || execSummary.events[0].eventEnd);
 
         if (hasInlineDates) {
-          // Dates included — no extra API call needed
           return {
             powerData: powerData,
             siteName: siteName,
@@ -554,7 +673,6 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
           };
         }
 
-        // Dates not included — fetch separately
         var eventIds = execSummary.events.map(function(evt) {
           return evt.eventID;
         }).filter(function(id) {
@@ -586,16 +704,15 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
           state.placeholderMsg = null;
         }
 
-        // Store raw data for detail panel
+        // Store raw data
         state.siteName = data.siteName;
         state.rawExecSummaryEvents = data.execSummary.events;
 
-        // Update title
-        titleDiv.textContent = 'Event Utility Cost Tracking - ' + data.siteName;
+        // Update title bar
+        titleSite.textContent = 'Event Utility Cost Tracking — ' + data.siteName;
 
-        // Update cost widgets from dedicated API calls (modes 2 and 3)
-        totalEventCostValueDiv.textContent = '$' + Math.round(data.totalEventCost).toLocaleString();
-        utilityCostValueDiv.textContent = '$' + Math.round(data.utilityCost).toLocaleString();
+        // Update Summary tab
+        updateSummaryTab(data);
 
         // Transform events for chart/timeline
         var chartEvents = data.execSummary.events.map(function(evt, index) {
@@ -612,7 +729,6 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
           var evtStartDate = evt.eventStart ? new Date(evt.eventStart) : null;
           var evtEndDate = evt.eventEnd ? new Date(evt.eventEnd) : null;
 
-          // Calculate duration string
           var durationStr = null;
           if (evtStartDate && evtEndDate) {
             var durationMs = evtEndDate.getTime() - evtStartDate.getTime();
@@ -629,7 +745,6 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
             }
           }
 
-          // Format area (square footage)
           var areaStr = null;
           if (evt.eventSF) {
             var sf = parseFloat(evt.eventSF);
@@ -638,7 +753,6 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
             }
           }
 
-          // Format cost for tooltip display
           var costStr = null;
           if (evt.totalCost) {
             var costVal = parseFloat(evt.totalCost);
@@ -654,11 +768,9 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
             time: evtStartDate,
             color: colors[index % colors.length],
             cost: evt.totalCost,
-            // Tooltip fields
             duration: durationStr,
             area: areaStr,
             costDisplay: costStr,
-            // Raw data for detail panel (preserves per-utility cost breakdown)
             rawData: evt
           };
         }).filter(function(evt) {
@@ -667,30 +779,23 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
 
         state.currentEvents = chartEvents;
 
-        // Reset visibility
         state.visibilityState = {};
         chartEvents.forEach(function(evt, index) {
           state.visibilityState[index] = true;
         });
 
-        // Build chart data
         var utilityDataObj = {};
         utilityDataObj[data.activeUtility] = data.powerData;
         state.refs.timeSeriesData = utilityDataObj;
-
-        // Store date range for rebuilding chart later
         state.currentDateRange = { startDate: startDate, endDate: endDate };
 
-        // Create chart with explicit date range bounds
         chart.createChart(state.refs.canvas, utilityDataObj, chartEvents, state.currentDateRange);
 
-        // Redraw overlays
         syncOverlaySize();
         resizeTimelineForEvents(chartEvents);
         annotations.drawAnnotationOverlay(state.chartInstance, state.overlayCanvas, chartEvents);
         timeline.drawTimeline(state.refs.timelineCanvas, state.chartInstance, chartEvents);
 
-        // Create events list (with costs shown inline)
         state.refs.eventsContainer.innerHTML = '';
         interactions.createEventList(state.refs.eventsContainer, chartEvents, state.chartInstance);
       })
@@ -699,14 +804,7 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
       });
     }
 
-    // If the Events Database was open before this refresh, re-open it.
-    // Clear stale saved content first (old DOM nodes were destroyed by view.removeAll())
-    if (eventsDatabase && state.eventsDatabaseState && state.eventsDatabaseState.isOpen) {
-      state.eventsDatabaseState._savedContent = null;
-      eventsDatabase.openPanel(mainContainer, state);
-    } else {
-      loadDataForSite();
-    }
+    loadDataForSite();
 
     // Start polling for variable changes
     skyspark.startPolling(view, {
@@ -721,10 +819,16 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
       state._startDate = newStartDate;
       state._endDate = newEndDate;
 
-      // If Events Database is open, stay in it (user can Search again)
-      if (!(eventsDatabase && state.eventsDatabaseState && state.eventsDatabaseState.isOpen)) {
-        loadDataForSite();
+      if (newStartDate && newEndDate) {
+        titleDates.textContent = newStartDate + ' – ' + newEndDate;
       }
+
+      // Show loading state on summary tab
+      summaryLoading.style.display = '';
+      summaryCards.style.display = 'none';
+      summaryTableSection.style.display = 'none';
+
+      loadDataForSite();
     });
   });
 };
