@@ -52,27 +52,31 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
   root.className = 'eap-root';
   elem.appendChild(root);
 
-  // ── Title Bar (IMEG blue) ────────────────────────────────────────────
+  // ── Title Bar (IMEG blue, contains tabs) ──────────────────────────────
   var titleBar = document.createElement('div');
   titleBar.className = 'eap-title-bar';
   root.appendChild(titleBar);
 
+  var titleRow = document.createElement('div');
+  titleRow.style.cssText = 'display:flex;align-items:baseline;gap:20px;';
+  titleBar.appendChild(titleRow);
+
   var titleSite = document.createElement('span');
   titleSite.className = 'eap-title-site';
   titleSite.textContent = 'Event Utility Cost Tracking';
-  titleBar.appendChild(titleSite);
+  titleRow.appendChild(titleSite);
 
   var titleDates = document.createElement('span');
   titleDates.className = 'eap-title-dates';
   if (startDate && endDate) {
     titleDates.textContent = startDate + ' – ' + endDate;
   }
-  titleBar.appendChild(titleDates);
+  titleRow.appendChild(titleDates);
 
-  // ── Tab Bar ──────────────────────────────────────────────────────────
+  // Tab bar inside title bar
   var tabBar = document.createElement('div');
   tabBar.className = 'eap-tab-bar';
-  root.appendChild(tabBar);
+  titleBar.appendChild(tabBar);
 
   var TAB_IDS = ['summary', 'lookup', 'database', 'docs'];
   var TAB_LABELS = ['Summary', 'Event Lookup', 'Event Database', 'Documentation'];
@@ -161,20 +165,28 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
   var summaryPanel = tabPanels.summary;
   summaryPanel.style.padding = '24px 28px';
 
+  // Summary list view (cards + table)
+  var summaryListView = document.createElement('div');
+  summaryPanel.appendChild(summaryListView);
+
+  // Summary detail view (hidden until event clicked)
+  var summaryDetailView = document.createElement('div');
+  summaryDetailView.style.display = 'none';
+  summaryPanel.appendChild(summaryDetailView);
+
   var summaryLoading = document.createElement('div');
   summaryLoading.style.cssText = 'text-align:center;padding:80px 20px;color:#6c757d;';
   summaryLoading.innerHTML = '<div class="edb-spinner" style="width:32px;height:32px;margin:0 auto 12px;"></div><div style="font-size:14px;font-weight:600;">Loading summary data…</div>';
-  summaryPanel.appendChild(summaryLoading);
+  summaryListView.appendChild(summaryLoading);
 
   var summaryCards = document.createElement('div');
   summaryCards.className = 'eap-summary-cards';
   summaryCards.style.display = 'none';
-  summaryPanel.appendChild(summaryCards);
+  summaryListView.appendChild(summaryCards);
 
-  function createSummaryCard(label, value, color) {
+  function createSummaryCard(label, value) {
     var card = document.createElement('div');
     card.className = 'eap-summary-card';
-    card.style.borderTopColor = color;
     var lbl = document.createElement('div');
     lbl.className = 'eap-summary-card-label';
     lbl.textContent = label;
@@ -187,14 +199,14 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
     return val;
   }
 
-  var summaryTotalCostVal = createSummaryCard('Total Event Cost', '—', '#1565c0');
-  var summaryUtilityCostVal = createSummaryCard('Utility Cost', '—', '#43a047');
-  var summaryEventCountVal = createSummaryCard('Events Tracked', '—', '#ff9800');
+  var summaryTotalCostVal = createSummaryCard('Total Event Cost', '—');
+  var summaryUtilityCostVal = createSummaryCard('Utility Cost', '—');
+  var summaryEventCountVal = createSummaryCard('Events Tracked', '—');
 
   var summaryTableSection = document.createElement('div');
   summaryTableSection.className = 'eap-summary-table-section';
   summaryTableSection.style.display = 'none';
-  summaryPanel.appendChild(summaryTableSection);
+  summaryListView.appendChild(summaryTableSection);
 
   var summaryTableTitle = document.createElement('h3');
   summaryTableTitle.className = 'eap-summary-table-title';
@@ -204,10 +216,156 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
   var summaryTableWrap = document.createElement('div');
   summaryTableSection.appendChild(summaryTableWrap);
 
+  function showEventDetail(evt) {
+    summaryListView.style.display = 'none';
+    summaryDetailView.style.display = '';
+    summaryDetailView.innerHTML = '';
+
+    var detailModule = window.EventAnnotationsPlot.eventDetail;
+    var colors = state.detailColors;
+    var formatCurrency = detailModule.formatCurrency;
+    var formatCents = detailModule.formatCurrencyCents;
+    var raw = evt;
+    var totalCost = parseFloat(raw.totalCost) || 0;
+
+    // Back button
+    var backBtn = document.createElement('button');
+    backBtn.innerHTML = '← Back to Summary';
+    backBtn.style.cssText = 'padding:10px 20px;border:1px solid #dee2e6;border-radius:6px;background:white;color:#495057;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;margin-bottom:20px;';
+    backBtn.onmouseover = function() { backBtn.style.background = '#e8f4fd'; backBtn.style.borderColor = '#4A6FA5'; backBtn.style.color = '#4A6FA5'; };
+    backBtn.onmouseout = function() { backBtn.style.background = 'white'; backBtn.style.borderColor = '#dee2e6'; backBtn.style.color = '#495057'; };
+    backBtn.onclick = function() {
+      summaryDetailView.style.display = 'none';
+      summaryListView.style.display = '';
+    };
+    summaryDetailView.appendChild(backBtn);
+
+    // Event header card
+    var headerCard = document.createElement('div');
+    headerCard.className = 'eap-summary-table-section';
+    headerCard.style.textAlign = 'center';
+    headerCard.style.marginBottom = '20px';
+
+    var evtName = document.createElement('div');
+    evtName.textContent = raw.event || 'Unnamed Event';
+    evtName.style.cssText = 'font-size:12px;text-transform:uppercase;letter-spacing:2px;color:#6c757d;margin-bottom:8px;';
+    headerCard.appendChild(evtName);
+
+    var evtTotal = document.createElement('div');
+    evtTotal.textContent = formatCurrency(totalCost);
+    evtTotal.style.cssText = 'font-size:48px;font-weight:900;color:#17a2b8;line-height:1;margin-bottom:6px;';
+    headerCard.appendChild(evtTotal);
+
+    var evtLabel = document.createElement('div');
+    evtLabel.textContent = 'Total Event Utility Cost';
+    evtLabel.style.cssText = 'font-size:14px;color:#6c757d;margin-bottom:16px;';
+    headerCard.appendChild(evtLabel);
+
+    // Event metadata
+    var metaGrid = document.createElement('div');
+    metaGrid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;text-align:center;';
+
+    function addMeta(label, value) {
+      var item = document.createElement('div');
+      item.style.cssText = 'padding:10px;background:#f8f9fa;border-radius:8px;';
+      var l = document.createElement('div');
+      l.textContent = label;
+      l.style.cssText = 'font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:#6c757d;margin-bottom:2px;';
+      var v = document.createElement('div');
+      v.textContent = value;
+      v.style.cssText = 'font-size:14px;font-weight:600;color:#2c3e50;';
+      item.appendChild(l);
+      item.appendChild(v);
+      metaGrid.appendChild(item);
+    }
+
+    if (raw.eventID) addMeta('Event ID', raw.eventID);
+    if (raw.eventSF) addMeta('Area', parseFloat(raw.eventSF).toLocaleString() + ' sq ft');
+    if (raw.eventStart) addMeta('Start', new Date(raw.eventStart).toLocaleDateString());
+    if (raw.eventEnd) addMeta('End', new Date(raw.eventEnd).toLocaleDateString());
+
+    headerCard.appendChild(metaGrid);
+    summaryDetailView.appendChild(headerCard);
+
+    // Utility cost breakdown
+    var utilities = [
+      { name: 'Electric', color: colors.electric, energyCost: parseFloat(raw.elec_energyCost) || 0, demandCost: parseFloat(raw.elec_demandCost) || 0 },
+      { name: 'Chilled Water', color: colors.chw, energyCost: parseFloat(raw.chw_energyCost) || 0, demandCost: parseFloat(raw.chw_demandCost) || 0 },
+      { name: 'Steam', color: colors.steam, energyCost: parseFloat(raw.steam_energyCost) || 0, demandCost: parseFloat(raw.steam_demandCost) || 0 },
+      { name: 'Gas', color: colors.gas, energyCost: parseFloat(raw.gas_energyCost) || 0, demandCost: parseFloat(raw.gas_demandCost) || 0 }
+    ];
+
+    utilities.forEach(function(u) {
+      u.total = u.energyCost + u.demandCost;
+      u.percent = totalCost > 0 ? Math.round((u.total / totalCost) * 100) : 0;
+    });
+
+    var activeUtils = utilities.filter(function(u) { return u.total > 0; })
+      .sort(function(a, b) { return b.total - a.total; });
+
+    if (activeUtils.length > 0) {
+      var breakdownSection = document.createElement('div');
+      breakdownSection.className = 'eap-summary-table-section';
+
+      var breakdownTitle = document.createElement('h3');
+      breakdownTitle.className = 'eap-summary-table-title';
+      breakdownTitle.textContent = 'Utility Cost Breakdown';
+      breakdownSection.appendChild(breakdownTitle);
+
+      var breakdownGrid = document.createElement('div');
+      breakdownGrid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;';
+
+      activeUtils.forEach(function(util) {
+        var card = document.createElement('div');
+        card.style.cssText = 'background:#f8f9fa;border-radius:10px;padding:18px 20px;border-left:4px solid ' + util.color + ';';
+
+        var cName = document.createElement('div');
+        cName.textContent = util.name;
+        cName.style.cssText = 'font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#6c757d;margin-bottom:6px;';
+        card.appendChild(cName);
+
+        var cTotal = document.createElement('div');
+        cTotal.textContent = formatCurrency(util.total);
+        cTotal.style.cssText = 'font-size:24px;font-weight:700;color:#2c3e50;margin-bottom:4px;';
+        card.appendChild(cTotal);
+
+        var cPct = document.createElement('div');
+        cPct.textContent = util.percent + '% of total';
+        cPct.style.cssText = 'font-size:12px;color:#6c757d;margin-bottom:12px;';
+        card.appendChild(cPct);
+
+        var rows = [
+          { label: 'Energy Cost', value: formatCents(util.energyCost) },
+          { label: 'Demand Cost', value: formatCents(util.demandCost) }
+        ];
+        rows.forEach(function(r) {
+          var row = document.createElement('div');
+          row.style.cssText = 'display:flex;justify-content:space-between;font-size:13px;padding:3px 0;';
+          var rl = document.createElement('span');
+          rl.textContent = r.label;
+          rl.style.color = '#6c757d';
+          var rv = document.createElement('span');
+          rv.textContent = r.value;
+          rv.style.fontWeight = '600';
+          row.appendChild(rl);
+          row.appendChild(rv);
+          card.appendChild(row);
+        });
+
+        breakdownGrid.appendChild(card);
+      });
+
+      breakdownSection.appendChild(breakdownGrid);
+      summaryDetailView.appendChild(breakdownSection);
+    }
+  }
+
   function updateSummaryTab(data) {
     summaryLoading.style.display = 'none';
     summaryCards.style.display = '';
     summaryTableSection.style.display = '';
+    summaryDetailView.style.display = 'none';
+    summaryListView.style.display = '';
 
     summaryTotalCostVal.textContent = '$' + Math.round(data.totalEventCost).toLocaleString();
     summaryUtilityCostVal.textContent = '$' + Math.round(data.utilityCost).toLocaleString();
@@ -219,21 +377,31 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
       return;
     }
 
+    summaryTableWrap.innerHTML = '';
     var table = document.createElement('table');
     table.className = 'eap-summary-table';
-    var thead = '<thead><tr><th>Event</th><th>Start</th><th>End</th><th>Sq Ft</th><th>Total Cost</th></tr></thead>';
-    var tbody = '<tbody>';
+
+    var thead = document.createElement('thead');
+    thead.innerHTML = '<tr><th>Event</th><th>Start</th><th>End</th><th>Sq Ft</th><th>Total Cost</th></tr>';
+    table.appendChild(thead);
+
+    var tbody = document.createElement('tbody');
     events.forEach(function(evt) {
+      var tr = document.createElement('tr');
+      tr.style.cursor = 'pointer';
+
       var startStr = evt.eventStart ? new Date(evt.eventStart).toLocaleDateString() : '—';
       var endStr = evt.eventEnd ? new Date(evt.eventEnd).toLocaleDateString() : '—';
       var sfStr = evt.eventSF ? parseFloat(evt.eventSF).toLocaleString() : '—';
       var costVal = parseFloat(evt.totalCost) || 0;
       var costStr = '$' + costVal.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-      tbody += '<tr><td>' + (evt.event || 'Unnamed') + '</td><td>' + startStr + '</td><td>' + endStr + '</td><td>' + sfStr + '</td><td>' + costStr + '</td></tr>';
+
+      tr.innerHTML = '<td>' + (evt.event || 'Unnamed') + '</td><td>' + startStr + '</td><td>' + endStr + '</td><td>' + sfStr + '</td><td>' + costStr + '</td>';
+      tr.onclick = function() { showEventDetail(evt); };
+      tbody.appendChild(tr);
     });
-    tbody += '</tbody>';
-    table.innerHTML = thead + tbody;
-    summaryTableWrap.innerHTML = '';
+
+    table.appendChild(tbody);
     summaryTableWrap.appendChild(table);
   }
 
