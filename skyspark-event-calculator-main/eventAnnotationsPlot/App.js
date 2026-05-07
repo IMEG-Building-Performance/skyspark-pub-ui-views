@@ -207,12 +207,40 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
   plotTitleEl.style.cssText = 'font-size:14px;font-weight:700;color:#374151;margin:0;';
   plotHeader.appendChild(plotTitleEl);
 
-  var plotToggleBtn = document.createElement('button');
-  plotToggleBtn.textContent = 'Hide';
-  plotToggleBtn.style.cssText = 'padding:5px 14px;border:1px solid #dee2e6;border-radius:6px;background:white;color:#6c757d;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.15s;';
-  plotToggleBtn.onmouseover = function() { plotToggleBtn.style.borderColor = '#4A6FA5'; plotToggleBtn.style.color = '#4A6FA5'; };
-  plotToggleBtn.onmouseout = function() { plotToggleBtn.style.borderColor = '#dee2e6'; plotToggleBtn.style.color = '#6c757d'; };
-  plotHeader.appendChild(plotToggleBtn);
+  var plotBtnGroup = document.createElement('div');
+  plotBtnGroup.style.cssText = 'display:flex;gap:6px;';
+  plotHeader.appendChild(plotBtnGroup);
+
+  function makePlotHeaderBtn(label) {
+    var b = document.createElement('button');
+    b.textContent = label;
+    b.style.cssText = 'padding:5px 14px;border:1px solid #dee2e6;border-radius:6px;background:white;color:#6c757d;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.15s;';
+    b.onmouseover = function() { b.style.borderColor = '#4A6FA5'; b.style.color = '#4A6FA5'; };
+    b.onmouseout = function() { b.style.borderColor = '#dee2e6'; b.style.color = '#6c757d'; };
+    return b;
+  }
+
+  var showAllBtn = makePlotHeaderBtn('Show All');
+  var hideAllBtn = makePlotHeaderBtn('Hide All');
+  var plotToggleBtn = makePlotHeaderBtn('Hide');
+
+  showAllBtn.onclick = function() {
+    var evts = state.currentEvents || [];
+    evts.forEach(function(_, i) { state.visibilityState[i] = true; });
+    redrawChart();
+    syncVisIcons();
+  };
+
+  hideAllBtn.onclick = function() {
+    var evts = state.currentEvents || [];
+    evts.forEach(function(_, i) { state.visibilityState[i] = false; });
+    redrawChart();
+    syncVisIcons();
+  };
+
+  plotBtnGroup.appendChild(showAllBtn);
+  plotBtnGroup.appendChild(hideAllBtn);
+  plotBtnGroup.appendChild(plotToggleBtn);
 
   var plotBody = document.createElement('div');
   plotBody.style.cssText = 'padding:16px 20px;';
@@ -235,6 +263,25 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
       }, 50);
     }
   };
+
+  function redrawChart() {
+    if (state.chartInstance && state.overlayCanvas) {
+      var currentEvents = state.currentEvents || [];
+      annotations.drawAnnotationOverlay(state.chartInstance, state.overlayCanvas, currentEvents);
+      if (state.refs) timeline.drawTimeline(state.refs.timelineCanvas, state.chartInstance, currentEvents);
+    }
+  }
+
+  var visIconElements = [];
+
+  function syncVisIcons() {
+    visIconElements.forEach(function(item) {
+      var visible = state.visibilityState[item.index] !== false;
+      item.el.textContent = visible ? '●' : '○';
+      item.el.style.opacity = visible ? '1' : '0.35';
+      item.row.style.opacity = visible ? '1' : '0.5';
+    });
+  }
 
   // ── Chart container inside plot body ─────────────────────────────────
   var chartH = Math.max(350, Math.min(Math.round(window.innerHeight * 0.45), 550));
@@ -672,18 +719,62 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
       return;
     }
 
+    visIconElements = [];
+
+    var chartColors = [
+      'rgba(54, 162, 235, 0.8)',
+      'rgba(255, 99, 132, 0.8)',
+      'rgba(75, 192, 192, 0.8)',
+      'rgba(255, 159, 64, 0.8)',
+      'rgba(153, 102, 255, 0.8)',
+      'rgba(255, 205, 86, 0.8)',
+      'rgba(201, 203, 207, 0.8)'
+    ];
+
+    var chartEventMap = {};
+    (state.currentEvents || []).forEach(function(ce, ci) {
+      if (ce.rawData) {
+        var key = (ce.rawData.eventID || '') + '|' + (ce.rawData.event || '');
+        chartEventMap[key] = ci;
+      }
+    });
+
     summaryTableWrap.innerHTML = '';
     var table = document.createElement('table');
     table.className = 'eap-summary-table';
 
     var thead = document.createElement('thead');
-    thead.innerHTML = '<tr><th>Event</th><th>Start</th><th>End</th><th>Sq Ft</th><th>Total Cost</th></tr>';
+    thead.innerHTML = '<tr><th style="width:40px;text-align:center;">Vis</th><th>Event</th><th>Start</th><th>End</th><th>Sq Ft</th><th>Total Cost</th></tr>';
     table.appendChild(thead);
 
     var tbody = document.createElement('tbody');
-    events.forEach(function(evt) {
+    events.forEach(function(evt, idx) {
+      var evtKey = (evt.eventID || '') + '|' + (evt.event || '');
+      var chartIdx = chartEventMap[evtKey];
+      var color = chartIdx !== undefined ? chartColors[chartIdx % chartColors.length] : '#adb5bd';
+
       var tr = document.createElement('tr');
       tr.style.cursor = 'pointer';
+
+      var visTd = document.createElement('td');
+      visTd.style.cssText = 'text-align:center;font-size:16px;cursor:pointer;user-select:none;';
+      var visIcon = document.createElement('span');
+      visIcon.textContent = '●';
+      visIcon.style.cssText = 'color:' + color + ';transition:opacity 0.15s;';
+      visTd.appendChild(visIcon);
+
+      if (chartIdx !== undefined) {
+        visIconElements.push({ el: visIcon, row: tr, index: chartIdx });
+        visTd.onclick = function(e) {
+          e.stopPropagation();
+          var isVis = state.visibilityState[chartIdx] !== false;
+          state.visibilityState[chartIdx] = !isVis;
+          redrawChart();
+          syncVisIcons();
+        };
+      }
+
+      tr.appendChild(visTd);
 
       var startStr = evt.eventStart ? new Date(evt.eventStart).toLocaleDateString() : '—';
       var endStr = evt.eventEnd ? new Date(evt.eventEnd).toLocaleDateString() : '—';
@@ -691,13 +782,30 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
       var costVal = parseFloat(evt.totalCost) || 0;
       var costStr = '$' + costVal.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
-      tr.innerHTML = '<td>' + (evt.event || 'Unnamed') + '</td><td>' + startStr + '</td><td>' + endStr + '</td><td>' + sfStr + '</td><td>' + costStr + '</td>';
+      var nameTd = document.createElement('td');
+      nameTd.textContent = evt.event || 'Unnamed';
+      var startTd = document.createElement('td');
+      startTd.textContent = startStr;
+      var endTd = document.createElement('td');
+      endTd.textContent = endStr;
+      var sfTd = document.createElement('td');
+      sfTd.textContent = sfStr;
+      var costTd = document.createElement('td');
+      costTd.textContent = costStr;
+
+      tr.appendChild(nameTd);
+      tr.appendChild(startTd);
+      tr.appendChild(endTd);
+      tr.appendChild(sfTd);
+      tr.appendChild(costTd);
+
       tr.onclick = function() { showEventDetail(evt); };
       tbody.appendChild(tr);
     });
 
     table.appendChild(tbody);
     summaryTableWrap.appendChild(table);
+    syncVisIcons();
   }
 
   // ══════════════════════════════════════════════════════════════════════
