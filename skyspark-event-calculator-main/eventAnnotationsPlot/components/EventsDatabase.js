@@ -1010,3 +1010,49 @@ window.EventAnnotationsPlot.eventsDatabase.renderMiniBarChart = function(contain
 
   container.appendChild(svg);
 };
+
+// ── Render Tab (inline in tab panel, no full-screen takeover) ──────────
+
+window.EventAnnotationsPlot.eventsDatabase.renderTab = function(container, state) {
+  var edb = window.EventAnnotationsPlot.eventsDatabase;
+  var dbState = state.eventsDatabaseState;
+
+  edb.injectStyles();
+
+  var wrapper = document.createElement('div');
+  wrapper.className = 'edb-container';
+  container.appendChild(wrapper);
+
+  var content = document.createElement('div');
+  content.className = 'edb-content';
+  wrapper.appendChild(content);
+
+  var tablePanel = document.createElement('div');
+  tablePanel.className = 'edb-table-panel';
+  content.appendChild(tablePanel);
+
+  edb.buildFilterBar(tablePanel, dbState, function() {
+    edb._refresh(tablePanel, dbState);
+  });
+
+  var tableWrap = document.createElement('div');
+  tableWrap.className = 'edb-table-wrap';
+  tablePanel.appendChild(tableWrap);
+  dbState._tableWrap = tableWrap;
+
+  var paginationEl = document.createElement('div');
+  paginationEl.className = 'edb-pagination';
+  tablePanel.appendChild(paginationEl);
+  dbState._paginationEl = paginationEl;
+
+  var summaryPanel = document.createElement('div');
+  summaryPanel.className = 'edb-summary-panel';
+  content.appendChild(summaryPanel);
+  dbState._summaryPanel = summaryPanel;
+
+  edb._renderSummaryPlaceholder(summaryPanel);
+
+  dbState.allEvents = [];
+  dbState.filteredEvents = [];
+  edb._renderTablePlaceholder(dbState._tableWrap);
+};
