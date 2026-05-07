@@ -57,21 +57,10 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
   titleBar.className = 'eap-title-bar';
   root.appendChild(titleBar);
 
-  var titleRow = document.createElement('div');
-  titleRow.style.cssText = 'display:flex;align-items:baseline;gap:20px;';
-  titleBar.appendChild(titleRow);
-
   var titleSite = document.createElement('span');
   titleSite.className = 'eap-title-site';
   titleSite.textContent = 'Event Utility Cost Tracking';
-  titleRow.appendChild(titleSite);
-
-  var titleDates = document.createElement('span');
-  titleDates.className = 'eap-title-dates';
-  if (startDate && endDate) {
-    titleDates.textContent = startDate + ' – ' + endDate;
-  }
-  titleRow.appendChild(titleDates);
+  titleBar.appendChild(titleSite);
 
   // Tab bar inside title bar
   var tabBar = document.createElement('div');
@@ -227,10 +216,45 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
     var formatCents = detailModule.formatCurrencyCents;
     var raw = evt;
     var totalCost = parseFloat(raw.totalCost) || 0;
+    var eventSF = parseFloat(raw.eventSF) || 0;
 
-    // Back button
+    // ── Demo data (will be replaced by API calls) ──────────────────
+    var demoSpaces = [
+      { name: 'Ballroom A', sqft: Math.round(eventSF * 0.45) || 4500, floor: '1st Floor', type: 'Event Space' },
+      { name: 'Ballroom B', sqft: Math.round(eventSF * 0.30) || 3000, floor: '1st Floor', type: 'Event Space' },
+      { name: 'Pre-Function Lobby', sqft: Math.round(eventSF * 0.15) || 1500, floor: '1st Floor', type: 'Common Area' },
+      { name: 'Kitchen / Catering', sqft: Math.round(eventSF * 0.10) || 1000, floor: '1st Floor', type: 'Support' }
+    ];
+
+    var demoMeters = [
+      { id: 'EM-101', name: 'Main Electrical Panel A', type: 'Electric', serves: 'Ballroom A, Pre-Function Lobby', unit: 'kW' },
+      { id: 'EM-102', name: 'Main Electrical Panel B', type: 'Electric', serves: 'Ballroom B, Kitchen', unit: 'kW' },
+      { id: 'CHW-201', name: 'CHW AHU-1 Loop', type: 'CHW', serves: 'Ballroom A & B', unit: 'Ton' },
+      { id: 'STM-301', name: 'Steam AHU-1 Coil', type: 'Steam', serves: 'Ballroom A & B', unit: 'Mlb/hr' },
+      { id: 'GAS-401', name: 'Kitchen Gas Meter', type: 'Gas', serves: 'Kitchen / Catering', unit: 'Therms' }
+    ];
+
+    var allEvents = state.rawExecSummaryEvents || [];
+    var concurrentEvents = allEvents.filter(function(other) {
+      if (!other.eventStart || !other.eventEnd || !raw.eventStart || !raw.eventEnd) return false;
+      if ((other.eventID || other.event) === (raw.eventID || raw.event)) return false;
+      var oStart = new Date(other.eventStart).getTime();
+      var oEnd = new Date(other.eventEnd).getTime();
+      var rStart = new Date(raw.eventStart).getTime();
+      var rEnd = new Date(raw.eventEnd).getTime();
+      return oStart < rEnd && oEnd > rStart;
+    });
+
+    // ── Helper: create a section card ──────────────────────────────
+    var sectionStyle = 'background:white;border:1px solid #E5E7EB;border-radius:8px;padding:20px 24px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,0.08);';
+    var sectionTitleStyle = 'font-size:14px;font-weight:700;color:#374151;margin:0 0 16px 0;padding-bottom:10px;border-bottom:1px solid #E5E7EB;';
+    var tableStyle = 'width:100%;border-collapse:collapse;font-size:13px;';
+    var thStyle = 'text-align:left;padding:8px 12px;font-weight:600;color:#6c757d;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;border-bottom:2px solid #E5E7EB;';
+    var tdStyle = 'padding:8px 12px;border-bottom:1px solid #f0f0f0;color:#374151;';
+
+    // ── Back button ────────────────────────────────────────────────
     var backBtn = document.createElement('button');
-    backBtn.innerHTML = '← Back to Summary';
+    backBtn.textContent = '← Back to Summary';
     backBtn.style.cssText = 'padding:10px 20px;border:1px solid #dee2e6;border-radius:6px;background:white;color:#495057;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;margin-bottom:20px;';
     backBtn.onmouseover = function() { backBtn.style.background = '#e8f4fd'; backBtn.style.borderColor = '#4A6FA5'; backBtn.style.color = '#4A6FA5'; };
     backBtn.onmouseout = function() { backBtn.style.background = 'white'; backBtn.style.borderColor = '#dee2e6'; backBtn.style.color = '#495057'; };
@@ -240,15 +264,13 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
     };
     summaryDetailView.appendChild(backBtn);
 
-    // Event header card
+    // ── Event header card ──────────────────────────────────────────
     var headerCard = document.createElement('div');
-    headerCard.className = 'eap-summary-table-section';
-    headerCard.style.textAlign = 'center';
-    headerCard.style.marginBottom = '20px';
+    headerCard.style.cssText = sectionStyle + 'text-align:center;';
 
     var evtName = document.createElement('div');
     evtName.textContent = raw.event || 'Unnamed Event';
-    evtName.style.cssText = 'font-size:12px;text-transform:uppercase;letter-spacing:2px;color:#6c757d;margin-bottom:8px;';
+    evtName.style.cssText = 'font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#6c757d;margin-bottom:8px;';
     headerCard.appendChild(evtName);
 
     var evtTotal = document.createElement('div');
@@ -258,105 +280,238 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
 
     var evtLabel = document.createElement('div');
     evtLabel.textContent = 'Total Event Utility Cost';
-    evtLabel.style.cssText = 'font-size:14px;color:#6c757d;margin-bottom:16px;';
+    evtLabel.style.cssText = 'font-size:14px;color:#6c757d;margin-bottom:18px;';
     headerCard.appendChild(evtLabel);
 
-    // Event metadata
     var metaGrid = document.createElement('div');
     metaGrid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;text-align:center;';
 
-    function addMeta(label, value) {
+    var metaItems = [];
+    if (raw.eventID) metaItems.push({ label: 'Event ID', value: raw.eventID });
+    if (eventSF) metaItems.push({ label: 'Area', value: eventSF.toLocaleString() + ' sq ft' });
+    if (raw.eventStart) metaItems.push({ label: 'Start', value: new Date(raw.eventStart).toLocaleDateString() });
+    if (raw.eventEnd) metaItems.push({ label: 'End', value: new Date(raw.eventEnd).toLocaleDateString() });
+    if (state.siteName) metaItems.push({ label: 'Site', value: state.siteName });
+
+    metaItems.forEach(function(m) {
       var item = document.createElement('div');
       item.style.cssText = 'padding:10px;background:#f8f9fa;border-radius:8px;';
       var l = document.createElement('div');
-      l.textContent = label;
+      l.textContent = m.label;
       l.style.cssText = 'font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:#6c757d;margin-bottom:2px;';
       var v = document.createElement('div');
-      v.textContent = value;
+      v.textContent = m.value;
       v.style.cssText = 'font-size:14px;font-weight:600;color:#2c3e50;';
       item.appendChild(l);
       item.appendChild(v);
       metaGrid.appendChild(item);
-    }
-
-    if (raw.eventID) addMeta('Event ID', raw.eventID);
-    if (raw.eventSF) addMeta('Area', parseFloat(raw.eventSF).toLocaleString() + ' sq ft');
-    if (raw.eventStart) addMeta('Start', new Date(raw.eventStart).toLocaleDateString());
-    if (raw.eventEnd) addMeta('End', new Date(raw.eventEnd).toLocaleDateString());
+    });
 
     headerCard.appendChild(metaGrid);
     summaryDetailView.appendChild(headerCard);
 
-    // Utility cost breakdown
+    // ── Two-column layout for Spaces + Meters ──────────────────────
+    var twoCol = document.createElement('div');
+    twoCol.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;';
+
+    // Spaces Served
+    var spacesCard = document.createElement('div');
+    spacesCard.style.cssText = sectionStyle + 'margin-bottom:0;';
+    var spacesTitle = document.createElement('h3');
+    spacesTitle.textContent = 'Spaces Served';
+    spacesTitle.style.cssText = sectionTitleStyle;
+    spacesCard.appendChild(spacesTitle);
+
+    var spacesTable = document.createElement('table');
+    spacesTable.style.cssText = tableStyle;
+    var spacesHead = document.createElement('thead');
+    spacesHead.innerHTML = '<tr><th style="' + thStyle + '">Space</th><th style="' + thStyle + '">Sq Ft</th><th style="' + thStyle + '">Type</th></tr>';
+    spacesTable.appendChild(spacesHead);
+    var spacesBody = document.createElement('tbody');
+    var totalSpaceSF = 0;
+    demoSpaces.forEach(function(sp) {
+      totalSpaceSF += sp.sqft;
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td style="' + tdStyle + '">' + sp.name + '</td>' +
+        '<td style="' + tdStyle + '">' + sp.sqft.toLocaleString() + '</td>' +
+        '<td style="' + tdStyle + '"><span style="padding:2px 8px;background:#EBF5FB;color:#2980B9;border-radius:4px;font-size:11px;font-weight:600;">' + sp.type + '</span></td>';
+      spacesBody.appendChild(tr);
+    });
+    var spacesFootTr = document.createElement('tr');
+    spacesFootTr.innerHTML = '<td style="' + tdStyle + 'font-weight:700;">Total</td><td style="' + tdStyle + 'font-weight:700;">' + totalSpaceSF.toLocaleString() + '</td><td style="' + tdStyle + '">' + demoSpaces.length + ' spaces</td>';
+    spacesBody.appendChild(spacesFootTr);
+    spacesTable.appendChild(spacesBody);
+    spacesCard.appendChild(spacesTable);
+    twoCol.appendChild(spacesCard);
+
+    // Meters Serving Event
+    var metersCard = document.createElement('div');
+    metersCard.style.cssText = sectionStyle + 'margin-bottom:0;';
+    var metersTitle = document.createElement('h3');
+    metersTitle.textContent = 'Meters Serving Event';
+    metersTitle.style.cssText = sectionTitleStyle;
+    metersCard.appendChild(metersTitle);
+
+    var metersTable = document.createElement('table');
+    metersTable.style.cssText = tableStyle;
+    var metersHead = document.createElement('thead');
+    metersHead.innerHTML = '<tr><th style="' + thStyle + '">Meter ID</th><th style="' + thStyle + '">Type</th><th style="' + thStyle + '">Serves</th></tr>';
+    metersTable.appendChild(metersHead);
+    var metersBody = document.createElement('tbody');
+    var typeColors = { Electric: '#27AE60', CHW: '#2980B9', Steam: '#E74C3C', Gas: '#F39C12', Water: '#5DADE2' };
+    demoMeters.forEach(function(mt) {
+      var tr = document.createElement('tr');
+      var tc = typeColors[mt.type] || '#6c757d';
+      tr.innerHTML = '<td style="' + tdStyle + 'font-family:monospace;font-size:12px;">' + mt.id + '</td>' +
+        '<td style="' + tdStyle + '"><span style="padding:2px 8px;background:' + tc + '15;color:' + tc + ';border-radius:4px;font-size:11px;font-weight:600;">' + mt.type + '</span></td>' +
+        '<td style="' + tdStyle + 'font-size:12px;color:#6c757d;">' + mt.serves + '</td>';
+      metersBody.appendChild(tr);
+    });
+    metersTable.appendChild(metersBody);
+    metersCard.appendChild(metersTable);
+    twoCol.appendChild(metersCard);
+
+    summaryDetailView.appendChild(twoCol);
+
+    // ── Concurrent Events ──────────────────────────────────────────
+    var concurrentCard = document.createElement('div');
+    concurrentCard.style.cssText = sectionStyle;
+    var concurrentTitle = document.createElement('h3');
+    concurrentTitle.textContent = 'Other Events in Space During This Period';
+    concurrentTitle.style.cssText = sectionTitleStyle;
+    concurrentCard.appendChild(concurrentTitle);
+
+    if (concurrentEvents.length === 0) {
+      var noOverlap = document.createElement('div');
+      noOverlap.style.cssText = 'text-align:center;padding:24px;color:#6c757d;font-size:13px;';
+      noOverlap.textContent = 'No other events overlap with this event period.';
+      concurrentCard.appendChild(noOverlap);
+    } else {
+      var concTable = document.createElement('table');
+      concTable.style.cssText = tableStyle;
+      var concHead = document.createElement('thead');
+      concHead.innerHTML = '<tr><th style="' + thStyle + '">Event</th><th style="' + thStyle + '">Start</th><th style="' + thStyle + '">End</th><th style="' + thStyle + '">Sq Ft</th><th style="' + thStyle + '">Cost</th><th style="' + thStyle + '">Overlap</th></tr>';
+      concTable.appendChild(concHead);
+      var concBody = document.createElement('tbody');
+      concurrentEvents.forEach(function(ce) {
+        var ceStart = new Date(ce.eventStart);
+        var ceEnd = new Date(ce.eventEnd);
+        var rStart = new Date(raw.eventStart);
+        var rEnd = new Date(raw.eventEnd);
+        var overlapStart = Math.max(ceStart.getTime(), rStart.getTime());
+        var overlapEnd = Math.min(ceEnd.getTime(), rEnd.getTime());
+        var overlapHrs = Math.round((overlapEnd - overlapStart) / (1000 * 60 * 60));
+        var overlapStr = overlapHrs >= 24 ? Math.round(overlapHrs / 24) + 'd' : overlapHrs + 'h';
+        var ceCost = parseFloat(ce.totalCost) || 0;
+        var tr = document.createElement('tr');
+        tr.style.cursor = 'pointer';
+        tr.onmouseover = function() { tr.style.backgroundColor = '#f8f9fa'; };
+        tr.onmouseout = function() { tr.style.backgroundColor = ''; };
+        tr.onclick = function() { showEventDetail(ce); };
+        tr.innerHTML = '<td style="' + tdStyle + 'font-weight:600;">' + (ce.event || 'Unnamed') + '</td>' +
+          '<td style="' + tdStyle + '">' + ceStart.toLocaleDateString() + '</td>' +
+          '<td style="' + tdStyle + '">' + ceEnd.toLocaleDateString() + '</td>' +
+          '<td style="' + tdStyle + '">' + (ce.eventSF ? parseFloat(ce.eventSF).toLocaleString() : '—') + '</td>' +
+          '<td style="' + tdStyle + 'font-weight:600;">' + formatCurrency(ceCost) + '</td>' +
+          '<td style="' + tdStyle + '"><span style="padding:2px 8px;background:#FEF3C7;color:#92400E;border-radius:4px;font-size:11px;font-weight:600;">' + overlapStr + '</span></td>';
+        concBody.appendChild(tr);
+      });
+      concTable.appendChild(concBody);
+      concurrentCard.appendChild(concTable);
+    }
+    summaryDetailView.appendChild(concurrentCard);
+
+    // ── Utility Usage Derivation ───────────────────────────────────
     var utilities = [
-      { name: 'Electric', color: colors.electric, energyCost: parseFloat(raw.elec_energyCost) || 0, demandCost: parseFloat(raw.elec_demandCost) || 0 },
-      { name: 'Chilled Water', color: colors.chw, energyCost: parseFloat(raw.chw_energyCost) || 0, demandCost: parseFloat(raw.chw_demandCost) || 0 },
-      { name: 'Steam', color: colors.steam, energyCost: parseFloat(raw.steam_energyCost) || 0, demandCost: parseFloat(raw.steam_demandCost) || 0 },
-      { name: 'Gas', color: colors.gas, energyCost: parseFloat(raw.gas_energyCost) || 0, demandCost: parseFloat(raw.gas_demandCost) || 0 }
+      { name: 'Electric', key: 'elec', color: colors.electric, unit: 'kWh', demandUnit: 'kW', rate: 0.085, demandRate: 12.50,
+        energyCost: parseFloat(raw.elec_energyCost) || 0, demandCost: parseFloat(raw.elec_demandCost) || 0 },
+      { name: 'Chilled Water', key: 'chw', color: colors.chw, unit: 'Ton-hr', demandUnit: 'Ton', rate: 0.145, demandRate: 18.00,
+        energyCost: parseFloat(raw.chw_energyCost) || 0, demandCost: parseFloat(raw.chw_demandCost) || 0 },
+      { name: 'Steam', key: 'steam', color: colors.steam, unit: 'Mlb', demandUnit: 'Mlb/hr', rate: 22.50, demandRate: 35.00,
+        energyCost: parseFloat(raw.steam_energyCost) || 0, demandCost: parseFloat(raw.steam_demandCost) || 0 },
+      { name: 'Gas', key: 'gas', color: colors.gas, unit: 'Therms', demandUnit: 'Therms/hr', rate: 1.05, demandRate: 8.75,
+        energyCost: parseFloat(raw.gas_energyCost) || 0, demandCost: parseFloat(raw.gas_demandCost) || 0 }
     ];
 
     utilities.forEach(function(u) {
       u.total = u.energyCost + u.demandCost;
       u.percent = totalCost > 0 ? Math.round((u.total / totalCost) * 100) : 0;
+      u.energyUsage = u.rate > 0 ? (u.energyCost / u.rate) : 0;
+      u.demandPeak = u.demandRate > 0 ? (u.demandCost / u.demandRate) : 0;
     });
 
     var activeUtils = utilities.filter(function(u) { return u.total > 0; })
       .sort(function(a, b) { return b.total - a.total; });
 
     if (activeUtils.length > 0) {
-      var breakdownSection = document.createElement('div');
-      breakdownSection.className = 'eap-summary-table-section';
+      var derivCard = document.createElement('div');
+      derivCard.style.cssText = sectionStyle;
+      var derivTitle = document.createElement('h3');
+      derivTitle.textContent = 'Utility Usage Derivation';
+      derivTitle.style.cssText = sectionTitleStyle;
+      derivCard.appendChild(derivTitle);
 
-      var breakdownTitle = document.createElement('h3');
-      breakdownTitle.className = 'eap-summary-table-title';
-      breakdownTitle.textContent = 'Utility Cost Breakdown';
-      breakdownSection.appendChild(breakdownTitle);
-
-      var breakdownGrid = document.createElement('div');
-      breakdownGrid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;';
+      var derivGrid = document.createElement('div');
+      derivGrid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;';
 
       activeUtils.forEach(function(util) {
         var card = document.createElement('div');
-        card.style.cssText = 'background:#f8f9fa;border-radius:10px;padding:18px 20px;border-left:4px solid ' + util.color + ';';
+        card.style.cssText = 'background:#f8f9fa;border-radius:10px;padding:20px;border-left:4px solid ' + util.color + ';';
 
+        var cHeader = document.createElement('div');
+        cHeader.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;';
         var cName = document.createElement('div');
         cName.textContent = util.name;
-        cName.style.cssText = 'font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#6c757d;margin-bottom:6px;';
-        card.appendChild(cName);
-
+        cName.style.cssText = 'font-size:15px;font-weight:700;color:#374151;';
         var cTotal = document.createElement('div');
         cTotal.textContent = formatCurrency(util.total);
-        cTotal.style.cssText = 'font-size:24px;font-weight:700;color:#2c3e50;margin-bottom:4px;';
-        card.appendChild(cTotal);
+        cTotal.style.cssText = 'font-size:20px;font-weight:700;color:' + util.color + ';';
+        cHeader.appendChild(cName);
+        cHeader.appendChild(cTotal);
+        card.appendChild(cHeader);
 
-        var cPct = document.createElement('div');
-        cPct.textContent = util.percent + '% of total';
-        cPct.style.cssText = 'font-size:12px;color:#6c757d;margin-bottom:12px;';
-        card.appendChild(cPct);
+        var pctBar = document.createElement('div');
+        pctBar.style.cssText = 'height:4px;background:#E5E7EB;border-radius:2px;margin-bottom:16px;overflow:hidden;';
+        var pctFill = document.createElement('div');
+        pctFill.style.cssText = 'height:100%;background:' + util.color + ';border-radius:2px;width:' + util.percent + '%;';
+        pctBar.appendChild(pctFill);
+        card.appendChild(pctBar);
 
-        var rows = [
-          { label: 'Energy Cost', value: formatCents(util.energyCost) },
-          { label: 'Demand Cost', value: formatCents(util.demandCost) }
+        var calcRows = [
+          { label: 'Energy Usage', value: Math.round(util.energyUsage).toLocaleString() + ' ' + util.unit, dimmed: false },
+          { label: 'Energy Rate', value: '$' + util.rate.toFixed(3) + ' / ' + util.unit, dimmed: true },
+          { label: 'Energy Cost', value: formatCents(util.energyCost), dimmed: false },
+          { label: '', value: '', separator: true },
+          { label: 'Peak Demand', value: util.demandPeak.toFixed(1) + ' ' + util.demandUnit, dimmed: false },
+          { label: 'Demand Rate', value: '$' + util.demandRate.toFixed(2) + ' / ' + util.demandUnit, dimmed: true },
+          { label: 'Demand Cost', value: formatCents(util.demandCost), dimmed: false }
         ];
-        rows.forEach(function(r) {
+
+        calcRows.forEach(function(r) {
+          if (r.separator) {
+            var sep = document.createElement('div');
+            sep.style.cssText = 'border-top:1px dashed #dee2e6;margin:8px 0;';
+            card.appendChild(sep);
+            return;
+          }
           var row = document.createElement('div');
-          row.style.cssText = 'display:flex;justify-content:space-between;font-size:13px;padding:3px 0;';
+          row.style.cssText = 'display:flex;justify-content:space-between;font-size:13px;padding:4px 0;';
           var rl = document.createElement('span');
           rl.textContent = r.label;
-          rl.style.color = '#6c757d';
+          rl.style.cssText = 'color:' + (r.dimmed ? '#9CA3AF' : '#6c757d') + ';' + (r.dimmed ? 'font-style:italic;' : '');
           var rv = document.createElement('span');
           rv.textContent = r.value;
-          rv.style.fontWeight = '600';
+          rv.style.cssText = 'font-weight:600;color:' + (r.dimmed ? '#9CA3AF' : '#374151') + ';' + (r.dimmed ? 'font-style:italic;' : '');
           row.appendChild(rl);
           row.appendChild(rv);
           card.appendChild(row);
         });
 
-        breakdownGrid.appendChild(card);
+        derivGrid.appendChild(card);
       });
 
-      breakdownSection.appendChild(breakdownGrid);
-      summaryDetailView.appendChild(breakdownSection);
+      derivCard.appendChild(derivGrid);
+      summaryDetailView.appendChild(derivCard);
     }
   }
 
@@ -986,10 +1141,6 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
       state._selectedSite = newSite;
       state._startDate = newStartDate;
       state._endDate = newEndDate;
-
-      if (newStartDate && newEndDate) {
-        titleDates.textContent = newStartDate + ' – ' + newEndDate;
-      }
 
       // Show loading state on summary tab
       summaryLoading.style.display = '';

@@ -716,12 +716,6 @@
   margin-bottom: 14px;
 }
 
-.eap-title-dates {
-  font-size: 12px;
-  opacity: 0.78;
-  font-weight: 400;
-}
-
 .eap-tab-bar {
   display: flex;
   gap: 4px;
