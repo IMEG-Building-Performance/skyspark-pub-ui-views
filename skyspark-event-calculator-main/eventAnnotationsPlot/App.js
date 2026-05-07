@@ -100,7 +100,7 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
   // ── Tab Switching ────────────────────────────────────────────────────
   state.activeTab = initialTab;
   var tabInited = { summary: true, database: false, docs: false };
-  var plotHidden = false;
+  var plotHidden = true;
 
   function switchTab(tabId) {
     if (state.activeTab === tabId) return;
@@ -222,7 +222,7 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
 
   var showAllBtn = makePlotHeaderBtn('Show All');
   var hideAllBtn = makePlotHeaderBtn('Hide All');
-  var plotToggleBtn = makePlotHeaderBtn('Hide');
+  var plotToggleBtn = makePlotHeaderBtn('Show Plot');
 
   showAllBtn.onclick = function() {
     var evts = state.currentEvents || [];
@@ -243,7 +243,7 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
   plotBtnGroup.appendChild(plotToggleBtn);
 
   var plotBody = document.createElement('div');
-  plotBody.style.cssText = 'padding:16px 20px;';
+  plotBody.style.cssText = 'padding:16px 20px;display:none;';
   plotSection.appendChild(plotBody);
 
   plotToggleBtn.onclick = function() {
@@ -387,13 +387,46 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
   summaryTableSection.style.display = 'none';
   summaryListView.appendChild(summaryTableSection);
 
+  var summaryTableHeader = document.createElement('div');
+  summaryTableHeader.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;';
+  summaryTableSection.appendChild(summaryTableHeader);
+
   var summaryTableTitle = document.createElement('h3');
   summaryTableTitle.className = 'eap-summary-table-title';
   summaryTableTitle.textContent = 'Event Summary';
-  summaryTableSection.appendChild(summaryTableTitle);
+  summaryTableTitle.style.marginBottom = '0';
+  summaryTableHeader.appendChild(summaryTableTitle);
+
+  var searchInput = document.createElement('input');
+  searchInput.type = 'text';
+  searchInput.placeholder = 'Search events…';
+  searchInput.style.cssText = 'padding:7px 14px;border:1px solid #dee2e6;border-radius:6px;font-size:13px;width:220px;outline:none;transition:border-color 0.15s;';
+  searchInput.onfocus = function() { searchInput.style.borderColor = '#4A6FA5'; };
+  searchInput.onblur = function() { searchInput.style.borderColor = '#dee2e6'; };
+  searchInput.oninput = function() { filterSummaryTable(); };
+  summaryTableHeader.appendChild(searchInput);
 
   var summaryTableWrap = document.createElement('div');
   summaryTableSection.appendChild(summaryTableWrap);
+
+  var lastRenderedEvents = [];
+
+  function filterSummaryTable() {
+    var query = (searchInput.value || '').toLowerCase().trim();
+    var rows = summaryTableWrap.querySelectorAll('tbody tr');
+    rows.forEach(function(tr, i) {
+      if (!query) {
+        tr.style.display = '';
+        return;
+      }
+      var evt = lastRenderedEvents[i];
+      if (!evt) { tr.style.display = ''; return; }
+      var name = (evt.event || '').toLowerCase();
+      var id = (evt.eventID || '').toLowerCase();
+      var match = name.indexOf(query) >= 0 || id.indexOf(query) >= 0;
+      tr.style.display = match ? '' : 'none';
+    });
+  }
 
   // ── Event Detail Sub-view ────────────────────────────────────────────
 
@@ -714,6 +747,9 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
     summaryEventCountVal.textContent = String(data.execSummary.events.length);
 
     var events = data.execSummary.events;
+    lastRenderedEvents = events;
+    searchInput.value = '';
+
     if (events.length === 0) {
       summaryTableWrap.innerHTML = '<div style="text-align:center;padding:40px;color:#6c757d;">No events found for this date range.</div>';
       return;
@@ -1182,7 +1218,7 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
 
         state.visibilityState = {};
         chartEvents.forEach(function(evt, index) {
-          state.visibilityState[index] = true;
+          state.visibilityState[index] = false;
         });
 
         updateSummaryTab(data);
