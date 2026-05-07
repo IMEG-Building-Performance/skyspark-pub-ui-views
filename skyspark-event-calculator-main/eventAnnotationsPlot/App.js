@@ -1116,8 +1116,6 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
 
         titleSite.textContent = 'Event Utility Cost Tracking — ' + data.siteName;
 
-        updateSummaryTab(data);
-
         var chartEvents = data.execSummary.events.map(function(evt, index) {
           var colors = [
             'rgba(54, 162, 235, 0.8)',
@@ -1186,6 +1184,8 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
         chartEvents.forEach(function(evt, index) {
           state.visibilityState[index] = true;
         });
+
+        updateSummaryTab(data);
 
         var utilityDataObj = {};
         utilityDataObj[data.activeUtility] = data.powerData;
