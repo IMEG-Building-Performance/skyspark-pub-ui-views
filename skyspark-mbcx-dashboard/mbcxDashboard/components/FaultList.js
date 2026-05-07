@@ -268,7 +268,7 @@ window.mbcxDashboard.components.FaultList = {
 
     thead.innerHTML = '<tr>' + FL_COLS.map(function(k){
       return '<th class="tu-th tu-th-sort fl-th" data-col="' + k + '">' + FL_LABELS[k] + '<span class="tu-sort-ind" data-col="' + k + '"></span></th>';
-    }).join('') + '</tr>';
+    }).join('') + '<th class="tu-th fl-th-act" title="Meeting Agenda"></th></tr>';
 
     thead.querySelectorAll('.tu-th-sort').forEach(function(th){
       th.addEventListener('click', function(){
@@ -284,6 +284,30 @@ window.mbcxDashboard.components.FaultList = {
     var tbody = container.querySelector('#flTbody');
     if (tbody) {
       tbody.addEventListener('click', function (e) {
+        // Agenda button — toggle without opening detail
+        var agendaBtn = e.target.closest('.fl-agenda-btn');
+        if (agendaBtn) {
+          var fid2 = parseInt(agendaBtn.getAttribute('data-fid'), 10);
+          var row2 = self._state && self._state.rows
+            ? self._state.rows.filter(function (f) { return f.id === fid2; })[0]
+            : null;
+          if (row2 && window.mbcxDashboard && window.mbcxDashboard.meeting) {
+            var mtg = window.mbcxDashboard.meeting;
+            if (mtg.has(fid2)) {
+              mtg.remove(fid2);
+              agendaBtn.textContent = '+';
+              agendaBtn.title = 'Add to Meeting Agenda';
+              agendaBtn.classList.remove('fl-agenda-btn-in');
+            } else {
+              mtg.add(row2);
+              agendaBtn.textContent = '✓';
+              agendaBtn.title = 'Remove from Meeting Agenda';
+              agendaBtn.classList.add('fl-agenda-btn-in');
+            }
+          }
+          return;
+        }
+
         var tr = e.target.closest('tr[data-fid]');
         if (!tr || !self.onFaultClick) return;
         var fid = parseInt(tr.getAttribute('data-fid'), 10);
@@ -326,6 +350,7 @@ window.mbcxDashboard.components.FaultList = {
       var statusBadge = r.status === 'Active'
         ? '<span class="fl-badge fl-badge-active">Active</span>'
         : '<span class="fl-badge fl-badge-ack">Ack</span>';
+      var inAgenda = !!(window.mbcxDashboard && window.mbcxDashboard.meeting && window.mbcxDashboard.meeting.has(r.id));
       return '<tr class="fl-row fl-row-' + r.sev + ' fl-row-clickable" data-fid="' + r.id + '">' +
         '<td class="tu-td fl-td-mono">' + r.ts + '</td>' +
         '<td class="tu-td tu-td-name">' + r.equip + '</td>' +
@@ -334,6 +359,7 @@ window.mbcxDashboard.components.FaultList = {
         '<td class="tu-td">' + sevBadge + '</td>' +
         '<td class="tu-td fl-td-mono">' + r.dur + '</td>' +
         '<td class="tu-td">' + statusBadge + '</td>' +
+        '<td class="tu-td fl-td-act"><button class="fl-agenda-btn' + (inAgenda ? ' fl-agenda-btn-in' : '') + '" data-fid="' + r.id + '" title="' + (inAgenda ? 'Remove from Meeting Agenda' : 'Add to Meeting Agenda') + '">' + (inAgenda ? '&#10003;' : '+') + '</button></td>' +
         '</tr>';
     }).join('');
 

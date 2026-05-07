@@ -1,4 +1,4 @@
-// App.js — tab-based layout: Summary | Faults | Trends
+// App.js — tab-based layout: Summary | Faults | Trends | Meetings
 window.mbcxDashboard = window.mbcxDashboard || {};
 
 (function (NS) {
@@ -27,6 +27,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         TerminalUnits: window.mbcxDashboard.components.TerminalUnits,
         FaultList:     window.mbcxDashboard.components.FaultList,
         FaultDetail:   window.mbcxDashboard.components.FaultDetail,
+        MeetingView:   window.mbcxDashboard.components.MeetingView,
         TrendingView:  window.mbcxDashboard.components.TrendingView,
         Footer:        window.mbcxDashboard.components.Footer
       };
@@ -49,6 +50,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         '  <button class="dash-tab" data-tab="summary">Summary</button>',
         '  <button class="dash-tab" data-tab="faults">Faults</button>',
         '  <button class="dash-tab" data-tab="trends">Trends</button>',
+        '  <button class="dash-tab" data-tab="meetings">Meetings</button>',
         '</div>',
         '<div class="dash-content" id="mbcxContent"></div>'
       ].join('\n');
@@ -89,6 +91,9 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       if (NS.App._activeTab === 'fault-detail' && co.FaultDetail && co.FaultDetail.destroy) {
         co.FaultDetail.destroy();
       }
+      if (NS.App._activeTab === 'meetings' && co.MeetingView && co.MeetingView.destroy) {
+        co.MeetingView.destroy(co);
+      }
       NS.App._activeTab = tab;
 
       container.querySelectorAll('.dash-tab').forEach(function (btn) {
@@ -122,6 +127,9 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       }
       else if (tab === 'trends') {
         if (co.TrendingView) co.TrendingView.showInContent(content, ctx || {});
+      }
+      else if (tab === 'meetings') {
+        if (co.MeetingView) co.MeetingView.showInContent(content, ctx || {}, co);
       }
     }
   };

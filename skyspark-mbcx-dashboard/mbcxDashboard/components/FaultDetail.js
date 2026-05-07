@@ -65,14 +65,14 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       }
       if (desc.indexOf('vfd') !== -1 || desc.indexOf('speed') !== -1 || desc.indexOf('oscil') !== -1) {
         return [
-          { key:'vfd', label:'VFD Speed',          unit:'%',    color:'#8b5cf6', data:wave(rng, 60, 50, 22, 10, 100) },
-          { key:'dsp', label:'Duct Static Pres.',  unit:'inWC', color:'#3b82f6', data:wave(rng, 1.1, 0.7, 0.25, 0) }
+          { key:'vfd', label:'VFD Speed',         unit:'%',    color:'#8b5cf6', data:wave(rng, 60, 50, 22, 10, 100) },
+          { key:'dsp', label:'Duct Static Pres.', unit:'inWC', color:'#3b82f6', data:wave(rng, 1.1, 0.7, 0.25, 0) }
         ];
       }
       if (desc.indexOf('sensor') !== -1 || desc.indexOf('drift') !== -1) {
         return [
-          { key:'sat', label:'SAT (sensor)',   unit:'°F', color:'#ef4444', data:wave(rng, 62, 5, 9) },
-          { key:'avg', label:'Avg Zone Temp',  unit:'°F', color:'#3b82f6', data:wave(rng, 70, 2, 1) }
+          { key:'sat', label:'SAT (sensor)',  unit:'°F', color:'#ef4444', data:wave(rng, 62, 5, 9) },
+          { key:'avg', label:'Avg Zone Temp', unit:'°F', color:'#3b82f6', data:wave(rng, 70, 2, 1) }
         ];
       }
       return [
@@ -93,25 +93,24 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       }
       if (desc.indexOf('damper') !== -1 || desc.indexOf('cfm') !== -1 || desc.indexOf('airflow') !== -1) {
         return [
-          { key:'dm',  label:'Damper',         unit:'%',   color:'#8b5cf6', data:stuck(rng, 6, 4, 0, 100) },
-          { key:'af',  label:'Airflow',        unit:'CFM', color:'#10b981', data:stuck(rng, 30, 20, 0) },
-          { key:'zt',  label:'Zone Temp',      unit:'°F',  color:'#3b82f6', data:wave(rng, 74, 3, 1.5) },
-          { key:'sp',  label:'Zone Setpoint',  unit:'°F',  color:'#94a3b8', data:constant(70) }
+          { key:'dm',  label:'Damper',        unit:'%',   color:'#8b5cf6', data:stuck(rng, 6, 4, 0, 100) },
+          { key:'af',  label:'Airflow',       unit:'CFM', color:'#10b981', data:stuck(rng, 30, 20, 0) },
+          { key:'zt',  label:'Zone Temp',     unit:'°F',  color:'#3b82f6', data:wave(rng, 74, 3, 1.5) },
+          { key:'sp',  label:'Zone Setpoint', unit:'°F',  color:'#94a3b8', data:constant(70) }
         ];
       }
       return [
-        { key:'zt',  label:'Zone Temp',      unit:'°F',  color:'#ef4444', data:wave(rng, 73.5, 2, 1) },
-        { key:'sp',  label:'Zone Setpoint',  unit:'°F',  color:'#94a3b8', data:constant(70) },
-        { key:'af',  label:'Airflow',        unit:'CFM', color:'#10b981', data:wave(rng, 350, 200, 50, 50) },
-        { key:'rh',  label:'Reheat Valve',   unit:'%',   color:'#f97316', data:wave(rng, 20, 20, 8, 0, 100) }
+        { key:'zt',  label:'Zone Temp',     unit:'°F',  color:'#ef4444', data:wave(rng, 73.5, 2, 1) },
+        { key:'sp',  label:'Zone Setpoint', unit:'°F',  color:'#94a3b8', data:constant(70) },
+        { key:'af',  label:'Airflow',       unit:'CFM', color:'#10b981', data:wave(rng, 350, 200, 50, 50) },
+        { key:'rh',  label:'Reheat Valve',  unit:'%',   color:'#f97316', data:wave(rng, 20, 20, 8, 0, 100) }
       ];
     }
 
-    // CUP / Other
     return [
-      { key:'st', label:'Supply Temp',    unit:'°F',  color:'#06b6d4', data:wave(rng, 44, 4, 2) },
-      { key:'rt', label:'Return Temp',    unit:'°F',  color:'#ef4444', data:wave(rng, 57, 5, 2) },
-      { key:'dp', label:'Diff Pressure',  unit:'psi', color:'#8b5cf6', data:wave(rng, 11, 3, 1.5, 0) }
+      { key:'st', label:'Supply Temp',   unit:'°F',  color:'#06b6d4', data:wave(rng, 44, 4, 2) },
+      { key:'rt', label:'Return Temp',   unit:'°F',  color:'#ef4444', data:wave(rng, 57, 5, 2) },
+      { key:'dp', label:'Diff Pressure', unit:'psi', color:'#8b5cf6', data:wave(rng, 11, 3, 1.5, 0) }
     ];
   }
 
@@ -121,15 +120,20 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     var items = [];
 
     if (desc.indexOf('stuck') !== -1 || desc.indexOf('valve') !== -1) {
-      items.push({ type:'cause',  label:'Root Cause',           text:'Valve actuator failure or control loop instability. Output signal consistently outside normal range for >24 hours.' });
+      items.push({ type:'cause',  label:'Root Cause',
+        text:'Valve actuator failure or control loop instability. Output signal consistently outside normal range for >24 hours.' });
     } else if (desc.indexOf('sensor') !== -1 || desc.indexOf('drift') !== -1) {
-      items.push({ type:'cause',  label:'Root Cause',           text:'Sensor calibration drift. Readings deviate from correlated equipment values beyond the fault threshold.' });
+      items.push({ type:'cause',  label:'Root Cause',
+        text:'Sensor calibration drift. Readings deviate from correlated equipment values beyond the fault threshold.' });
     } else if (desc.indexOf('damper') !== -1) {
-      items.push({ type:'cause',  label:'Root Cause',           text:'Actuator or mechanical linkage failure. Damper not responding to control command.' });
+      items.push({ type:'cause',  label:'Root Cause',
+        text:'Actuator or mechanical linkage failure. Damper not responding to control command.' });
     } else if (desc.indexOf('vfd') !== -1 || desc.indexOf('speed') !== -1) {
-      items.push({ type:'cause',  label:'Root Cause',           text:'PID control loop tuning issue. Speed oscillation exceeds ±15% of setpoint within 5-minute windows.' });
+      items.push({ type:'cause',  label:'Root Cause',
+        text:'PID control loop tuning issue. Speed oscillation exceeds ±15% of setpoint within 5-minute windows.' });
     } else {
-      items.push({ type:'cause',  label:'Root Cause',           text:'Performance deviation detected outside normal operating envelope by MBCx rule engine.' });
+      items.push({ type:'cause',  label:'Root Cause',
+        text:'Performance deviation detected outside normal operating envelope by MBCx rule engine.' });
     }
 
     items.push({
@@ -140,23 +144,27 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         : 'Warning — active condition that may escalate without intervention. Recommend inspection within 2 weeks.'
     });
 
-    items.push({
-      type: 'info', label: 'Estimated Energy Impact',
+    items.push({ type:'info', label:'Estimated Energy Impact',
       text: sev === 'critical'
         ? 'High — estimated 15–25% excess energy consumption for this system during fault period.'
         : 'Moderate — estimated 5–12% excess energy consumption for this system during fault period.'
     });
 
     if (desc.indexOf('valve') !== -1 || desc.indexOf('stuck') !== -1) {
-      items.push({ type:'action', label:'Recommended Action', text:'Inspect valve actuator and calibration. Compare position feedback vs control command in BAS.' });
+      items.push({ type:'action', label:'Recommended Action',
+        text:'Inspect valve actuator and calibration. Compare position feedback vs control command in BAS.' });
     } else if (desc.indexOf('sensor') !== -1) {
-      items.push({ type:'action', label:'Recommended Action', text:'Calibrate or replace sensor. Verify installation location, wiring, and signal scaling.' });
+      items.push({ type:'action', label:'Recommended Action',
+        text:'Calibrate or replace sensor. Verify installation location, wiring, and signal scaling.' });
     } else if (desc.indexOf('damper') !== -1) {
-      items.push({ type:'action', label:'Recommended Action', text:'Inspect damper linkage and actuator. Verify control signal output and position feedback.' });
+      items.push({ type:'action', label:'Recommended Action',
+        text:'Inspect damper linkage and actuator. Verify control signal output and position feedback.' });
     } else if (desc.indexOf('vfd') !== -1) {
-      items.push({ type:'action', label:'Recommended Action', text:'Retune PID control loop. Review acceleration/deceleration ramp settings with BAS contractor.' });
+      items.push({ type:'action', label:'Recommended Action',
+        text:'Retune PID control loop. Review acceleration/deceleration ramp settings with BAS contractor.' });
     } else {
-      items.push({ type:'action', label:'Recommended Action', text:'Schedule equipment inspection. Verify operation against design intent and commissioning records.' });
+      items.push({ type:'action', label:'Recommended Action',
+        text:'Schedule equipment inspection. Verify operation against design intent and commissioning records.' });
     }
 
     return items;
@@ -260,23 +268,43 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     });
   }
 
+  // ── Public API ─────────────────────────────────────────────────────────────
   NS.components.FaultDetail = {
 
-    show: function (contentEl, fault, allFaults, ctx, onBack) {
+    // options.agendaNav = { current, total, discussed, onPrev, onNext, onMarkDiscussed }
+    show: function (contentEl, fault, allFaults, ctx, onBack, options) {
       if (_chart) { _chart.destroy(); _chart = null; }
 
+      var opts     = options || {};
+      var nav      = opts.agendaNav || null;
       var signals  = genSignals(fault);
       var diags    = genDiagnostics(fault);
       var sevCls   = fault.sev === 'critical' ? 'fl-badge-critical' : 'fl-badge-warning';
       var sevLabel = fault.sev === 'critical' ? 'Critical' : 'Warning';
       var sta      = fault.status || 'Active';
       var staCls   = sta === 'Active' ? 'fl-badge-active' : 'fl-badge-ack';
+      var backLabel = nav ? '&#8592; Agenda' : '&#8592; Fault List';
+      var inAgenda = !!(NS.meeting && NS.meeting.has(fault.id));
 
       contentEl.innerHTML = [
+        // Meeting nav bar — sticky top, only in meeting/present mode
+        nav ? [
+          '<div class="fd-mtg-nav">',
+          '  <span class="fd-mtg-pos">Item ' + nav.current + ' of ' + nav.total + '</span>',
+          '  <div class="fd-mtg-arrows">',
+          '    <button class="fd-mtg-arrow" id="fdNavPrev"' + (!nav.onPrev ? ' disabled' : '') + '>&#8592; Prev</button>',
+          '    <button class="fd-mtg-arrow" id="fdNavNext"' + (!nav.onNext ? ' disabled' : '') + '>Next &#8594;</button>',
+          '  </div>',
+          '  <button class="fd-discuss-btn' + (nav.discussed ? ' fd-discuss-done' : '') + '" id="fdDiscussBtn">',
+          nav.discussed ? '&#10003; Discussed' : 'Mark Discussed',
+          '  </button>',
+          '</div>'
+        ].join('\n') : '',
+
         '<div class="fd-page">',
 
         '  <div class="fd-hd">',
-        '    <button class="fd-back" id="fdBackBtn">&#8592; Fault List</button>',
+        '    <button class="fd-back" id="fdBackBtn">' + backLabel + '</button>',
         '    <div class="fd-hd-center">',
         '      <div class="fd-hd-equip">' + (fault.equip || '') + '</div>',
         '      <div class="fd-hd-fault">' + (fault.fault  || '') + '</div>',
@@ -285,6 +313,9 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         '      <span class="fl-badge ' + sevCls + '">' + sevLabel + '</span>',
         '      <span class="fl-badge ' + staCls + '">' + sta + '</span>',
         fault.dur ? '<span class="fd-dur">' + fault.dur + '</span>' : '',
+        // "Add to Meeting" button — hidden when already in meeting nav mode
+        !nav ? '<button class="fd-agenda-toggle' + (inAgenda ? ' fd-agenda-in' : '') + '" id="fdAgendaToggle">' +
+               (inAgenda ? '&#10003; In Agenda' : '+ Add to Meeting') + '</button>' : '',
         '    </div>',
         '  </div>',
 
@@ -327,11 +358,49 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         '</div>'
       ].join('\n');
 
+      // Back button
       contentEl.querySelector('#fdBackBtn').addEventListener('click', function () {
         if (_chart) { _chart.destroy(); _chart = null; }
         onBack();
       });
 
+      // Meeting nav buttons
+      if (nav) {
+        var prevBtn = contentEl.querySelector('#fdNavPrev');
+        var nextBtn = contentEl.querySelector('#fdNavNext');
+        var discBtn = contentEl.querySelector('#fdDiscussBtn');
+        if (prevBtn && nav.onPrev) prevBtn.addEventListener('click', function () {
+          if (_chart) { _chart.destroy(); _chart = null; } nav.onPrev();
+        });
+        if (nextBtn && nav.onNext) nextBtn.addEventListener('click', function () {
+          if (_chart) { _chart.destroy(); _chart = null; } nav.onNext();
+        });
+        if (discBtn) discBtn.addEventListener('click', function () {
+          if (_chart) { _chart.destroy(); _chart = null; }
+          if (nav.onMarkDiscussed) nav.onMarkDiscussed();
+        });
+      }
+
+      // "Add to Meeting" toggle (Fault List / Fault Detail context, not meeting mode)
+      if (!nav) {
+        var agBtn = contentEl.querySelector('#fdAgendaToggle');
+        if (agBtn) {
+          agBtn.addEventListener('click', function () {
+            if (!NS.meeting) return;
+            if (NS.meeting.has(fault.id)) {
+              NS.meeting.remove(fault.id);
+              agBtn.textContent = '+ Add to Meeting';
+              agBtn.classList.remove('fd-agenda-in');
+            } else {
+              NS.meeting.add(fault);
+              agBtn.textContent = '✓ In Agenda';
+              agBtn.classList.add('fd-agenda-in');
+            }
+          });
+        }
+      }
+
+      // Add note
       contentEl.querySelector('#fdNoteBtn').addEventListener('click', function () {
         var input = contentEl.querySelector('#fdNoteInput');
         var text  = input && input.value.trim();
