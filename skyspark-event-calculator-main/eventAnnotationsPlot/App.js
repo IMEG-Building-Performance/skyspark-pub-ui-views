@@ -1,7 +1,8 @@
 /**
  * App.js - Root Application
  *
- * Tabbed interface: Summary | Event Lookup | Event Database | Documentation
+ * Tabbed interface: Summary | Event Database | Documentation
+ * Summary tab includes collapsible utility plot, summary cards, and event table.
  * Page shell matches MBCx Dashboard styling with IMEG blue title bar.
  */
 
@@ -67,11 +68,12 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
   tabBar.className = 'eap-tab-bar';
   titleBar.appendChild(tabBar);
 
-  var TAB_IDS = ['summary', 'lookup', 'database', 'docs'];
-  var TAB_LABELS = ['Summary', 'Event Lookup', 'Event Database', 'Documentation'];
+  var TAB_IDS = ['summary', 'database', 'docs'];
+  var TAB_LABELS = ['Summary', 'Event Database', 'Documentation'];
   var tabBtns = {};
   var tabPanels = {};
   var initialTab = state.activeTab || 'summary';
+  if (initialTab === 'lookup') initialTab = 'summary';
 
   TAB_IDS.forEach(function(id, i) {
     var btn = document.createElement('button');
@@ -97,7 +99,8 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
 
   // ── Tab Switching ────────────────────────────────────────────────────
   state.activeTab = initialTab;
-  var tabInited = { summary: true, lookup: true, database: false, docs: false };
+  var tabInited = { summary: true, database: false, docs: false };
+  var plotHidden = false;
 
   function switchTab(tabId) {
     if (state.activeTab === tabId) return;
@@ -119,7 +122,7 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
       if (documentation) documentation.renderTab(tabPanels.docs);
     }
 
-    if (tabId === 'lookup') {
+    if (tabId === 'summary' && !plotHidden) {
       setTimeout(function() {
         if (state.chartInstance) {
           state.chartInstance.resize();
@@ -127,7 +130,7 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
           var currentEvents = state.currentEvents || [];
           if (state._resizeTimelineForEvents) state._resizeTimelineForEvents(currentEvents);
           annotations.drawAnnotationOverlay(state.chartInstance, state.overlayCanvas, currentEvents);
-          timeline.drawTimeline(state.refs.timelineCanvas, state.chartInstance, currentEvents);
+          if (state.refs) timeline.drawTimeline(state.refs.timelineCanvas, state.chartInstance, currentEvents);
         }
       }, 50);
     }
@@ -138,7 +141,6 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
     if (btn) switchTab(btn.getAttribute('data-tab'));
   });
 
-  // Lazy-init persisted tabs on restore
   if (initialTab === 'database') {
     tabInited.database = true;
     if (eventsDatabase) eventsDatabase.renderTab(tabPanels.database, state);
@@ -148,17 +150,15 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
   }
 
   // ══════════════════════════════════════════════════════════════════════
-  // ── TAB 1: SUMMARY
+  // ── SUMMARY TAB (cards + plot + table)
   // ══════════════════════════════════════════════════════════════════════
 
   var summaryPanel = tabPanels.summary;
   summaryPanel.style.padding = '24px 28px';
 
-  // Summary list view (cards + table)
   var summaryListView = document.createElement('div');
   summaryPanel.appendChild(summaryListView);
 
-  // Summary detail view (hidden until event clicked)
   var summaryDetailView = document.createElement('div');
   summaryDetailView.style.display = 'none';
   summaryPanel.appendChild(summaryDetailView);
@@ -168,6 +168,7 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
   summaryLoading.innerHTML = '<div class="edb-spinner" style="width:32px;height:32px;margin:0 auto 12px;"></div><div style="font-size:14px;font-weight:600;">Loading summary data…</div>';
   summaryListView.appendChild(summaryLoading);
 
+  // ── Summary Cards ────────────────────────────────────────────────────
   var summaryCards = document.createElement('div');
   summaryCards.className = 'eap-summary-cards';
   summaryCards.style.display = 'none';
@@ -192,6 +193,148 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
   var summaryUtilityCostVal = createSummaryCard('Utility Cost', '—');
   var summaryEventCountVal = createSummaryCard('Events Tracked', '—');
 
+  // ── Plot Section (collapsible card) ──────────────────────────────────
+  var plotSection = document.createElement('div');
+  plotSection.style.cssText = 'background:white;border:1px solid #E5E7EB;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.08);margin-bottom:20px;display:none;overflow:hidden;';
+  summaryListView.appendChild(plotSection);
+
+  var plotHeader = document.createElement('div');
+  plotHeader.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid #E5E7EB;';
+  plotSection.appendChild(plotHeader);
+
+  var plotTitleEl = document.createElement('h3');
+  plotTitleEl.textContent = 'Utility Plot';
+  plotTitleEl.style.cssText = 'font-size:14px;font-weight:700;color:#374151;margin:0;';
+  plotHeader.appendChild(plotTitleEl);
+
+  var plotToggleBtn = document.createElement('button');
+  plotToggleBtn.textContent = 'Hide';
+  plotToggleBtn.style.cssText = 'padding:5px 14px;border:1px solid #dee2e6;border-radius:6px;background:white;color:#6c757d;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.15s;';
+  plotToggleBtn.onmouseover = function() { plotToggleBtn.style.borderColor = '#4A6FA5'; plotToggleBtn.style.color = '#4A6FA5'; };
+  plotToggleBtn.onmouseout = function() { plotToggleBtn.style.borderColor = '#dee2e6'; plotToggleBtn.style.color = '#6c757d'; };
+  plotHeader.appendChild(plotToggleBtn);
+
+  var plotBody = document.createElement('div');
+  plotBody.style.cssText = 'padding:16px 20px;';
+  plotSection.appendChild(plotBody);
+
+  plotToggleBtn.onclick = function() {
+    plotHidden = !plotHidden;
+    plotBody.style.display = plotHidden ? 'none' : '';
+    plotToggleBtn.textContent = plotHidden ? 'Show Plot' : 'Hide';
+    if (!plotHidden) {
+      setTimeout(function() {
+        if (state.chartInstance) {
+          state.chartInstance.resize();
+          if (state._syncOverlaySize) state._syncOverlaySize();
+          var currentEvents = state.currentEvents || [];
+          if (state._resizeTimelineForEvents) state._resizeTimelineForEvents(currentEvents);
+          annotations.drawAnnotationOverlay(state.chartInstance, state.overlayCanvas, currentEvents);
+          if (state.refs) timeline.drawTimeline(state.refs.timelineCanvas, state.chartInstance, currentEvents);
+        }
+      }, 50);
+    }
+  };
+
+  // ── Chart container inside plot body ─────────────────────────────────
+  var chartH = Math.max(350, Math.min(Math.round(window.innerHeight * 0.45), 550));
+  var chartContainer = document.createElement('div');
+  chartContainer.style.cssText = 'width:100%;height:' + chartH + 'px;box-sizing:border-box;position:relative;display:flex;flex-direction:column;';
+  plotBody.appendChild(chartContainer);
+
+  var utilityToggleBar = interactions.createUtilityToggle(function(utilityName) {
+    state.activeUtility = utilityName;
+    if (state._refreshUtilityData) state._refreshUtilityData();
+  });
+  chartContainer.appendChild(utilityToggleBar);
+
+  var btnGroup = document.createElement('div');
+  btnGroup.style.cssText = 'position:absolute;top:4px;right:4px;z-index:20;display:flex;gap:6px;';
+  chartContainer.appendChild(btnGroup);
+
+  var expandBtn = document.createElement('button');
+  expandBtn.title = 'Expand chart';
+  expandBtn.textContent = '⛶';
+  expandBtn.style.cssText = 'width:32px;height:32px;border:1px solid #dee2e6;border-radius:6px;background:white;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;color:#6c757d;box-shadow:0 1px 3px rgba(0,0,0,0.08);';
+  expandBtn.onmouseover = function() { expandBtn.style.backgroundColor = '#e8f4fd'; expandBtn.style.color = '#1565c0'; expandBtn.style.borderColor = '#1565c0'; };
+  expandBtn.onmouseout = function() { expandBtn.style.backgroundColor = 'white'; expandBtn.style.color = '#6c757d'; expandBtn.style.borderColor = '#dee2e6'; };
+  expandBtn.onclick = function() {
+    if (window.EventAnnotationsPlot.expandView) {
+      window.EventAnnotationsPlot.expandView.open(state, interactions, annotations, timeline, chart);
+    }
+  };
+  btnGroup.appendChild(expandBtn);
+
+  var canvasMinH = Math.round(200 + 60 * rs.vhScale);
+  var canvasWrapper = document.createElement('div');
+  canvasWrapper.style.cssText = 'width:100%;flex:1;min-height:' + canvasMinH + 'px;position:relative;';
+  chartContainer.appendChild(canvasWrapper);
+
+  var canvas = document.createElement('canvas');
+  canvas.id = 'eventAnnotationsChart';
+  canvasWrapper.appendChild(canvas);
+
+  var timelineMinH = Math.round(60 + 60 * rs.vhScale);
+  var timelineMaxH = Math.round(160 + 80 * rs.vhScale);
+  var timelineWrapper = document.createElement('div');
+  timelineWrapper.style.cssText = 'width:100%;margin-top:4px;flex-shrink:0;';
+  chartContainer.appendChild(timelineWrapper);
+
+  var timelineHeader = document.createElement('div');
+  timelineHeader.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:2px 4px;cursor:pointer;';
+  timelineWrapper.appendChild(timelineHeader);
+
+  var timelineLabel = document.createElement('span');
+  timelineLabel.textContent = 'Event Timeline';
+  timelineLabel.style.cssText = 'font-size:10px;font-weight:600;color:#adb5bd;text-transform:uppercase;letter-spacing:0.5px;';
+  timelineHeader.appendChild(timelineLabel);
+
+  var timelineToggleBtn = document.createElement('button');
+  timelineToggleBtn.style.cssText = 'border:none;background:transparent;cursor:pointer;font-size:11px;color:#adb5bd;padding:2px 6px;transition:color 0.2s;';
+  timelineToggleBtn.onmouseover = function() { timelineToggleBtn.style.color = '#1565c0'; };
+  timelineToggleBtn.onmouseout = function() { timelineToggleBtn.style.color = '#adb5bd'; };
+  timelineHeader.appendChild(timelineToggleBtn);
+
+  var timelineContainer = document.createElement('div');
+  timelineContainer.style.cssText = 'width:100%;height:' + timelineMinH + 'px;max-height:' + timelineMaxH + 'px;position:relative;overflow-y:auto;overflow-x:hidden;';
+  timelineWrapper.appendChild(timelineContainer);
+
+  function applyTimelineToggle() {
+    timelineContainer.style.display = state.timelineHidden ? 'none' : 'block';
+    timelineToggleBtn.textContent = state.timelineHidden ? 'Show' : 'Hide';
+  }
+  applyTimelineToggle();
+
+  timelineHeader.onclick = function() {
+    state.timelineHidden = !state.timelineHidden;
+    applyTimelineToggle();
+    setTimeout(function() {
+      if (state.chartInstance) state.chartInstance.resize();
+      if (state._syncOverlaySize) state._syncOverlaySize();
+      var currentEvents = state.currentEvents || [];
+      if (state.chartInstance && state.overlayCanvas) {
+        annotations.drawAnnotationOverlay(state.chartInstance, state.overlayCanvas, currentEvents);
+      }
+      if (!state.timelineHidden && state.chartInstance && state.timelineCanvas) {
+        if (state._resizeTimelineForEvents) state._resizeTimelineForEvents(currentEvents);
+        timeline.drawTimeline(state.timelineCanvas, state.chartInstance, currentEvents);
+      }
+    }, 50);
+  };
+
+  var loadingMsg = document.createElement('div');
+  loadingMsg.style.cssText = 'text-align:center;padding:40px;color:#666;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);';
+  var loadingSpinner = document.createElement('div');
+  loadingSpinner.className = 'edb-spinner';
+  loadingSpinner.style.cssText += 'width:40px;height:40px;margin:0 auto 16px;';
+  loadingMsg.appendChild(loadingSpinner);
+  var loadingText = document.createElement('div');
+  loadingText.textContent = 'Loading…';
+  loadingText.style.cssText = 'font-size:15px;font-weight:600;';
+  loadingMsg.appendChild(loadingText);
+  chartContainer.appendChild(loadingMsg);
+
+  // ── Event Summary Table ──────────────────────────────────────────────
   var summaryTableSection = document.createElement('div');
   summaryTableSection.className = 'eap-summary-table-section';
   summaryTableSection.style.display = 'none';
@@ -204,6 +347,8 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
 
   var summaryTableWrap = document.createElement('div');
   summaryTableSection.appendChild(summaryTableWrap);
+
+  // ── Event Detail Sub-view ────────────────────────────────────────────
 
   function showEventDetail(evt) {
     summaryListView.style.display = 'none';
@@ -245,14 +390,12 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
       return oStart < rEnd && oEnd > rStart;
     });
 
-    // ── Helper: create a section card ──────────────────────────────
     var sectionStyle = 'background:white;border:1px solid #E5E7EB;border-radius:8px;padding:20px 24px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,0.08);';
     var sectionTitleStyle = 'font-size:14px;font-weight:700;color:#374151;margin:0 0 16px 0;padding-bottom:10px;border-bottom:1px solid #E5E7EB;';
     var tableStyle = 'width:100%;border-collapse:collapse;font-size:13px;';
     var thStyle = 'text-align:left;padding:8px 12px;font-weight:600;color:#6c757d;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;border-bottom:2px solid #E5E7EB;';
     var tdStyle = 'padding:8px 12px;border-bottom:1px solid #f0f0f0;color:#374151;';
 
-    // ── Back button ────────────────────────────────────────────────
     var backBtn = document.createElement('button');
     backBtn.textContent = '← Back to Summary';
     backBtn.style.cssText = 'padding:10px 20px;border:1px solid #dee2e6;border-radius:6px;background:white;color:#495057;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;margin-bottom:20px;';
@@ -264,7 +407,6 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
     };
     summaryDetailView.appendChild(backBtn);
 
-    // ── Event header card ──────────────────────────────────────────
     var headerCard = document.createElement('div');
     headerCard.style.cssText = sectionStyle + 'text-align:center;';
 
@@ -310,11 +452,9 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
     headerCard.appendChild(metaGrid);
     summaryDetailView.appendChild(headerCard);
 
-    // ── Two-column layout for Spaces + Meters ──────────────────────
     var twoCol = document.createElement('div');
     twoCol.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;';
 
-    // Spaces Served
     var spacesCard = document.createElement('div');
     spacesCard.style.cssText = sectionStyle + 'margin-bottom:0;';
     var spacesTitle = document.createElement('h3');
@@ -344,7 +484,6 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
     spacesCard.appendChild(spacesTable);
     twoCol.appendChild(spacesCard);
 
-    // Meters Serving Event
     var metersCard = document.createElement('div');
     metersCard.style.cssText = sectionStyle + 'margin-bottom:0;';
     var metersTitle = document.createElement('h3');
@@ -373,7 +512,6 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
 
     summaryDetailView.appendChild(twoCol);
 
-    // ── Concurrent Events ──────────────────────────────────────────
     var concurrentCard = document.createElement('div');
     concurrentCard.style.cssText = sectionStyle;
     var concurrentTitle = document.createElement('h3');
@@ -421,7 +559,6 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
     }
     summaryDetailView.appendChild(concurrentCard);
 
-    // ── Utility Usage Derivation ───────────────────────────────────
     var utilities = [
       { name: 'Electric', key: 'elec', color: colors.electric, unit: 'kWh', demandUnit: 'kW', rate: 0.085, demandRate: 12.50,
         energyCost: parseFloat(raw.elec_energyCost) || 0, demandCost: parseFloat(raw.elec_demandCost) || 0 },
@@ -515,9 +652,12 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
     }
   }
 
+  // ── Update Summary Tab ───────────────────────────────────────────────
+
   function updateSummaryTab(data) {
     summaryLoading.style.display = 'none';
     summaryCards.style.display = '';
+    plotSection.style.display = '';
     summaryTableSection.style.display = '';
     summaryDetailView.style.display = 'none';
     summaryListView.style.display = '';
@@ -561,166 +701,12 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
   }
 
   // ══════════════════════════════════════════════════════════════════════
-  // ── TAB 2: EVENT LOOKUP (Chart + Sidebar)
+  // ── CHART.JS INIT & DATA LOADING
   // ══════════════════════════════════════════════════════════════════════
 
-  var lookupPanel = tabPanels.lookup;
-  var lookupPad = Math.round(12 + 8 * rs.vhScale);
-  lookupPanel.style.padding = lookupPad + 'px';
-
-  var layoutContainer = document.createElement('div');
-  layoutContainer.style.cssText = 'display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;';
-  lookupPanel.appendChild(layoutContainer);
-
-  // Chart container
-  var chartH = Math.max(400, Math.min(Math.round(window.innerHeight * 0.65), 800));
-  var chartPad = Math.round(12 + 8 * rs.vhScale);
-  var chartContainer = document.createElement('div');
-  chartContainer.style.cssText = 'flex:2;min-width:500px;min-height:400px;height:' + chartH + 'px;box-sizing:border-box;background:white;padding:' + chartPad + 'px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1);position:relative;display:flex;flex-direction:column;transition:flex 0.2s ease;';
-  layoutContainer.appendChild(chartContainer);
-
-  // Utility toggle
-  var utilityToggleBar = interactions.createUtilityToggle(function(utilityName) {
-    state.activeUtility = utilityName;
-    if (state._refreshUtilityData) state._refreshUtilityData();
-  });
-  chartContainer.appendChild(utilityToggleBar);
-
-  // Top-right button group (expand only)
-  var btnGroup = document.createElement('div');
-  btnGroup.style.cssText = 'position:absolute;top:12px;right:12px;z-index:20;display:flex;gap:6px;';
-  chartContainer.appendChild(btnGroup);
-
-  var expandBtn = document.createElement('button');
-  expandBtn.title = 'Expand chart';
-  expandBtn.textContent = '⛶';
-  expandBtn.style.cssText = 'width:32px;height:32px;border:1px solid #dee2e6;border-radius:6px;background:white;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;color:#6c757d;box-shadow:0 1px 3px rgba(0,0,0,0.08);';
-  expandBtn.onmouseover = function() { expandBtn.style.backgroundColor = '#e8f4fd'; expandBtn.style.color = '#1565c0'; expandBtn.style.borderColor = '#1565c0'; };
-  expandBtn.onmouseout = function() { expandBtn.style.backgroundColor = 'white'; expandBtn.style.color = '#6c757d'; expandBtn.style.borderColor = '#dee2e6'; };
-  expandBtn.onclick = function() {
-    if (window.EventAnnotationsPlot.expandView) {
-      window.EventAnnotationsPlot.expandView.open(state, interactions, annotations, timeline, chart);
-    }
-  };
-  btnGroup.appendChild(expandBtn);
-
-  // Canvas wrapper
-  var canvasMinH = Math.round(200 + 100 * rs.vhScale);
-  var canvasWrapper = document.createElement('div');
-  canvasWrapper.style.cssText = 'width:100%;flex:1;min-height:' + canvasMinH + 'px;position:relative;';
-  chartContainer.appendChild(canvasWrapper);
-
-  var canvas = document.createElement('canvas');
-  canvas.id = 'eventAnnotationsChart';
-  canvasWrapper.appendChild(canvas);
-
-  // Timeline wrapper
-  var timelineMinH = Math.round(60 + 60 * rs.vhScale);
-  var timelineMaxH = Math.round(160 + 80 * rs.vhScale);
-  var timelineWrapper = document.createElement('div');
-  timelineWrapper.style.cssText = 'width:100%;margin-top:4px;flex-shrink:0;';
-  chartContainer.appendChild(timelineWrapper);
-
-  var timelineHeader = document.createElement('div');
-  timelineHeader.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:2px 4px;cursor:pointer;';
-  timelineWrapper.appendChild(timelineHeader);
-
-  var timelineLabel = document.createElement('span');
-  timelineLabel.textContent = 'Event Timeline';
-  timelineLabel.style.cssText = 'font-size:10px;font-weight:600;color:#adb5bd;text-transform:uppercase;letter-spacing:0.5px;';
-  timelineHeader.appendChild(timelineLabel);
-
-  var timelineToggleBtn = document.createElement('button');
-  timelineToggleBtn.style.cssText = 'border:none;background:transparent;cursor:pointer;font-size:11px;color:#adb5bd;padding:2px 6px;transition:color 0.2s;';
-  timelineToggleBtn.onmouseover = function() { timelineToggleBtn.style.color = '#1565c0'; };
-  timelineToggleBtn.onmouseout = function() { timelineToggleBtn.style.color = '#adb5bd'; };
-  timelineHeader.appendChild(timelineToggleBtn);
-
-  var timelineContainer = document.createElement('div');
-  timelineContainer.style.cssText = 'width:100%;height:' + timelineMinH + 'px;max-height:' + timelineMaxH + 'px;position:relative;overflow-y:auto;overflow-x:hidden;';
-  timelineWrapper.appendChild(timelineContainer);
-
-  function applyTimelineToggle() {
-    timelineContainer.style.display = state.timelineHidden ? 'none' : 'block';
-    timelineToggleBtn.textContent = state.timelineHidden ? 'Show' : 'Hide';
-  }
-  applyTimelineToggle();
-
-  timelineHeader.onclick = function() {
-    state.timelineHidden = !state.timelineHidden;
-    applyTimelineToggle();
-    setTimeout(function() {
-      if (state.chartInstance) state.chartInstance.resize();
-      if (state._syncOverlaySize) state._syncOverlaySize();
-      var currentEvents = state.currentEvents || [];
-      if (state.chartInstance && state.overlayCanvas) {
-        annotations.drawAnnotationOverlay(state.chartInstance, state.overlayCanvas, currentEvents);
-      }
-      if (!state.timelineHidden && state.chartInstance && state.timelineCanvas) {
-        if (state._resizeTimelineForEvents) state._resizeTimelineForEvents(currentEvents);
-        timeline.drawTimeline(state.timelineCanvas, state.chartInstance, currentEvents);
-      }
-    }, 50);
-  };
-
-  // Events sidebar
-  var eventsContainer = document.createElement('div');
-  eventsContainer.style.cssText = 'flex:1;min-width:280px;max-width:400px;height:' + chartH + 'px;display:flex;flex-direction:column;position:relative;z-index:10;';
-  layoutContainer.appendChild(eventsContainer);
-
-  // Sidebar re-show button
-  var showSidebarBtn = document.createElement('button');
-  showSidebarBtn.title = 'Show event filter panel';
-  showSidebarBtn.textContent = 'Event Filter ▶';
-  showSidebarBtn.style.cssText = 'position:absolute;top:50%;right:-1px;transform:translateY(-50%);z-index:15;padding:8px 6px;border:1px solid #dee2e6;border-right:none;border-radius:6px 0 0 6px;background:white;cursor:pointer;font-size:10px;font-weight:600;color:#6c757d;box-shadow:-2px 0 4px rgba(0,0,0,0.08);transition:all 0.2s;writing-mode:vertical-lr;letter-spacing:0.5px;';
-  showSidebarBtn.onmouseover = function() { showSidebarBtn.style.backgroundColor = '#e8f4fd'; showSidebarBtn.style.color = '#1565c0'; showSidebarBtn.style.borderColor = '#1565c0'; };
-  showSidebarBtn.onmouseout = function() { showSidebarBtn.style.backgroundColor = 'white'; showSidebarBtn.style.color = '#6c757d'; showSidebarBtn.style.borderColor = '#dee2e6'; };
-  showSidebarBtn.onclick = function() {
-    state.filterSidebarHidden = false;
-    eventsContainer.style.display = 'flex';
-    showSidebarBtn.style.display = 'none';
-    setTimeout(function() {
-      if (state.chartInstance) state.chartInstance.resize();
-      if (state._syncOverlaySize) state._syncOverlaySize();
-      var currentEvents = state.currentEvents || [];
-      if (state._resizeTimelineForEvents) state._resizeTimelineForEvents(currentEvents);
-      if (state.chartInstance && state.overlayCanvas) {
-        annotations.drawAnnotationOverlay(state.chartInstance, state.overlayCanvas, currentEvents);
-      }
-      if (state.chartInstance && state.timelineCanvas) {
-        timeline.drawTimeline(state.timelineCanvas, state.chartInstance, currentEvents);
-      }
-    }, 50);
-  };
-  chartContainer.appendChild(showSidebarBtn);
-
-  state._showSidebarBtn = showSidebarBtn;
-
-  if (state.filterSidebarHidden) {
-    eventsContainer.style.display = 'none';
-    showSidebarBtn.style.display = 'block';
-  } else {
-    showSidebarBtn.style.display = 'none';
-  }
-
-  // Loading animation
-  var loadingMsg = document.createElement('div');
-  loadingMsg.style.cssText = 'text-align:center;padding:40px;color:#666;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);';
-  var loadingSpinner = document.createElement('div');
-  loadingSpinner.className = 'edb-spinner';
-  loadingSpinner.style.cssText += 'width:40px;height:40px;margin:0 auto 16px;';
-  loadingMsg.appendChild(loadingSpinner);
-  var loadingText = document.createElement('div');
-  loadingText.textContent = 'Loading…';
-  loadingText.style.cssText = 'font-size:15px;font-weight:600;';
-  loadingMsg.appendChild(loadingText);
-  chartContainer.appendChild(loadingMsg);
-
-  // ── Load Chart.js and initialize ─────────────────────────────────────
   loader.loadChartJs(function() {
     if (loadingMsg.parentNode) loadingMsg.parentNode.removeChild(loadingMsg);
 
-    // Placeholder
     var placeholderMsg = document.createElement('div');
     placeholderMsg.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:#666;font-size:16px;';
     placeholderMsg.innerHTML = '<div style="font-size:48px;margin-bottom:16px;">📊</div><div style="font-weight:600;margin-bottom:8px;">No Data Loaded</div><div>Select a site and date range</div>';
@@ -729,7 +715,6 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
 
     chart.createChart(canvas, [], [], null);
 
-    // Overlay canvas
     var overlayCanvas = document.createElement('canvas');
     overlayCanvas.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;cursor:default;pointer-events:auto;';
     canvasWrapper.appendChild(overlayCanvas);
@@ -749,7 +734,6 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
     state._syncOverlaySize = syncOverlaySize;
     syncOverlaySize();
 
-    // Timeline canvas
     var timelineCanvas = document.createElement('canvas');
     timelineCanvas.style.cssText = 'display:block;cursor:pointer;';
     timelineContainer.appendChild(timelineCanvas);
@@ -791,21 +775,20 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
     timeline.drawTimeline(timelineCanvas, state.chartInstance, events);
     annotations.drawAnnotationOverlay(state.chartInstance, overlayCanvas, events);
 
-    // Resize handler
     window.addEventListener('resize', function() {
       window.EventAnnotationsPlot.computeScaling();
-      var newChartH = Math.max(400, Math.min(Math.round(window.innerHeight * 0.65), 800));
+      var newChartH = Math.max(350, Math.min(Math.round(window.innerHeight * 0.45), 550));
       chartContainer.style.height = newChartH + 'px';
-      eventsContainer.style.height = newChartH + 'px';
-      resizeTimelineForEvents(state.currentEvents || []);
-      syncOverlaySize();
-      updateTimelineSize();
-      var currentEvents = state.currentEvents || [];
-      annotations.drawAnnotationOverlay(state.chartInstance, overlayCanvas, currentEvents);
-      timeline.drawTimeline(timelineCanvas, state.chartInstance, currentEvents);
+      if (!plotHidden) {
+        resizeTimelineForEvents(state.currentEvents || []);
+        syncOverlaySize();
+        updateTimelineSize();
+        var currentEvents = state.currentEvents || [];
+        annotations.drawAnnotationOverlay(state.chartInstance, overlayCanvas, currentEvents);
+        timeline.drawTimeline(timelineCanvas, state.chartInstance, currentEvents);
+      }
     });
 
-    // Mouse handlers for overlay
     overlayCanvas.addEventListener('mousemove', function(e) {
       var rect = overlayCanvas.getBoundingClientRect();
       var mouseX = e.clientX - rect.left;
@@ -908,19 +891,16 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
       timeline.drawTimeline(timelineCanvas, state.chartInstance, currentEvents);
     });
 
-    // Store refs
     state.refs = {
       canvas: canvas,
       overlayCanvas: overlayCanvas,
       timelineCanvas: timelineCanvas,
       canvasWrapper: canvasWrapper,
-      eventsContainer: eventsContainer,
       _selectedSite: selectedSite,
       _startDate: startDate,
       _endDate: endDate
     };
 
-    // ── Utility toggle refresh ─────────────────────────────────────────
     function refreshUtilityData() {
       if (!selectedSite || !startDate || !endDate) return;
       var active = state.activeUtility;
@@ -933,9 +913,7 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
             state.utilityData[active] = data;
             rebuildChartFromCache();
           })
-          .catch(function(err) {
-            // Silent error handling
-          });
+          .catch(function(err) {});
       }
     }
     state._refreshUtilityData = refreshUtilityData;
@@ -956,7 +934,6 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
       timeline.drawTimeline(state.refs.timelineCanvas, state.chartInstance, currentEvents);
     }
 
-    // ── Main data loading ──────────────────────────────────────────────
     function loadDataForSite() {
       state.utilityData = {};
 
@@ -1021,23 +998,18 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
         });
       })
       .then(function(data) {
-        // Remove placeholder
         if (state.placeholderMsg && state.placeholderMsg.parentNode) {
           state.placeholderMsg.parentNode.removeChild(state.placeholderMsg);
           state.placeholderMsg = null;
         }
 
-        // Store raw data
         state.siteName = data.siteName;
         state.rawExecSummaryEvents = data.execSummary.events;
 
-        // Update title bar
         titleSite.textContent = 'Event Utility Cost Tracking — ' + data.siteName;
 
-        // Update Summary tab
         updateSummaryTab(data);
 
-        // Transform events for chart/timeline
         var chartEvents = data.execSummary.events.map(function(evt, index) {
           var colors = [
             'rgba(54, 162, 235, 0.8)',
@@ -1118,9 +1090,6 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
         resizeTimelineForEvents(chartEvents);
         annotations.drawAnnotationOverlay(state.chartInstance, state.overlayCanvas, chartEvents);
         timeline.drawTimeline(state.refs.timelineCanvas, state.chartInstance, chartEvents);
-
-        state.refs.eventsContainer.innerHTML = '';
-        interactions.createEventList(state.refs.eventsContainer, chartEvents, state.chartInstance);
       })
       .catch(function(error) {
         console.error('loadDataForSite error:', error);
@@ -1129,7 +1098,6 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
 
     loadDataForSite();
 
-    // Start polling for variable changes
     skyspark.startPolling(view, {
       selectedSite: selectedSite,
       startDate: startDate,
@@ -1142,9 +1110,9 @@ window.EventAnnotationsPlot.onUpdate = function(arg) {
       state._startDate = newStartDate;
       state._endDate = newEndDate;
 
-      // Show loading state on summary tab
       summaryLoading.style.display = '';
       summaryCards.style.display = 'none';
+      plotSection.style.display = 'none';
       summaryTableSection.style.display = 'none';
 
       loadDataForSite();

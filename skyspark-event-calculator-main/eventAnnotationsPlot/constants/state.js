@@ -36,9 +36,7 @@ window.EventAnnotationsPlot.state = {
   // ── Per-event visibility (keyed by event index, true = visible) ───
   visibilityState: {},
 
-  // ── Filter panel UI state ──────────────────────────────────────────
-  filterPanelCollapsed: false,
-  filterSidebarHidden: false,
+  // ── Plot / timeline UI state ────────────────────────────────────────
   timelineHidden: false,
 
   // ── Active tab (persists through SkySpark refreshes) ──────────
@@ -69,7 +67,7 @@ window.EventAnnotationsPlot.state = {
   /**
    * DOM / data references stored after the chart is built.
    * Populated with: canvas, overlayCanvas, timelineCanvas,
-   * canvasWrapper, eventsContainer, timeSeriesData
+   * canvasWrapper, timeSeriesData
    */
   refs: null,
 
