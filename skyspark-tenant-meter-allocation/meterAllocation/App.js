@@ -330,22 +330,6 @@ window.meterAllocation = window.meterAllocation || {};
       return '<button class="ma-page-tab' + (isActive ? ' is-active' : '') + '" data-page="' + p + '" style="' + style + '">' + lbl + '</button>';
     }).join('');
 
-    // Utility tabs: only shown in Details mode
-    var utilTabs = '';
-    if (_state.page === 'details') {
-      utilTabs = '<div class="ma-util-tabs">' +
-        UTIL_KEYS.map(function (k) {
-          var u = UTILS[k];
-          var isActive = k === _state.selectedUtil;
-          var style = isActive
-            ? 'background:' + u.color + ';color:#fff;border-bottom:2px solid #fff;'
-            : 'color:rgba(255,255,255,0.55);';
-          return '<button class="ma-util-tab' + (isActive ? ' is-active' : '') + '" data-util-tab="' + k + '" style="' + style + '">' +
-            u.icon + '&nbsp;' + u.label + '</button>';
-        }).join('') +
-      '</div>';
-    }
-
     return (
       '<div class="ma-header" style="background:' + HEADER_BG + '">' +
         '<div class="ma-header-top">' +
@@ -354,7 +338,6 @@ window.meterAllocation = window.meterAllocation || {};
         '</div>' +
         '<div class="ma-header-nav">' +
           '<div class="ma-page-tabs">' + pageTabs + '</div>' +
-          utilTabs +
         '</div>' +
       '</div>'
     );
@@ -368,8 +351,19 @@ window.meterAllocation = window.meterAllocation || {};
       body.innerHTML = _renderSummaryPage();
     } else {
       var rows = _getRows();
+      var utilSelector = '<div class="ma-util-selector">' +
+        UTIL_KEYS.map(function (k) {
+          var u = UTILS[k];
+          var isActive = k === _state.selectedUtil;
+          return '<button class="ma-util-pill' + (isActive ? ' is-active' : '') + '" data-util-tab="' + k + '" ' +
+            'style="' + (isActive ? 'background:' + u.color + ';color:#fff;border-color:' + u.color + ';' : '') + '">' +
+            u.icon + '&nbsp;' + u.label +
+          '</button>';
+        }).join('') +
+      '</div>';
       body.innerHTML = (
         '<div class="ma-page">' +
+          utilSelector +
           _renderKpis(rows) +
           _renderTable(rows) +
           '<div class="ma-footer">Cost&nbsp;=&nbsp;(Meter&nbsp;Usage&nbsp;÷&nbsp;Plant&nbsp;Output)&nbsp;&times;&nbsp;Rate&nbsp;&nbsp;&middot;&nbsp;&nbsp;SkySpark&nbsp;pUb</div>' +
