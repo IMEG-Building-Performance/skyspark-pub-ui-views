@@ -180,11 +180,16 @@ window.meterAllocation = window.meterAllocation || {};
     var cfg = UTILS[_state.selectedUtil] || UTILS.Cooling;
 
     if (rows.length === 0) {
+      var errMsg = _state.allData && _state.allData._errors && _state.allData._errors[_state.selectedUtil];
       return (
         '<div class="ma-card ma-empty">' +
           '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#c0c0b8" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>' +
-          '<div>No data available for ' + _esc(_state.selectedUtil) + '.</div>' +
-          '<div class="ma-empty-hint">Configure a site and date range in the view properties.</div>' +
+          (errMsg
+            ? '<div style="color:#b91c1c">Error loading ' + _esc(_state.selectedUtil) + ' data</div>' +
+              '<div class="ma-empty-hint" style="color:#b91c1c;max-width:480px">' + _esc(errMsg) + '</div>'
+            : '<div>No ' + _esc(_state.selectedUtil) + ' meter data for this site and date range.</div>' +
+              '<div class="ma-empty-hint">The function returned zero rows — check that ' + _esc(_state.selectedUtil) + ' meters are configured for this site.</div>'
+          ) +
         '</div>'
       );
     }

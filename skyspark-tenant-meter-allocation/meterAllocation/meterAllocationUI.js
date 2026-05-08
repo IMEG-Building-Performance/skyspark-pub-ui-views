@@ -151,14 +151,14 @@ window.meterAllocation = window.meterAllocation || {};
 
     // If the date range control is visible but the variable hasn't been committed
     // yet (SkySpark initialises the picker display before setting the var), fall
-    // back to the current month so the dashboard loads immediately.
-    var datesExpr = dates || 'thisMonth()';
+    // back to last month so the dashboard loads immediately.
+    var datesExpr = dates || 'lastMonth()';
 
     console.log('[meterAlloc] siteRef:', siteRef, '| dates:', dates, '| datesExpr:', datesExpr);
 
     var ctx = {
       siteName:  null,
-      dateLabel: dates ? _dateLabel(dates) : 'Current Month'
+      dateLabel: dates ? _dateLabel(dates) : 'Last Month'
     };
 
     // ── Fetch live data or use demo ──────────────────────────────────────────

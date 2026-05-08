@@ -59,22 +59,26 @@ window.meterAllocation = window.meterAllocation || {};
 
   /**
    * Load all three utilities in parallel.
-   * Returns Promise<{ Cooling: [], Heating: [], Flow: [] }>
-   * Each utility that fails resolves to [] so the dashboard still loads.
+   * Returns Promise<{ Cooling: [], Heating: [], Flow: [], _errors: { ... } }>
+   * Each utility that fails resolves to [] and records the error message so the
+   * UI can surface it rather than silently showing an empty table.
    */
   NS.evals.loadAllUtilities = function (attestKey, projectName, siteRef, dates) {
     var UTILS = ['Cooling', 'Heating', 'Flow'];
 
+    var errors = {};
     var promises = UTILS.map(function (u) {
       return NS.evals.loadMeterData(attestKey, projectName, siteRef, dates, u)
         .catch(function (err) {
-          console.warn('[meterAllocation] ' + u + ' load failed:', err.message || err);
+          var msg = err.message || String(err);
+          console.warn('[meterAllocation] ' + u + ' load failed:', msg);
+          errors[u] = msg;
           return [];
         });
     });
 
     return Promise.all(promises).then(function (results) {
-      var out = {};
+      var out = { _errors: errors };
       UTILS.forEach(function (u, i) { out[u] = results[i]; });
       return out;
     });
