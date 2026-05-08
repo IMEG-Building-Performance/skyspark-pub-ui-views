@@ -29,14 +29,15 @@ window.meterAllocation = window.meterAllocation || {};
 
       if (typeof val.toAxon === 'function') {
         var ax = val.toAxon();
-        // Resolve nav: URI refs (@nav:site.site.<base64>) → bare @ref
+        console.log('[meterAlloc] ' + varName + ' toAxon()=', ax);
         ax = _resolveNavRef(ax);
-        return ax;
+        return ax || null;
       }
 
       var s;
       try { s = typeof val.toStr === 'function' ? val.toStr() : String(val); }
       catch (e) { s = String(val); }
+      console.log('[meterAlloc] ' + varName + ' toStr()=', s);
 
       // Bracket-wrapped Ref: [id:display] or [id]
       if (s.charAt(0) === '[' && s.charAt(s.length - 1) === ']') {
@@ -52,20 +53,29 @@ window.meterAllocation = window.meterAllocation || {};
         return '@' + inner;
       }
 
+      // Fantom DateSpan — full date range: 2026-02-01..2026-04-30
+      if (/^\d{4}-\d{2}-\d{2}\.\.\d{4}-\d{2}-\d{2}$/.test(s)) return s;
       // Fantom DateSpan comma form: 2026-02-01,2026-03-01 → 2026-02-01..2026-03-01
-      if (/^\d{4}-\d{2}-\d{2},\d{4}-\d{2}-\d{2}$/.test(s)) {
-        return s.replace(',', '..');
-      }
-      // Month span: 2026-01,2026-03 (no day)
-      if (/^\d{4}-\d{2},\d{4}-\d{2}$/.test(s)) {
-        return s.replace(',', '..');
+      if (/^\d{4}-\d{2}-\d{2},\d{4}-\d{2}-\d{2}$/.test(s)) return s.replace(',', '..');
+      // Month span already in Axon form: 2026-04
+      if (/^\d{4}-\d{2}$/.test(s)) return s;
+      // Month span comma form: 2026-01,2026-03 → 2026-01..2026-03
+      if (/^\d{4}-\d{2},\d{4}-\d{2}$/.test(s)) return s.replace(',', '..');
+
+      // Try to extract DateSpan via .start / .end properties (Fantom object)
+      if (val.start != null && val.end != null) {
+        var st = typeof val.start.toStr === 'function' ? val.start.toStr() : String(val.start);
+        var en = typeof val.end.toStr   === 'function' ? val.end.toStr()   : String(val.end);
+        if (st && en) return st + '..' + en;
       }
 
       // Bare ref id (e.g. p:proj:r:xxx)
       if (/^p:[^,\s]+$/.test(s)) return '@' + s;
 
-      return s;
-    } catch (e) { /* var not set */ }
+      return s || null;
+    } catch (e) {
+      console.log('[meterAlloc] tryReadVar(' + varName + ') error:', e.message || e);
+    }
     return null;
   }
 
@@ -88,13 +98,8 @@ window.meterAllocation = window.meterAllocation || {};
     return datesAxon.replace('..', ' – ');
   }
 
-  // ── "No site" prompt ─────────────────────────────────────────────────────────
-  function renderNoSite(container, attestKey, siteRef, dates) {
-    var missing = [];
-    if (!attestKey) missing.push('SkySpark session');
-    if (!siteRef)   missing.push('site (view variable)');
-    if (!dates)     missing.push('dates (view variable)');
-
+  // ── "No site" prompt — only shown when site ref itself is missing ────────────
+  function renderNoSite(container) {
     container.innerHTML = [
       '<div class="ma-no-site">',
       '  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#a8a7a1" stroke-width="1.5" stroke-linecap="round">',
@@ -102,12 +107,11 @@ window.meterAllocation = window.meterAllocation || {};
       '  </svg>',
       '  <div class="ma-no-site-title">No Site Selected</div>',
       '  <div class="ma-no-site-body">',
-      '    Configure a site and date range in the view properties to load the Meter Allocation dashboard.',
+      '    Use the Site Selector above to choose a site.',
       '  </div>',
       '  <div class="ma-no-site-hint">',
-      '    View Properties &rarr; Variables &rarr; <code>site</code> and <code>dates</code>',
+      '    The date range will default to the current month if not yet set.',
       '  </div>',
-      missing.length ? '<div class="ma-no-site-missing">Missing: ' + missing.join(', ') + '</div>' : '',
       '</div>'
     ].join('\n');
   }
@@ -145,19 +149,24 @@ window.meterAllocation = window.meterAllocation || {};
     var siteRef = tryReadVar(view, 'site') || (parentView && tryReadVar(parentView, 'site'));
     var dates   = tryReadVar(view, 'dates') || (parentView && tryReadVar(parentView, 'dates'));
 
-    console.log('[meterAlloc] siteRef:', siteRef, '| dates:', dates);
+    // If the date range control is visible but the variable hasn't been committed
+    // yet (SkySpark initialises the picker display before setting the var), fall
+    // back to the current month so the dashboard loads immediately.
+    var datesExpr = dates || 'thisMonth()';
+
+    console.log('[meterAlloc] siteRef:', siteRef, '| dates:', dates, '| datesExpr:', datesExpr);
 
     var ctx = {
       siteName:  null,
-      dateLabel: _dateLabel(dates)
+      dateLabel: dates ? _dateLabel(dates) : 'Current Month'
     };
 
     // ── Fetch live data or use demo ──────────────────────────────────────────
-    if (attestKey && projectName && siteRef && dates) {
+    if (attestKey && projectName && siteRef) {
       var gen = ++_fetchGen;
       container.innerHTML = '<div style="padding:2rem;color:#888">Loading…</div>';
 
-      NS.evals.loadAllUtilities(attestKey, projectName, siteRef, dates)
+      NS.evals.loadAllUtilities(attestKey, projectName, siteRef, datesExpr)
         .then(function (allData) {
           if (gen !== _fetchGen) return;
           container.innerHTML = '';
@@ -186,8 +195,8 @@ window.meterAllocation = window.meterAllocation || {};
           container.appendChild(msg);
         });
     } else if (attestKey && projectName) {
-      // Session present but vars missing — show prompt
-      renderNoSite(container, attestKey, siteRef, dates);
+      // Session present but site not selected — show prompt
+      renderNoSite(container);
     } else {
       // No session — render demo data
       console.log('[meterAlloc] no session — using demo data');
