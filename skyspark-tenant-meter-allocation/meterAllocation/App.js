@@ -181,11 +181,9 @@ window.meterAllocation = window.meterAllocation || {};
           '<span class="ma-chevron">' + (isOpen ? '▼' : '▶') + '</span>' +
           '<span class="ma-group-name" title="' + _esc(g.name) + '">' + _esc(displayName) + '</span>' +
           '<span class="ma-group-count">' + g.meters.length + '&nbsp;meter' + (g.meters.length !== 1 ? 's' : '') + '</span>' +
-          '<span class="ma-group-usage" style="color:' + cfg.color + '">' +
-            fmtNum(g.totalUsage) + '<small>&nbsp;' + _esc(g.meters[0] ? g.meters[0].usageUnit : '') + '</small>' +
-          '</span>' +
-          '<span class="ma-group-pct">' + _pctBar(g.totalPercOfPlant, cfg.color) + '</span>' +
-          '<span class="ma-group-cost">' + fmtCost(g.totalCost) + '</span>' +
+          '<span></span>' +
+          '<span></span>' +
+          '<span></span>' +
         '</div>'
       );
 
@@ -214,7 +212,7 @@ window.meterAllocation = window.meterAllocation || {};
       '<div class="ma-card ma-table-card">' +
         '<div class="ma-table-titlebar">' +
           '<span class="ma-table-title">Meter Allocation Detail</span>' +
-          '<span class="ma-table-hint">Click a group to expand individual meters</span>' +
+          '<span class="ma-table-hint">Individual meter usage and % of plant — see Tenant Totals below for group-level actuals</span>' +
         '</div>' +
         '<div class="ma-col-headers">' +
           '<span></span>' +
