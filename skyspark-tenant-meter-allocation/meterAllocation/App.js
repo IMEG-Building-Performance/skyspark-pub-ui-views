@@ -339,10 +339,65 @@ window.meterAllocation = window.meterAllocation || {};
       '</div>';
     }
 
+    // ── BTU reconciliation card ────────────────────────────────────────────────
+    var reconcRows = UTIL_KEYS.map(function (u) {
+      var cfg        = UTILS[u];
+      var plantBtu   = summary[u] ? (summary[u].btuUsage || 0) : null;
+      var btuUnit    = summary[u] ? (summary[u].btuUnit || 'BTU') : 'BTU';
+      var tenantBtu  = ((_state.allData && _state.allData[u]) || [])
+                         .reduce(function (s, r) { return s + (r.usage || 0); }, 0);
+      var coverage   = (plantBtu && tenantBtu) ? (tenantBtu / plantBtu * 100) : null;
+      var variance   = (plantBtu != null) ? (plantBtu - tenantBtu) : null;
+
+      // coverage bar colour: green ≥95%, amber 80–95%, red <80%
+      var barColor = coverage == null ? '#d1d5db'
+                   : coverage >= 95   ? '#16a34a'
+                   : coverage >= 80   ? '#d97706'
+                   : '#dc2626';
+      var barWidth = coverage != null ? Math.min(coverage, 100).toFixed(1) : '0';
+
+      return '<tr class="ma-recon-row">' +
+        '<td class="ma-recon-util" style="color:' + cfg.color + '">' + cfg.icon + '&nbsp;' + cfg.label + '</td>' +
+        '<td class="ma-recon-num">' + (plantBtu  != null ? fmtNum(plantBtu)  + '<small>&nbsp;' + _esc(btuUnit) + '</small>' : '—') + '</td>' +
+        '<td class="ma-recon-num">' + (tenantBtu  > 0    ? fmtNum(tenantBtu) + '<small>&nbsp;' + _esc(btuUnit) + '</small>' : '—') + '</td>' +
+        '<td class="ma-recon-num" style="color:' + (variance != null && variance > 0 ? '#6b7280' : '#16a34a') + '">' +
+          (variance != null ? (variance >= 0 ? '+' : '') + fmtNum(variance) + '<small>&nbsp;' + _esc(btuUnit) + '</small>' : '—') +
+        '</td>' +
+        '<td class="ma-recon-bar">' +
+          (coverage != null
+            ? '<div class="ma-recon-bar-wrap">' +
+                '<div class="ma-pct-track" style="min-width:80px">' +
+                  '<div class="ma-pct-fill" style="width:' + barWidth + '%;background:' + barColor + '"></div>' +
+                '</div>' +
+                '<span class="ma-recon-pct" style="color:' + barColor + '">' + coverage.toFixed(1) + '%</span>' +
+              '</div>'
+            : '—') +
+        '</td>' +
+      '</tr>';
+    }).join('');
+
+    var reconcHtml = '<div class="ma-card ma-table-card">' +
+      '<div class="ma-table-titlebar">' +
+        '<span class="ma-table-title">BTU Reconciliation</span>' +
+        '<span class="ma-table-hint">Plant total vs. sum of tenant meters — measures allocation coverage</span>' +
+      '</div>' +
+      '<table class="ma-recon-table">' +
+        '<thead><tr>' +
+          '<th class="ma-recon-head">Utility</th>' +
+          '<th class="ma-recon-head right">Plant Total</th>' +
+          '<th class="ma-recon-head right">Tenant Sum</th>' +
+          '<th class="ma-recon-head right">Variance</th>' +
+          '<th class="ma-recon-head">Coverage</th>' +
+        '</tr></thead>' +
+        '<tbody>' + reconcRows + '</tbody>' +
+      '</table>' +
+    '</div>';
+
     return (
       '<div class="ma-page">' +
       noticeHtml +
       kpiHtml +
+      reconcHtml +
       '<div class="ma-card ma-table-card">' +
         '<div class="ma-table-titlebar">' +
           '<span class="ma-table-title">Tenant Billing Overview</span>' +

@@ -624,3 +624,74 @@
   color: #9ca3af;
   font-size: 12px;
 }
+
+/* ── BTU reconciliation table ────────────────────────────────────────────── */
+.ma-recon-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.ma-recon-head {
+  padding: 6px 20px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9ca3af;
+  border-bottom: 2px solid #e5e7eb;
+  background: #fafaf8;
+  white-space: nowrap;
+}
+
+.ma-recon-head.right {
+  text-align: right;
+}
+
+.ma-recon-row {
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.ma-recon-row:last-child {
+  border-bottom: none;
+}
+
+.ma-recon-util {
+  padding: 12px 20px;
+  font-weight: 700;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.ma-recon-num {
+  text-align: right;
+  padding: 12px 20px;
+  font-variant-numeric: tabular-nums;
+  color: #1a1a1a;
+  white-space: nowrap;
+}
+
+.ma-recon-num small {
+  font-size: 9px;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.ma-recon-bar {
+  padding: 12px 20px;
+  min-width: 160px;
+}
+
+.ma-recon-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ma-recon-pct {
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  min-width: 44px;
+  text-align: right;
+}
