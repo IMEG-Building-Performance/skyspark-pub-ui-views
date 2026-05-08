@@ -86,27 +86,27 @@ window.meterAllocation = window.meterAllocation || {};
 
   // ── Summary data (report_meterValidation_totalsTable) ──────────────────────
 
-  // Parse a group-level totals grid (no meter column).
+  // Parse a plant-level totals grid (one row, columns: site, utility,
+  // plantTotalkWhUsage, plantTotalCost, plantTotalBTUUsage).
+  // Returns a plain object, or null if the grid is empty.
   function _parseSummaryGrid(grid) {
-    if (!grid || !grid.rows) return [];
+    if (!grid || !grid.rows) return null;
     if (grid.meta && grid.meta.err) {
       var msg = grid.meta.dis ? String(grid.meta.dis) : 'SkySpark returned an error grid';
       throw new Error(msg);
     }
-    return (grid.rows || []).map(function (row) {
-      var id   = HP.ref(row.id)   || { id: '', dis: '' };
-      var usage = HP.num(row.usage);
-      var perc  = HP.num(row.percOfPlant);
-      var cost  = HP.num(row.cost);
-      return {
-        groupId:     id.id,
-        groupName:   id.dis,
-        usage:       usage.val,
-        usageUnit:   usage.unit || 'BTU',
-        percOfPlant: perc.val,
-        cost:        cost.val
-      };
-    });
+    if (!grid.rows.length) return null;
+    var row  = grid.rows[0];
+    var kWh  = HP.num(row.plantTotalkWhUsage);
+    var btu  = HP.num(row.plantTotalBTUUsage);
+    var cost = HP.num(row.plantTotalCost);
+    return {
+      kWhUsage: kWh.val,
+      kWhUnit:  kWh.unit || 'kWh',
+      btuUsage: btu.val,
+      btuUnit:  btu.unit || 'BTU',
+      cost:     cost.val
+    };
   }
 
   /**
@@ -136,12 +136,12 @@ window.meterAllocation = window.meterAllocation || {};
           var msg = err.message || String(err);
           console.warn('[meterAllocation] summary ' + u + ' load failed:', msg);
           errors[u] = msg;
-          return [];
+          return null;
         });
     });
     return Promise.all(promises).then(function (results) {
       var out = { _errors: errors };
-      UTILS.forEach(function (u, i) { out[u] = results[i]; });
+      UTILS.forEach(function (u, i) { out[u] = results[i]; }); // null when unavailable
       return out;
     });
   };
