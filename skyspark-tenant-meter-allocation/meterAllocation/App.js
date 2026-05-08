@@ -339,17 +339,28 @@ window.meterAllocation = window.meterAllocation || {};
       '</div>';
     }
 
-    // ── BTU reconciliation card ────────────────────────────────────────────────
-    var reconcRows = UTIL_KEYS.map(function (u) {
-      var cfg        = UTILS[u];
-      var plantBtu   = summary[u] ? (summary[u].btuUsage || 0) : null;
-      var btuUnit    = summary[u] ? (summary[u].btuUnit || 'BTU') : 'BTU';
-      var tenantBtu  = ((_state.allData && _state.allData[u]) || [])
-                         .reduce(function (s, r) { return s + (r.usage || 0); }, 0);
-      var coverage   = (plantBtu && tenantBtu) ? (tenantBtu / plantBtu * 100) : null;
-      var variance   = (plantBtu != null) ? (plantBtu - tenantBtu) : null;
+    // ── Tenant totals lookup ───────────────────────────────────────────────────
+    var tenantTotals = (_state.allData && _state.allData._tenantTotals) || {};
 
-      // coverage bar colour: green ≥95%, amber 80–95%, red <80%
+    // Collect ordered unique tenant names across all utilities
+    var tenantNames = [], tenantNameSet = {};
+    UTIL_KEYS.forEach(function (u) {
+      ((tenantTotals[u]) || []).forEach(function (r) {
+        if (!tenantNameSet[r.tenantName]) { tenantNameSet[r.tenantName] = true; tenantNames.push(r.tenantName); }
+      });
+    });
+
+    // ── BTU reconciliation card ────────────────────────────────────────────────
+    // Tenant Sum uses authoritative tenant totals (correct for Residential etc.)
+    var reconcRows = UTIL_KEYS.map(function (u) {
+      var cfg      = UTILS[u];
+      var plantBtu = summary[u] ? (summary[u].btuUsage || 0) : null;
+      var btuUnit  = summary[u] ? (summary[u].btuUnit || 'BTU') : 'BTU';
+      // Sum from tenant totals function (authoritative, handles special calculations)
+      var tenantBtu = ((tenantTotals[u]) || []).reduce(function (s, r) { return s + (r.usage || 0); }, 0);
+      var coverage  = (plantBtu && tenantBtu) ? (tenantBtu / plantBtu * 100) : null;
+      var variance  = (plantBtu != null) ? (plantBtu - tenantBtu) : null;
+
       var barColor = coverage == null ? '#d1d5db'
                    : coverage >= 95   ? '#16a34a'
                    : coverage >= 80   ? '#d97706'
@@ -379,7 +390,7 @@ window.meterAllocation = window.meterAllocation || {};
     var reconcHtml = '<div class="ma-card ma-table-card">' +
       '<div class="ma-table-titlebar">' +
         '<span class="ma-table-title">BTU Reconciliation</span>' +
-        '<span class="ma-table-hint">Plant total vs. sum of tenant meters — measures allocation coverage</span>' +
+        '<span class="ma-table-hint">Plant total vs. authoritative tenant totals</span>' +
       '</div>' +
       '<table class="ma-recon-table">' +
         '<thead><tr>' +
@@ -393,11 +404,67 @@ window.meterAllocation = window.meterAllocation || {};
       '</table>' +
     '</div>';
 
+    // ── Per-tenant usage breakdown card ────────────────────────────────────────
+    var tenantBreakdownHtml = '';
+    if (tenantNames.length > 0) {
+      // Build per-utility lookup: tenantName → row
+      var tenantByUtil = {};
+      UTIL_KEYS.forEach(function (u) {
+        var map = {};
+        ((tenantTotals[u]) || []).forEach(function (r) { map[r.tenantName] = r; });
+        tenantByUtil[u] = map;
+      });
+
+      var tenantUtilHeads = UTIL_KEYS.map(function (u) {
+        var cfg = UTILS[u];
+        var unit = (tenantTotals[u] && tenantTotals[u][0]) ? tenantTotals[u][0].usageUnit : 'BTU';
+        return '<th class="ma-recon-head right" style="color:' + cfg.color + '">' +
+          cfg.icon + '&nbsp;' + cfg.label + '&nbsp;<span style="font-weight:400;color:#c4c4bc">(' + _esc(unit) + ')</span>' +
+        '</th>';
+      }).join('');
+
+      var tenantRows = tenantNames.map(function (name, i) {
+        var cells = UTIL_KEYS.map(function (u) {
+          var r = tenantByUtil[u][name];
+          return '<td class="ma-recon-num">' + (r ? fmtNum(r.usage) : '—') + '</td>';
+        }).join('');
+        return '<tr class="ma-recon-row' + (i % 2 === 0 ? '' : ' stripe') + '">' +
+          '<td class="ma-recon-util" style="color:#374151;font-weight:600">' + _esc(name) + '</td>' +
+          cells +
+        '</tr>';
+      }).join('');
+
+      // Footer totals row
+      var tenantFooter = UTIL_KEYS.map(function (u) {
+        var total = ((tenantTotals[u]) || []).reduce(function (s, r) { return s + (r.usage || 0); }, 0);
+        return '<td class="ma-recon-num ma-sum-foot">' + (total ? fmtNum(total) : '—') + '</td>';
+      }).join('');
+
+      tenantBreakdownHtml = '<div class="ma-card ma-table-card">' +
+        '<div class="ma-table-titlebar">' +
+          '<span class="ma-table-title">Tenant Usage Breakdown</span>' +
+          '<span class="ma-table-hint">BTU per tenant by utility</span>' +
+        '</div>' +
+        '<table class="ma-recon-table">' +
+          '<thead><tr>' +
+            '<th class="ma-recon-head">Tenant</th>' +
+            tenantUtilHeads +
+          '</tr></thead>' +
+          '<tbody>' + tenantRows + '</tbody>' +
+          '<tfoot><tr>' +
+            '<td class="ma-recon-util ma-sum-foot" style="color:#374151">Total</td>' +
+            tenantFooter +
+          '</tr></tfoot>' +
+        '</table>' +
+      '</div>';
+    }
+
     return (
       '<div class="ma-page">' +
       noticeHtml +
       kpiHtml +
       reconcHtml +
+      tenantBreakdownHtml +
       '<div class="ma-card ma-table-card">' +
         '<div class="ma-table-titlebar">' +
           '<span class="ma-table-title">Tenant Billing Overview</span>' +

@@ -146,4 +146,61 @@ window.meterAllocation = window.meterAllocation || {};
     });
   };
 
+  // ── Tenant totals (report_meterValidation_tenantTotalsTable) ──────────────
+
+  // Parse tenant totals grid: rows have { tenant (string), totalTenanteUsage (number) }.
+  // Returns array of { tenantName, usage, usageUnit }.
+  function _parseTenantGrid(grid) {
+    if (!grid || !grid.rows) return [];
+    if (grid.meta && grid.meta.err) {
+      var msg = grid.meta.dis ? String(grid.meta.dis) : 'SkySpark returned an error grid';
+      throw new Error(msg);
+    }
+    return (grid.rows || []).map(function (row) {
+      var usage = HP.num(row.totalTenanteUsage); // note: column has typo 'e' in source
+      return {
+        tenantName: typeof row.tenant === 'string' ? row.tenant : String(row.tenant || ''),
+        usage:      usage.val,
+        usageUnit:  usage.unit || 'BTU'
+      };
+    });
+  }
+
+  /**
+   * Load tenant totals for one utility.
+   * Calls report_meterValidation_tenantTotalsTable(site, dates, utility)
+   */
+  NS.evals.loadTenantTotals = function (attestKey, projectName, siteRef, dates, utility) {
+    var axon = 'report_meterValidation_tenantTotalsTable(' + siteRef + ', ' + dates + ', "' + utility + '")';
+    console.log('[meterAllocation] Eval:', axon);
+    return api.evalAxon(axon, attestKey, projectName)
+      .then(function (data) {
+        var grid = api.unwrapGrid(data);
+        return _parseTenantGrid(grid);
+      });
+  };
+
+  /**
+   * Load tenant totals for all three utilities in parallel.
+   * Returns Promise<{ Cooling: [], Heating: [], Flow: [], _errors: { ... } }>
+   */
+  NS.evals.loadAllTenantTotals = function (attestKey, projectName, siteRef, dates) {
+    var UTILS = ['Cooling', 'Heating', 'Flow'];
+    var errors = {};
+    var promises = UTILS.map(function (u) {
+      return NS.evals.loadTenantTotals(attestKey, projectName, siteRef, dates, u)
+        .catch(function (err) {
+          var msg = err.message || String(err);
+          console.warn('[meterAllocation] tenantTotals ' + u + ' load failed:', msg);
+          errors[u] = msg;
+          return [];
+        });
+    });
+    return Promise.all(promises).then(function (results) {
+      var out = { _errors: errors };
+      UTILS.forEach(function (u, i) { out[u] = results[i]; });
+      return out;
+    });
+  };
+
 })(window.meterAllocation);

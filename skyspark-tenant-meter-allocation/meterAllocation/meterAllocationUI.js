@@ -203,10 +203,12 @@ window.meterAllocation = window.meterAllocation || {};
 
       Promise.all([
         NS.evals.loadAllUtilities(attestKey, projectName, siteRef, datesExpr),
-        NS.evals.loadAllSummaryUtilities(attestKey, projectName, siteRef, datesExpr)
+        NS.evals.loadAllSummaryUtilities(attestKey, projectName, siteRef, datesExpr),
+        NS.evals.loadAllTenantTotals(attestKey, projectName, siteRef, datesExpr)
       ]).then(function (results) {
           var allData = results[0];
           allData._summary = results[1];
+          allData._tenantTotals = results[2];
           if (gen !== _fetchGen) return;
           container.innerHTML = '';
           NS.App.init(container, allData, ctx);

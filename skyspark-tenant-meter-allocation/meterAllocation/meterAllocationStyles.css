@@ -656,6 +656,10 @@
   border-bottom: none;
 }
 
+.ma-recon-row.stripe {
+  background: #fafaf8;
+}
+
 .ma-recon-util {
   padding: 12px 20px;
   font-weight: 700;
