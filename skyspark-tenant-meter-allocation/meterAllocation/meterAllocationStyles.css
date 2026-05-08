@@ -168,7 +168,7 @@
 /* ── Column headers ──────────────────────────────────────────────────────── */
 .ma-col-headers {
   display: grid;
-  grid-template-columns: 28px 1fr 80px 140px 190px 110px;
+  grid-template-columns: 28px 1fr 80px 140px 190px;
   padding: 6px 20px;
   border-bottom: 2px solid #e5e7eb;
   background: #fafaf8;
@@ -216,7 +216,7 @@
 
 .ma-group-row {
   display: grid;
-  grid-template-columns: 28px 1fr 80px 140px 190px 110px;
+  grid-template-columns: 28px 1fr 80px 140px 190px;
   align-items: center;
   padding: 11px 20px;
   cursor: pointer;
@@ -285,7 +285,7 @@
 /* ── Meter rows (expanded) ───────────────────────────────────────────────── */
 .ma-meter-row {
   display: grid;
-  grid-template-columns: 28px 1fr 80px 140px 190px 110px;
+  grid-template-columns: 28px 1fr 80px 140px 190px;
   align-items: center;
   padding: 9px 20px;
   border-bottom: 1px solid #f3f4f6;
