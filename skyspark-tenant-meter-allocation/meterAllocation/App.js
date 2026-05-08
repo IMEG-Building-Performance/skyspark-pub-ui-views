@@ -236,7 +236,7 @@ window.meterAllocation = window.meterAllocation || {};
     var siteName = _state.siteName;
     var summaryErrors = summary._errors || {};
 
-    // ── KPI cards — plant-level totals from report_meterValidation_totalsTable ──
+    // ── KPI cards — plant-level totals from report_meterValidation_plantTotalsTable ──
     var grandCost = UTIL_KEYS.reduce(function (s, u) {
       return s + ((summary[u] && summary[u].cost) || 0);
     }, 0);
@@ -334,7 +334,7 @@ window.meterAllocation = window.meterAllocation || {};
       noticeHtml = '<div class="ma-sum-notice">' +
         '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>' +
         '<span>KPI totals for ' + _esc(labels) + ' are pending — ' +
-        '<code>report_meterValidation_totalsTable</code> not yet available for those utilities. ' +
+        '<code>report_meterValidation_plantTotalsTable</code> not yet available for those utilities. ' +
         'Table rows use allocated costs from meter detail data.</span>' +
       '</div>';
     }
