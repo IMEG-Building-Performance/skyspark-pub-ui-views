@@ -201,8 +201,12 @@ window.meterAllocation = window.meterAllocation || {};
       var gen = ++_fetchGen;
       container.innerHTML = '<div style="padding:2rem;color:#888">Loading…</div>';
 
-      NS.evals.loadAllUtilities(attestKey, projectName, siteRef, datesExpr)
-        .then(function (allData) {
+      Promise.all([
+        NS.evals.loadAllUtilities(attestKey, projectName, siteRef, datesExpr),
+        NS.evals.loadAllSummaryUtilities(attestKey, projectName, siteRef, datesExpr)
+      ]).then(function (results) {
+          var allData = results[0];
+          allData._summary = results[1];
           if (gen !== _fetchGen) return;
           container.innerHTML = '';
           NS.App.init(container, allData, ctx);

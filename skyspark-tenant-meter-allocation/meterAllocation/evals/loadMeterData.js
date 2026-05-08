@@ -84,4 +84,66 @@ window.meterAllocation = window.meterAllocation || {};
     });
   };
 
+  // ── Summary data (report_meterValidation_totalsTable) ──────────────────────
+
+  // Parse a group-level totals grid (no meter column).
+  function _parseSummaryGrid(grid) {
+    if (!grid || !grid.rows) return [];
+    if (grid.meta && grid.meta.err) {
+      var msg = grid.meta.dis ? String(grid.meta.dis) : 'SkySpark returned an error grid';
+      throw new Error(msg);
+    }
+    return (grid.rows || []).map(function (row) {
+      var id   = HP.ref(row.id)   || { id: '', dis: '' };
+      var usage = HP.num(row.usage);
+      var perc  = HP.num(row.percOfPlant);
+      var cost  = HP.num(row.cost);
+      return {
+        groupId:     id.id,
+        groupName:   id.dis,
+        usage:       usage.val,
+        usageUnit:   usage.unit || 'BTU',
+        percOfPlant: perc.val,
+        cost:        cost.val
+      };
+    });
+  }
+
+  /**
+   * Load summary totals for one utility.
+   * Calls report_meterValidation_totalsTable(site, dates, false, utility)
+   */
+  NS.evals.loadSummaryData = function (attestKey, projectName, siteRef, dates, utility) {
+    var axon = 'report_meterValidation_totalsTable(' + siteRef + ', ' + dates + ', false, "' + utility + '")';
+    console.log('[meterAllocation] Eval:', axon);
+    return api.evalAxon(axon, attestKey, projectName)
+      .then(function (data) {
+        var grid = api.unwrapGrid(data);
+        return _parseSummaryGrid(grid);
+      });
+  };
+
+  /**
+   * Load summary totals for all three utilities in parallel.
+   * Returns Promise<{ Cooling: [], Heating: [], Flow: [], _errors: { ... } }>
+   */
+  NS.evals.loadAllSummaryUtilities = function (attestKey, projectName, siteRef, dates) {
+    var UTILS = ['Cooling', 'Heating', 'Flow'];
+    var errors = {};
+    var promises = UTILS.map(function (u) {
+      return NS.evals.loadSummaryData(attestKey, projectName, siteRef, dates, u)
+        .catch(function (err) {
+          var msg = err.message || String(err);
+          console.warn('[meterAllocation] summary ' + u + ' load failed:', msg);
+          errors[u] = msg;
+          return [];
+        });
+    });
+    return Promise.all(promises).then(function (results) {
+      var out = { _errors: errors };
+      UTILS.forEach(function (u, i) { out[u] = results[i]; });
+      return out;
+    });
+  };
+
 })(window.meterAllocation);

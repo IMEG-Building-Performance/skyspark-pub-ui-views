@@ -231,70 +231,124 @@ window.meterAllocation = window.meterAllocation || {};
 
   // ── Render: Summary page ──────────────────────────────────────────────────────
   function _renderSummaryPage() {
-    var groups = _getAllGroups();
+    var summary  = (_state.allData && _state.allData._summary) || {};
     var siteName = _state.siteName;
 
-    // Column definitions: three utilities × (usage + cost) + total cost
-    var cols = [];
+    // Build per-utility lookup maps: groupId → row
+    var byUtil = {};
     UTIL_KEYS.forEach(function (u) {
-      cols.push({ util: u, type: 'usage' });
-      cols.push({ util: u, type: 'cost' });
+      var map = {};
+      ((summary[u]) || []).forEach(function (r) { map[r.groupId] = r; });
+      byUtil[u] = map;
     });
 
-    // Build header rows
+    // Collect all unique groups across all summary utilities (fall back to detail data)
+    var groupMap = {}, groupOrder = [];
+    UTIL_KEYS.forEach(function (u) {
+      ((summary[u]) || []).forEach(function (r) {
+        if (!groupMap[r.groupId]) { groupMap[r.groupId] = r.groupName; groupOrder.push(r.groupId); }
+      });
+    });
+    if (groupOrder.length === 0) {
+      // No summary data yet — fall back to groups from detail data
+      _getAllGroups().forEach(function (g) {
+        if (!groupMap[g.id]) { groupMap[g.id] = g.name; groupOrder.push(g.id); }
+      });
+    }
+
+    // Compute per-utility totals and grand total cost
+    var utilTotals = {};
+    UTIL_KEYS.forEach(function (u) {
+      var rows = (summary[u]) || [];
+      utilTotals[u] = {
+        usage: rows.reduce(function (s, r) { return s + (r.usage || 0); }, 0),
+        cost:  rows.reduce(function (s, r) { return s + (r.cost  || 0); }, 0),
+        unit:  rows.length ? (rows[0].usageUnit || '') : ''
+      };
+    });
+    var grandCost = UTIL_KEYS.reduce(function (s, u) { return s + utilTotals[u].cost; }, 0);
+
+    // Check if any summary data loaded at all
+    var hasSummaryData = UTIL_KEYS.some(function (u) { return (summary[u] || []).length > 0; });
+    var summaryErrors  = summary._errors || {};
+    var pendingUtils   = UTIL_KEYS.filter(function (u) { return !(summary[u] || []).length; });
+
+    // ── KPI cards ──────────────────────────────────────────────────────────────
+    var kpiCards = [
+      { label: 'Total Plant Cost', value: hasSummaryData ? fmtCost(grandCost) : '—', color: HEADER_BG },
+      { label: 'Cooling Cost',     value: utilTotals.Cooling.cost  ? fmtCost(utilTotals.Cooling.cost)  : '—', color: UTILS.Cooling.color },
+      { label: 'Heating Cost',     value: utilTotals.Heating.cost  ? fmtCost(utilTotals.Heating.cost)  : '—', color: UTILS.Heating.color },
+      { label: 'Flow Cost',        value: utilTotals.Flow.cost     ? fmtCost(utilTotals.Flow.cost)     : '—', color: UTILS.Flow.color }
+    ];
+    var kpiHtml = '<div class="ma-kpi-strip">' +
+      kpiCards.map(function (k) {
+        return '<div class="ma-kpi-card">' +
+          '<div class="ma-kpi-label">' + k.label + '</div>' +
+          '<div class="ma-kpi-value" style="color:' + k.color + '">' + k.value + '</div>' +
+        '</div>';
+      }).join('') +
+    '</div>';
+
+    // ── Table headers ──────────────────────────────────────────────────────────
     var utilHeads = UTIL_KEYS.map(function (u) {
       var cfg = UTILS[u];
-      return '<th colspan="2" class="ma-sum-util-head" style="color:' + cfg.color + '">' +
-        cfg.icon + '&nbsp;' + cfg.label + '</th>';
+      var hasErr = !!summaryErrors[u];
+      var label = cfg.icon + '&nbsp;' + cfg.label + (hasErr ? '&nbsp;<span style="font-size:10px;font-weight:400;opacity:0.6" title="' + _esc(summaryErrors[u]) + '">⚠</span>' : '');
+      return '<th colspan="2" class="ma-sum-util-head" style="color:' + cfg.color + '">' + label + '</th>';
     }).join('') + '<th class="ma-sum-total-head">Total Cost</th>';
 
-    var subHeads = UTIL_KEYS.map(function () {
-      return '<th class="ma-sum-sub-head">Usage</th><th class="ma-sum-sub-head">Cost</th>';
+    var subHeads = UTIL_KEYS.map(function (u) {
+      var unit = utilTotals[u].unit ? '&nbsp;<span style="font-weight:400;color:#c4c4bc">(' + _esc(utilTotals[u].unit) + ')</span>' : '';
+      return '<th class="ma-sum-sub-head">Usage' + unit + '</th><th class="ma-sum-sub-head">Cost</th>';
     }).join('') + '<th></th>';
 
-    // Build body rows
-    var bodyRows = groups.length === 0
-      ? '<tr><td colspan="' + (cols.length + 2) + '" class="ma-sum-no-data">No meter groups found — load a site with Cooling data first.</td></tr>'
-      : groups.map(function (g, i) {
-          var name = _shortName(g.name, siteName);
-          var cells = UTIL_KEYS.map(function () {
-            return '<td class="ma-sum-num">—</td><td class="ma-sum-num">—</td>';
-          }).join('') + '<td class="ma-sum-total">—</td>';
+    // ── Body rows ──────────────────────────────────────────────────────────────
+    var NUM_COLS = UTIL_KEYS.length * 2 + 2;
+    var bodyRows = groupOrder.length === 0
+      ? '<tr><td colspan="' + NUM_COLS + '" class="ma-sum-no-data">No meter groups found — select a site with meter data.</td></tr>'
+      : groupOrder.map(function (gid, i) {
+          var name = _shortName(groupMap[gid], siteName);
+          var rowCost = 0;
+          var hasAny  = false;
+          var cells = UTIL_KEYS.map(function (u) {
+            var r = byUtil[u][gid];
+            if (r) { rowCost += r.cost || 0; hasAny = true; }
+            return '<td class="ma-sum-num">' + (r ? fmtNum(r.usage)  : '—') + '</td>' +
+                   '<td class="ma-sum-num">' + (r ? fmtCost(r.cost) : '—') + '</td>';
+          }).join('');
+          var totalCell = '<td class="ma-sum-total">' + (hasAny ? fmtCost(rowCost) : '—') + '</td>';
           return '<tr class="ma-sum-row' + (i % 2 === 0 ? '' : ' stripe') + '">' +
-            '<td class="ma-sum-name" title="' + _esc(g.name) + '">' + _esc(name) + '</td>' +
-            cells + '</tr>';
+            '<td class="ma-sum-name" title="' + _esc(groupMap[gid]) + '">' + _esc(name) + '</td>' +
+            cells + totalCell +
+          '</tr>';
         }).join('');
 
-    // Footer total row
-    var footerCells = UTIL_KEYS.map(function () {
-      return '<td class="ma-sum-num ma-sum-foot">—</td><td class="ma-sum-num ma-sum-foot">—</td>';
-    }).join('') + '<td class="ma-sum-total ma-sum-foot">—</td>';
+    // ── Footer totals ──────────────────────────────────────────────────────────
+    var footerCells = UTIL_KEYS.map(function (u) {
+      var t = utilTotals[u];
+      return '<td class="ma-sum-num ma-sum-foot">' + (t.usage ? fmtNum(t.usage) : '—') + '</td>' +
+             '<td class="ma-sum-num ma-sum-foot">' + (t.cost  ? fmtCost(t.cost) : '—') + '</td>';
+    }).join('') + '<td class="ma-sum-total ma-sum-foot">' + (hasSummaryData ? fmtCost(grandCost) : '—') + '</td>';
+
+    // ── Pending-utility notice (only when some utilities haven't returned data) ─
+    var noticeHtml = '';
+    if (pendingUtils.length > 0) {
+      var pendingLabels = pendingUtils.map(function (u) { return UTILS[u].label; }).join(', ');
+      noticeHtml = '<div class="ma-sum-notice">' +
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>' +
+        '<span>' + _esc(pendingLabels) + (pendingUtils.length === 1 ? ' data is' : ' data are') +
+        ' not yet available — those columns will populate once&nbsp;<code>report_meterValidation_totalsTable</code>&nbsp;returns results for those utilities.</span>' +
+      '</div>';
+    }
 
     return (
       '<div class="ma-page">' +
-
-      // ── Pending-function notice ──────────────────────────────────────────────
-      '<div class="ma-sum-notice">' +
-        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>' +
-        'Summary billing data requires a separate function — numbers will populate once&nbsp;<code>report_meterValidation_summaryData</code>&nbsp;is configured.' +
-      '</div>' +
-
-      // ── Summary KPI cards (all blank) ────────────────────────────────────────
-      '<div class="ma-kpi-strip">' +
-        ['Total Plant Cost', 'Cooling Cost', 'Heating Cost', 'Flow Cost'].map(function (lbl) {
-          return '<div class="ma-kpi-card">' +
-            '<div class="ma-kpi-label">' + lbl + '</div>' +
-            '<div class="ma-kpi-value" style="color:#9ca3af">—</div>' +
-            '<div class="ma-kpi-sub">Pending summary function</div>' +
-          '</div>';
-        }).join('') +
-      '</div>' +
-
-      // ── Billing overview table ───────────────────────────────────────────────
+      noticeHtml +
+      kpiHtml +
       '<div class="ma-card ma-table-card">' +
         '<div class="ma-table-titlebar">' +
           '<span class="ma-table-title">Tenant Billing Overview</span>' +
-          '<span class="ma-table-hint">Group-level totals by utility — numbers pending summary function</span>' +
+          '<span class="ma-table-hint">Group-level totals by utility</span>' +
         '</div>' +
         '<div style="overflow-x:auto">' +
           '<table class="ma-sum-table">' +
@@ -303,13 +357,10 @@ window.meterAllocation = window.meterAllocation || {};
               '<tr><th></th>' + subHeads + '</tr>' +
             '</thead>' +
             '<tbody>' + bodyRows + '</tbody>' +
-            '<tfoot>' +
-              '<tr><td class="ma-sum-foot ma-sum-name">Total</td>' + footerCells + '</tr>' +
-            '</tfoot>' +
+            '<tfoot><tr><td class="ma-sum-foot ma-sum-name">Total</td>' + footerCells + '</tr></tfoot>' +
           '</table>' +
         '</div>' +
       '</div>' +
-
       '<div class="ma-footer">Cost&nbsp;=&nbsp;(Meter&nbsp;Usage&nbsp;÷&nbsp;Plant&nbsp;Output)&nbsp;&times;&nbsp;Rate&nbsp;&nbsp;&middot;&nbsp;&nbsp;SkySpark&nbsp;pUb</div>' +
       '</div>'
     );
