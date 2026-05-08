@@ -27,23 +27,51 @@ window.meterAllocation = window.meterAllocation || {};
       var val = view.var(varName);
       if (val == null) return null;
 
+      // 1. Try toAxon() — most reliable for Refs
       if (typeof val.toAxon === 'function') {
-        var ax = val.toAxon();
-        console.log('[meterAlloc] ' + varName + ' toAxon()=', ax);
-        ax = _resolveNavRef(ax);
-        return ax || null;
+        try {
+          var ax = val.toAxon();
+          console.log('[meterAlloc] ' + varName + ' toAxon()=', ax);
+          if (ax) {
+            ax = _resolveNavRef(ax);
+            // If this is a date-like result from toAxon(), normalise it
+            var axNorm = _normDateStr(ax);
+            if (axNorm) return axNorm;
+            // Otherwise treat as ref / other literal
+            if (ax) return ax;
+          }
+        } catch (e2) { /* fall through */ }
       }
 
+      // 2. Try .start / .end properties (Fantom DateSpan object)
+      try {
+        if (val.start != null && val.end != null) {
+          var st = typeof val.start.toStr === 'function' ? val.start.toStr() : String(val.start);
+          var en = typeof val.end.toStr   === 'function' ? val.end.toStr()   : String(val.end);
+          console.log('[meterAlloc] ' + varName + ' .start=', st, '.end=', en);
+          if (st && en) {
+            // Trim to YYYY-MM-DD if time component present
+            st = st.replace(/T.*$/, '');
+            en = en.replace(/T.*$/, '');
+            if (/^\d{4}-\d{2}-\d{2}$/.test(st) && /^\d{4}-\d{2}-\d{2}$/.test(en)) {
+              return st + '..' + en;
+            }
+          }
+        }
+      } catch (e3) { /* fall through */ }
+
+      // 3. Try toStr() / String() and normalise the result
       var s;
       try { s = typeof val.toStr === 'function' ? val.toStr() : String(val); }
-      catch (e) { s = String(val); }
+      catch (e) { try { s = String(val); } catch (e4) { s = ''; } }
       console.log('[meterAlloc] ' + varName + ' toStr()=', s);
+
+      if (!s) return null;
 
       // Bracket-wrapped Ref: [id:display] or [id]
       if (s.charAt(0) === '[' && s.charAt(s.length - 1) === ']') {
         var inner = s.slice(1, -1);
         if (inner.indexOf(',') !== -1) {
-          // List of refs
           var parts = inner.split(',').map(function (p) {
             p = p.trim();
             return p.charAt(0) === '@' ? p : '@' + p;
@@ -53,21 +81,9 @@ window.meterAllocation = window.meterAllocation || {};
         return '@' + inner;
       }
 
-      // Fantom DateSpan — full date range: 2026-02-01..2026-04-30
-      if (/^\d{4}-\d{2}-\d{2}\.\.\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-      // Fantom DateSpan comma form: 2026-02-01,2026-03-01 → 2026-02-01..2026-03-01
-      if (/^\d{4}-\d{2}-\d{2},\d{4}-\d{2}-\d{2}$/.test(s)) return s.replace(',', '..');
-      // Month span already in Axon form: 2026-04
-      if (/^\d{4}-\d{2}$/.test(s)) return s;
-      // Month span comma form: 2026-01,2026-03 → 2026-01..2026-03
-      if (/^\d{4}-\d{2},\d{4}-\d{2}$/.test(s)) return s.replace(',', '..');
-
-      // Try to extract DateSpan via .start / .end properties (Fantom object)
-      if (val.start != null && val.end != null) {
-        var st = typeof val.start.toStr === 'function' ? val.start.toStr() : String(val.start);
-        var en = typeof val.end.toStr   === 'function' ? val.end.toStr()   : String(val.end);
-        if (st && en) return st + '..' + en;
-      }
+      // Date patterns
+      var dateNorm = _normDateStr(s);
+      if (dateNorm) return dateNorm;
 
       // Bare ref id (e.g. p:proj:r:xxx)
       if (/^p:[^,\s]+$/.test(s)) return '@' + s;
@@ -76,6 +92,25 @@ window.meterAllocation = window.meterAllocation || {};
     } catch (e) {
       console.log('[meterAlloc] tryReadVar(' + varName + ') error:', e.message || e);
     }
+    return null;
+  }
+
+  // Normalise a string that might represent a date / DateSpan into Axon form.
+  // Returns the normalised string, or null if it doesn't look like a date.
+  function _normDateStr(s) {
+    if (!s) return null;
+    // Full date range with .. separator: 2026-02-01..2026-04-30
+    if (/^\d{4}-\d{2}-\d{2}\.\.\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    // Full date range with comma: 2026-02-01,2026-04-30
+    if (/^\d{4}-\d{2}-\d{2},\d{4}-\d{2}-\d{2}$/.test(s)) return s.replace(',', '..');
+    // Single date: 2026-02-01
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    // Month span with ..: 2026-01..2026-03
+    if (/^\d{4}-\d{2}\.\.\d{4}-\d{2}$/.test(s)) return s;
+    // Month span with comma: 2026-01,2026-03
+    if (/^\d{4}-\d{2},\d{4}-\d{2}$/.test(s)) return s.replace(',', '..');
+    // Single month: 2026-04
+    if (/^\d{4}-\d{2}$/.test(s)) return s;
     return null;
   }
 

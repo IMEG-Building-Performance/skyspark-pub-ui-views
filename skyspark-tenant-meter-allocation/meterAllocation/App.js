@@ -13,16 +13,7 @@ window.meterAllocation = window.meterAllocation || {};
   };
   var UTIL_KEYS = ['Cooling', 'Heating', 'Flow'];
 
-  var HEADER_BG   = '#3d4f7c';
-  var BODY_BG     = '#f2f2ee';
-  var CARD_BG     = '#ffffff';
-  var TEXT_PRI    = '#1a1a1a';
-  var TEXT_SEC    = '#6b7280';
-  var TEXT_MUTED  = '#9ca3af';
-  var BORDER      = '#e5e7eb';
-  var BORDER_LT   = '#f3f4f6';
-  var RADIUS      = '6px';
-  var SHADOW      = '0 1px 3px rgba(0,0,0,0.07)';
+  var HEADER_BG = '#3d4f7c';
 
   // ── Shared state ─────────────────────────────────────────────────────────────
   var _state = {};
@@ -36,27 +27,20 @@ window.meterAllocation = window.meterAllocation || {};
     if (v >= 1e3) return (v / 1e3).toFixed(1) + 'K';
     return v.toLocaleString('en-US', { maximumFractionDigits: 1 });
   }
-
   function fmtCost(v) {
     if (v == null || isNaN(v)) return '—';
     return '$' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
-
   function fmtPct(v) {
     if (v == null || isNaN(v)) return '0.00%';
     return v.toFixed(2) + '%';
   }
-
   function _esc(s) {
     return String(s == null ? '' : s)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
   // Strip the site display name prefix from a meter or group name.
-  // e.g. siteName="2200 Westlake", name="2200 Westlake BTU-23 ..." → "BTU-23 ..."
   function _shortName(name, siteName) {
     if (!name) return '(unknown)';
     if (siteName && name.toLowerCase().indexOf(siteName.toLowerCase()) === 0) {
@@ -70,20 +54,25 @@ window.meterAllocation = window.meterAllocation || {};
     return (_state.allData && _state.allData[_state.selectedUtil]) || [];
   }
 
+  // Collect unique groups across all utilities (for summary page).
+  function _getAllGroups() {
+    var map = {}, order = [];
+    UTIL_KEYS.forEach(function (u) {
+      var rows = (_state.allData && _state.allData[u]) || [];
+      rows.forEach(function (r) {
+        if (!map[r.groupId]) { map[r.groupId] = r.groupName; order.push(r.groupId); }
+      });
+    });
+    return order.map(function (id) { return { id: id, name: map[id] }; });
+  }
+
   // Group rows by groupId; preserve insertion order.
   function _groupRows(rows) {
-    var map = {};
-    var order = [];
+    var map = {}, order = [];
     rows.forEach(function (row) {
       if (!map[row.groupId]) {
-        map[row.groupId] = {
-          id: row.groupId,
-          name: row.groupName,
-          meters: [],
-          totalUsage: 0,
-          totalPercOfPlant: 0,
-          totalCost: 0
-        };
+        map[row.groupId] = { id: row.groupId, name: row.groupName, meters: [],
+                             totalUsage: 0, totalPercOfPlant: 0, totalCost: 0 };
         order.push(row.groupId);
       }
       var g = map[row.groupId];
@@ -95,11 +84,9 @@ window.meterAllocation = window.meterAllocation || {};
     return order.map(function (id) { return map[id]; });
   }
 
-  // Sort and group in one pass, sorting both groups and their inner meters.
+  // Sort groups and their inner meters by the current sort state.
   function _buildDisplayGroups(rows) {
-    var col = _state.sortCol;
-    var dir = _state.sortAsc ? 1 : -1;
-
+    var col = _state.sortCol, dir = _state.sortAsc ? 1 : -1;
     function cmp(a, b, isGroup) {
       if (col === 'name')  return (isGroup ? a.name : a.meterName).localeCompare(isGroup ? b.name : b.meterName) * dir;
       if (col === 'usage') return ((isGroup ? a.totalUsage : a.usage) - (isGroup ? b.totalUsage : b.usage)) * dir;
@@ -107,7 +94,6 @@ window.meterAllocation = window.meterAllocation || {};
       if (col === 'cost')  return ((isGroup ? a.totalCost : a.cost) - (isGroup ? b.totalCost : b.cost)) * dir;
       return 0;
     }
-
     var groups = _groupRows(rows);
     groups.forEach(function (g) { g.meters.sort(function (a, b) { return cmp(a, b, false); }); });
     groups.sort(function (a, b) { return cmp(a, b, true); });
@@ -125,40 +111,23 @@ window.meterAllocation = window.meterAllocation || {};
     );
   }
 
-  // ── Render: KPI strip ────────────────────────────────────────────────────────
+  // ── Render: KPI strip (Details page) ─────────────────────────────────────────
   function _renderKpis(rows) {
     var cfg = UTILS[_state.selectedUtil] || UTILS.Cooling;
-    var totalCost  = rows.reduce(function (s, r) { return s + (r.cost || 0); }, 0);
-    var totalUsage = rows.reduce(function (s, r) { return s + (r.usage || 0); }, 0);
-    var totalMeters = rows.length;
+    var totalCost    = rows.reduce(function (s, r) { return s + (r.cost  || 0); }, 0);
+    var totalUsage   = rows.reduce(function (s, r) { return s + (r.usage || 0); }, 0);
+    var totalMeters  = rows.length;
     var activeMeters = rows.filter(function (r) { return r.usage > 0; }).length;
-    var topRow = rows.slice().sort(function (a, b) { return b.percOfPlant - a.percOfPlant; })[0];
+    var topRow  = rows.slice().sort(function (a, b) { return b.percOfPlant - a.percOfPlant; })[0];
     var topPct  = topRow ? fmtPct(topRow.percOfPlant) : '—';
     var topName = topRow ? _shortName(topRow.meterName, _state.siteName) : '—';
 
     var cards = [
-      {
-        label: 'Total Metered Cost',
-        value: fmtCost(totalCost),
-        sub:   ''
-      },
-      {
-        label: 'Total Metered Usage',
-        value: fmtNum(totalUsage),
-        sub:   rows.length ? (rows[0].usageUnit || 'BTU') : ''
-      },
-      {
-        label: 'Active Meters',
-        value: activeMeters + ' / ' + totalMeters,
-        sub:   'reporting non-zero usage'
-      },
-      {
-        label: 'Top Consumer',
-        value: topPct,
-        sub:   topName
-      }
+      { label: 'Total Metered Cost',  value: fmtCost(totalCost),  sub: '' },
+      { label: 'Total Metered Usage', value: fmtNum(totalUsage),  sub: rows.length ? (rows[0].usageUnit || 'BTU') : '' },
+      { label: 'Active Meters',       value: activeMeters + ' / ' + totalMeters, sub: 'reporting non-zero usage' },
+      { label: 'Top Consumer',        value: topPct, sub: topName }
     ];
-
     var html = '<div class="ma-kpi-strip">';
     cards.forEach(function (k, i) {
       html += (
@@ -175,7 +144,7 @@ window.meterAllocation = window.meterAllocation || {};
     return html;
   }
 
-  // ── Render: main table ───────────────────────────────────────────────────────
+  // ── Render: detail table (Details page) ──────────────────────────────────────
   function _renderTable(rows) {
     var cfg = UTILS[_state.selectedUtil] || UTILS.Cooling;
 
@@ -224,9 +193,8 @@ window.meterAllocation = window.meterAllocation || {};
       if (isOpen) {
         meterRows = g.meters.map(function (m, idx) {
           var mName = _shortName(m.meterName, siteName);
-          var stripe = idx % 2 === 0 ? '' : ' stripe';
           return (
-            '<div class="ma-meter-row' + stripe + '">' +
+            '<div class="ma-meter-row' + (idx % 2 === 0 ? '' : ' stripe') + '">' +
               '<span class="ma-meter-indent"></span>' +
               '<span class="ma-meter-name" title="' + _esc(m.meterName) + '">' + _esc(mName) + '</span>' +
               '<span></span>' +
@@ -239,7 +207,6 @@ window.meterAllocation = window.meterAllocation || {};
           );
         }).join('');
       }
-
       return groupRow + meterRows;
     }).join('');
 
@@ -257,80 +224,181 @@ window.meterAllocation = window.meterAllocation || {};
           '<span class="ma-col-h sortable" data-sort="pct">% of Plant ' + sortArrow('pct') + '</span>' +
           '<span class="ma-col-h sortable right" data-sort="cost">Cost ' + sortArrow('cost') + '</span>' +
         '</div>' +
-        '<div class="ma-rows" id="ma-rows">' + rowsHtml + '</div>' +
+        '<div class="ma-rows">' + rowsHtml + '</div>' +
       '</div>'
     );
   }
 
-  // ── Render: header ───────────────────────────────────────────────────────────
-  function _renderHeader() {
-    var tabsHtml = UTIL_KEYS.map(function (k) {
-      var u = UTILS[k];
-      var isActive = k === _state.selectedUtil;
-      var cls = 'ma-util-tab' + (isActive ? ' is-active' : '');
-      var style = isActive
-        ? 'background:' + u.color + ';color:#fff;border-bottom:2px solid #fff;'
-        : 'color:rgba(255,255,255,0.55);';
-      return (
-        '<button class="' + cls + '" data-util-tab="' + k + '" style="' + style + '">' +
-          u.icon + '&nbsp;' + u.label +
-        '</button>'
-      );
-    }).join('');
+  // ── Render: Summary page ──────────────────────────────────────────────────────
+  function _renderSummaryPage() {
+    var groups = _getAllGroups();
+    var siteName = _state.siteName;
 
+    // Column definitions: three utilities × (usage + cost) + total cost
+    var cols = [];
+    UTIL_KEYS.forEach(function (u) {
+      cols.push({ util: u, type: 'usage' });
+      cols.push({ util: u, type: 'cost' });
+    });
+
+    // Build header rows
+    var utilHeads = UTIL_KEYS.map(function (u) {
+      var cfg = UTILS[u];
+      return '<th colspan="2" class="ma-sum-util-head" style="color:' + cfg.color + '">' +
+        cfg.icon + '&nbsp;' + cfg.label + '</th>';
+    }).join('') + '<th class="ma-sum-total-head">Total Cost</th>';
+
+    var subHeads = UTIL_KEYS.map(function () {
+      return '<th class="ma-sum-sub-head">Usage</th><th class="ma-sum-sub-head">Cost</th>';
+    }).join('') + '<th></th>';
+
+    // Build body rows
+    var bodyRows = groups.length === 0
+      ? '<tr><td colspan="' + (cols.length + 2) + '" class="ma-sum-no-data">No meter groups found — load a site with Cooling data first.</td></tr>'
+      : groups.map(function (g, i) {
+          var name = _shortName(g.name, siteName);
+          var cells = UTIL_KEYS.map(function () {
+            return '<td class="ma-sum-num">—</td><td class="ma-sum-num">—</td>';
+          }).join('') + '<td class="ma-sum-total">—</td>';
+          return '<tr class="ma-sum-row' + (i % 2 === 0 ? '' : ' stripe') + '">' +
+            '<td class="ma-sum-name" title="' + _esc(g.name) + '">' + _esc(name) + '</td>' +
+            cells + '</tr>';
+        }).join('');
+
+    // Footer total row
+    var footerCells = UTIL_KEYS.map(function () {
+      return '<td class="ma-sum-num ma-sum-foot">—</td><td class="ma-sum-num ma-sum-foot">—</td>';
+    }).join('') + '<td class="ma-sum-total ma-sum-foot">—</td>';
+
+    return (
+      '<div class="ma-page">' +
+
+      // ── Pending-function notice ──────────────────────────────────────────────
+      '<div class="ma-sum-notice">' +
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>' +
+        'Summary billing data requires a separate function — numbers will populate once&nbsp;<code>report_meterValidation_summaryData</code>&nbsp;is configured.' +
+      '</div>' +
+
+      // ── Summary KPI cards (all blank) ────────────────────────────────────────
+      '<div class="ma-kpi-strip">' +
+        ['Total Plant Cost', 'Cooling Cost', 'Heating Cost', 'Flow Cost'].map(function (lbl) {
+          return '<div class="ma-kpi-card">' +
+            '<div class="ma-kpi-label">' + lbl + '</div>' +
+            '<div class="ma-kpi-value" style="color:#9ca3af">—</div>' +
+            '<div class="ma-kpi-sub">Pending summary function</div>' +
+          '</div>';
+        }).join('') +
+      '</div>' +
+
+      // ── Billing overview table ───────────────────────────────────────────────
+      '<div class="ma-card ma-table-card">' +
+        '<div class="ma-table-titlebar">' +
+          '<span class="ma-table-title">Tenant Billing Overview</span>' +
+          '<span class="ma-table-hint">Group-level totals by utility — numbers pending summary function</span>' +
+        '</div>' +
+        '<div style="overflow-x:auto">' +
+          '<table class="ma-sum-table">' +
+            '<thead>' +
+              '<tr><th class="ma-sum-name-head">Meter Group</th>' + utilHeads + '</tr>' +
+              '<tr><th></th>' + subHeads + '</tr>' +
+            '</thead>' +
+            '<tbody>' + bodyRows + '</tbody>' +
+            '<tfoot>' +
+              '<tr><td class="ma-sum-foot ma-sum-name">Total</td>' + footerCells + '</tr>' +
+            '</tfoot>' +
+          '</table>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="ma-footer">Cost&nbsp;=&nbsp;(Meter&nbsp;Usage&nbsp;÷&nbsp;Plant&nbsp;Output)&nbsp;&times;&nbsp;Rate&nbsp;&nbsp;&middot;&nbsp;&nbsp;SkySpark&nbsp;pUb</div>' +
+      '</div>'
+    );
+  }
+
+  // ── Render: header (sticky) ───────────────────────────────────────────────────
+  function _renderHeader() {
     var siteLine = _state.siteName ? _esc(_state.siteName) : 'Demo Site';
     var dateLine = _state.dateLabel ? '&nbsp;&bull;&nbsp;' + _esc(_state.dateLabel) : '';
+
+    // Page tabs: Summary | Details
+    var pageTabs = ['summary', 'details'].map(function (p) {
+      var lbl = p === 'summary' ? 'Summary' : 'Details';
+      var isActive = _state.page === p;
+      var style = isActive
+        ? 'color:#fff;background:rgba(255,255,255,0.18);border-bottom:2px solid #fff;'
+        : 'color:rgba(255,255,255,0.55);';
+      return '<button class="ma-page-tab' + (isActive ? ' is-active' : '') + '" data-page="' + p + '" style="' + style + '">' + lbl + '</button>';
+    }).join('');
+
+    // Utility tabs: only shown in Details mode
+    var utilTabs = '';
+    if (_state.page === 'details') {
+      utilTabs = '<div class="ma-util-tabs">' +
+        UTIL_KEYS.map(function (k) {
+          var u = UTILS[k];
+          var isActive = k === _state.selectedUtil;
+          var style = isActive
+            ? 'background:' + u.color + ';color:#fff;border-bottom:2px solid #fff;'
+            : 'color:rgba(255,255,255,0.55);';
+          return '<button class="ma-util-tab' + (isActive ? ' is-active' : '') + '" data-util-tab="' + k + '" style="' + style + '">' +
+            u.icon + '&nbsp;' + u.label + '</button>';
+        }).join('') +
+      '</div>';
+    }
 
     return (
       '<div class="ma-header" style="background:' + HEADER_BG + '">' +
         '<div class="ma-header-top">' +
-          '<div>' +
-            '<div class="ma-header-site">' + siteLine + '</div>' +
-            '<div class="ma-header-subtitle">Tenant Meter Allocation' + dateLine + '</div>' +
-          '</div>' +
+          '<div class="ma-header-site">' + siteLine + '</div>' +
+          '<div class="ma-header-subtitle">Tenant Meter Allocation' + dateLine + '</div>' +
         '</div>' +
-        '<div class="ma-header-tabs">' +
-          tabsHtml +
+        '<div class="ma-header-nav">' +
+          '<div class="ma-page-tabs">' + pageTabs + '</div>' +
+          utilTabs +
         '</div>' +
       '</div>'
     );
   }
 
-  // ── Render: full body (below header) ─────────────────────────────────────────
+  // ── Render: full body ─────────────────────────────────────────────────────────
   function _renderBody() {
     var body = _container && _container.querySelector('#ma-body');
     if (!body) return;
-    var rows = _getRows();
-    body.innerHTML = (
-      '<div class="ma-page">' +
-        _renderKpis(rows) +
-        _renderTable(rows) +
-        '<div class="ma-footer">Cost&nbsp;=&nbsp;(Meter&nbsp;Usage&nbsp;÷&nbsp;Plant&nbsp;Output)&nbsp;&times;&nbsp;Rate&nbsp;&nbsp;&middot;&nbsp;&nbsp;SkySpark&nbsp;pUb</div>' +
-      '</div>'
-    );
+    if (_state.page === 'summary') {
+      body.innerHTML = _renderSummaryPage();
+    } else {
+      var rows = _getRows();
+      body.innerHTML = (
+        '<div class="ma-page">' +
+          _renderKpis(rows) +
+          _renderTable(rows) +
+          '<div class="ma-footer">Cost&nbsp;=&nbsp;(Meter&nbsp;Usage&nbsp;÷&nbsp;Plant&nbsp;Output)&nbsp;&times;&nbsp;Rate&nbsp;&nbsp;&middot;&nbsp;&nbsp;SkySpark&nbsp;pUb</div>' +
+        '</div>'
+      );
+    }
   }
 
-  // ── Update utility tab active styles without full re-render ──────────────────
-  function _syncTabStyles() {
-    if (!_container) return;
-    _container.querySelectorAll('[data-util-tab]').forEach(function (btn) {
-      var k = btn.getAttribute('data-util-tab');
-      var u = UTILS[k];
-      if (!u) return;
-      var isActive = k === _state.selectedUtil;
-      btn.className = 'ma-util-tab' + (isActive ? ' is-active' : '');
-      if (isActive) {
-        btn.style.cssText = 'background:' + u.color + ';color:#fff;border-bottom:2px solid #fff;';
-      } else {
-        btn.style.cssText = 'color:rgba(255,255,255,0.55);';
-      }
-    });
+  // ── Render: full page (header + body) ────────────────────────────────────────
+  function _renderAll() {
+    _container.innerHTML = _renderHeader() + '<div id="ma-body"></div>';
+    _renderBody();
   }
 
   // ── Event handling ───────────────────────────────────────────────────────────
   function _attachListeners() {
     if (!_container) return;
     _container.addEventListener('click', function (e) {
+
+      // Page tab (Summary / Details)
+      var pageTab = e.target.closest('[data-page]');
+      if (pageTab) {
+        var pg = pageTab.getAttribute('data-page');
+        if (pg && pg !== _state.page) {
+          _state.page = pg;
+          _renderAll(); // header changes (util tabs appear/disappear)
+        }
+        return;
+      }
 
       // Utility tab
       var tab = e.target.closest('[data-util-tab]');
@@ -339,8 +407,7 @@ window.meterAllocation = window.meterAllocation || {};
         if (util && util !== _state.selectedUtil) {
           _state.selectedUtil = util;
           _state.expandedGroups = {};
-          _syncTabStyles();
-          _renderBody();
+          _renderAll(); // header active state changes
         }
         return;
       }
@@ -361,12 +428,8 @@ window.meterAllocation = window.meterAllocation || {};
       if (sortBtn) {
         var col = sortBtn.getAttribute('data-sort');
         if (col) {
-          if (_state.sortCol === col) {
-            _state.sortAsc = !_state.sortAsc;
-          } else {
-            _state.sortCol = col;
-            _state.sortAsc = false;
-          }
+          if (_state.sortCol === col) { _state.sortAsc = !_state.sortAsc; }
+          else { _state.sortCol = col; _state.sortAsc = false; }
           _renderBody();
         }
         return;
@@ -376,16 +439,10 @@ window.meterAllocation = window.meterAllocation || {};
 
   // ── Public API ───────────────────────────────────────────────────────────────
   NS.App = {
-    /**
-     * Initialise and render the dashboard.
-     *
-     * @param {HTMLElement} container - Scoped root element
-     * @param {Object}      allData   - { Cooling: [], Heating: [], Flow: [] }
-     * @param {Object}      ctx       - { siteName, dateLabel }
-     */
     init: function (container, allData, ctx) {
       _container = container;
       _state = {
+        page:           'summary',
         selectedUtil:   'Cooling',
         expandedGroups: {},
         sortCol:        'pct',
@@ -394,13 +451,10 @@ window.meterAllocation = window.meterAllocation || {};
         siteName:       (ctx && ctx.siteName)  || '',
         dateLabel:      (ctx && ctx.dateLabel) || ''
       };
-
-      container.innerHTML = _renderHeader() + '<div id="ma-body"></div>';
-      _renderBody();
+      _renderAll();
       _attachListeners();
     },
 
-    // Called after async site-name lookup resolves to update the header label.
     updateSiteName: function (name) {
       _state.siteName = name;
       var el = _container && _container.querySelector('.ma-header-site');
