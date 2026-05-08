@@ -282,49 +282,62 @@ window.meterAllocation = window.meterAllocation || {};
       '</div>';
     }
 
-    // ── Tenant billing table — rows from tenantTotals, usage only ─────────────
-    var utilHeads = UTIL_KEYS.map(function (u) {
-      var cfg  = UTILS[u];
-      var unit = (tenantTotals[u] && tenantTotals[u][0]) ? tenantTotals[u][0].usageUnit : 'BTU';
-      return '<th class="ma-sum-util-head" style="color:' + cfg.color + '">' +
-        cfg.icon + '&nbsp;' + cfg.label +
-        '&nbsp;<span style="font-weight:400;color:#c4c4bc;font-size:9px">(' + _esc(unit) + ')</span>' +
-      '</th>';
-    }).join('');
-
-    var NUM_COLS = UTIL_KEYS.length + 1;
+    // ── Tenant billing table — rows from tenantTotals, usage + computed cost ────
+    var NUM_COLS = UTIL_KEYS.length * 2 + 1; // usage + cost per utility
     var billingBodyRows = tenantNames.length === 0
       ? '<tr><td colspan="' + NUM_COLS + '" class="ma-sum-no-data">No tenant data — tenant totals function has not returned data yet.</td></tr>'
       : tenantNames.map(function (name, i) {
+          var rowCost = 0, hasAnyCost = false;
           var cells = UTIL_KEYS.map(function (u) {
-            var r = tenantByUtil[u][name];
-            return '<td class="ma-sum-num">' + (r ? fmtNum(r.usage) : '—') + '</td>';
+            var r         = tenantByUtil[u][name];
+            var plantBtu  = summary[u] ? summary[u].btuUsage  : null;
+            var plantCost = summary[u] ? summary[u].cost       : null;
+            var tenantCost = (r && plantBtu && plantCost)
+              ? (r.usage / plantBtu) * plantCost
+              : null;
+            if (tenantCost != null) { rowCost += tenantCost; hasAnyCost = true; }
+            return '<td class="ma-sum-num">'  + (r          ? fmtNum(r.usage)      : '—') + '</td>' +
+                   '<td class="ma-sum-num">'  + (tenantCost != null ? fmtCost(tenantCost) : '—') + '</td>';
           }).join('');
           return '<tr class="ma-sum-row' + (i % 2 === 0 ? '' : ' stripe') + '">' +
             '<td class="ma-sum-name">' + _esc(name) + '</td>' +
             cells +
+            '<td class="ma-sum-total">' + (hasAnyCost ? fmtCost(rowCost) : '—') + '</td>' +
           '</tr>';
         }).join('');
 
     var billingFooterCells = UTIL_KEYS.map(function (u) {
-      var total = ((tenantTotals[u]) || []).reduce(function (s, r) { return s + (r.usage || 0); }, 0);
-      return '<td class="ma-sum-num ma-sum-foot">' + (total ? fmtNum(total) : '—') + '</td>';
-    }).join('');
+      var tenantTotal = ((tenantTotals[u]) || []).reduce(function (s, r) { return s + (r.usage || 0); }, 0);
+      var plantCost   = summary[u] ? summary[u].cost : null;
+      return '<td class="ma-sum-num ma-sum-foot">' + (tenantTotal ? fmtNum(tenantTotal) : '—') + '</td>' +
+             '<td class="ma-sum-num ma-sum-foot">' + (plantCost   ? fmtCost(plantCost)  : '—') + '</td>';
+    }).join('') + '<td class="ma-sum-total ma-sum-foot">' + (hasSummaryData ? fmtCost(grandCost) : '—') + '</td>';
+
+    var billingUtilHeads = UTIL_KEYS.map(function (u) {
+      var cfg  = UTILS[u];
+      return '<th colspan="2" class="ma-sum-util-head" style="color:' + cfg.color + '">' +
+        cfg.icon + '&nbsp;' + cfg.label + '</th>';
+    }).join('') + '<th class="ma-sum-total-head">Total Cost</th>';
+
+    var billingSubHeads = UTIL_KEYS.map(function (u) {
+      var unit = (tenantTotals[u] && tenantTotals[u][0]) ? tenantTotals[u][0].usageUnit : 'BTU';
+      return '<th class="ma-sum-sub-head">Usage&nbsp;<span style="font-weight:400;color:#c4c4bc">(' + _esc(unit) + ')</span></th>' +
+             '<th class="ma-sum-sub-head">Cost</th>';
+    }).join('') + '<th></th>';
 
     var billingTableHtml = '<div class="ma-card ma-table-card">' +
       '<div class="ma-table-titlebar">' +
         '<span class="ma-table-title">Tenant Billing Overview</span>' +
-        '<span class="ma-table-hint">Authoritative usage totals per tenant by utility</span>' +
+        '<span class="ma-table-hint">Usage from tenant totals &middot; Cost = (tenant BTU &divide; plant BTU) &times; plant cost</span>' +
       '</div>' +
       '<div style="overflow-x:auto">' +
         '<table class="ma-sum-table">' +
-          '<thead><tr>' +
-            '<th class="ma-sum-name-head">Tenant</th>' + utilHeads +
-          '</tr></thead>' +
+          '<thead>' +
+            '<tr><th class="ma-sum-name-head">Tenant</th>' + billingUtilHeads + '</tr>' +
+            '<tr><th></th>' + billingSubHeads + '</tr>' +
+          '</thead>' +
           '<tbody>' + billingBodyRows + '</tbody>' +
-          '<tfoot><tr>' +
-            '<td class="ma-sum-foot ma-sum-name">Total</td>' + billingFooterCells +
-          '</tr></tfoot>' +
+          '<tfoot><tr><td class="ma-sum-foot ma-sum-name">Total</td>' + billingFooterCells + '</tr></tfoot>' +
         '</table>' +
       '</div>' +
     '</div>';
