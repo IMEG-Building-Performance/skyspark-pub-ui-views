@@ -80,6 +80,11 @@ window.meterAllocation = window.meterAllocation || {};
     return Promise.all(promises).then(function (results) {
       var out = { _errors: errors };
       UTILS.forEach(function (u, i) { out[u] = results[i]; });
+      // Diagnostic: log first row of each utility to verify correct data is loaded
+      UTILS.forEach(function (u) {
+        var rows = out[u] || [];
+        console.log('[meterAllocation] tenantTotals.' + u + ' (' + rows.length + ' rows):', rows.length ? JSON.stringify(rows[0]) : '(empty)');
+      });
       return out;
     });
   };

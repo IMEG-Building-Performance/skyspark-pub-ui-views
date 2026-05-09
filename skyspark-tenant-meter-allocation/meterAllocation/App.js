@@ -253,6 +253,11 @@ window.meterAllocation = window.meterAllocation || {};
 
     // ── Tenant totals lookup ───────────────────────────────────────────────────
     var tenantTotals = (_state.allData && _state.allData._tenantTotals) || {};
+    // Diagnostic: verify each utility has distinct data in state
+    UTIL_KEYS.forEach(function (u) {
+      var rows = tenantTotals[u] || [];
+      console.log('[meterAllocation] _renderSummaryPage tenantTotals.' + u + ' (' + rows.length + ' rows):', rows.length ? JSON.stringify(rows[0]) : '(empty)');
+    });
 
     // Collect ordered unique tenant names across all utilities
     var tenantNames = [], tenantNameSet = {};
