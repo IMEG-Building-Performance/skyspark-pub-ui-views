@@ -87,7 +87,7 @@ window.meterAllocation = window.meterAllocation || {};
   // ── Summary data (report_meterValidation_totalsTable) ──────────────────────
 
   // Parse a plant-level totals grid (one row, columns: site, utility,
-  // plantTotalkWhUsage, plantTotalCost, plantTotalBTUUsage).
+  // plantTotalBillUsage, plantTotalCost, plantTotalBTUUsage).
   // Returns a plain object, or null if the grid is empty.
   function _parseSummaryGrid(grid) {
     if (!grid || !grid.rows) return null;
@@ -97,15 +97,15 @@ window.meterAllocation = window.meterAllocation || {};
     }
     if (!grid.rows.length) return null;
     var row  = grid.rows[0];
-    var kWh  = HP.num(row.plantTotalkWhUsage);
+    var bill = HP.num(row.plantTotalBillUsage);
     var btu  = HP.num(row.plantTotalBTUUsage);
     var cost = HP.num(row.plantTotalCost);
     return {
-      kWhUsage: kWh.val,
-      kWhUnit:  kWh.unit || 'kWh',
-      btuUsage: btu.val,
-      btuUnit:  btu.unit || 'BTU',
-      cost:     cost.val
+      billUsage: bill.val,
+      billUnit:  bill.unit || 'therm',
+      btuUsage:  btu.val,
+      btuUnit:   btu.unit || 'BTU',
+      cost:      cost.val
     };
   }
 
