@@ -171,7 +171,7 @@ window.meterAllocation = window.meterAllocation || {};
    * Calls report_meterValidation_tenantTotalsTable(site, dates, utility)
    */
   NS.evals.loadTenantTotals = function (attestKey, projectName, siteRef, dates, utility) {
-    var axon = 'report_meterValidation_tenantTotalsTable(' + siteRef + ', ' + dates + ', "' + utility + '")';
+    var axon = 'report_meterValidation_tenantTotalsTable(' + siteRef + ', ' + dates + ', false, "' + utility + '")';
     console.log('[meterAllocation] Eval:', axon);
     return api.evalAxon(axon, attestKey, projectName, 'tenantTotals-' + utility)
       .then(function (data) {
