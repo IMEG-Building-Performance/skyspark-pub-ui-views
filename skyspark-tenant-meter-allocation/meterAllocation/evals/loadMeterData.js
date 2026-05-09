@@ -50,7 +50,7 @@ window.meterAllocation = window.meterAllocation || {};
     var axon = 'report_meterValidation_meterData(' + siteRef + ', ' + dates + ', "' + utility + '")';
     console.log('[meterAllocation] Eval:', axon);
 
-    return api.evalAxon(axon, attestKey, projectName)
+    return api.evalAxon(axon, attestKey, projectName, 'meterData-' + utility)
       .then(function (data) {
         var grid = api.unwrapGrid(data);
         return _parseGrid(grid);
@@ -80,11 +80,6 @@ window.meterAllocation = window.meterAllocation || {};
     return Promise.all(promises).then(function (results) {
       var out = { _errors: errors };
       UTILS.forEach(function (u, i) { out[u] = results[i]; });
-      // Diagnostic: log first row of each utility to verify correct data is loaded
-      UTILS.forEach(function (u) {
-        var rows = out[u] || [];
-        console.log('[meterAllocation] tenantTotals.' + u + ' (' + rows.length + ' rows):', rows.length ? JSON.stringify(rows[0]) : '(empty)');
-      });
       return out;
     });
   };
@@ -121,7 +116,7 @@ window.meterAllocation = window.meterAllocation || {};
   NS.evals.loadSummaryData = function (attestKey, projectName, siteRef, dates, utility) {
     var axon = 'report_meterValidation_plantTotalsTable(' + siteRef + ', ' + dates + ', false, "' + utility + '")';
     console.log('[meterAllocation] Eval:', axon);
-    return api.evalAxon(axon, attestKey, projectName)
+    return api.evalAxon(axon, attestKey, projectName, 'plantTotals-' + utility)
       .then(function (data) {
         var grid = api.unwrapGrid(data);
         return _parseSummaryGrid(grid);
@@ -178,7 +173,7 @@ window.meterAllocation = window.meterAllocation || {};
   NS.evals.loadTenantTotals = function (attestKey, projectName, siteRef, dates, utility) {
     var axon = 'report_meterValidation_tenantTotalsTable(' + siteRef + ', ' + dates + ', "' + utility + '")';
     console.log('[meterAllocation] Eval:', axon);
-    return api.evalAxon(axon, attestKey, projectName)
+    return api.evalAxon(axon, attestKey, projectName, 'tenantTotals-' + utility)
       .then(function (data) {
         var grid = api.unwrapGrid(data);
         return _parseTenantGrid(grid);
@@ -204,6 +199,11 @@ window.meterAllocation = window.meterAllocation || {};
     return Promise.all(promises).then(function (results) {
       var out = { _errors: errors };
       UTILS.forEach(function (u, i) { out[u] = results[i]; });
+      // Diagnostic: confirm each utility received distinct data
+      UTILS.forEach(function (u) {
+        var rows = out[u] || [];
+        console.log('[meterAllocation] loadAllTenantTotals.' + u + ' (' + rows.length + ' rows):', rows.length ? JSON.stringify(rows[0]) : '(empty)');
+      });
       return out;
     });
   };
