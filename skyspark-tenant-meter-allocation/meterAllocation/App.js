@@ -180,55 +180,36 @@ window.meterAllocation = window.meterAllocation || {};
       return '<span class="ma-sort-active">' + (_state.sortAsc ? '↑' : '↓') + '</span>';
     }
 
-    var groups = _buildDisplayGroups(rows);
+    var col = _state.sortCol, dir = _state.sortAsc ? 1 : -1;
+    var sorted = rows.slice().sort(function (a, b) {
+      if (col === 'name')  return a.meterName.localeCompare(b.meterName) * dir;
+      if (col === 'usage') return (a.usage - b.usage) * dir;
+      if (col === 'pct')   return (a.percOfPlant - b.percOfPlant) * dir;
+      return 0;
+    });
+
     var siteName = _state.siteName;
-
-    var rowsHtml = groups.map(function (g) {
-      var gId = _esc(g.id);
-      var isOpen = !!_state.expandedGroups[g.id];
-      var displayName = _shortName(g.name, siteName);
-
-      var groupRow = (
-        '<div class="ma-group-row' + (isOpen ? ' is-open' : '') + '" data-group-id="' + gId + '">' +
-          '<span class="ma-chevron">' + (isOpen ? '▼' : '▶') + '</span>' +
-          '<span class="ma-group-name" title="' + _esc(g.name) + '">' + _esc(displayName) + '</span>' +
-          '<span class="ma-group-count">' + g.meters.length + '&nbsp;meter' + (g.meters.length !== 1 ? 's' : '') + '</span>' +
-          '<span></span>' +
-          '<span></span>' +
-          '<span></span>' +
+    var rowsHtml = sorted.map(function (m, idx) {
+      var mName = _shortName(m.meterName, siteName);
+      return (
+        '<div class="ma-meter-row' + (idx % 2 === 0 ? '' : ' stripe') + '">' +
+          '<span class="ma-meter-name" title="' + _esc(m.meterName) + '">' + _esc(mName) + '</span>' +
+          '<span class="ma-meter-usage" style="color:' + cfg.color + '">' +
+            fmtBtu(m.usage, m.usageUnit) + '<small>&nbsp;' + _esc(btuUnit(m.usageUnit)) + '</small>' +
+          '</span>' +
+          '<span class="ma-meter-pct">' + _pctBar(m.percOfPlant, cfg.color) + '</span>' +
         '</div>'
       );
-
-      var meterRows = '';
-      if (isOpen) {
-        meterRows = g.meters.map(function (m, idx) {
-          var mName = _shortName(m.meterName, siteName);
-          return (
-            '<div class="ma-meter-row' + (idx % 2 === 0 ? '' : ' stripe') + '">' +
-              '<span class="ma-meter-indent"></span>' +
-              '<span class="ma-meter-name" title="' + _esc(m.meterName) + '">' + _esc(mName) + '</span>' +
-              '<span></span>' +
-              '<span class="ma-meter-usage" style="color:' + cfg.color + '">' +
-                fmtBtu(m.usage, m.usageUnit) + '<small>&nbsp;' + _esc(btuUnit(m.usageUnit)) + '</small>' +
-              '</span>' +
-              '<span class="ma-meter-pct">' + _pctBar(m.percOfPlant, cfg.color) + '</span>' +
-            '</div>'
-          );
-        }).join('');
-      }
-      return groupRow + meterRows;
     }).join('');
 
     return (
       '<div class="ma-card ma-table-card">' +
         '<div class="ma-table-titlebar">' +
           '<span class="ma-table-title">Meter Allocation Detail</span>' +
-          '<span class="ma-table-hint">Individual meter usage and % of plant — see Tenant Totals below for group-level actuals</span>' +
+          '<span class="ma-table-hint">All meters sorted by % of plant</span>' +
         '</div>' +
         '<div class="ma-col-headers">' +
-          '<span></span>' +
-          '<span class="ma-col-h sortable" data-sort="name">Meter / Group ' + sortArrow('name') + '</span>' +
-          '<span class="ma-col-h">Meters</span>' +
+          '<span class="ma-col-h sortable" data-sort="name">Meter ' + sortArrow('name') + '</span>' +
           '<span class="ma-col-h sortable right" data-sort="usage">Usage ' + sortArrow('usage') + '</span>' +
           '<span class="ma-col-h sortable" data-sort="pct">% of Plant ' + sortArrow('pct') + '</span>' +
         '</div>' +
@@ -487,71 +468,11 @@ window.meterAllocation = window.meterAllocation || {};
       }).join('') +
     '</div>';
 
-    // Tenant totals card — authoritative per-tenant BTU for the current utility
-    var tenantTotalsCard = '';
-    var tenantRows = ((_state.allData && _state.allData._tenantTotals && _state.allData._tenantTotals[_state.selectedUtil]) || []);
-    if (tenantRows.length > 0) {
-      var groups = _groupRows(rows);
-      var meterSumByGroup = {};
-      groups.forEach(function (g) { meterSumByGroup[g.name] = g.totalUsage; });
-
-      var tenantTableRows = tenantRows.map(function (t, i) {
-        var matchedSum = null;
-        var tLower = t.tenantName.toLowerCase();
-        groups.forEach(function (g) {
-          var gLower = g.name.toLowerCase();
-          if (tLower.indexOf(gLower) !== -1 || gLower.indexOf(tLower) !== -1) {
-            matchedSum = g.totalUsage;
-          }
-        });
-        var diff = (matchedSum != null) ? (t.usage - matchedSum) : null;
-        var hasDiff = diff != null && Math.abs(diff) > 1;
-        var diffColor = hasDiff ? '#d97706' : '#16a34a';
-
-        var dispU = btuUnit(t.usageUnit);
-        return '<tr class="ma-recon-row' + (i % 2 === 0 ? '' : ' stripe') + '">' +
-          '<td class="ma-recon-util" style="color:#374151;font-weight:600">' + _esc(t.tenantName) + '</td>' +
-          '<td class="ma-recon-num">' + fmtBtu(t.usage, t.usageUnit) + '<small>&nbsp;' + dispU + '</small></td>' +
-          '<td class="ma-recon-num">' + (matchedSum != null ? fmtBtu(matchedSum, t.usageUnit) + '<small>&nbsp;' + dispU + '</small>' : '—') + '</td>' +
-          '<td class="ma-recon-num" style="color:' + diffColor + '">' +
-            (diff != null ? (diff >= 0 ? '+' : '') + fmtBtu(diff, t.usageUnit) + (hasDiff ? '&nbsp;<span style="font-size:10px">⚠</span>' : '&nbsp;<span style="font-size:10px">✓</span>') : '—') +
-          '</td>' +
-        '</tr>';
-      }).join('');
-
-      var tenantTotal = tenantRows.reduce(function (s, r) { return s + (r.usage || 0); }, 0);
-      var rawUnit = tenantRows[0].usageUnit || 'BTU';
-      var dispUnit = btuUnit(rawUnit);
-
-      tenantTotalsCard = '<div class="ma-card ma-table-card">' +
-        '<div class="ma-table-titlebar">' +
-          '<span class="ma-table-title">Tenant Totals</span>' +
-          '<span class="ma-table-hint">Authoritative totals vs. meter sums — Residential uses a calculated total, not a direct meter sum</span>' +
-        '</div>' +
-        '<table class="ma-recon-table">' +
-          '<thead><tr>' +
-            '<th class="ma-recon-head">Tenant</th>' +
-            '<th class="ma-recon-head right" style="color:' + cfg.color + '">Authoritative&nbsp;<span style="font-weight:400;color:#c4c4bc">(' + dispUnit + ')</span></th>' +
-            '<th class="ma-recon-head right">Meter Sum&nbsp;<span style="font-weight:400;color:#c4c4bc">(' + dispUnit + ')</span></th>' +
-            '<th class="ma-recon-head right">Variance</th>' +
-          '</tr></thead>' +
-          '<tbody>' + tenantTableRows + '</tbody>' +
-          '<tfoot><tr>' +
-            '<td class="ma-recon-util ma-sum-foot" style="color:#374151">Total</td>' +
-            '<td class="ma-recon-num ma-sum-foot">' + fmtBtu(tenantTotal, rawUnit) + '</td>' +
-            '<td class="ma-recon-num ma-sum-foot">—</td>' +
-            '<td class="ma-recon-num ma-sum-foot">—</td>' +
-          '</tr></tfoot>' +
-        '</table>' +
-      '</div>';
-    }
-
     body.innerHTML = (
       '<div class="ma-page">' +
         utilSelector +
         _renderKpis(rows) +
         _renderTable(rows) +
-        tenantTotalsCard +
         '<div class="ma-footer">Cost&nbsp;=&nbsp;(Meter&nbsp;Usage&nbsp;÷&nbsp;Plant&nbsp;Output)&nbsp;&times;&nbsp;Rate&nbsp;&nbsp;&middot;&nbsp;&nbsp;SkySpark&nbsp;pUb</div>' +
       '</div>'
     );

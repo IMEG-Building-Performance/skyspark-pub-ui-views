@@ -192,7 +192,7 @@
 /* ── Column headers ──────────────────────────────────────────────────────── */
 .ma-col-headers {
   display: grid;
-  grid-template-columns: 28px 1fr 80px 140px 190px;
+  grid-template-columns: 1fr 140px 190px;
   padding: 6px 20px;
   border-bottom: 2px solid #e5e7eb;
   background: #fafaf8;
@@ -309,7 +309,7 @@
 /* ── Meter rows (expanded) ───────────────────────────────────────────────── */
 .ma-meter-row {
   display: grid;
-  grid-template-columns: 28px 1fr 80px 140px 190px;
+  grid-template-columns: 1fr 140px 190px;
   align-items: center;
   padding: 9px 20px;
   border-bottom: 1px solid #f3f4f6;
@@ -326,12 +326,12 @@
 
 .ma-meter-name {
   font-size: 12px;
-  color: #6b7280;
+  font-weight: 600;
+  color: #1a1a1a;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   padding-right: 12px;
-  padding-left: 16px;
 }
 
 /* ── Percent bar ─────────────────────────────────────────────────────────── */
