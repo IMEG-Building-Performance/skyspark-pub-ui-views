@@ -191,6 +191,17 @@ window.meterAllocation = window.meterAllocation || {};
         '| toStr:', _rawDates && typeof _rawDates.toStr === 'function' ? _rawDates.toStr() : String(_rawDates));
     } catch (e) { console.log('[meterAlloc] raw dates read error:', e.message || e); }
 
+    // Debug: look for date info via other view APIs
+    try {
+      var _viewKeys = [];
+      for (var _k in view) { try { if (typeof view[_k] === 'function') _viewKeys.push(_k); } catch(e){} }
+      console.log('[meterAlloc] view methods:', _viewKeys.join(', '));
+    } catch (e) {}
+    try { console.log('[meterAlloc] view.dateSpan():', view.dateSpan()); } catch(e) { console.log('[meterAlloc] view.dateSpan() error:', e.message); }
+    try { console.log('[meterAlloc] view.vars():', JSON.stringify(view.vars())); } catch(e) { console.log('[meterAlloc] view.vars() error:', e.message); }
+    try { console.log('[meterAlloc] arg keys:', Object.keys(arg).join(', ')); } catch(e) {}
+    try { var _q = arg.query || arg.ctx || arg.dates; console.log('[meterAlloc] arg.query/ctx/dates:', _q); } catch(e) {}
+
     var siteRef = tryReadVar(view, 'site') || (parentView && tryReadVar(parentView, 'site'));
     var dates   = tryReadVar(view, 'dates') || (parentView && tryReadVar(parentView, 'dates'));
 
