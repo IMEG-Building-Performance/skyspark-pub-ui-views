@@ -22,10 +22,14 @@ window.meterAllocation = window.meterAllocation || {};
   // ── Formatters ───────────────────────────────────────────────────────────────
   function fmtNum(v) {
     if (v == null || isNaN(v)) return '—';
-    if (v >= 1e9) return (v / 1e9).toFixed(2) + 'B';
-    if (v >= 1e6) return (v / 1e6).toFixed(2) + 'M';
-    if (v >= 1e3) return (v / 1e3).toFixed(1) + 'K';
-    return v.toLocaleString('en-US', { maximumFractionDigits: 1 });
+    var neg = v < 0;
+    var abs = Math.abs(v);
+    var s;
+    if (abs >= 1e9) s = (abs / 1e9).toFixed(2) + 'B';
+    else if (abs >= 1e6) s = (abs / 1e6).toFixed(2) + 'M';
+    else if (abs >= 1e3) s = (abs / 1e3).toFixed(1) + 'K';
+    else s = abs.toLocaleString('en-US', { maximumFractionDigits: 1 });
+    return neg ? '-' + s : s;
   }
   function fmtCost(v) {
     if (v == null || isNaN(v)) return '—';
@@ -34,6 +38,14 @@ window.meterAllocation = window.meterAllocation || {};
   function fmtPct(v) {
     if (v == null || isNaN(v)) return '0.00%';
     return v.toFixed(2) + '%';
+  }
+  // Convert raw BTU → kBTU for display; pass through other units unchanged.
+  function fmtBtu(val, unit) {
+    if (val == null || isNaN(val)) return '—';
+    return (!unit || unit === 'BTU') ? fmtNum(val / 1000) : fmtNum(val);
+  }
+  function btuUnit(unit) {
+    return (!unit || unit === 'BTU') ? 'kBTU' : unit;
   }
   function _esc(s) {
     return String(s == null ? '' : s)
@@ -121,8 +133,9 @@ window.meterAllocation = window.meterAllocation || {};
     var topPct  = topRow ? fmtPct(topRow.percOfPlant) : '—';
     var topName = topRow ? _shortName(topRow.meterName, _state.siteName) : '—';
 
+    var usageUnit = rows.length ? (rows[0].usageUnit || 'BTU') : 'BTU';
     var cards = [
-      { label: 'Total Metered Usage', value: fmtNum(totalUsage), sub: rows.length ? (rows[0].usageUnit || 'BTU') : '', isUnit: true },
+      { label: 'Total Metered Usage', value: fmtBtu(totalUsage, usageUnit), sub: btuUnit(usageUnit), isUnit: true },
       { label: 'Active Meters',       value: activeMeters + ' / ' + totalMeters, sub: 'reporting non-zero usage', isUnit: false },
       { label: 'Top Consumer',        value: topPct, sub: topName, isUnit: false }
     ];
@@ -195,7 +208,7 @@ window.meterAllocation = window.meterAllocation || {};
               '<span class="ma-meter-name" title="' + _esc(m.meterName) + '">' + _esc(mName) + '</span>' +
               '<span></span>' +
               '<span class="ma-meter-usage" style="color:' + cfg.color + '">' +
-                fmtNum(m.usage) + '<small>&nbsp;' + _esc(m.usageUnit) + '</small>' +
+                fmtBtu(m.usage, m.usageUnit) + '<small>&nbsp;' + _esc(btuUnit(m.usageUnit)) + '</small>' +
               '</span>' +
               '<span class="ma-meter-pct">' + _pctBar(m.percOfPlant, cfg.color) + '</span>' +
             '</div>'
@@ -301,7 +314,8 @@ window.meterAllocation = window.meterAllocation || {};
               ? (r.usage / plantBtu) * plantCost
               : null;
             if (tenantCost != null) { rowCost += tenantCost; hasAnyCost = true; }
-            return '<td class="ma-sum-num">'  + (r          ? fmtNum(r.usage)      : '—') + '</td>' +
+            var rawUnit = r ? (r.usageUnit || 'BTU') : 'BTU';
+            return '<td class="ma-sum-num">'  + (r ? fmtBtu(r.usage, rawUnit) : '—') + '</td>' +
                    '<td class="ma-sum-num">'  + (tenantCost != null ? fmtCost(tenantCost) : '—') + '</td>';
           }).join('');
           return '<tr class="ma-sum-row' + (i % 2 === 0 ? '' : ' stripe') + '">' +
@@ -312,9 +326,11 @@ window.meterAllocation = window.meterAllocation || {};
         }).join('');
 
     var billingFooterCells = UTIL_KEYS.map(function (u) {
-      var tenantTotal = ((tenantTotals[u]) || []).reduce(function (s, r) { return s + (r.usage || 0); }, 0);
+      var tenantRows  = (tenantTotals[u]) || [];
+      var tenantTotal = tenantRows.reduce(function (s, r) { return s + (r.usage || 0); }, 0);
+      var rawUnit     = tenantRows.length ? (tenantRows[0].usageUnit || 'BTU') : 'BTU';
       var plantCost   = summary[u] ? summary[u].cost : null;
-      return '<td class="ma-sum-num ma-sum-foot">' + (tenantTotal ? fmtNum(tenantTotal) : '—') + '</td>' +
+      return '<td class="ma-sum-num ma-sum-foot">' + (tenantTotal ? fmtBtu(tenantTotal, rawUnit) : '—') + '</td>' +
              '<td class="ma-sum-num ma-sum-foot">' + (plantCost   ? fmtCost(plantCost)  : '—') + '</td>';
     }).join('') + '<td class="ma-sum-total ma-sum-foot">' + (hasSummaryData ? fmtCost(grandCost) : '—') + '</td>';
 
@@ -325,8 +341,8 @@ window.meterAllocation = window.meterAllocation || {};
     }).join('') + '<th class="ma-sum-total-head">Total Cost</th>';
 
     var billingSubHeads = UTIL_KEYS.map(function (u) {
-      var unit = (tenantTotals[u] && tenantTotals[u][0]) ? tenantTotals[u][0].usageUnit : 'BTU';
-      return '<th class="ma-sum-sub-head">Usage&nbsp;<span style="font-weight:400;color:#c4c4bc">(' + _esc(unit) + ')</span></th>' +
+      var rawUnit = (tenantTotals[u] && tenantTotals[u][0]) ? tenantTotals[u][0].usageUnit : 'BTU';
+      return '<th class="ma-sum-sub-head">Usage&nbsp;<span style="font-weight:400;color:#c4c4bc">(' + _esc(btuUnit(rawUnit)) + ')</span></th>' +
              '<th class="ma-sum-sub-head">Cost</th>';
     }).join('') + '<th></th>';
 
@@ -350,9 +366,10 @@ window.meterAllocation = window.meterAllocation || {};
     // ── BTU reconciliation card ────────────────────────────────────────────────
     // Tenant Sum uses authoritative tenant totals (correct for Residential etc.)
     var reconcRows = UTIL_KEYS.map(function (u) {
-      var cfg      = UTILS[u];
-      var plantBtu = summary[u] ? (summary[u].btuUsage || 0) : null;
-      var btuUnit  = summary[u] ? (summary[u].btuUnit || 'BTU') : 'BTU';
+      var cfg        = UTILS[u];
+      var plantBtu   = summary[u] ? (summary[u].btuUsage || 0) : null;
+      var rawBtuUnit = summary[u] ? (summary[u].btuUnit || 'BTU') : 'BTU';
+      var dispUnit   = btuUnit(rawBtuUnit);
       // Sum from tenant totals function (authoritative, handles special calculations)
       var tenantBtu = ((tenantTotals[u]) || []).reduce(function (s, r) { return s + (r.usage || 0); }, 0);
       var coverage  = (plantBtu && tenantBtu) ? (tenantBtu / plantBtu * 100) : null;
@@ -366,10 +383,10 @@ window.meterAllocation = window.meterAllocation || {};
 
       return '<tr class="ma-recon-row">' +
         '<td class="ma-recon-util" style="color:' + cfg.color + '">' + cfg.icon + '&nbsp;' + cfg.label + '</td>' +
-        '<td class="ma-recon-num">' + (plantBtu  != null ? fmtNum(plantBtu)  + '<small>&nbsp;' + _esc(btuUnit) + '</small>' : '—') + '</td>' +
-        '<td class="ma-recon-num">' + (tenantBtu  > 0    ? fmtNum(tenantBtu) + '<small>&nbsp;' + _esc(btuUnit) + '</small>' : '—') + '</td>' +
+        '<td class="ma-recon-num">' + (plantBtu  != null ? fmtBtu(plantBtu, rawBtuUnit)  + '<small>&nbsp;' + dispUnit + '</small>' : '—') + '</td>' +
+        '<td class="ma-recon-num">' + (tenantBtu  !== 0  ? fmtBtu(tenantBtu, rawBtuUnit) + '<small>&nbsp;' + dispUnit + '</small>' : '—') + '</td>' +
         '<td class="ma-recon-num" style="color:' + (variance != null && variance > 0 ? '#6b7280' : '#16a34a') + '">' +
-          (variance != null ? (variance >= 0 ? '+' : '') + fmtNum(variance) + '<small>&nbsp;' + _esc(btuUnit) + '</small>' : '—') +
+          (variance != null ? (variance >= 0 ? '+' : '') + fmtBtu(variance, rawBtuUnit) + '<small>&nbsp;' + dispUnit + '</small>' : '—') +
         '</td>' +
         '<td class="ma-recon-bar">' +
           (coverage != null
@@ -413,17 +430,18 @@ window.meterAllocation = window.meterAllocation || {};
       });
 
       var tenantUtilHeads = UTIL_KEYS.map(function (u) {
-        var cfg = UTILS[u];
-        var unit = (tenantTotals[u] && tenantTotals[u][0]) ? tenantTotals[u][0].usageUnit : 'BTU';
+        var cfg     = UTILS[u];
+        var rawUnit = (tenantTotals[u] && tenantTotals[u][0]) ? tenantTotals[u][0].usageUnit : 'BTU';
         return '<th class="ma-recon-head right" style="color:' + cfg.color + '">' +
-          cfg.icon + '&nbsp;' + cfg.label + '&nbsp;<span style="font-weight:400;color:#c4c4bc">(' + _esc(unit) + ')</span>' +
+          cfg.icon + '&nbsp;' + cfg.label + '&nbsp;<span style="font-weight:400;color:#c4c4bc">(' + _esc(btuUnit(rawUnit)) + ')</span>' +
         '</th>';
       }).join('');
 
       var tenantRows = tenantNames.map(function (name, i) {
         var cells = UTIL_KEYS.map(function (u) {
-          var r = tenantByUtil[u][name];
-          return '<td class="ma-recon-num">' + (r ? fmtNum(r.usage) : '—') + '</td>';
+          var r       = tenantByUtil[u][name];
+          var rawUnit = r ? (r.usageUnit || 'BTU') : 'BTU';
+          return '<td class="ma-recon-num">' + (r ? fmtBtu(r.usage, rawUnit) : '—') + '</td>';
         }).join('');
         return '<tr class="ma-recon-row' + (i % 2 === 0 ? '' : ' stripe') + '">' +
           '<td class="ma-recon-util" style="color:#374151;font-weight:600">' + _esc(name) + '</td>' +
@@ -433,14 +451,16 @@ window.meterAllocation = window.meterAllocation || {};
 
       // Footer totals row
       var tenantFooter = UTIL_KEYS.map(function (u) {
-        var total = ((tenantTotals[u]) || []).reduce(function (s, r) { return s + (r.usage || 0); }, 0);
-        return '<td class="ma-recon-num ma-sum-foot">' + (total ? fmtNum(total) : '—') + '</td>';
+        var rows    = (tenantTotals[u]) || [];
+        var total   = rows.reduce(function (s, r) { return s + (r.usage || 0); }, 0);
+        var rawUnit = rows.length ? (rows[0].usageUnit || 'BTU') : 'BTU';
+        return '<td class="ma-recon-num ma-sum-foot">' + (total ? fmtBtu(total, rawUnit) : '—') + '</td>';
       }).join('');
 
       tenantBreakdownHtml = '<div class="ma-card ma-table-card">' +
         '<div class="ma-table-titlebar">' +
           '<span class="ma-table-title">Tenant Usage Breakdown</span>' +
-          '<span class="ma-table-hint">BTU per tenant by utility</span>' +
+          '<span class="ma-table-hint">kBTU per tenant by utility</span>' +
         '</div>' +
         '<table class="ma-recon-table">' +
           '<thead><tr>' +
@@ -467,19 +487,128 @@ window.meterAllocation = window.meterAllocation || {};
     );
   }
 
+  // ── Render: Bills page ───────────────────────────────────────────────────────
+  function _renderBillsPage() {
+    var summary      = (_state.allData && _state.allData._summary)      || {};
+    var tenantTotals = (_state.allData && _state.allData._tenantTotals) || {};
+
+    // Collect tenant names
+    var tenantNames = [], tenantNameSet = {};
+    UTIL_KEYS.forEach(function (u) {
+      ((tenantTotals[u]) || []).forEach(function (r) {
+        if (!tenantNameSet[r.tenantName]) { tenantNameSet[r.tenantName] = true; tenantNames.push(r.tenantName); }
+      });
+    });
+
+    // Default selection
+    if (!_state.selectedTenant && tenantNames.length) _state.selectedTenant = tenantNames[0];
+    var selected = _state.selectedTenant;
+
+    // ── Tenant selector pills ──────────────────────────────────────────────────
+    var tenantSelector = tenantNames.length === 0
+      ? '<div class="ma-util-selector"><span style="color:#888;font-size:12px">No tenant data loaded yet.</span></div>'
+      : '<div class="ma-util-selector">' +
+          tenantNames.map(function (name) {
+            var isActive = name === selected;
+            return '<button class="ma-util-pill' + (isActive ? ' is-active' : '') + '" data-tenant-tab="' + _esc(name) + '" ' +
+              'style="' + (isActive ? 'background:' + HEADER_BG + ';color:#fff;border-color:' + HEADER_BG + ';' : '') + '">' +
+              _esc(name) +
+            '</button>';
+          }).join('') +
+        '</div>';
+
+    // ── KPI cards — same 4 plant-level cost cards as Summary ──────────────────
+    var grandCost = UTIL_KEYS.reduce(function (s, u) { return s + ((summary[u] && summary[u].cost) || 0); }, 0);
+    var hasSummaryData = UTIL_KEYS.some(function (u) { return summary[u] != null; });
+    var kpiCards = [
+      { label: 'Total Plant Cost', value: hasSummaryData ? fmtCost(grandCost) : '—', color: HEADER_BG },
+      { label: 'Cooling Cost',  value: summary.Cooling ? fmtCost(summary.Cooling.cost)  : '—', color: UTILS.Cooling.color },
+      { label: 'Heating Cost',  value: summary.Heating ? fmtCost(summary.Heating.cost)  : '—', color: UTILS.Heating.color },
+      { label: 'Flow Cost',     value: summary.Flow    ? fmtCost(summary.Flow.cost)     : '—', color: UTILS.Flow.color }
+    ];
+    var kpiHtml = '<div class="ma-kpi-strip">' +
+      kpiCards.map(function (k) {
+        return '<div class="ma-kpi-card">' +
+          '<div class="ma-kpi-label">' + k.label + '</div>' +
+          '<div class="ma-kpi-value" style="color:' + k.color + '">' + k.value + '</div>' +
+        '</div>';
+      }).join('') +
+    '</div>';
+
+    // ── Billing detail table for the selected tenant ───────────────────────────
+    var detailRows = '', totalCost = 0, hasCost = false;
+    UTIL_KEYS.forEach(function (u) {
+      var rows    = (tenantTotals[u]) || [];
+      var r       = null;
+      rows.forEach(function (row) { if (row.tenantName === selected) r = row; });
+
+      var plantBtu  = summary[u] ? summary[u].btuUsage : null;
+      var plantCost = summary[u] ? summary[u].cost      : null;
+      var tenantCost = (r && plantBtu && plantCost) ? (r.usage / plantBtu) * plantCost : null;
+      if (tenantCost != null) { totalCost += tenantCost; hasCost = true; }
+
+      var pct = (r && plantBtu) ? (r.usage / plantBtu * 100) : null;
+      var cfg = UTILS[u];
+      var rawUnit = r ? (r.usageUnit || 'BTU') : 'BTU';
+
+      detailRows += '<tr class="ma-recon-row">' +
+        '<td style="padding:10px 16px;font-weight:600;color:' + cfg.color + '">' + cfg.icon + '&nbsp;' + cfg.label + '</td>' +
+        '<td class="ma-recon-num">' + (r ? fmtBtu(r.usage, rawUnit) + '<small>&nbsp;' + btuUnit(rawUnit) + '</small>' : '—') + '</td>' +
+        '<td class="ma-recon-num">' + (pct != null ? fmtPct(pct) : '—') + '</td>' +
+        '<td class="ma-recon-num">' + (tenantCost != null ? fmtCost(tenantCost) : '—') + '</td>' +
+      '</tr>';
+    });
+
+    var detailCard = selected
+      ? '<div class="ma-card ma-table-card">' +
+          '<div class="ma-table-titlebar">' +
+            '<span class="ma-table-title">' + _esc(selected) + '</span>' +
+            '<span class="ma-table-hint">Cost = (tenant kBTU &divide; plant kBTU) &times; plant cost</span>' +
+          '</div>' +
+          '<table class="ma-recon-table">' +
+            '<thead><tr>' +
+              '<th class="ma-recon-head">Utility</th>' +
+              '<th class="ma-recon-head right">Usage</th>' +
+              '<th class="ma-recon-head right">% of Plant</th>' +
+              '<th class="ma-recon-head right">Cost</th>' +
+            '</tr></thead>' +
+            '<tbody>' + detailRows + '</tbody>' +
+            '<tfoot><tr>' +
+              '<td class="ma-recon-util ma-sum-foot" style="color:#374151">Total</td>' +
+              '<td class="ma-recon-num ma-sum-foot">—</td>' +
+              '<td class="ma-recon-num ma-sum-foot">—</td>' +
+              '<td class="ma-recon-num ma-sum-foot">' + (hasCost ? fmtCost(totalCost) : '—') + '</td>' +
+            '</tr></tfoot>' +
+          '</table>' +
+        '</div>'
+      : '<div class="ma-card ma-empty"><div>Select a tenant above to view their billing detail.</div></div>';
+
+    return (
+      '<div class="ma-page">' +
+        tenantSelector +
+        kpiHtml +
+        detailCard +
+        '<div class="ma-footer">Cost&nbsp;=&nbsp;(Tenant&nbsp;kBTU&nbsp;&divide;&nbsp;Plant&nbsp;kBTU)&nbsp;&times;&nbsp;Plant&nbsp;Cost&nbsp;&nbsp;&middot;&nbsp;&nbsp;SkySpark&nbsp;pUb</div>' +
+      '</div>'
+    );
+  }
+
   // ── Render: header (sticky) ───────────────────────────────────────────────────
   function _renderHeader() {
     var siteLine  = _state.siteName ? _esc(_state.siteName) : 'Demo Site';
     var dateLabel = _state.dateLabel || 'Last Month';
 
-    // Page tabs: Summary | Details
-    var pageTabs = ['summary', 'details'].map(function (p) {
-      var lbl = p === 'summary' ? 'Summary' : 'Details';
-      var isActive = _state.page === p;
+    // Page tabs: Summary | Bills | Details
+    var pageTabs = [
+      { id: 'summary', lbl: 'Summary' },
+      { id: 'bills',   lbl: 'Bills'   },
+      { id: 'details', lbl: 'Details' }
+    ].map(function (p) {
+      var isActive = _state.page === p.id;
       var style = isActive
         ? 'color:#fff;background:rgba(255,255,255,0.18);border-bottom:2px solid #fff;'
         : 'color:rgba(255,255,255,0.55);';
-      return '<button class="ma-page-tab' + (isActive ? ' is-active' : '') + '" data-page="' + p + '" style="' + style + '">' + lbl + '</button>';
+      return '<button class="ma-page-tab' + (isActive ? ' is-active' : '') + '" data-page="' + p.id + '" style="' + style + '">' + p.lbl + '</button>';
     }).join('');
 
     return (
@@ -507,6 +636,10 @@ window.meterAllocation = window.meterAllocation || {};
   function _renderBody() {
     var body = _container && _container.querySelector('#ma-body');
     if (!body) return;
+    if (_state.page === 'bills') {
+      body.innerHTML = _renderBillsPage();
+      return;
+    }
     if (_state.page === 'summary') {
       body.innerHTML = _renderSummaryPage();
     } else {
@@ -546,18 +679,20 @@ window.meterAllocation = window.meterAllocation || {};
           var hasDiff = diff != null && Math.abs(diff) > 1;
           var diffColor = hasDiff ? '#d97706' : '#16a34a';
 
+          var dispU = btuUnit(t.usageUnit);
           return '<tr class="ma-recon-row' + (i % 2 === 0 ? '' : ' stripe') + '">' +
             '<td class="ma-recon-util" style="color:#374151;font-weight:600">' + _esc(t.tenantName) + '</td>' +
-            '<td class="ma-recon-num">' + fmtNum(t.usage) + '<small>&nbsp;' + _esc(t.usageUnit) + '</small></td>' +
-            '<td class="ma-recon-num">' + (matchedSum != null ? fmtNum(matchedSum) + '<small>&nbsp;' + _esc(t.usageUnit) + '</small>' : '—') + '</td>' +
+            '<td class="ma-recon-num">' + fmtBtu(t.usage, t.usageUnit) + '<small>&nbsp;' + dispU + '</small></td>' +
+            '<td class="ma-recon-num">' + (matchedSum != null ? fmtBtu(matchedSum, t.usageUnit) + '<small>&nbsp;' + dispU + '</small>' : '—') + '</td>' +
             '<td class="ma-recon-num" style="color:' + diffColor + '">' +
-              (diff != null ? (diff >= 0 ? '+' : '') + fmtNum(diff) + (hasDiff ? '&nbsp;<span style="font-size:10px">⚠</span>' : '&nbsp;<span style="font-size:10px">✓</span>') : '—') +
+              (diff != null ? (diff >= 0 ? '+' : '') + fmtBtu(diff, t.usageUnit) + (hasDiff ? '&nbsp;<span style="font-size:10px">⚠</span>' : '&nbsp;<span style="font-size:10px">✓</span>') : '—') +
             '</td>' +
           '</tr>';
         }).join('');
 
         var tenantTotal = tenantRows.reduce(function (s, r) { return s + (r.usage || 0); }, 0);
-        var unit = tenantRows[0].usageUnit || 'BTU';
+        var rawUnit = tenantRows[0].usageUnit || 'BTU';
+        var dispUnit = btuUnit(rawUnit);
 
         tenantTotalsCard = '<div class="ma-card ma-table-card">' +
           '<div class="ma-table-titlebar">' +
@@ -567,14 +702,14 @@ window.meterAllocation = window.meterAllocation || {};
           '<table class="ma-recon-table">' +
             '<thead><tr>' +
               '<th class="ma-recon-head">Tenant</th>' +
-              '<th class="ma-recon-head right" style="color:' + cfg.color + '">Authoritative&nbsp;<span style="font-weight:400;color:#c4c4bc">(' + _esc(unit) + ')</span></th>' +
-              '<th class="ma-recon-head right">Meter Sum&nbsp;<span style="font-weight:400;color:#c4c4bc">(' + _esc(unit) + ')</span></th>' +
+              '<th class="ma-recon-head right" style="color:' + cfg.color + '">Authoritative&nbsp;<span style="font-weight:400;color:#c4c4bc">(' + dispUnit + ')</span></th>' +
+              '<th class="ma-recon-head right">Meter Sum&nbsp;<span style="font-weight:400;color:#c4c4bc">(' + dispUnit + ')</span></th>' +
               '<th class="ma-recon-head right">Variance</th>' +
             '</tr></thead>' +
             '<tbody>' + tenantTableRows + '</tbody>' +
             '<tfoot><tr>' +
               '<td class="ma-recon-util ma-sum-foot" style="color:#374151">Total</td>' +
-              '<td class="ma-recon-num ma-sum-foot">' + fmtNum(tenantTotal) + '</td>' +
+              '<td class="ma-recon-num ma-sum-foot">' + fmtBtu(tenantTotal, rawUnit) + '</td>' +
               '<td class="ma-recon-num ma-sum-foot">—</td>' +
               '<td class="ma-recon-num ma-sum-foot">—</td>' +
             '</tr></tfoot>' +
@@ -623,7 +758,18 @@ window.meterAllocation = window.meterAllocation || {};
         if (util && util !== _state.selectedUtil) {
           _state.selectedUtil = util;
           _state.expandedGroups = {};
-          _renderAll(); // header active state changes
+          _renderAll();
+        }
+        return;
+      }
+
+      // Tenant tab (Bills page)
+      var tenantTab = e.target.closest('[data-tenant-tab]');
+      if (tenantTab) {
+        var tenant = tenantTab.getAttribute('data-tenant-tab');
+        if (tenant && tenant !== _state.selectedTenant) {
+          _state.selectedTenant = tenant;
+          _renderBody();
         }
         return;
       }
@@ -660,6 +806,7 @@ window.meterAllocation = window.meterAllocation || {};
       _state = {
         page:           'summary',
         selectedUtil:   'Cooling',
+        selectedTenant: null,
         expandedGroups: {},
         sortCol:        'pct',
         sortAsc:        false,
