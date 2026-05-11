@@ -469,8 +469,8 @@ window.meterAllocation = window.meterAllocation || {};
 
   // ── Render: header (sticky) ───────────────────────────────────────────────────
   function _renderHeader() {
-    var siteLine = _state.siteName ? _esc(_state.siteName) : 'Demo Site';
-    var dateLine = _state.dateLabel ? '&nbsp;&bull;&nbsp;' + _esc(_state.dateLabel) : '';
+    var siteLine  = _state.siteName ? _esc(_state.siteName) : 'Demo Site';
+    var dateLabel = _state.dateLabel || 'Last Month';
 
     // Page tabs: Summary | Details
     var pageTabs = ['summary', 'details'].map(function (p) {
@@ -485,8 +485,16 @@ window.meterAllocation = window.meterAllocation || {};
     return (
       '<div class="ma-header" style="background:' + HEADER_BG + '">' +
         '<div class="ma-header-top">' +
-          '<div class="ma-header-site">' + siteLine + '</div>' +
-          '<div class="ma-header-subtitle">Tenant Meter Allocation' + dateLine + '</div>' +
+          '<div class="ma-header-left">' +
+            '<div class="ma-header-site">' + siteLine + '</div>' +
+            '<div class="ma-header-subtitle">Tenant Meter Allocation</div>' +
+          '</div>' +
+          '<div class="ma-header-date-badge">' +
+            '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;opacity:0.8">' +
+              '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>' +
+            '</svg>' +
+            '<span>' + _esc(dateLabel) + '</span>' +
+          '</div>' +
         '</div>' +
         '<div class="ma-header-nav">' +
           '<div class="ma-page-tabs">' + pageTabs + '</div>' +
