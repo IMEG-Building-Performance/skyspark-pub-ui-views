@@ -309,22 +309,6 @@ window.meterAllocation = window.meterAllocation || {};
           }).join('') +
         '</div>';
 
-    // ── Plant BTU KPI cards (one per utility) ─────────────────────────────────
-    var btuKpiHtml = '<div class="ma-kpi-strip" style="grid-template-columns:repeat(3,1fr)">' +
-      UTIL_KEYS.map(function (u) {
-        var cfg     = UTILS[u];
-        var s       = summary[u];
-        var rawUnit = s ? (s.btuUnit || 'BTU') : 'BTU';
-        var val     = s ? fmtBtu(s.btuUsage, rawUnit) : '—';
-        return '<div class="ma-kpi-card">' +
-          '<div class="ma-kpi-label">' + cfg.icon + '&nbsp;' + cfg.label + ' Plant Total</div>' +
-          '<div class="ma-kpi-value" style="color:' + cfg.color + '">' + val +
-            '<span class="ma-kpi-unit">&nbsp;' + btuUnit(rawUnit) + '</span>' +
-          '</div>' +
-        '</div>';
-      }).join('') +
-    '</div>';
-
     // ── Per-tenant billing detail table ───────────────────────────────────────
     var detailRows = '', totalCost = 0, hasCost = false;
     UTIL_KEYS.forEach(function (u) {
@@ -373,7 +357,7 @@ window.meterAllocation = window.meterAllocation || {};
         '</div>'
       : '<div class="ma-card ma-empty"><div>Select a tenant above to view their billing detail.</div></div>';
 
-    var billingContent = tenantSelector + btuKpiHtml + detailCard;
+    var billingContent = tenantSelector + detailCard;
     var billingSectionHtml = _collapseSection('billing', 'Tenant Billing', _state.summaryExpanded.billing, billingContent);
 
     // ── BTU reconciliation table ──────────────────────────────────────────────
