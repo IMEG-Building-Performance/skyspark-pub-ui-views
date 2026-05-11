@@ -181,6 +181,16 @@ window.meterAllocation = window.meterAllocation || {};
     var parentView = null;
     try { parentView = view.parent(); } catch (e) {}
 
+    // Debug: log raw dates value so we can see what type it is
+    try {
+      var _rawDates = view.var('dates');
+      console.log('[meterAlloc] raw dates value:', _rawDates,
+        '| type:', typeof _rawDates,
+        '| null?', _rawDates == null,
+        '| toAxon:', typeof (_rawDates && _rawDates.toAxon) === 'function' ? _rawDates.toAxon() : 'n/a',
+        '| toStr:', _rawDates && typeof _rawDates.toStr === 'function' ? _rawDates.toStr() : String(_rawDates));
+    } catch (e) { console.log('[meterAlloc] raw dates read error:', e.message || e); }
+
     var siteRef = tryReadVar(view, 'site') || (parentView && tryReadVar(parentView, 'site'));
     var dates   = tryReadVar(view, 'dates') || (parentView && tryReadVar(parentView, 'dates'));
 
