@@ -535,6 +535,22 @@ window.meterAllocation = window.meterAllocation || {};
       }).join('') +
     '</div>';
 
+    // ── Plant BTU KPI cards (one per utility, updates with live data) ─────────
+    var btuKpiHtml = '<div class="ma-kpi-strip" style="grid-template-columns:repeat(3,1fr)">' +
+      UTIL_KEYS.map(function (u) {
+        var cfg     = UTILS[u];
+        var s       = summary[u];
+        var rawUnit = s ? (s.btuUnit || 'BTU') : 'BTU';
+        var val     = s ? fmtBtu(s.btuUsage, rawUnit) : '—';
+        return '<div class="ma-kpi-card">' +
+          '<div class="ma-kpi-label">' + cfg.icon + '&nbsp;' + cfg.label + ' Plant Total</div>' +
+          '<div class="ma-kpi-value" style="color:' + cfg.color + '">' + val +
+            '<span class="ma-kpi-unit">&nbsp;' + btuUnit(rawUnit) + '</span>' +
+          '</div>' +
+        '</div>';
+      }).join('') +
+    '</div>';
+
     // ── Billing detail table for the selected tenant ───────────────────────────
     var detailRows = '', totalCost = 0, hasCost = false;
     UTIL_KEYS.forEach(function (u) {
@@ -587,6 +603,7 @@ window.meterAllocation = window.meterAllocation || {};
       '<div class="ma-page">' +
         kpiHtml +
         tenantSelector +
+        btuKpiHtml +
         detailCard +
         '<div class="ma-footer">Cost&nbsp;=&nbsp;(Tenant&nbsp;kBTU&nbsp;&divide;&nbsp;Plant&nbsp;kBTU)&nbsp;&times;&nbsp;Plant&nbsp;Cost&nbsp;&nbsp;&middot;&nbsp;&nbsp;SkySpark&nbsp;pUb</div>' +
       '</div>'
