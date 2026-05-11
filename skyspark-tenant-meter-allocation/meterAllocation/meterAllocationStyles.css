@@ -426,6 +426,115 @@
   padding: 6px 12px;
 }
 
+/* ── Residential formula diagram ─────────────────────────────────────────── */
+.ma-res-diagram-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 16px 20px 20px;
+}
+
+.ma-res-result-box {
+  flex-shrink: 0;
+  border: 2px solid;
+  border-radius: 8px;
+  padding: 12px 16px;
+  text-align: center;
+  min-width: 110px;
+}
+
+.ma-res-result-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.ma-res-result-val {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.ma-res-eq {
+  font-size: 28px;
+  font-weight: 300;
+  color: #374151;
+  flex-shrink: 0;
+}
+
+.ma-res-terms {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ma-res-term {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ma-res-paren {
+  background: #f9f9f7;
+  border: 1px dashed #d1d5db;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.ma-res-group-box {
+  border-radius: 6px;
+  border-width: 1.5px;
+  border-style: solid;
+  padding: 8px 12px;
+  min-width: 88px;
+  max-width: 130px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.ma-res-box-header {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 3px;
+}
+
+.ma-res-box-meters {
+  font-size: 10px;
+  color: #6b7280;
+  line-height: 1.3;
+  margin-bottom: 4px;
+  word-break: break-word;
+}
+
+.ma-res-box-val {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ma-res-op {
+  font-size: 18px;
+  font-weight: 600;
+  color: #374151;
+  flex-shrink: 0;
+}
+
+.ma-res-sub-op {
+  color: #b91c1c;
+}
+
+.ma-res-outer-op {
+  font-size: 24px;
+  font-weight: 700;
+  color: #374151;
+  flex-shrink: 0;
+  padding: 0 2px;
+}
+
 /* ── Collapsible sections (Summary page) ─────────────────────────────────── */
 .ma-collapse-section {
   margin: 0 16px 12px;

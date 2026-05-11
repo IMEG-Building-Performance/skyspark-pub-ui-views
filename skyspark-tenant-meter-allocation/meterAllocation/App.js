@@ -344,7 +344,7 @@ window.meterAllocation = window.meterAllocation || {};
       : '<div class="ma-card ma-empty"><div>Select a tenant above to view their billing detail.</div></div>';
 
     var billingContent = tenantSelector + detailCard;
-    var billingSectionHtml = _collapseSection('billing', 'Tenant Billing', _state.summaryExpanded.billing, billingContent);
+    var billingSectionHtml = _collapseSection('billing', 'Tenant Billing', _state.expanded.billing, billingContent);
 
     // ── BTU reconciliation table ──────────────────────────────────────────────
     var reconcRows = UTIL_KEYS.map(function (u) {
@@ -395,7 +395,7 @@ window.meterAllocation = window.meterAllocation || {};
       '</table>' +
     '</div>';
 
-    var reconcSectionHtml = _collapseSection('reconciliation', 'BTU Reconciliation', _state.summaryExpanded.reconciliation, reconcTableHtml);
+    var reconcSectionHtml = _collapseSection('reconciliation', 'BTU Reconciliation', _state.expanded.reconciliation, reconcTableHtml);
 
     return (
       '<div class="ma-page">' +
@@ -410,10 +410,8 @@ window.meterAllocation = window.meterAllocation || {};
 
   // ── Render: Residential page ─────────────────────────────────────────────────
   function _renderResidentialPage() {
-    var resData  = (_state.allData && _state.allData._residentialData) || {};
+    var resData   = (_state.allData && _state.allData._residentialData) || {};
     var RES_UTILS = ['Cooling', 'Heating'];
-
-    // If current util is not applicable, fall back to Cooling
     var activeUtil = (RES_UTILS.indexOf(_state.selectedUtil) !== -1) ? _state.selectedUtil : 'Cooling';
     var cfg  = UTILS[activeUtil];
     var data = resData[activeUtil];
@@ -424,8 +422,7 @@ window.meterAllocation = window.meterAllocation || {};
         var isActive = k === activeUtil;
         return '<button class="ma-util-pill' + (isActive ? ' is-active' : '') + '" data-util-tab="' + k + '" ' +
           'style="' + (isActive ? 'background:' + u.color + ';color:#fff;border-color:' + u.color + ';' : '') + '">' +
-          u.icon + '&nbsp;' + u.label +
-        '</button>';
+          u.icon + '&nbsp;' + u.label + '</button>';
       }).join('') +
     '</div>';
 
@@ -435,60 +432,98 @@ window.meterAllocation = window.meterAllocation || {};
         '</div>';
     }
 
-    function fmtField(obj) {
-      if (!obj || obj.val == null) return '—';
-      return fmtBtu(obj.val, obj.unit) + '<small>&nbsp;' + btuUnit(obj.unit) + '</small>';
+    var resD = data.resSum;
+
+    // ── Formula diagram ───────────────────────────────────────────────────────
+    function groupBox(label, meters, sumObj, isAdd) {
+      var borderColor = isAdd ? cfg.color : '#b91c1c';
+      var bgColor     = isAdd ? cfg.light  : '#fef2f2';
+      var valColor    = isAdd ? cfg.color  : '#b91c1c';
+      var meterLabel;
+      if (!meters || !meters.length) {
+        meterLabel = '—';
+      } else if (meters.length === 1) {
+        var n = _shortName(meters[0].name, _state.siteName);
+        meterLabel = _esc(n.length > 26 ? n.slice(0, 24) + '&hellip;' : n);
+      } else {
+        meterLabel = meters.length + '&nbsp;meters';
+      }
+      return '<div class="ma-res-group-box" style="border-color:' + borderColor + ';background:' + bgColor + '">' +
+        '<div class="ma-res-box-header" style="color:' + borderColor + '">' + label + '</div>' +
+        '<div class="ma-res-box-meters">' + meterLabel + '</div>' +
+        '<div class="ma-res-box-val" style="color:' + valColor + '">' +
+          (sumObj ? fmtBtu(sumObj.val, sumObj.unit) + '&nbsp;kBTU' : '—') +
+        '</div>' +
+      '</div>';
     }
 
-    // ── Group meter sum KPI cards ─────────────────────────────────────────────
-    var groupDefs = [
-      { label: 'Group 1', key: 'group1Sum' },
-      { label: 'Group 2', key: 'group2Sum' },
-      { label: 'Group 3', key: 'group3Sum' },
-      { label: 'Group 4', key: 'group4Sum' },
-      { label: 'Group 5', key: 'group5Sum' },
-      { label: 'Group 6', key: 'group6Sum' }
-    ];
-    var groupKpiHtml = '<div class="ma-kpi-strip" style="grid-template-columns:repeat(3,1fr)">' +
-      groupDefs.map(function (g) {
-        var d = data[g.key];
-        return '<div class="ma-kpi-card">' +
-          '<div class="ma-kpi-label">' + g.label + '</div>' +
-          '<div class="ma-kpi-value" style="color:' + cfg.color + '">' +
-            (d ? fmtBtu(d.val, d.unit) : '—') +
-            (d ? '<span class="ma-kpi-unit">&nbsp;' + btuUnit(d.unit) + '</span>' : '') +
+    var subOp = '<span class="ma-res-op ma-res-sub-op">&#8722;</span>';
+    var addOp = '<span class="ma-res-op">+</span>';
+
+    var diagramHtml = '<div class="ma-card">' +
+      '<div class="ma-table-titlebar">' +
+        '<span class="ma-table-title">Residential Energy Formula</span>' +
+        '<span class="ma-table-hint">Total = (G1+G2) + (G3&#8722;G5) + (G4&#8722;G5&#8722;G6)</span>' +
+      '</div>' +
+      '<div class="ma-res-diagram-wrap">' +
+        '<div class="ma-res-result-box" style="border-color:' + cfg.color + ';background:' + cfg.light + '">' +
+          '<div class="ma-res-result-label">Total Residential</div>' +
+          '<div class="ma-res-result-val" style="color:' + cfg.color + '">' +
+            (resD ? fmtBtu(resD.val, resD.unit) + '&nbsp;kBTU' : '—') +
           '</div>' +
-        '</div>';
-      }).join('') +
+        '</div>' +
+        '<div class="ma-res-eq">=</div>' +
+        '<div class="ma-res-terms">' +
+          '<div class="ma-res-term">' +
+            groupBox('Group 1', data.group1Meters, data.group1Sum, true) +
+            addOp +
+            groupBox('Group 2', data.group2Meters, data.group2Sum, true) +
+          '</div>' +
+          '<span class="ma-res-outer-op">+</span>' +
+          '<div class="ma-res-term ma-res-paren">' +
+            groupBox('Group 3', data.group3Meters, data.group3Sum, true) +
+            subOp +
+            groupBox('Group 5', data.group5Meters, data.group5Sum, false) +
+          '</div>' +
+          '<span class="ma-res-outer-op">+</span>' +
+          '<div class="ma-res-term ma-res-paren">' +
+            groupBox('Group 4', data.group4Meters, data.group4Sum, true) +
+            subOp +
+            groupBox('Group 5', data.group5Meters, data.group5Sum, false) +
+            subOp +
+            groupBox('Group 6', data.group6Meters, data.group6Sum, false) +
+          '</div>' +
+        '</div>' +
+      '</div>' +
     '</div>';
 
     // ── Calculation steps ─────────────────────────────────────────────────────
     var stepDefs = [
-      { label: 'Group 1 + Group 2',                expr: 'group1Sum + group2Sum',                        key: 'group1Plus2'        },
-      { label: 'Group 3 − Group 5',            expr: 'group3Sum − group5Sum',                   key: 'group3Minus5'       },
-      { label: 'Group 4 − Group 5 − Group 6', expr: 'group4Sum − group5Sum − group6Sum', key: 'group4Minus5Minus6' }
+      { label: 'Group 1 + Group 2',          expr: 'group1Sum + group2Sum',          key: 'group1Plus2'        },
+      { label: 'Group 3 &#8722; Group 5',    expr: 'group3Sum &#8722; group5Sum',    key: 'group3Minus5'       },
+      { label: 'Group 4 &#8722; 5 &#8722; 6', expr: 'group4Sum &#8722; group5Sum &#8722; group6Sum', key: 'group4Minus5Minus6' }
     ];
-
     var stepRows = stepDefs.map(function (s, i) {
       var d = data[s.key];
       return '<tr class="ma-recon-row' + (i % 2 === 0 ? '' : ' stripe') + '">' +
         '<td class="ma-recon-util" style="color:#374151;font-weight:600">' + s.label + '</td>' +
         '<td style="padding:10px 16px;color:#9ca3af;font-size:11px;font-family:monospace">' + s.expr + '</td>' +
-        '<td class="ma-recon-num" style="color:' + cfg.color + ';font-weight:600">' + fmtField(d) + '</td>' +
+        '<td class="ma-recon-num" style="color:' + cfg.color + ';font-weight:600">' +
+          (d ? fmtBtu(d.val, d.unit) + '<small>&nbsp;' + btuUnit(d.unit) + '</small>' : '—') +
+        '</td>' +
       '</tr>';
     }).join('');
-
-    var resD = data.resSum;
     var totalRow = '<tr style="border-top:2px solid #e5e7eb">' +
-      '<td class="ma-recon-util" style="color:#1a1a1a;font-weight:700;font-size:13px">Residential Total</td>' +
+      '<td class="ma-recon-util" style="color:#1a1a1a;font-weight:700">Residential Total</td>' +
       '<td style="padding:10px 16px;color:#9ca3af;font-size:11px;font-family:monospace">group1Plus2 + group3Minus5 + group4Minus5Minus6</td>' +
-      '<td class="ma-recon-num" style="color:' + cfg.color + ';font-weight:700;font-size:15px">' + fmtField(resD) + '</td>' +
+      '<td class="ma-recon-num" style="color:' + cfg.color + ';font-weight:700;font-size:15px">' +
+        (resD ? fmtBtu(resD.val, resD.unit) + '<small>&nbsp;' + btuUnit(resD.unit) + '</small>' : '—') +
+      '</td>' +
     '</tr>';
-
     var calcCard = '<div class="ma-card ma-table-card">' +
       '<div class="ma-table-titlebar">' +
         '<span class="ma-table-title">Calculation Steps</span>' +
-        '<span class="ma-table-hint">resSum = (Group 1+2) + (Group 3−5) + (Group 4−5−6)</span>' +
+        '<span class="ma-table-hint">Intermediate values for each term</span>' +
       '</div>' +
       '<table class="ma-recon-table">' +
         '<thead><tr>' +
@@ -500,12 +535,60 @@ window.meterAllocation = window.meterAllocation || {};
       '</table>' +
     '</div>';
 
+    // ── Per-group meter tables (collapsible) ──────────────────────────────────
+    function meterTable(meters) {
+      if (!meters || !meters.length) {
+        return '<div style="padding:12px 20px;color:#9ca3af;font-size:12px">No meters in this group.</div>';
+      }
+      var total = meters.reduce(function (s, m) { return s + (m.usage || 0); }, 0);
+      var unit  = meters[0].unit || 'BTU';
+      var rows  = meters.map(function (m, i) {
+        var name = _shortName(m.name, _state.siteName);
+        return '<tr class="ma-recon-row' + (i % 2 === 0 ? '' : ' stripe') + '">' +
+          '<td class="ma-recon-util" style="color:#374151">' + _esc(name) + '</td>' +
+          '<td class="ma-recon-num">' + fmtBtu(m.usage, m.unit) + '<small>&nbsp;' + btuUnit(m.unit) + '</small></td>' +
+        '</tr>';
+      }).join('');
+      return '<table class="ma-recon-table">' +
+        '<thead><tr>' +
+          '<th class="ma-recon-head">Meter</th>' +
+          '<th class="ma-recon-head right" style="color:' + cfg.color + '">Usage</th>' +
+        '</tr></thead>' +
+        '<tbody>' + rows + '</tbody>' +
+        '<tfoot><tr>' +
+          '<td class="ma-recon-util ma-sum-foot" style="color:#374151">Total</td>' +
+          '<td class="ma-recon-num ma-sum-foot">' + fmtBtu(total, unit) + '<small>&nbsp;' + btuUnit(unit) + '</small></td>' +
+        '</tr></tfoot>' +
+      '</table>';
+    }
+
+    var groupMeterSections = [
+      { key: 'res-g1', label: 'Group 1',                   meters: data.group1Meters, isAdd: true  },
+      { key: 'res-g2', label: 'Group 2',                   meters: data.group2Meters, isAdd: true  },
+      { key: 'res-g3', label: 'Group 3',                   meters: data.group3Meters, isAdd: true  },
+      { key: 'res-g4', label: 'Group 4',                   meters: data.group4Meters, isAdd: true  },
+      { key: 'res-g5', label: 'Group 5 (subtracted)',       meters: data.group5Meters, isAdd: false },
+      { key: 'res-g6', label: 'Group 6 (subtracted)',       meters: data.group6Meters, isAdd: false }
+    ].map(function (g) {
+      var accentColor = g.isAdd ? cfg.color : '#b91c1c';
+      var count = (g.meters && g.meters.length) ? ' <span style="color:#9ca3af;font-weight:400">(' + g.meters.length + ')</span>' : '';
+      var isOpen = !!_state.expanded[g.key];
+      return '<div class="ma-collapse-section">' +
+        '<button class="ma-section-toggle" data-collapse="' + g.key + '" style="border-left:3px solid ' + accentColor + '">' +
+          '<span class="ma-section-toggle-title">' + g.label + count + '</span>' +
+          '<span class="ma-toggle-chevron">' + (isOpen ? '&#9660;' : '&#9658;') + '</span>' +
+        '</button>' +
+        (isOpen ? '<div class="ma-section-body"><div class="ma-card ma-table-card" style="margin:0">' + meterTable(g.meters) + '</div></div>' : '') +
+      '</div>';
+    }).join('');
+
     return (
       '<div class="ma-page">' +
         utilSelector +
-        groupKpiHtml +
+        diagramHtml +
         calcCard +
-        '<div class="ma-footer">Residential&nbsp;Total&nbsp;=&nbsp;(G1+G2)&nbsp;+&nbsp;(G3−G5)&nbsp;+&nbsp;(G4−G5−G6)&nbsp;&nbsp;·&nbsp;&nbsp;SkySpark&nbsp;pUb</div>' +
+        groupMeterSections +
+        '<div class="ma-footer">Residential&nbsp;Total&nbsp;=&nbsp;(G1+G2)&nbsp;+&nbsp;(G3&#8722;G5)&nbsp;+&nbsp;(G4&#8722;G5&#8722;G6)&nbsp;&nbsp;&middot;&nbsp;&nbsp;SkySpark&nbsp;pUb</div>' +
       '</div>'
     );
   }
@@ -613,8 +696,8 @@ window.meterAllocation = window.meterAllocation || {};
       var collapseBtn = e.target.closest('[data-collapse]');
       if (collapseBtn) {
         var section = collapseBtn.getAttribute('data-collapse');
-        if (section && _state.summaryExpanded) {
-          _state.summaryExpanded[section] = !_state.summaryExpanded[section];
+        if (section && _state.expanded) {
+          _state.expanded[section] = !_state.expanded[section];
           _renderBody();
         }
         return;
@@ -679,7 +762,7 @@ window.meterAllocation = window.meterAllocation || {};
         expandedGroups:   {},
         sortCol:          'pct',
         sortAsc:          false,
-        summaryExpanded:  { billing: true, reconciliation: false },
+        expanded:         { billing: true, reconciliation: false, 'res-g1': false, 'res-g2': false, 'res-g3': false, 'res-g4': false, 'res-g5': false, 'res-g6': false },
         allData:          allData || { Cooling: [], Heating: [], Flow: [] },
         siteName:         (ctx && ctx.siteName)  || '',
         dateLabel:        (ctx && ctx.dateLabel) || ''

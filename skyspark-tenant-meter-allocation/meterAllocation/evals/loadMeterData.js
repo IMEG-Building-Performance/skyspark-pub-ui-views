@@ -212,6 +212,16 @@ window.meterAllocation = window.meterAllocation || {};
   // Returns a single row with component group sums; resSum is the authoritative total.
   // Only applicable to Cooling and Heating.
 
+  // Parse a nested meter grid: rows have { id (ref), usage (number) }.
+  function _parseMeterGrid(gridVal) {
+    if (!gridVal || !gridVal.rows) return [];
+    return gridVal.rows.map(function (row) {
+      var id    = HP.ref(row.id) || { id: '', dis: '' };
+      var usage = HP.num(row.usage);
+      return { name: id.dis, id: id.id, usage: usage.val, unit: usage.unit || 'BTU' };
+    });
+  }
+
   function _parseResidentialGrid(grid) {
     if (!grid || !grid.rows) return null;
     if (grid.meta && grid.meta.err) {
@@ -221,6 +231,7 @@ window.meterAllocation = window.meterAllocation || {};
     if (!grid.rows.length) return null;
     var row = grid.rows[0];
     function n(f) { var r = HP.num(row[f]); return { val: r.val, unit: r.unit || 'BTU' }; }
+    function m(f) { return _parseMeterGrid(row[f]); }
     return {
       group1Sum:          n('group1Sum'),
       group2Sum:          n('group2Sum'),
@@ -231,7 +242,13 @@ window.meterAllocation = window.meterAllocation || {};
       group1Plus2:        n('group1Plus2'),
       group3Minus5:       n('group3Minus5'),
       group4Minus5Minus6: n('group4Minus5Minus6'),
-      resSum:             n('resSum')
+      resSum:             n('resSum'),
+      group1Meters:       m('group1Meters'),
+      group2Meters:       m('group2Meters'),
+      group3Meters:       m('group3Meters'),
+      group4Meters:       m('group4Meters'),
+      group5Meters:       m('group5Meters'),
+      group6Meters:       m('group6Meters')
     };
   }
 
