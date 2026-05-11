@@ -434,66 +434,14 @@ window.meterAllocation = window.meterAllocation || {};
 
     var resD = data.resSum;
 
-    // ── Formula diagram ───────────────────────────────────────────────────────
-    function groupBox(label, meters, sumObj, isAdd) {
-      var borderColor = isAdd ? cfg.color : '#b91c1c';
-      var bgColor     = isAdd ? cfg.light  : '#fef2f2';
-      var valColor    = isAdd ? cfg.color  : '#b91c1c';
-      var meterLabel;
-      if (!meters || !meters.length) {
-        meterLabel = '—';
-      } else if (meters.length === 1) {
-        var n = _shortName(meters[0].name, _state.siteName);
-        meterLabel = _esc(n.length > 26 ? n.slice(0, 24) + '&hellip;' : n);
-      } else {
-        meterLabel = meters.length + '&nbsp;meters';
-      }
-      return '<div class="ma-res-group-box" style="border-color:' + borderColor + ';background:' + bgColor + '">' +
-        '<div class="ma-res-box-header" style="color:' + borderColor + '">' + label + '</div>' +
-        '<div class="ma-res-box-meters">' + meterLabel + '</div>' +
-        '<div class="ma-res-box-val" style="color:' + valColor + '">' +
-          (sumObj ? fmtBtu(sumObj.val, sumObj.unit) + '&nbsp;kBTU' : '—') +
-        '</div>' +
-      '</div>';
-    }
-
-    var subOp = '<span class="ma-res-op ma-res-sub-op">&#8722;</span>';
-    var addOp = '<span class="ma-res-op">+</span>';
-
+    // ── Formula diagram (static reference image) ─────────────────────────────
     var diagramHtml = '<div class="ma-card">' +
       '<div class="ma-table-titlebar">' +
         '<span class="ma-table-title">Residential Energy Formula</span>' +
         '<span class="ma-table-hint">Total = (G1+G2) + (G3&#8722;G5) + (G4&#8722;G5&#8722;G6)</span>' +
       '</div>' +
-      '<div class="ma-res-diagram-wrap">' +
-        '<div class="ma-res-result-box" style="border-color:' + cfg.color + ';background:' + cfg.light + '">' +
-          '<div class="ma-res-result-label">Total Residential</div>' +
-          '<div class="ma-res-result-val" style="color:' + cfg.color + '">' +
-            (resD ? fmtBtu(resD.val, resD.unit) + '&nbsp;kBTU' : '—') +
-          '</div>' +
-        '</div>' +
-        '<div class="ma-res-eq">=</div>' +
-        '<div class="ma-res-terms">' +
-          '<div class="ma-res-term">' +
-            groupBox('Group 1', data.group1Meters, data.group1Sum, true) +
-            addOp +
-            groupBox('Group 2', data.group2Meters, data.group2Sum, true) +
-          '</div>' +
-          '<span class="ma-res-outer-op">+</span>' +
-          '<div class="ma-res-term ma-res-paren">' +
-            groupBox('Group 3', data.group3Meters, data.group3Sum, true) +
-            subOp +
-            groupBox('Group 5', data.group5Meters, data.group5Sum, false) +
-          '</div>' +
-          '<span class="ma-res-outer-op">+</span>' +
-          '<div class="ma-res-term ma-res-paren">' +
-            groupBox('Group 4', data.group4Meters, data.group4Sum, true) +
-            subOp +
-            groupBox('Group 5', data.group5Meters, data.group5Sum, false) +
-            subOp +
-            groupBox('Group 6', data.group6Meters, data.group6Sum, false) +
-          '</div>' +
-        '</div>' +
+      '<div class="ma-res-diagram-img-wrap">' +
+        '<img src="/pub/ui/meterAllocation/residentialFormula.png" alt="Residential energy formula diagram" class="ma-res-diagram-img">' +
       '</div>' +
     '</div>';
 
