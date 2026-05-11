@@ -208,4 +208,58 @@ window.meterAllocation = window.meterAllocation || {};
     });
   };
 
+  // ── Residential meter total (report_meterValidation_residentialMeterTotal) ──
+  // Returns a single row with component group sums; resSum is the authoritative total.
+  // Only applicable to Cooling and Heating.
+
+  function _parseResidentialGrid(grid) {
+    if (!grid || !grid.rows) return null;
+    if (grid.meta && grid.meta.err) {
+      var msg = grid.meta.dis ? String(grid.meta.dis) : 'SkySpark returned an error grid';
+      throw new Error(msg);
+    }
+    if (!grid.rows.length) return null;
+    var row    = grid.rows[0];
+    var resSum = HP.num(row.resSum);
+    return { val: resSum.val, unit: resSum.unit || 'BTU' };
+  }
+
+  /**
+   * Load authoritative residential total for one utility (Cooling or Heating).
+   * Calls report_meterValidation_residentialMeterTotal(site, dates, utility)
+   * Returns { val, unit } or null on failure.
+   */
+  NS.evals.loadResidentialTotal = function (attestKey, projectName, siteRef, dates, utility) {
+    var axon = 'report_meterValidation_residentialMeterTotal(' + siteRef + ', ' + dates + ', "' + utility + '")';
+    console.log('[meterAllocation] Eval:', axon);
+    return api.evalAxon(axon, attestKey, projectName, 'resTotals-' + utility)
+      .then(function (data) {
+        var grid = api.unwrapGrid(data);
+        return _parseResidentialGrid(grid);
+      });
+  };
+
+  /**
+   * Load residential totals for Cooling and Heating in parallel.
+   * Returns Promise<{ Cooling: {val,unit}|null, Heating: {val,unit}|null, _errors:{} }>
+   */
+  NS.evals.loadAllResidentialTotals = function (attestKey, projectName, siteRef, dates) {
+    var RES_UTILS = ['Cooling', 'Heating'];
+    var errors = {};
+    var promises = RES_UTILS.map(function (u) {
+      return NS.evals.loadResidentialTotal(attestKey, projectName, siteRef, dates, u)
+        .catch(function (err) {
+          var msg = err.message || String(err);
+          console.warn('[meterAllocation] residential ' + u + ' load failed:', msg);
+          errors[u] = msg;
+          return null;
+        });
+    });
+    return Promise.all(promises).then(function (results) {
+      var out = { _errors: errors };
+      RES_UTILS.forEach(function (u, i) { out[u] = results[i]; });
+      return out;
+    });
+  };
+
 })(window.meterAllocation);

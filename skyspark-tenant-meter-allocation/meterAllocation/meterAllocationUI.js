@@ -209,11 +209,34 @@ window.meterAllocation = window.meterAllocation || {};
       Promise.all([
         NS.evals.loadAllUtilities(attestKey, projectName, siteRef, datesExpr),
         NS.evals.loadAllSummaryUtilities(attestKey, projectName, siteRef, datesExpr),
-        NS.evals.loadAllTenantTotals(attestKey, projectName, siteRef, datesExpr)
+        NS.evals.loadAllTenantTotals(attestKey, projectName, siteRef, datesExpr),
+        NS.evals.loadAllResidentialTotals(attestKey, projectName, siteRef, datesExpr)
       ]).then(function (results) {
-          var allData = results[0];
-          allData._summary = results[1];
+          var allData       = results[0];
+          allData._summary      = results[1];
           allData._tenantTotals = results[2];
+          var resTotals         = results[3];
+
+          // Replace residential row in _tenantTotals for Cooling & Heating with
+          // the authoritative value from report_meterValidation_residentialMeterTotal.
+          ['Cooling', 'Heating'].forEach(function (u) {
+            var resVal = resTotals && resTotals[u];
+            if (resVal == null) return;
+            var rows = allData._tenantTotals[u] || [];
+            var replaced = false;
+            rows.forEach(function (r) {
+              if (r.tenantName && r.tenantName.toLowerCase().indexOf('residential') !== -1) {
+                r.usage     = resVal.val;
+                r.usageUnit = resVal.unit;
+                replaced = true;
+              }
+            });
+            if (!replaced) {
+              rows.push({ tenantName: 'Residential', usage: resVal.val, usageUnit: resVal.unit });
+              allData._tenantTotals[u] = rows;
+            }
+          });
+
           if (gen !== _fetchGen) return;
           container.innerHTML = '';
           NS.App.init(container, allData, ctx);
