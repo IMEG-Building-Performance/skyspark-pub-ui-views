@@ -200,7 +200,13 @@ window.meterAllocation = window.meterAllocation || {};
     try { console.log('[meterAlloc] view.dateSpan():', view.dateSpan()); } catch(e) { console.log('[meterAlloc] view.dateSpan() error:', e.message); }
     try { console.log('[meterAlloc] view.vars():', JSON.stringify(view.vars())); } catch(e) { console.log('[meterAlloc] view.vars() error:', e.message); }
     try { console.log('[meterAlloc] arg keys:', Object.keys(arg).join(', ')); } catch(e) {}
-    try { var _q = arg.query || arg.ctx || arg.dates; console.log('[meterAlloc] arg.query/ctx/dates:', _q); } catch(e) {}
+    try { console.log('[meterAlloc] arg.data:', JSON.stringify(arg.data)); } catch(e) { console.log('[meterAlloc] arg.data (raw):', arg.data); }
+    try { console.log('[meterAlloc] arg.data keys:', arg.data ? Object.keys(arg.data).join(', ') : 'null'); } catch(e) {}
+    try { console.log('[meterAlloc] arg.callback:', typeof arg.callback, arg.callback ? arg.callback.toString().slice(0,200) : 'null'); } catch(e) {}
+    // Try known SkySpark pub view variable access patterns
+    try { console.log('[meterAlloc] view.var("dateSpan"):', view.var('dateSpan')); } catch(e) {}
+    try { console.log('[meterAlloc] view.var("date"):', view.var('date')); } catch(e) {}
+    try { console.log('[meterAlloc] view.session().var("dates"):', view.session().var('dates')); } catch(e) { console.log('[meterAlloc] session.var dates error:', e.message); }
 
     var siteRef = tryReadVar(view, 'site') || (parentView && tryReadVar(parentView, 'site'));
     var dates   = tryReadVar(view, 'dates') || (parentView && tryReadVar(parentView, 'dates'));
