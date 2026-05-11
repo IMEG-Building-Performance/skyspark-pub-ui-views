@@ -129,7 +129,13 @@ window.meterAllocation = window.meterAllocation || {};
   // Build a human-readable date label from the Axon date expression
   function _dateLabel(datesAxon) {
     if (!datesAxon) return '';
-    // e.g. "2025-01-01..2025-01-31" → "2025-01-01 – 2025-01-31"
+    var SPAN_LABELS = {
+      pastDay: 'Past Day', today: 'Today', yesterday: 'Yesterday',
+      pastWeek: 'Past Week', thisWeek: 'This Week', lastWeek: 'Last Week',
+      pastMonth: 'Past Month', thisMonth: 'This Month', lastMonth: 'Last Month',
+      pastYear: 'Past Year', thisYear: 'This Year', lastYear: 'Last Year'
+    };
+    if (SPAN_LABELS[datesAxon]) return SPAN_LABELS[datesAxon];
     return datesAxon.replace('..', ' – ');
   }
 
@@ -181,46 +187,18 @@ window.meterAllocation = window.meterAllocation || {};
     var parentView = null;
     try { parentView = view.parent(); } catch (e) {}
 
-    // Debug: log raw dates value so we can see what type it is
-    try {
-      var _rawDates = view.var('dates');
-      console.log('[meterAlloc] raw dates value:', _rawDates,
-        '| type:', typeof _rawDates,
-        '| null?', _rawDates == null,
-        '| toAxon:', typeof (_rawDates && _rawDates.toAxon) === 'function' ? _rawDates.toAxon() : 'n/a',
-        '| toStr:', _rawDates && typeof _rawDates.toStr === 'function' ? _rawDates.toStr() : String(_rawDates));
-    } catch (e) { console.log('[meterAlloc] raw dates read error:', e.message || e); }
-
-    // Debug: look for date info via other view APIs
-    try {
-      var _viewKeys = [];
-      for (var _k in view) { try { if (typeof view[_k] === 'function') _viewKeys.push(_k); } catch(e){} }
-      console.log('[meterAlloc] view methods:', _viewKeys.join(', '));
-    } catch (e) {}
-    try { console.log('[meterAlloc] view.dateSpan():', view.dateSpan()); } catch(e) { console.log('[meterAlloc] view.dateSpan() error:', e.message); }
-    try { console.log('[meterAlloc] view.vars():', JSON.stringify(view.vars())); } catch(e) { console.log('[meterAlloc] view.vars() error:', e.message); }
-    try { console.log('[meterAlloc] arg keys:', Object.keys(arg).join(', ')); } catch(e) {}
-    try { console.log('[meterAlloc] arg.data:', JSON.stringify(arg.data)); } catch(e) { console.log('[meterAlloc] arg.data (raw):', arg.data); }
-    try { console.log('[meterAlloc] arg.data keys:', arg.data ? Object.keys(arg.data).join(', ') : 'null'); } catch(e) {}
-    try { console.log('[meterAlloc] arg.callback:', typeof arg.callback, arg.callback ? arg.callback.toString().slice(0,200) : 'null'); } catch(e) {}
-    // Try known SkySpark pub view variable access patterns
-    try { console.log('[meterAlloc] view.var("dateSpan"):', view.var('dateSpan')); } catch(e) {}
-    try { console.log('[meterAlloc] view.var("date"):', view.var('date')); } catch(e) {}
-    try { console.log('[meterAlloc] view.session().var("dates"):', view.session().var('dates')); } catch(e) { console.log('[meterAlloc] session.var dates error:', e.message); }
-
     var siteRef = tryReadVar(view, 'site') || (parentView && tryReadVar(parentView, 'site'));
-    var dates   = tryReadVar(view, 'dates') || (parentView && tryReadVar(parentView, 'dates'));
+    // dateRange is declared as kind:Span in the view definition
+    var dates   = tryReadVar(view, 'dateRange');
 
-    // If the date range control is visible but the variable hasn't been committed
-    // yet (SkySpark initialises the picker display before setting the var), fall
-    // back to last month so the dashboard loads immediately.
-    var datesExpr = dates || 'lastMonth()';
+    // Fall back to the view's default (pastWeek) when dateRange hasn't been set yet.
+    var datesExpr = dates || 'pastWeek';
 
     console.log('[meterAlloc] siteRef:', siteRef, '| dates:', dates, '| datesExpr:', datesExpr);
 
     var ctx = {
       siteName:  null,
-      dateLabel: dates ? _dateLabel(dates) : 'Last Month'
+      dateLabel: _dateLabel(datesExpr)
     };
 
     // ── Fetch live data or use demo ──────────────────────────────────────────
