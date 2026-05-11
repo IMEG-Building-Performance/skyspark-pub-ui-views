@@ -6,10 +6,15 @@ window.meterAllocation = window.meterAllocation || {};
 (function (NS) {
 
   // ── Utility config ──────────────────────────────────────────────────────────
+  var _svg = {
+    Cooling: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>',
+    Heating: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>',
+    Flow:    '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>'
+  };
   var UTILS = {
-    Cooling: { color: '#4a7f96', light: '#dcedf3', label: 'Cooling', icon: '❄' },
-    Heating: { color: '#c0564b', light: '#fae8e6', label: 'Heating', icon: '🔥' },
-    Flow:    { color: '#5b8c6f', light: '#e0ede6', label: 'Flow',    icon: '💧' }
+    Cooling: { color: '#4a7f96', light: '#dcedf3', label: 'Cooling', icon: _svg.Cooling },
+    Heating: { color: '#c0564b', light: '#fae8e6', label: 'Heating', icon: _svg.Heating },
+    Flow:    { color: '#5b8c6f', light: '#e0ede6', label: 'Flow',    icon: _svg.Flow    }
   };
   var UTIL_KEYS = ['Cooling', 'Heating', 'Flow'];
 
@@ -348,30 +353,26 @@ window.meterAllocation = window.meterAllocation || {};
       var rawBtuUnit = summary[u] ? (summary[u].btuUnit || 'BTU') : 'BTU';
       var dispUnit   = btuUnit(rawBtuUnit);
       var tenantBtu  = ((tenantTotals[u]) || []).reduce(function (s, r) { return s + (r.usage || 0); }, 0);
-      var coverage   = (plantBtu && tenantBtu) ? (tenantBtu / plantBtu * 100) : null;
       var variance   = (plantBtu != null) ? (plantBtu - tenantBtu) : null;
+      var pctDiff    = plantBtu ? ((tenantBtu - plantBtu) / plantBtu * 100) : null;
 
-      var barColor = coverage == null ? '#d1d5db'
-                   : coverage >= 95   ? '#16a34a'
-                   : coverage >= 80   ? '#d97706'
-                   : '#dc2626';
-      var barWidth = coverage != null ? Math.min(coverage, 100).toFixed(1) : '0';
+      var diffColor = pctDiff == null     ? '#9ca3af'
+                    : Math.abs(pctDiff) <= 5  ? '#16a34a'
+                    : Math.abs(pctDiff) <= 20 ? '#d97706'
+                    : '#dc2626';
 
       return '<tr class="ma-recon-row">' +
         '<td class="ma-recon-util" style="color:' + cfg.color + '">' + cfg.icon + '&nbsp;' + cfg.label + '</td>' +
         '<td class="ma-recon-num">' + (plantBtu  != null ? fmtBtu(plantBtu, rawBtuUnit)  + '<small>&nbsp;' + dispUnit + '</small>' : '—') + '</td>' +
         '<td class="ma-recon-num">' + (tenantBtu  !== 0  ? fmtBtu(tenantBtu, rawBtuUnit) + '<small>&nbsp;' + dispUnit + '</small>' : '—') + '</td>' +
-        '<td class="ma-recon-num" style="color:' + (variance != null && variance > 0 ? '#6b7280' : '#16a34a') + '">' +
+        '<td class="ma-recon-num" style="color:#6b7280">' +
           (variance != null ? (variance >= 0 ? '+' : '') + fmtBtu(variance, rawBtuUnit) + '<small>&nbsp;' + dispUnit + '</small>' : '—') +
         '</td>' +
-        '<td class="ma-recon-bar">' +
-          (coverage != null
-            ? '<div class="ma-recon-bar-wrap">' +
-                '<div class="ma-pct-track" style="min-width:80px">' +
-                  '<div class="ma-pct-fill" style="width:' + barWidth + '%;background:' + barColor + '"></div>' +
-                '</div>' +
-                '<span class="ma-recon-pct" style="color:' + barColor + '">' + coverage.toFixed(1) + '%</span>' +
-              '</div>'
+        '<td class="ma-recon-num">' +
+          (pctDiff != null
+            ? '<span style="color:' + diffColor + ';font-weight:700">' +
+                (pctDiff >= 0 ? '+' : '') + pctDiff.toFixed(1) + '%' +
+              '</span>'
             : '—') +
         '</td>' +
       '</tr>';
@@ -388,7 +389,7 @@ window.meterAllocation = window.meterAllocation || {};
           '<th class="ma-recon-head right">Plant Total</th>' +
           '<th class="ma-recon-head right">Tenant Sum</th>' +
           '<th class="ma-recon-head right">Variance</th>' +
-          '<th class="ma-recon-head">Coverage</th>' +
+          '<th class="ma-recon-head right">% Diff</th>' +
         '</tr></thead>' +
         '<tbody>' + reconcRows + '</tbody>' +
       '</table>' +
