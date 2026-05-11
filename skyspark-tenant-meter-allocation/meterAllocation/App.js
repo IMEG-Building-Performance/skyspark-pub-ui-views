@@ -408,14 +408,117 @@ window.meterAllocation = window.meterAllocation || {};
     );
   }
 
+  // ── Render: Residential page ─────────────────────────────────────────────────
+  function _renderResidentialPage() {
+    var resData  = (_state.allData && _state.allData._residentialData) || {};
+    var RES_UTILS = ['Cooling', 'Heating'];
+
+    // If current util is not applicable, fall back to Cooling
+    var activeUtil = (RES_UTILS.indexOf(_state.selectedUtil) !== -1) ? _state.selectedUtil : 'Cooling';
+    var cfg  = UTILS[activeUtil];
+    var data = resData[activeUtil];
+
+    var utilSelector = '<div class="ma-util-selector">' +
+      RES_UTILS.map(function (k) {
+        var u = UTILS[k];
+        var isActive = k === activeUtil;
+        return '<button class="ma-util-pill' + (isActive ? ' is-active' : '') + '" data-util-tab="' + k + '" ' +
+          'style="' + (isActive ? 'background:' + u.color + ';color:#fff;border-color:' + u.color + ';' : '') + '">' +
+          u.icon + '&nbsp;' + u.label +
+        '</button>';
+      }).join('') +
+    '</div>';
+
+    if (!data) {
+      return '<div class="ma-page">' + utilSelector +
+        '<div class="ma-card ma-empty"><div>No residential data loaded for ' + _esc(activeUtil) + '.</div></div>' +
+        '</div>';
+    }
+
+    function fmtField(obj) {
+      if (!obj || obj.val == null) return '—';
+      return fmtBtu(obj.val, obj.unit) + '<small>&nbsp;' + btuUnit(obj.unit) + '</small>';
+    }
+
+    // ── Group meter sum KPI cards ─────────────────────────────────────────────
+    var groupDefs = [
+      { label: 'Group 1', key: 'group1Sum' },
+      { label: 'Group 2', key: 'group2Sum' },
+      { label: 'Group 3', key: 'group3Sum' },
+      { label: 'Group 4', key: 'group4Sum' },
+      { label: 'Group 5', key: 'group5Sum' },
+      { label: 'Group 6', key: 'group6Sum' }
+    ];
+    var groupKpiHtml = '<div class="ma-kpi-strip" style="grid-template-columns:repeat(3,1fr)">' +
+      groupDefs.map(function (g) {
+        var d = data[g.key];
+        return '<div class="ma-kpi-card">' +
+          '<div class="ma-kpi-label">' + g.label + '</div>' +
+          '<div class="ma-kpi-value" style="color:' + cfg.color + '">' +
+            (d ? fmtBtu(d.val, d.unit) : '—') +
+            (d ? '<span class="ma-kpi-unit">&nbsp;' + btuUnit(d.unit) + '</span>' : '') +
+          '</div>' +
+        '</div>';
+      }).join('') +
+    '</div>';
+
+    // ── Calculation steps ─────────────────────────────────────────────────────
+    var stepDefs = [
+      { label: 'Group 1 + Group 2',                expr: 'group1Sum + group2Sum',                        key: 'group1Plus2'        },
+      { label: 'Group 3 − Group 5',            expr: 'group3Sum − group5Sum',                   key: 'group3Minus5'       },
+      { label: 'Group 4 − Group 5 − Group 6', expr: 'group4Sum − group5Sum − group6Sum', key: 'group4Minus5Minus6' }
+    ];
+
+    var stepRows = stepDefs.map(function (s, i) {
+      var d = data[s.key];
+      return '<tr class="ma-recon-row' + (i % 2 === 0 ? '' : ' stripe') + '">' +
+        '<td class="ma-recon-util" style="color:#374151;font-weight:600">' + s.label + '</td>' +
+        '<td style="padding:10px 16px;color:#9ca3af;font-size:11px;font-family:monospace">' + s.expr + '</td>' +
+        '<td class="ma-recon-num" style="color:' + cfg.color + ';font-weight:600">' + fmtField(d) + '</td>' +
+      '</tr>';
+    }).join('');
+
+    var resD = data.resSum;
+    var totalRow = '<tr style="border-top:2px solid #e5e7eb">' +
+      '<td class="ma-recon-util" style="color:#1a1a1a;font-weight:700;font-size:13px">Residential Total</td>' +
+      '<td style="padding:10px 16px;color:#9ca3af;font-size:11px;font-family:monospace">group1Plus2 + group3Minus5 + group4Minus5Minus6</td>' +
+      '<td class="ma-recon-num" style="color:' + cfg.color + ';font-weight:700;font-size:15px">' + fmtField(resD) + '</td>' +
+    '</tr>';
+
+    var calcCard = '<div class="ma-card ma-table-card">' +
+      '<div class="ma-table-titlebar">' +
+        '<span class="ma-table-title">Calculation Steps</span>' +
+        '<span class="ma-table-hint">resSum = (Group 1+2) + (Group 3−5) + (Group 4−5−6)</span>' +
+      '</div>' +
+      '<table class="ma-recon-table">' +
+        '<thead><tr>' +
+          '<th class="ma-recon-head">Component</th>' +
+          '<th class="ma-recon-head">Expression</th>' +
+          '<th class="ma-recon-head right">Value</th>' +
+        '</tr></thead>' +
+        '<tbody>' + stepRows + totalRow + '</tbody>' +
+      '</table>' +
+    '</div>';
+
+    return (
+      '<div class="ma-page">' +
+        utilSelector +
+        groupKpiHtml +
+        calcCard +
+        '<div class="ma-footer">Residential&nbsp;Total&nbsp;=&nbsp;(G1+G2)&nbsp;+&nbsp;(G3−G5)&nbsp;+&nbsp;(G4−G5−G6)&nbsp;&nbsp;·&nbsp;&nbsp;SkySpark&nbsp;pUb</div>' +
+      '</div>'
+    );
+  }
+
   // ── Render: header (sticky) ───────────────────────────────────────────────────
   function _renderHeader() {
     var siteLine  = _state.siteName ? _esc(_state.siteName) : 'Demo Site';
     var dateLabel = _state.dateLabel || 'Last Month';
 
     var pageTabs = [
-      { id: 'summary', lbl: 'Summary' },
-      { id: 'details', lbl: 'Details' }
+      { id: 'summary',     lbl: 'Summary'     },
+      { id: 'details',     lbl: 'Details'     },
+      { id: 'residential', lbl: 'Residential' }
     ].map(function (p) {
       var isActive = _state.page === p.id;
       var style = isActive
@@ -452,6 +555,11 @@ window.meterAllocation = window.meterAllocation || {};
 
     if (_state.page === 'summary') {
       body.innerHTML = _renderSummaryPage();
+      return;
+    }
+
+    if (_state.page === 'residential') {
+      body.innerHTML = _renderResidentialPage();
       return;
     }
 

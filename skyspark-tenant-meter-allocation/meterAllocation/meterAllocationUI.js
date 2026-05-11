@@ -212,27 +212,28 @@ window.meterAllocation = window.meterAllocation || {};
         NS.evals.loadAllTenantTotals(attestKey, projectName, siteRef, datesExpr),
         NS.evals.loadAllResidentialTotals(attestKey, projectName, siteRef, datesExpr)
       ]).then(function (results) {
-          var allData       = results[0];
+          var allData           = results[0];
           allData._summary      = results[1];
           allData._tenantTotals = results[2];
-          var resTotals         = results[3];
+          allData._residentialData = results[3]; // full breakdown for Residential page
 
           // Replace residential row in _tenantTotals for Cooling & Heating with
-          // the authoritative value from report_meterValidation_residentialMeterTotal.
+          // the authoritative resSum from report_meterValidation_residentialMeterTotal.
           ['Cooling', 'Heating'].forEach(function (u) {
-            var resVal = resTotals && resTotals[u];
-            if (resVal == null) return;
+            var resData = allData._residentialData && allData._residentialData[u];
+            if (!resData || !resData.resSum) return;
+            var resSum = resData.resSum;
             var rows = allData._tenantTotals[u] || [];
             var replaced = false;
             rows.forEach(function (r) {
               if (r.tenantName && r.tenantName.toLowerCase().indexOf('residential') !== -1) {
-                r.usage     = resVal.val;
-                r.usageUnit = resVal.unit;
+                r.usage     = resSum.val;
+                r.usageUnit = resSum.unit;
                 replaced = true;
               }
             });
             if (!replaced) {
-              rows.push({ tenantName: 'Residential', usage: resVal.val, usageUnit: resVal.unit });
+              rows.push({ tenantName: 'Residential', usage: resSum.val, usageUnit: resSum.unit });
               allData._tenantTotals[u] = rows;
             }
           });

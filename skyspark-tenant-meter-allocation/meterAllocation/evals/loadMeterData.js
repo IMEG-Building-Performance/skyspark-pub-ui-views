@@ -219,9 +219,20 @@ window.meterAllocation = window.meterAllocation || {};
       throw new Error(msg);
     }
     if (!grid.rows.length) return null;
-    var row    = grid.rows[0];
-    var resSum = HP.num(row.resSum);
-    return { val: resSum.val, unit: resSum.unit || 'BTU' };
+    var row = grid.rows[0];
+    function n(f) { var r = HP.num(row[f]); return { val: r.val, unit: r.unit || 'BTU' }; }
+    return {
+      group1Sum:          n('group1Sum'),
+      group2Sum:          n('group2Sum'),
+      group3Sum:          n('group3Sum'),
+      group4Sum:          n('group4Sum'),
+      group5Sum:          n('group5Sum'),
+      group6Sum:          n('group6Sum'),
+      group1Plus2:        n('group1Plus2'),
+      group3Minus5:       n('group3Minus5'),
+      group4Minus5Minus6: n('group4Minus5Minus6'),
+      resSum:             n('resSum')
+    };
   }
 
   /**
