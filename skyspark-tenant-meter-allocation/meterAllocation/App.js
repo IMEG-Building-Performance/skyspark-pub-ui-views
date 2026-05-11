@@ -585,8 +585,8 @@ window.meterAllocation = window.meterAllocation || {};
 
     return (
       '<div class="ma-page">' +
-        tenantSelector +
         kpiHtml +
+        tenantSelector +
         detailCard +
         '<div class="ma-footer">Cost&nbsp;=&nbsp;(Tenant&nbsp;kBTU&nbsp;&divide;&nbsp;Plant&nbsp;kBTU)&nbsp;&times;&nbsp;Plant&nbsp;Cost&nbsp;&nbsp;&middot;&nbsp;&nbsp;SkySpark&nbsp;pUb</div>' +
       '</div>'
