@@ -426,6 +426,59 @@
   padding: 6px 12px;
 }
 
+/* ── Collapsible sections (Summary page) ─────────────────────────────────── */
+.ma-collapse-section {
+  margin: 0 16px 12px;
+}
+
+.ma-section-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 16px;
+  background: #e8e8e3;
+  border: 1px solid #d4d4cd;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.ma-section-toggle:hover {
+  background: #deded8;
+}
+
+.ma-section-toggle-title {
+  letter-spacing: 0.01em;
+}
+
+.ma-toggle-chevron {
+  font-size: 10px;
+  color: #6b7280;
+  margin-left: 8px;
+  flex-shrink: 0;
+}
+
+.ma-section-body {
+  margin-top: 4px;
+}
+
+.ma-section-body .ma-card {
+  margin: 0 0 8px;
+}
+
+.ma-section-body .ma-kpi-strip {
+  margin: 0 0 8px;
+}
+
+.ma-section-body .ma-util-selector {
+  margin: 0 0 4px;
+}
+
 /* ── Footer ──────────────────────────────────────────────────────────────── */
 .ma-footer {
   text-align: center;
