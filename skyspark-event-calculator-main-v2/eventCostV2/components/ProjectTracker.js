@@ -394,16 +394,20 @@ window.EventCostV2.projectTracker = window.EventCostV2.projectTracker || {};
 
     if (pt._viewMode === 'kanban') attachDragEvents();
 
-    // Explicitly size the content area because height:100% can't resolve when
-    // .eap-root uses min-height (not height), breaking the percentage chain.
+    // Explicitly size the content area. height:100% can't resolve when .eap-root
+    // uses min-height (not height). Use viewport coords instead — reliable regardless
+    // of the CSS chain.
     requestAnimationFrame(function() {
       if (!_container) return;
-      var tabContent = _container.parentElement; // .eap-tab-content (position:relative, flex:1)
-      var totalH = (tabContent && tabContent.clientHeight) ? tabContent.clientHeight : window.innerHeight;
+      var rect = _container.getBoundingClientRect();
+      // Height from container top to bottom of viewport
+      var availH = window.innerHeight - rect.top;
       var tb = _container.querySelector('.pt-title-bar');
       var fb = _container.querySelector('.pt-filter-bar');
       var usedH = (tb ? tb.offsetHeight : 0) + (fb ? fb.offsetHeight : 0);
-      var contentH = Math.max(200, totalH - usedH);
+      var contentH = Math.max(200, availH - usedH);
+      // Propagate to container so pt-root height:100% resolves
+      _container.style.height = availH + 'px';
       var content = _container.querySelector('.pt-board, .pt-table-wrap, .pt-list-wrap');
       if (content) {
         content.style.height = contentH + 'px';
