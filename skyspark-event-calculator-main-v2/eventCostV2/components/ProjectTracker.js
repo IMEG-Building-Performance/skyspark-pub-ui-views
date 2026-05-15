@@ -393,6 +393,23 @@ window.EventCostV2.projectTracker = window.EventCostV2.projectTracker || {};
     container.innerHTML = h;
 
     if (pt._viewMode === 'kanban') attachDragEvents();
+
+    // Explicitly size the content area because height:100% can't resolve when
+    // .eap-root uses min-height (not height), breaking the percentage chain.
+    requestAnimationFrame(function() {
+      if (!_container) return;
+      var tabContent = _container.parentElement; // .eap-tab-content (position:relative, flex:1)
+      var totalH = (tabContent && tabContent.clientHeight) ? tabContent.clientHeight : window.innerHeight;
+      var tb = _container.querySelector('.pt-title-bar');
+      var fb = _container.querySelector('.pt-filter-bar');
+      var usedH = (tb ? tb.offsetHeight : 0) + (fb ? fb.offsetHeight : 0);
+      var contentH = Math.max(200, totalH - usedH);
+      var content = _container.querySelector('.pt-board, .pt-table-wrap, .pt-list-wrap');
+      if (content) {
+        content.style.height = contentH + 'px';
+        content.style.flex = 'none';
+      }
+    });
   };
 
   // ── Drag & Drop (kanban only) ─────────────────────────────────────
