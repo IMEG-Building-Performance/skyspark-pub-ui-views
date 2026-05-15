@@ -10,7 +10,7 @@
  *   4. Restart SkySpark if needed.
  */
 
-var eventCostV2Handler = {};
+var eventCostHandler = {};
 
 (function() {
   var BASE_URL = 'https://imeg-skyspark.com/pub/ui/eventCostV2/';
@@ -30,7 +30,7 @@ var eventCostV2Handler = {};
     document.head.appendChild(script);
   }
 
-  eventCostV2Handler.onUpdate = function(arg) {
+  eventCostHandler.onUpdate = function(arg) {
     if (loaded) {
       window.EventCostV2.onUpdate(arg);
       return;
