@@ -9,7 +9,7 @@
  *   3. Update BASE_URL to point to the cloud server hosting eventCostV2/
  */
 
-window.eventCostHandler = {};
+var eventCostHandler = {};
 
 (function() {
   var BASE_URL = 'https://imeg-skyspark.com/pub/ui/eventCostV2/';
@@ -29,7 +29,7 @@ window.eventCostHandler = {};
     document.head.appendChild(script);
   }
 
-  window.eventCostHandler.onUpdate = function(arg) {
+  eventCostHandler.onUpdate = function(arg) {
     if (loaded) {
       window.EventCostV2.onUpdate(arg);
       return;
