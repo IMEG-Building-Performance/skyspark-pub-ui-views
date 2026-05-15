@@ -1,0 +1,21 @@
+// Event Cost V2 — View Record
+//
+// INSTALLATION:
+// 1. Copy eventCostV2Entry.js to {var}/pub/ui/ on the SkySpark server
+// 2. Deploy the eventCostV2/ module folder to the cloud server
+// 3. Update BASE_URL in eventCostV2Entry.js to point to the cloud server
+// 4. Import this record into your project (Folio or Apps Builder)
+// 5. Restart SkySpark
+
+dis: "Event Utility Cost Tracking V2"
+view:      { inherit:"tile" }
+site:      { dis:"Site Selector" var kind:"Ref<site>" input share defVal:@p:cibmc:r:2fa3db8a-af914930 }
+dateRange: { dis:"Date Range" var kind:"Span" input share defVal:Span("pastWeek") }
+uiViewBar: { var kind:"Dict" defVal:{} showVarLabels:T }
+layout:    { var kind:"Str" defVal:"grid 6x6; 0 0 6 6" }
+refresh:   { dis:"Refresh" action:"context" }
+subView: Trio:
+  view:      { inherit:"js" }
+  jsHandler: { var kind:"Str" defVal:"eventCostHandler" }
+  site:      { var input binding:"../site" }
+  dateRange: { var input binding:"../dateRange" }
