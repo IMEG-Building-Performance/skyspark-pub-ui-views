@@ -5,12 +5,11 @@
  *
  * SETUP:
  *   1. Copy this file to the client's {var}/pub/ui/ directory.
- *   2. Set the view record's jsHandler to: eventCostV2Handler
+ *   2. Set the view record's jsHandler to: eventCostHandler
  *   3. Update BASE_URL to point to the cloud server hosting eventCostV2/
- *   4. Restart SkySpark if needed.
  */
 
-var eventCostHandler = {};
+window.eventCostHandler = {};
 
 (function() {
   var BASE_URL = 'https://imeg-skyspark.com/pub/ui/eventCostV2/';
@@ -30,7 +29,7 @@ var eventCostHandler = {};
     document.head.appendChild(script);
   }
 
-  eventCostHandler.onUpdate = function(arg) {
+  window.eventCostHandler.onUpdate = function(arg) {
     if (loaded) {
       window.EventCostV2.onUpdate(arg);
       return;
