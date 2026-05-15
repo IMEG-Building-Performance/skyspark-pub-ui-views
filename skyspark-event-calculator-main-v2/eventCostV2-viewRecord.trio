@@ -16,6 +16,6 @@ layout:    { var kind:"Str" defVal:"grid 6x6; 0 0 6 6" }
 refresh:   { dis:"Refresh" action:"context" }
 subView: Trio:
   view:      { inherit:"js" }
-  jsHandler: { var kind:"Str" defVal:"eventCostHandler" }
+  jsHandler: { var defVal:"eventCostHandler" }
   site:      { var input binding:"../site" }
   dateRange: { var input binding:"../dateRange" }
