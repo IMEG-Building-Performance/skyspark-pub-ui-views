@@ -1,5 +1,16 @@
+// Event Cost V2 — View Record
+//
+// INSTALLATION:
+// 1. Copy eventCostV2Entry.js to {var}/pub/ui/ on the SkySpark server
+// 2. Ensure uiMeta record has the 'includePub' marker
+// 3. Import this record into your project (Folio or Apps Builder)
+// 4. Restart SkySpark
+
 dis: "Event Utility Cost Tracking V2"
-view
-jsHandler: "eventCostV2Handler"
-src: `eventCostV2Entry.js`
----
+appName: myApp
+view: eventCostV2
+src:
+  view:      { inherit:"js" }
+  jsHandler: { var defVal:"eventCostV2Handler" }
+  data:      { expr:"readAll(site).keepCols([\"dis\"])" }
+
