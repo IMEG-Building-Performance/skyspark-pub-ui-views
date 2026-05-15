@@ -1,12 +1,13 @@
 /**
  * App.js — Root Application for Event Cost V2
  *
- * 5-tab structure:
- *   Tab 1 (monthly)        — Monthly Overview
- *   Tab 2 (reconciliation) — Utility Reconciliation
- *   Tab 3 (detail)         — Event Detail (navigated to from Tab 1 or Tab 4)
- *   Tab 4 (siteStatus)     — Site Status (live chart)
- *   Tab 5 (docs)           — Documentation
+ * 6-tab structure:
+ *   Tab 1 (tracker)        — Project Tracker (kanban, static)
+ *   Tab 2 (monthly)        — Monthly Overview
+ *   Tab 3 (reconciliation) — Utility Reconciliation
+ *   Tab 4 (detail)         — Event Detail (navigated to from Tab 2 or Tab 5)
+ *   Tab 5 (siteStatus)     — Site Status (live chart)
+ *   Tab 6 (docs)           — Documentation
  */
 
 window.EventCostV2 = window.EventCostV2 || {};
@@ -18,6 +19,7 @@ window.EventCostV2.onUpdate = function(arg) {
   var state              = window.EventCostV2.state;
   var skyspark           = window.EventCostV2.skyspark;
   var api                = window.EventCostV2.api;
+  var projectTracker     = window.EventCostV2.projectTracker;
   var monthlyOverview    = window.EventCostV2.monthlyOverview;
   var utilReconciliation = window.EventCostV2.utilityReconciliation;
   var eventDetailV2      = window.EventCostV2.eventDetailV2;
@@ -63,12 +65,12 @@ window.EventCostV2.onUpdate = function(arg) {
   tabBar.className = 'eap-tab-bar';
   titleBar.appendChild(tabBar);
 
-  var TAB_IDS    = ['monthly', 'reconciliation', 'detail', 'siteStatus', 'docs'];
-  var TAB_LABELS = ['Monthly Overview', 'Utility Reconciliation', 'Event Detail', 'Site Status', 'Documentation'];
+  var TAB_IDS    = ['tracker', 'monthly', 'reconciliation', 'detail', 'siteStatus', 'docs'];
+  var TAB_LABELS = ['Project Tracker', 'Monthly Overview', 'Utility Reconciliation', 'Event Detail', 'Site Status', 'Documentation'];
 
   // Restore last active tab (skip 'detail' on fresh load — it requires a selected event)
-  var initialTab = state.activeTab || 'monthly';
-  if (initialTab === 'detail' && !state.selectedEventID) initialTab = 'monthly';
+  var initialTab = state.activeTab || 'tracker';
+  if (initialTab === 'detail' && !state.selectedEventID) initialTab = 'tracker';
 
   var tabBtns   = {};
   var tabPanels = {};
@@ -101,6 +103,10 @@ window.EventCostV2.onUpdate = function(arg) {
 
   state.activeTab = initialTab;
 
+  // Tracker is static — render it immediately regardless of initial tab
+  projectTracker.renderTab(tabPanels.tracker);
+  tabInited.tracker = true;
+
   // ── Tab switching ────────────────────────────────────────────────
   function switchTab(tabId, eventSummary) {
     if (state.activeTab === tabId && !eventSummary) return;
@@ -112,7 +118,10 @@ window.EventCostV2.onUpdate = function(arg) {
       tabPanels[id].className = 'eap-tab-panel'  + (isActive ? ' eap-tab-panel--active' : '');
     });
 
-    if (tabId === 'detail') {
+    if (tabId === 'tracker' && !tabInited.tracker) {
+      tabInited.tracker = true;
+      projectTracker.renderTab(tabPanels.tracker);
+    } else if (tabId === 'detail') {
       // Re-render detail for the (possibly new) selected event
       renderDetailTab(eventSummary || null);
     } else if (tabId === 'reconciliation' && !tabInited.reconciliation) {
