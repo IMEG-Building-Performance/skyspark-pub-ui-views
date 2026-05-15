@@ -2,15 +2,20 @@
 //
 // INSTALLATION:
 // 1. Copy eventCostV2Entry.js to {var}/pub/ui/ on the SkySpark server
-// 2. Ensure uiMeta record has the 'includePub' marker
-// 3. Import this record into your project (Folio or Apps Builder)
-// 4. Restart SkySpark
+// 2. Deploy the eventCostV2/ module folder to the cloud server
+// 3. Update BASE_URL in eventCostV2Entry.js to point to the cloud server
+// 4. Import this record into your project (Folio or Apps Builder)
+// 5. Restart SkySpark
 
 dis: "Event Utility Cost Tracking V2"
-appName: myApp
-view: eventCostV2
-src:
+view:      { inherit:"tile" }
+site:      { dis:"Site Selector" var kind:"Ref<site>" input share defVal:@p:cibmc:r:2fa3db8a-af914930 }
+dateRange: { dis:"Date Range" var kind:"Span" input share defVal:Span("pastWeek") }
+uiViewBar: { var kind:"Dict" defVal:{} showVarLabels:T }
+layout:    { var kind:"Str" defVal:"grid 6x6; 0 0 6 6" }
+refresh:   { dis:"Refresh" action:"context" }
+subView: Trio:
   view:      { inherit:"js" }
-  jsHandler: { var defVal:"eventCostV2Handler" }
-  data:      { expr:"readAll(site).keepCols([\"dis\"])" }
-
+  jsHandler: { var kind:"Str" defVal:"eventCostV2Handler" }
+  site:      { var input binding:"../site" }
+  dateRange: { var input binding:"../dateRange" }
