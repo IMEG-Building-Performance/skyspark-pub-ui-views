@@ -1,38 +1,37 @@
 /**
- * eventCostEntry.js
+ * eventCostV2Entry.js
  *
- * Thin entry file for SkySpark pub UI (v2 Event Cost tool).
- * Loads the UI module from the cloud server, then delegates to onUpdate.
+ * Thin entry file for SkySpark pub UI (Event Cost V2).
  *
  * SETUP:
  *   1. Copy this file to the client's {var}/pub/ui/ directory.
  *   2. Set the view record's jsHandler to: eventCostHandler
- *   3. Restart SkySpark if needed.
+ *   3. Update BASE_URL to point to the cloud server hosting eventCostV2/
  */
 
-var eventCostHandler = {};
+window.eventCostHandler = {};
 
 (function() {
-  var BASE_URL = 'https://imeg-skyspark.com/pub/ui/eventCost/';
+  var BASE_URL = 'https://imeg-skyspark.com/pub/ui/eventCostV2/';
 
   var loaded = false;
   var loading = false;
   var pendingCalls = [];
 
   function loadUI(callback) {
-    window.__eventCostReady = callback;
+    window.__eventCostV2Ready = callback;
 
     var script = document.createElement('script');
-    script.src = BASE_URL + 'eventCostUI.js';
+    script.src = BASE_URL + 'eventCostV2UI.js';
     script.onerror = function() {
-      console.error('Failed to load eventCostUI.js');
+      console.error('Failed to load eventCostV2UI.js');
     };
     document.head.appendChild(script);
   }
 
-  eventCostHandler.onUpdate = function(arg) {
+  window.eventCostHandler.onUpdate = function(arg) {
     if (loaded) {
-      window.EventCost.onUpdate(arg);
+      window.EventCostV2.onUpdate(arg);
       return;
     }
 
@@ -40,25 +39,25 @@ var eventCostHandler = {};
 
     if (!loading) {
       loading = true;
-      console.log('Loading Event Cost modules...');
+      console.log('Loading Event Cost V2 modules...');
 
       loadUI(function(failedModules) {
         loading = false;
 
-        if (!window.EventCost || typeof window.EventCost.onUpdate !== 'function') {
+        if (!window.EventCostV2 || typeof window.EventCostV2.onUpdate !== 'function') {
           console.error(
-            'Event Cost failed to initialise.' +
-            (failedModules && failedModules.length ? ' Failed modules: ' + failedModules.join(', ') : '')
+            'Event Cost V2 failed to initialise.' +
+            (failedModules && failedModules.length ? ' Failed: ' + failedModules.join(', ') : '')
           );
           pendingCalls = [];
           return;
         }
 
         loaded = true;
-        console.log('Event Cost ready');
+        console.log('Event Cost V2 ready');
 
         pendingCalls.forEach(function(pendingArg) {
-          window.EventCost.onUpdate(pendingArg);
+          window.EventCostV2.onUpdate(pendingArg);
         });
         pendingCalls = [];
       });
