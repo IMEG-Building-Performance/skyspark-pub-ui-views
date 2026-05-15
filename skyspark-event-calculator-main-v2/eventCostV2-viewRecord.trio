@@ -1,0 +1,5 @@
+dis: "Event Utility Cost Tracking V2"
+view
+jsHandler: "eventCostV2Handler"
+src: `eventCostV2Entry.js`
+---
