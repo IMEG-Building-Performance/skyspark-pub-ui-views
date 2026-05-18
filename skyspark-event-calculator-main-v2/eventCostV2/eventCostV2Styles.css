@@ -14,8 +14,531 @@
   background: #F9FAFB;
   min-height: 100%;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  height: 100%;
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   SIDEBAR NAV
+   ══════════════════════════════════════════════════════════════════ */
+.eap-nav {
+  width: 220px;
+  min-width: 220px;
+  background: #fff;
+  border-right: 1px solid #E5E7EB;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow: visible;
+  position: relative;
+  z-index: 20;
+  transition: width 0.2s, min-width 0.2s;
+}
+
+.eap-nav--collapsed {
+  width: 52px;
+  min-width: 52px;
+}
+
+/* ── Nav: controls block (site + date picker) ─────────────────── */
+.eap-nav-controls {
+  padding: 12px 10px 8px;
+  border-bottom: 1px solid #F3F4F6;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.eap-nav--collapsed .eap-nav-controls {
+  display: none;
+}
+
+.eap-nav-section-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9CA3AF;
+  margin-bottom: 2px;
+}
+
+/* Site selector */
+.eap-site-select {
+  width: 100%;
+  font-size: 12px;
+  padding: 5px 8px;
+  border: 1px solid #E5E7EB;
+  border-radius: 5px;
+  background: #F9FAFB;
+  color: #374151;
+  cursor: pointer;
+  outline: none;
+}
+
+.eap-site-select:focus {
+  border-color: #4A6FA5;
+  background: #fff;
+}
+
+/* ── Nav: header block ────────────────────────────────────────── */
+.eap-nav-header {
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid #F3F4F6;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.eap-nav-logo {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow: hidden;
+}
+
+.eap-nav-logo-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1F2937;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.eap-nav-logo-site {
+  font-size: 11px;
+  color: #6B7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.eap-nav--collapsed .eap-nav-header {
+  padding: 12px 0;
+  justify-content: center;
+}
+
+.eap-nav--collapsed .eap-nav-logo { display: none; }
+
+.eap-nav-collapse-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+  border: 1px solid #E5E7EB;
+  background: #fff;
+  cursor: pointer;
+  font-size: 12px;
+  color: #6B7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.1s;
+}
+
+.eap-nav-collapse-btn:hover { background: #F3F4F6; color: #374151; }
+
+/* ── Nav: item buttons ────────────────────────────────────────── */
+.eap-nav-items {
+  flex: 1;
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+}
+
+.eap-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: #4B5563;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: background 0.1s, color 0.1s;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.eap-nav-btn:hover { background: #F3F4F6; color: #1F2937; }
+
+.eap-nav-btn--active {
+  background: #EFF6FF;
+  color: #1D4ED8;
+  font-weight: 600;
+}
+
+.eap-nav-btn--active:hover { background: #DBEAFE; }
+
+.eap-nav-btn--disabled {
+  opacity: 0.4;
+  cursor: default;
+  pointer-events: none;
+}
+
+.eap-nav-btn-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.eap-nav-btn--active .eap-nav-btn-icon { opacity: 1; }
+
+.eap-nav-btn-label {
+  transition: opacity 0.15s;
+}
+
+.eap-nav--collapsed .eap-nav-btn {
+  justify-content: center;
+  padding: 9px 0;
+}
+
+.eap-nav--collapsed .eap-nav-btn-label { display: none; }
+
+/* ── Nav: footer ──────────────────────────────────────────────── */
+.eap-nav-footer {
+  padding: 8px 10px;
+  border-top: 1px solid #F3F4F6;
+}
+
+.eap-dark-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: #6B7280;
+  font-size: 12px;
+  cursor: pointer;
+  width: 100%;
+  transition: background 0.1s;
+}
+
+.eap-dark-toggle:hover { background: #F3F4F6; color: #374151; }
+
+.eap-nav--collapsed .eap-dark-toggle {
+  justify-content: center;
+  padding: 9px 0;
+}
+
+.eap-nav--collapsed .eap-dark-toggle span { display: none; }
+
+/* ── Main content area ────────────────────────────────────────── */
+.eap-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   DATE RANGE PICKER
+   ══════════════════════════════════════════════════════════════════ */
+.dp-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+/* ── Compact control ──────────────────────────────────────────── */
+.dp-control {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid #E5E7EB;
+  border-radius: 5px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.dp-nav-btn {
+  width: 26px;
+  border: none;
+  background: transparent;
+  color: #6B7280;
+  font-size: 15px;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.1s, color 0.1s;
+}
+
+.dp-nav-btn:hover:not(:disabled) { background: #F3F4F6; color: #1F2937; }
+.dp-nav-btn:disabled { opacity: 0.3; cursor: default; }
+
+.dp-label-btn {
+  flex: 1;
+  border: none;
+  border-left: 1px solid #E5E7EB;
+  border-right: 1px solid #E5E7EB;
+  background: #F9FAFB;
+  cursor: pointer;
+  padding: 5px 4px;
+  min-width: 0;
+  transition: background 0.1s;
+}
+
+.dp-label-btn:hover { background: #EFF6FF; }
+
+.dp-label-text {
+  font-size: 11px;
+  font-weight: 600;
+  color: #374151;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  text-align: center;
+}
+
+/* ── Dropdown panel ───────────────────────────────────────────── */
+.dp-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fff;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  z-index: 9999;
+  padding: 12px;
+  min-width: 300px;
+}
+
+.dp-dropdown--open { display: block; }
+
+/* ── Period buttons ───────────────────────────────────────────── */
+.dp-period-row {
+  display: flex;
+  gap: 3px;
+  margin-bottom: 10px;
+}
+
+.dp-period-btn {
+  flex: 1;
+  padding: 5px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid #E5E7EB;
+  border-radius: 4px;
+  background: #fff;
+  color: #4B5563;
+  cursor: pointer;
+  transition: all 0.1s;
+  white-space: nowrap;
+}
+
+.dp-period-btn:hover { border-color: #4A6FA5; color: #4A6FA5; background: #EFF6FF; }
+
+.dp-period-btn--active {
+  background: #4A6FA5;
+  border-color: #4A6FA5;
+  color: #fff;
+}
+
+/* ── Dual calendar ────────────────────────────────────────────── */
+.dp-cal-area {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+
+.dp-cal { flex: 1; min-width: 0; }
+
+.dp-cal-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.dp-cal-nav {
+  width: 22px;
+  height: 22px;
+  border: 1px solid #E5E7EB;
+  border-radius: 4px;
+  background: #fff;
+  font-size: 13px;
+  color: #6B7280;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background 0.1s;
+}
+
+.dp-cal-nav:hover { background: #F3F4F6; color: #1F2937; }
+
+.dp-cal-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #1F2937;
+}
+
+.dp-cal-dow {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 2px;
+}
+
+.dp-cal-dow-cell {
+  text-align: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: #9CA3AF;
+  padding: 2px 0;
+}
+
+.dp-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+}
+
+.dp-cal-cell {
+  text-align: center;
+  font-size: 11px;
+  color: #374151;
+  padding: 4px 0;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.dp-cal-blank { cursor: default; }
+
+.dp-cal-cell:not(.dp-cal-blank):hover { background: #EFF6FF; color: #1D4ED8; }
+
+.dp-cal-cell--range { background: #DBEAFE; border-radius: 0; }
+
+.dp-cal-cell--sel {
+  background: #4A6FA5 !important;
+  color: #fff !important;
+  border-radius: 3px;
+}
+
+.dp-cal-cell--start { border-radius: 3px 0 0 3px; }
+.dp-cal-cell--end   { border-radius: 0 3px 3px 0; }
+.dp-cal-cell--start.dp-cal-cell--end { border-radius: 3px; }
+
+/* ── Date text inputs + Ok ────────────────────────────────────── */
+.dp-date-input-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-top: 1px solid #F3F4F6;
+  padding-top: 10px;
+}
+
+.dp-date-input {
+  flex: 1;
+  padding: 5px 8px;
+  font-size: 11px;
+  border: 1px solid #E5E7EB;
+  border-radius: 4px;
+  outline: none;
+  color: #374151;
+  font-family: "SF Mono", "Fira Code", Consolas, monospace;
+}
+
+.dp-date-input:focus { border-color: #4A6FA5; }
+
+.dp-date-sep { font-size: 12px; color: #9CA3AF; flex-shrink: 0; }
+
+.dp-ok-btn {
+  padding: 5px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #4A6FA5;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.1s;
+}
+
+.dp-ok-btn:hover { background: #3d5f8f; }
+
+/* ══════════════════════════════════════════════════════════════════
+   DARK MODE
+   ══════════════════════════════════════════════════════════════════ */
+.eap-root--dark {
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+.eap-root--dark .eap-nav {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+.eap-root--dark .eap-nav-controls,
+.eap-root--dark .eap-nav-header,
+.eap-root--dark .eap-nav-items,
+.eap-root--dark .eap-nav-footer {
+  border-color: #334155;
+}
+
+.eap-root--dark .eap-nav-logo-title { color: #f1f5f9; }
+.eap-root--dark .eap-nav-logo-site  { color: #94a3b8; }
+.eap-root--dark .eap-nav-section-label { color: #64748b; }
+
+.eap-root--dark .eap-nav-btn { color: #94a3b8; }
+.eap-root--dark .eap-nav-btn:hover { background: #334155; color: #f1f5f9; }
+.eap-root--dark .eap-nav-btn--active { background: #1e3a5f; color: #60a5fa; }
+
+.eap-root--dark .eap-nav-collapse-btn {
+  background: #1e293b; border-color: #334155; color: #94a3b8;
+}
+.eap-root--dark .eap-nav-collapse-btn:hover { background: #334155; }
+
+.eap-root--dark .eap-site-select {
+  background: #1e293b; border-color: #334155; color: #e2e8f0;
+}
+
+.eap-root--dark .dp-control { background: #1e293b; border-color: #334155; }
+.eap-root--dark .dp-label-btn { background: #0f172a; }
+.eap-root--dark .dp-label-btn:hover { background: #1e3a5f; }
+.eap-root--dark .dp-label-text { color: #e2e8f0; }
+.eap-root--dark .dp-nav-btn { color: #94a3b8; }
+.eap-root--dark .dp-nav-btn:hover:not(:disabled) { background: #334155; }
+.eap-root--dark .dp-label-btn { border-color: #334155; }
+
+.eap-root--dark .dp-dropdown {
+  background: #1e293b; border-color: #334155;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+.eap-root--dark .dp-period-btn { background: #1e293b; border-color: #334155; color: #94a3b8; }
+.eap-root--dark .dp-period-btn:hover { background: #334155; color: #60a5fa; border-color: #60a5fa; }
+.eap-root--dark .dp-period-btn--active { background: #4A6FA5; color: #fff; }
+.eap-root--dark .dp-cal-title { color: #f1f5f9; }
+.eap-root--dark .dp-cal-cell { color: #cbd5e1; }
+.eap-root--dark .dp-cal-cell:not(.dp-cal-blank):hover { background: #1e3a5f; color: #60a5fa; }
+.eap-root--dark .dp-cal-cell--range { background: #1e3a5f; }
+.eap-root--dark .dp-date-input { background: #0f172a; border-color: #334155; color: #e2e8f0; }
+.eap-root--dark .dp-date-sep { color: #64748b; }
+
+.eap-root--dark .eap-dark-toggle { color: #94a3b8; }
+.eap-root--dark .eap-dark-toggle:hover { background: #334155; color: #f1f5f9; }
+
+.eap-root--dark .eap-main { background: #0f172a; }
 
 /* ── Title bar ─────────────────────────────────────────────────── */
 .eap-title-bar {

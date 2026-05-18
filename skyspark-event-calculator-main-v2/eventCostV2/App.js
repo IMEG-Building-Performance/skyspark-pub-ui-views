@@ -1,12 +1,9 @@
 /**
  * App.js — Root Application for Event Cost V2
  *
- * 5-tab structure:
- *   Tab 1 (monthly)        — Monthly Overview
- *   Tab 2 (reconciliation) — Utility Reconciliation
- *   Tab 3 (detail)         — Event Detail (navigated to from Tab 1 or Tab 4)
- *   Tab 4 (siteStatus)     — Site Status (live chart)
- *   Tab 5 (docs)           — Documentation
+ * Layout: collapsible left sidebar + main content area.
+ * Sidebar: site selector, compact date picker, nav buttons, dark mode toggle.
+ * Main: thin title bar + tab panels.
  */
 
 window.EventCostV2 = window.EventCostV2 || {};
@@ -23,6 +20,7 @@ window.EventCostV2.onUpdate = function(arg) {
   var eventDetailV2      = window.EventCostV2.eventDetailV2;
   var siteStatus         = window.EventCostV2.siteStatus;
   var documentation      = window.EventCostV2.documentation;
+  var dpFactory          = window.EventCostV2.datePicker;
 
   view.removeAll();
 
@@ -40,52 +38,194 @@ window.EventCostV2.onUpdate = function(arg) {
 
   window.EventCostV2.computeScaling();
 
+  // ── Dark mode ──────────────────────────────────────────────────────
+  var darkMode = localStorage.getItem('eap-v2-dark') === '1';
+
   // ══════════════════════════════════════════════════════════════════
   // PAGE SHELL
   // ══════════════════════════════════════════════════════════════════
 
   var root = document.createElement('div');
-  root.className = 'eap-root';
+  root.className = 'eap-root' + (darkMode ? ' eap-root--dark' : '');
   elem.appendChild(root);
 
-  // Title bar
+  // ── Sidebar ────────────────────────────────────────────────────────
+  var navCollapsed = state.navCollapsed || false;
+
+  var nav = document.createElement('div');
+  nav.className = 'eap-nav' + (navCollapsed ? ' eap-nav--collapsed' : '');
+  root.appendChild(nav);
+
+  // -- Controls: site + date range --
+  var navControls = document.createElement('div');
+  navControls.className = 'eap-nav-controls';
+  nav.appendChild(navControls);
+
+  // Site label
+  var siteLabel = document.createElement('div');
+  siteLabel.className = 'eap-nav-section-label';
+  siteLabel.textContent = 'Site';
+  navControls.appendChild(siteLabel);
+
+  // Site selector (scaffolding — populated when SkySpark provides sites)
+  var siteSelect = document.createElement('select');
+  siteSelect.className = 'eap-site-select';
+  var siteOpt = document.createElement('option');
+  siteOpt.value = selectedSite || '';
+  siteOpt.textContent = selectedSite ? selectedSite : '— Select site —';
+  siteSelect.appendChild(siteOpt);
+  siteSelect.disabled = true;
+  navControls.appendChild(siteSelect);
+
+  // Date range label
+  var dateLabel = document.createElement('div');
+  dateLabel.className = 'eap-nav-section-label';
+  dateLabel.style.marginTop = '6px';
+  dateLabel.textContent = 'Date Range';
+  navControls.appendChild(dateLabel);
+
+  // Compact date picker
+  var dpContainer = document.createElement('div');
+  navControls.appendChild(dpContainer);
+
+  var datePicker = dpFactory.create({
+    container: dpContainer,
+    startDate:  startDate,
+    endDate:    endDate,
+    onChange: function(newStart, newEnd) {
+      startDate = newStart;
+      endDate   = newEnd;
+      state._startDate = newStart;
+      state._endDate   = newEnd;
+      state.eventCostResults = null;
+      state.eventSummaries   = null;
+      state.utilityData      = {};
+      loadData();
+    }
+  });
+
+  // Sync initial dates from the picker's resolved range (e.g. "Past Week")
+  startDate = datePicker.getStartDate();
+  endDate   = datePicker.getEndDate();
+  state._startDate = startDate;
+  state._endDate   = endDate;
+
+  // -- Header: logo + site name --
+  var navHeader = document.createElement('div');
+  navHeader.className = 'eap-nav-header';
+  nav.appendChild(navHeader);
+
+  var navLogo = document.createElement('div');
+  navLogo.className = 'eap-nav-logo';
+
+  var navLogoTitle = document.createElement('div');
+  navLogoTitle.className = 'eap-nav-logo-title';
+  navLogoTitle.textContent = 'Event Cost Calc';
+
+  var navLogoSite = document.createElement('div');
+  navLogoSite.className = 'eap-nav-logo-site';
+  navLogoSite.textContent = selectedSite || '';
+
+  navLogo.appendChild(navLogoTitle);
+  navLogo.appendChild(navLogoSite);
+  navHeader.appendChild(navLogo);
+
+  var collapseBtn = document.createElement('button');
+  collapseBtn.className = 'eap-nav-collapse-btn';
+  collapseBtn.title = navCollapsed ? 'Expand sidebar' : 'Collapse sidebar';
+  collapseBtn.textContent = navCollapsed ? '›' : '‹';
+  collapseBtn.addEventListener('click', function() {
+    navCollapsed = !navCollapsed;
+    state.navCollapsed = navCollapsed;
+    nav.classList.toggle('eap-nav--collapsed', navCollapsed);
+    collapseBtn.textContent = navCollapsed ? '›' : '‹';
+    collapseBtn.title = navCollapsed ? 'Expand sidebar' : 'Collapse sidebar';
+  });
+  navHeader.appendChild(collapseBtn);
+
+  // -- Nav items --
+  var TAB_IDS    = ['monthly', 'reconciliation', 'detail', 'siteStatus', 'docs'];
+  var TAB_LABELS = ['Monthly Overview', 'Utility Reconciliation', 'Event Detail', 'Site Status', 'Documentation'];
+  var TAB_ICONS  = [
+    // Monthly: calendar grid
+    '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="14" height="12" rx="1.5"/><path d="M1 7h14M5 1v4M11 1v4"/></svg>',
+    // Reconciliation: arrows swap
+    '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 5h12M11 2l3 3-3 3M14 11H2M5 8l-3 3 3 3"/></svg>',
+    // Detail: doc lines
+    '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="1" width="12" height="14" rx="1.5"/><path d="M5 5h6M5 8h6M5 11h4"/></svg>',
+    // Site Status: chart
+    '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 13 5 7l4 3 3-6 3 3"/><path d="M1 13h14"/></svg>',
+    // Docs: book
+    '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 1h10v14H3zM8 1v14"/><path d="M3 5h5M3 9h5"/></svg>'
+  ];
+
+  var initialTab = state.activeTab || 'monthly';
+  if (initialTab === 'detail' && !state.selectedEventID) initialTab = 'monthly';
+
+  var navItems = document.createElement('div');
+  navItems.className = 'eap-nav-items';
+  nav.appendChild(navItems);
+
+  var navBtns = {};
+
+  TAB_IDS.forEach(function(id, i) {
+    var btn = document.createElement('button');
+    btn.className = 'eap-nav-btn' +
+      (id === initialTab ? ' eap-nav-btn--active' : '') +
+      (id === 'detail' && !state.selectedEventID ? ' eap-nav-btn--disabled' : '');
+
+    var icon = document.createElement('span');
+    icon.className = 'eap-nav-btn-icon';
+    icon.innerHTML = TAB_ICONS[i];
+
+    var lbl = document.createElement('span');
+    lbl.className = 'eap-nav-btn-label';
+    lbl.textContent = TAB_LABELS[i];
+
+    btn.appendChild(icon);
+    btn.appendChild(lbl);
+    btn.setAttribute('data-tab', id);
+    navItems.appendChild(btn);
+    navBtns[id] = btn;
+  });
+
+  // -- Footer: dark mode --
+  var navFooter = document.createElement('div');
+  navFooter.className = 'eap-nav-footer';
+  nav.appendChild(navFooter);
+
+  var darkToggle = document.createElement('button');
+  darkToggle.className = 'eap-dark-toggle';
+  darkToggle.innerHTML = (darkMode ? '☀' : '☾') + '<span>' + (darkMode ? ' Light mode' : ' Dark mode') + '</span>';
+  darkToggle.addEventListener('click', function() {
+    darkMode = !darkMode;
+    localStorage.setItem('eap-v2-dark', darkMode ? '1' : '0');
+    root.classList.toggle('eap-root--dark', darkMode);
+    darkToggle.innerHTML = (darkMode ? '☀' : '☾') + '<span>' + (darkMode ? ' Light mode' : ' Dark mode') + '</span>';
+  });
+  navFooter.appendChild(darkToggle);
+
+  // ── Main area ──────────────────────────────────────────────────────
+  var main = document.createElement('div');
+  main.className = 'eap-main';
+  root.appendChild(main);
+
+  // Thin title bar
   var titleBar = document.createElement('div');
   titleBar.className = 'eap-title-bar';
-  root.appendChild(titleBar);
+  main.appendChild(titleBar);
 
   var titleSite = document.createElement('span');
   titleSite.className = 'eap-title-site';
   titleSite.textContent = 'Event Utility Cost Tracking';
   titleBar.appendChild(titleSite);
 
-  // Tab bar
-  var tabBar = document.createElement('div');
-  tabBar.className = 'eap-tab-bar';
-  titleBar.appendChild(tabBar);
-
-  var TAB_IDS    = ['monthly', 'reconciliation', 'detail', 'siteStatus', 'docs'];
-  var TAB_LABELS = ['Monthly Overview', 'Utility Reconciliation', 'Event Detail', 'Site Status', 'Documentation'];
-
-  // Restore last active tab (skip 'detail' on fresh load — it requires a selected event)
-  var initialTab = state.activeTab || 'monthly';
-  if (initialTab === 'detail' && !state.selectedEventID) initialTab = 'monthly';
-
-  var tabBtns   = {};
-  var tabPanels = {};
-
-  TAB_IDS.forEach(function(id, i) {
-    var btn = document.createElement('button');
-    btn.className = 'eap-tab-btn' + (id === initialTab ? ' eap-tab-btn--active' : '');
-    btn.textContent = TAB_LABELS[i];
-    btn.setAttribute('data-tab', id);
-    tabBar.appendChild(btn);
-    tabBtns[id] = btn;
-  });
-
+  // Tab panels
   var tabContent = document.createElement('div');
   tabContent.className = 'eap-tab-content';
-  root.appendChild(tabContent);
+  main.appendChild(tabContent);
 
+  var tabPanels = {};
   TAB_IDS.forEach(function(id) {
     var panel = document.createElement('div');
     panel.className = 'eap-tab-panel' + (id === initialTab ? ' eap-tab-panel--active' : '');
@@ -94,7 +234,6 @@ window.EventCostV2.onUpdate = function(arg) {
     tabPanels[id] = panel;
   });
 
-  // Track which tabs have been initialized
   var tabInited = {};
   TAB_IDS.forEach(function(id) { tabInited[id] = false; });
   tabInited[initialTab] = true;
@@ -108,12 +247,11 @@ window.EventCostV2.onUpdate = function(arg) {
 
     TAB_IDS.forEach(function(id) {
       var isActive = id === tabId;
-      tabBtns[id].className   = 'eap-tab-btn'   + (isActive ? ' eap-tab-btn--active' : '');
-      tabPanels[id].className = 'eap-tab-panel'  + (isActive ? ' eap-tab-panel--active' : '');
+      navBtns[id].classList.toggle('eap-nav-btn--active', isActive);
+      tabPanels[id].classList.toggle('eap-tab-panel--active', isActive);
     });
 
     if (tabId === 'detail') {
-      // Re-render detail for the (possibly new) selected event
       renderDetailTab(eventSummary || null);
     } else if (tabId === 'reconciliation' && !tabInited.reconciliation) {
       tabInited.reconciliation = true;
@@ -126,7 +264,6 @@ window.EventCostV2.onUpdate = function(arg) {
       documentation.renderTab(tabPanels.docs);
     }
 
-    // If returning to siteStatus, force chart resize
     if (tabId === 'siteStatus' && state.chartInstance) {
       setTimeout(function() {
         state.chartInstance.resize();
@@ -139,21 +276,20 @@ window.EventCostV2.onUpdate = function(arg) {
     }
   }
 
-  tabBar.addEventListener('click', function(e) {
-    var btn = e.target.closest('.eap-tab-btn');
-    if (!btn) return;
+  navItems.addEventListener('click', function(e) {
+    var btn = e.target.closest('.eap-nav-btn');
+    if (!btn || btn.classList.contains('eap-nav-btn--disabled')) return;
     var id = btn.getAttribute('data-tab');
-    if (id === 'detail' && !state.selectedEventID) return; // require selection first
+    if (id === 'detail' && !state.selectedEventID) return;
     switchTab(id);
   });
 
   // ══════════════════════════════════════════════════════════════════
-  // TAB 1: MONTHLY OVERVIEW
+  // TAB RENDER FUNCTIONS (unchanged from original)
   // ══════════════════════════════════════════════════════════════════
 
   var monthlyPanel = tabPanels.monthly;
 
-  // Loading state
   var monthlyLoading = document.createElement('div');
   monthlyLoading.style.cssText = 'text-align:center;padding:100px 20px;color:#6c757d;';
   monthlyLoading.innerHTML = '<div class="edb-spinner" style="width:36px;height:36px;margin:0 auto 14px;"></div><div style="font-size:14px;font-weight:600;">Loading event cost data…</div>';
@@ -164,28 +300,21 @@ window.EventCostV2.onUpdate = function(arg) {
     monthlyOverview.render(monthlyPanel, eventSummaries, function(ev) {
       state.selectedEventID = ev.eventID;
       state.detailReturnTab = 'monthly';
+      // Unlock detail nav button
+      navBtns.detail.classList.remove('eap-nav-btn--disabled');
       switchTab('detail', ev);
     });
   }
-
-  // ══════════════════════════════════════════════════════════════════
-  // TAB 2: UTILITY RECONCILIATION
-  // ══════════════════════════════════════════════════════════════════
 
   function renderReconciliationTab() {
     var results = state.eventCostResults || [];
     utilReconciliation.render(tabPanels.reconciliation, results);
   }
 
-  // ══════════════════════════════════════════════════════════════════
-  // TAB 3: EVENT DETAIL
-  // ══════════════════════════════════════════════════════════════════
-
   function renderDetailTab(eventSummary) {
     var panel = tabPanels.detail;
     panel.innerHTML = '';
 
-    // If no summary passed, try to find it from state
     if (!eventSummary && state.selectedEventID && state.eventSummaries) {
       eventSummary = state.eventSummaries.find(function(ev) {
         return String(ev.eventID) === String(state.selectedEventID);
@@ -202,12 +331,8 @@ window.EventCostV2.onUpdate = function(arg) {
       panel,
       eventSummary,
       state.eventCostResults || [],
-      function() {
-        // Back button: return to originating tab
-        switchTab(state.detailReturnTab || 'monthly');
-      },
+      function() { switchTab(state.detailReturnTab || 'monthly'); },
       function(concurrentEvent) {
-        // Navigate to a concurrent event's detail
         var matched = (state.eventSummaries || []).find(function(ev) {
           return String(ev.eventID) === String(concurrentEvent.eventID);
         }) || concurrentEvent;
@@ -217,21 +342,11 @@ window.EventCostV2.onUpdate = function(arg) {
     );
   }
 
-  // ── Init detail tab if it was the last active tab ────────────────
-  if (initialTab === 'detail') {
-    renderDetailTab(null);
-  }
-
-  // ══════════════════════════════════════════════════════════════════
-  // TAB 4: SITE STATUS
-  // ══════════════════════════════════════════════════════════════════
+  if (initialTab === 'detail') renderDetailTab(null);
 
   function renderSiteStatusTab() {
-    siteStatus.render(tabPanels.siteStatus, function(refs) {
-      // Chart is ready — load power data if site is available
-      if (selectedSite && startDate && endDate) {
-        loadSiteStatusData();
-      }
+    siteStatus.render(tabPanels.siteStatus, function() {
+      if (selectedSite && startDate && endDate) loadSiteStatusData();
     });
   }
 
@@ -245,18 +360,8 @@ window.EventCostV2.onUpdate = function(arg) {
     }).catch(function(err) { console.warn('loadPowerData:', err); });
   }
 
-  // Init if siteStatus was initial tab
-  if (initialTab === 'siteStatus') {
-    renderSiteStatusTab();
-  }
-
-  // ══════════════════════════════════════════════════════════════════
-  // TAB 5: DOCUMENTATION
-  // ══════════════════════════════════════════════════════════════════
-
-  if (initialTab === 'docs') {
-    documentation.renderTab(tabPanels.docs);
-  }
+  if (initialTab === 'siteStatus') renderSiteStatusTab();
+  if (initialTab === 'docs') documentation.renderTab(tabPanels.docs);
 
   // ══════════════════════════════════════════════════════════════════
   // DATA LOADING
@@ -268,7 +373,6 @@ window.EventCostV2.onUpdate = function(arg) {
       return;
     }
 
-    // Show loading state in monthly tab
     monthlyPanel.innerHTML = '';
     monthlyPanel.appendChild(monthlyLoading);
 
@@ -280,13 +384,13 @@ window.EventCostV2.onUpdate = function(arg) {
       var siteName    = results[0];
       var rawResults  = results[1];
 
-      state.siteName          = siteName;
-      state.eventCostResults  = rawResults;
+      state.siteName         = siteName;
+      state.eventCostResults = rawResults;
 
       var eventSummaries = api.aggregateEventSummaries(rawResults);
       state.eventSummaries = eventSummaries;
 
-      // Build chart event objects for the Site Status tab
+      // Chart event objects for Site Status
       var chartColors = [
         'rgba(54,162,235,0.8)', 'rgba(255,99,132,0.8)', 'rgba(75,192,192,0.8)',
         'rgba(255,159,64,0.8)', 'rgba(153,102,255,0.8)', 'rgba(255,205,86,0.8)',
@@ -316,24 +420,19 @@ window.EventCostV2.onUpdate = function(arg) {
       state.visibilityState  = {};
       state.currentEvents.forEach(function(_, i) { state.visibilityState[i] = false; });
 
-      // Update title bar
+      // Update sidebar site name + title bar
+      navLogoSite.textContent = siteName;
       titleSite.textContent = 'Event Utility Cost Tracking — ' + siteName;
 
-      // Render Monthly Overview (always)
       renderMonthlyTab(eventSummaries);
 
-      // Re-render reconciliation if it was already open
-      if (tabInited.reconciliation) {
-        renderReconciliationTab();
-      }
+      if (tabInited.reconciliation) renderReconciliationTab();
 
-      // Update Site Status chart if it was already open
       if (tabInited.siteStatus && state._siteStatus_refreshUtility) {
         state.utilityData = {};
         loadSiteStatusData();
       }
 
-      // Re-render detail if it was the active tab
       if (state.activeTab === 'detail' && state.selectedEventID) {
         var matched = eventSummaries.find(function(ev) {
           return String(ev.eventID) === String(state.selectedEventID);
@@ -348,7 +447,7 @@ window.EventCostV2.onUpdate = function(arg) {
 
   loadData();
 
-  // ── Variable polling ─────────────────────────────────────────────
+  // ── SkySpark variable polling (external date/site changes) ─────────
   skyspark.startPolling(view, { selectedSite: selectedSite, startDate: startDate, endDate: endDate },
     function(newSite, newStart, newEnd) {
       selectedSite = newSite;
@@ -358,7 +457,6 @@ window.EventCostV2.onUpdate = function(arg) {
       state._startDate    = newStart;
       state._endDate      = newEnd;
 
-      // Clear caches
       state.eventCostResults = null;
       state.eventSummaries   = null;
       state.utilityData      = {};
