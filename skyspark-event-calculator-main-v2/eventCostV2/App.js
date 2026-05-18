@@ -74,6 +74,11 @@ window.EventCostV2.onUpdate = function(arg) {
   nav.className = 'eap-nav';
   root.appendChild(nav);
 
+  // ── Site & date range controls (top of sidebar) ──────────────────
+  var navControls = document.createElement('div');
+  navControls.className = 'eap-nav-controls';
+  nav.appendChild(navControls);
+
   // Header: logo + site name (two-line) + collapse button
   var navHeader = document.createElement('div');
   navHeader.className = 'eap-nav-header';
@@ -98,11 +103,6 @@ window.EventCostV2.onUpdate = function(arg) {
   collapseBtn.title = 'Collapse sidebar';
   collapseBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M8 1.5L3 6.5l5 5"/></svg>';
   navHeader.appendChild(collapseBtn);
-
-  // ── Site & date range controls ────────────────────────────────────
-  var navControls = document.createElement('div');
-  navControls.className = 'eap-nav-controls';
-  nav.appendChild(navControls);
 
   // Site selector
   var siteGroup = document.createElement('div');
