@@ -74,21 +74,112 @@ window.EventCostV2.onUpdate = function(arg) {
   nav.className = 'eap-nav';
   root.appendChild(nav);
 
-  // Header: logo + collapse button
+  // Header: logo + site name (two-line) + collapse button
   var navHeader = document.createElement('div');
   navHeader.className = 'eap-nav-header';
   nav.appendChild(navHeader);
 
   var navLogo = document.createElement('div');
   navLogo.className = 'eap-nav-logo';
-  navLogo.innerHTML = '<span class="eap-nav-logo-label">Event Cost</span>';
   navHeader.appendChild(navLogo);
+
+  var navLogoLabel = document.createElement('span');
+  navLogoLabel.className = 'eap-nav-logo-label';
+  navLogoLabel.textContent = 'Event Cost Calc';
+  navLogo.appendChild(navLogoLabel);
+
+  // titleSite lives here; loadData() fills it with the site name
+  var titleSite = document.createElement('span');
+  titleSite.className = 'eap-nav-site-name';
+  navLogo.appendChild(titleSite);
 
   var collapseBtn = document.createElement('button');
   collapseBtn.className = 'eap-nav-collapse-btn';
   collapseBtn.title = 'Collapse sidebar';
   collapseBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M8 1.5L3 6.5l5 5"/></svg>';
   navHeader.appendChild(collapseBtn);
+
+  // ── Site & date range controls ────────────────────────────────────
+  var navControls = document.createElement('div');
+  navControls.className = 'eap-nav-controls';
+  nav.appendChild(navControls);
+
+  // Site selector
+  var siteGroup = document.createElement('div');
+  siteGroup.className = 'eap-ctrl-group';
+  navControls.appendChild(siteGroup);
+
+  var siteLbl = document.createElement('label');
+  siteLbl.className = 'eap-ctrl-label';
+  siteLbl.textContent = 'Site';
+  siteGroup.appendChild(siteLbl);
+
+  var siteSelectEl = document.createElement('select');
+  siteSelectEl.className = 'eap-ctrl-select';
+  siteSelectEl.disabled = true;
+  var siteOptEl = document.createElement('option');
+  siteOptEl.textContent = '— Select site —';
+  siteSelectEl.appendChild(siteOptEl);
+  siteGroup.appendChild(siteSelectEl);
+
+  // Date range
+  var dateGroup = document.createElement('div');
+  dateGroup.className = 'eap-ctrl-group';
+  navControls.appendChild(dateGroup);
+
+  var dateLbl = document.createElement('label');
+  dateLbl.className = 'eap-ctrl-label';
+  dateLbl.textContent = 'Date Range';
+  dateGroup.appendChild(dateLbl);
+
+  // Navigation row: ‹  Past Week  ›  Refresh
+  var dateNav = document.createElement('div');
+  dateNav.className = 'eap-date-nav';
+  dateGroup.appendChild(dateNav);
+
+  var datePrevBtn = document.createElement('button');
+  datePrevBtn.className = 'eap-date-arrow';
+  datePrevBtn.innerHTML = '&#8249;';
+  dateNav.appendChild(datePrevBtn);
+
+  var dateDisplay = document.createElement('span');
+  dateDisplay.className = 'eap-date-display';
+  dateDisplay.textContent = 'Past Week';
+  dateNav.appendChild(dateDisplay);
+
+  var dateNextBtn = document.createElement('button');
+  dateNextBtn.className = 'eap-date-arrow';
+  dateNextBtn.innerHTML = '&#8250;';
+  dateNav.appendChild(dateNextBtn);
+
+  var refreshBtn = document.createElement('button');
+  refreshBtn.className = 'eap-date-refresh';
+  refreshBtn.title = 'Refresh';
+  refreshBtn.textContent = 'Refresh';
+  dateNav.appendChild(refreshBtn);
+
+  // Period buttons: Day / Week / Month / Quarter / Year / Other / Recent
+  var periodRow = document.createElement('div');
+  periodRow.className = 'eap-period-btns';
+  dateGroup.appendChild(periodRow);
+
+  var PERIODS = ['Day', 'Week', 'Month', 'Quarter', 'Year', 'Other', 'Recent'];
+  var _activePeriod = 'Other';
+  var _periodBtns = {};
+
+  PERIODS.forEach(function(p) {
+    var pb = document.createElement('button');
+    pb.className = 'eap-period-btn' + (p === _activePeriod ? ' eap-period-btn--active' : '');
+    pb.textContent = p;
+    pb.addEventListener('click', function() {
+      if (_activePeriod === p) return;
+      _periodBtns[_activePeriod].classList.remove('eap-period-btn--active');
+      _activePeriod = p;
+      pb.classList.add('eap-period-btn--active');
+    });
+    periodRow.appendChild(pb);
+    _periodBtns[p] = pb;
+  });
 
   // Nav items (one per tab)
   var navItems = document.createElement('div');
@@ -143,20 +234,10 @@ window.EventCostV2.onUpdate = function(arg) {
       : '<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M8 1.5L3 6.5l5 5"/></svg>';
   });
 
-  // ── Main content area ─────────────────────────────────────────────
+  // ── Main content area (no topbar — title lives in sidebar) ────────
   var mainArea = document.createElement('div');
   mainArea.className = 'eap-main';
   root.appendChild(mainArea);
-
-  // Thin topbar — just shows the site name
-  var topbar = document.createElement('div');
-  topbar.className = 'eap-topbar';
-  mainArea.appendChild(topbar);
-
-  var titleSite = document.createElement('span');
-  titleSite.className = 'eap-title-site';
-  titleSite.textContent = 'Event Utility Cost Tracking';
-  topbar.appendChild(titleSite);
 
   // Tab content panels
   var tabContent = document.createElement('div');
@@ -400,8 +481,8 @@ window.EventCostV2.onUpdate = function(arg) {
       state.visibilityState  = {};
       state.currentEvents.forEach(function(_, i) { state.visibilityState[i] = false; });
 
-      // Update title bar
-      titleSite.textContent = 'Event Utility Cost Tracking — ' + siteName;
+      // Update site name in sidebar header
+      titleSite.textContent = siteName;
 
       // Render Monthly Overview (always)
       renderMonthlyTab(eventSummaries);
