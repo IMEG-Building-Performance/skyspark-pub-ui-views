@@ -50,43 +50,118 @@ window.EventCostV2.onUpdate = function(arg) {
   root.className = 'eap-root';
   elem.appendChild(root);
 
-  // Title bar
-  var titleBar = document.createElement('div');
-  titleBar.className = 'eap-title-bar';
-  root.appendChild(titleBar);
-
-  var titleSite = document.createElement('span');
-  titleSite.className = 'eap-title-site';
-  titleSite.textContent = 'Event Utility Cost Tracking';
-  titleBar.appendChild(titleSite);
-
-  // Tab bar
-  var tabBar = document.createElement('div');
-  tabBar.className = 'eap-tab-bar';
-  titleBar.appendChild(tabBar);
-
   var TAB_IDS    = ['tracker', 'monthly', 'reconciliation', 'detail', 'siteStatus', 'docs'];
   var TAB_LABELS = ['Project Tracker', 'Monthly Overview', 'Utility Reconciliation', 'Event Detail', 'Site Status', 'Documentation'];
+  var TAB_ICONS  = [
+    '<svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="1.5" y="1.5" width="6" height="6" rx="1"/><rect x="9.5" y="1.5" width="6" height="6" rx="1"/><rect x="1.5" y="9.5" width="6" height="6" rx="1"/><rect x="9.5" y="9.5" width="6" height="6" rx="1"/></svg>',
+    '<svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="1.5" y="3" width="14" height="12" rx="1.5"/><path d="M1.5 6.5h14"/><path d="M5.5 1v3M11.5 1v3"/></svg>',
+    '<svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 5.5h12M10.5 2.5l4 3-4 3M14.5 11.5h-12M6.5 8.5l-4 3 4 3"/></svg>',
+    '<svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2.5" y="1.5" width="12" height="14" rx="1.5"/><path d="M5.5 5.5h6M5.5 8.5h6M5.5 11.5h3"/></svg>',
+    '<svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 8.5h2.5l2-5 3.5 9.5 2.5-7 2 5 1-2.5h2.5"/></svg>',
+    '<svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="1.5" y="2" width="14" height="13" rx="1.5"/><path d="M5 6h7M5 9h7M5 12h4"/></svg>'
+  ];
 
   // Restore last active tab (skip 'detail' on fresh load — it requires a selected event)
   var initialTab = state.activeTab || 'tracker';
   if (initialTab === 'detail' && !state.selectedEventID) initialTab = 'tracker';
 
+  // ── Dark mode (persisted in localStorage) ───────────────────────
+  var darkMode = localStorage.getItem('eap-v2-dark') === '1';
+  if (darkMode) root.classList.add('eap-dark');
+
+  // ── Left nav sidebar ─────────────────────────────────────────────
+  var nav = document.createElement('nav');
+  nav.className = 'eap-nav';
+  root.appendChild(nav);
+
+  // Header: logo + collapse button
+  var navHeader = document.createElement('div');
+  navHeader.className = 'eap-nav-header';
+  nav.appendChild(navHeader);
+
+  var navLogo = document.createElement('div');
+  navLogo.className = 'eap-nav-logo';
+  navLogo.innerHTML = '<span class="eap-nav-logo-label">Event Cost</span>';
+  navHeader.appendChild(navLogo);
+
+  var collapseBtn = document.createElement('button');
+  collapseBtn.className = 'eap-nav-collapse-btn';
+  collapseBtn.title = 'Collapse sidebar';
+  collapseBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M8 1.5L3 6.5l5 5"/></svg>';
+  navHeader.appendChild(collapseBtn);
+
+  // Nav items (one per tab)
+  var navItems = document.createElement('div');
+  navItems.className = 'eap-nav-items';
+  nav.appendChild(navItems);
+
   var tabBtns   = {};
   var tabPanels = {};
 
   TAB_IDS.forEach(function(id, i) {
-    var btn = document.createElement('button');
-    btn.className = 'eap-tab-btn' + (id === initialTab ? ' eap-tab-btn--active' : '');
-    btn.textContent = TAB_LABELS[i];
-    btn.setAttribute('data-tab', id);
-    tabBar.appendChild(btn);
-    tabBtns[id] = btn;
+    var item = document.createElement('button');
+    item.className = 'eap-nav-item' + (id === initialTab ? ' eap-nav-item--active' : '');
+    item.setAttribute('data-tab', id);
+    item.title = TAB_LABELS[i];
+    item.innerHTML = '<span class="eap-nav-item-icon">' + TAB_ICONS[i] + '</span>' +
+                     '<span class="eap-nav-item-label">' + TAB_LABELS[i] + '</span>';
+    navItems.appendChild(item);
+    tabBtns[id] = item;
   });
 
+  // Footer: dark mode toggle
+  var navFooter = document.createElement('div');
+  navFooter.className = 'eap-nav-footer';
+  nav.appendChild(navFooter);
+
+  var darkBtn = document.createElement('button');
+  darkBtn.className = 'eap-dark-btn';
+  darkBtn.title = 'Toggle dark mode';
+  function _updateDarkBtn() {
+    darkBtn.innerHTML = darkMode
+      ? '<span class="eap-dark-btn-icon">&#9728;</span><span class="eap-dark-btn-label">Light Mode</span>'
+      : '<span class="eap-dark-btn-icon">&#9682;</span><span class="eap-dark-btn-label">Dark Mode</span>';
+  }
+  _updateDarkBtn();
+  navFooter.appendChild(darkBtn);
+
+  darkBtn.addEventListener('click', function() {
+    darkMode = !darkMode;
+    root.classList.toggle('eap-dark', darkMode);
+    localStorage.setItem('eap-v2-dark', darkMode ? '1' : '0');
+    _updateDarkBtn();
+  });
+
+  // Sidebar collapse/expand
+  var navCollapsed = false;
+  collapseBtn.addEventListener('click', function() {
+    navCollapsed = !navCollapsed;
+    nav.classList.toggle('eap-nav--collapsed', navCollapsed);
+    collapseBtn.title = navCollapsed ? 'Expand sidebar' : 'Collapse sidebar';
+    collapseBtn.innerHTML = navCollapsed
+      ? '<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M5 1.5l5 5-5 5"/></svg>'
+      : '<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M8 1.5L3 6.5l5 5"/></svg>';
+  });
+
+  // ── Main content area ─────────────────────────────────────────────
+  var mainArea = document.createElement('div');
+  mainArea.className = 'eap-main';
+  root.appendChild(mainArea);
+
+  // Thin topbar — just shows the site name
+  var topbar = document.createElement('div');
+  topbar.className = 'eap-topbar';
+  mainArea.appendChild(topbar);
+
+  var titleSite = document.createElement('span');
+  titleSite.className = 'eap-title-site';
+  titleSite.textContent = 'Event Utility Cost Tracking';
+  topbar.appendChild(titleSite);
+
+  // Tab content panels
   var tabContent = document.createElement('div');
   tabContent.className = 'eap-tab-content';
-  root.appendChild(tabContent);
+  mainArea.appendChild(tabContent);
 
   TAB_IDS.forEach(function(id) {
     var panel = document.createElement('div');
@@ -114,7 +189,7 @@ window.EventCostV2.onUpdate = function(arg) {
 
     TAB_IDS.forEach(function(id) {
       var isActive = id === tabId;
-      tabBtns[id].className   = 'eap-tab-btn'   + (isActive ? ' eap-tab-btn--active' : '');
+      tabBtns[id].className   = 'eap-nav-item'  + (isActive ? ' eap-nav-item--active'  : '');
       tabPanels[id].className = 'eap-tab-panel'  + (isActive ? ' eap-tab-panel--active' : '');
     });
 
@@ -148,10 +223,10 @@ window.EventCostV2.onUpdate = function(arg) {
     }
   }
 
-  tabBar.addEventListener('click', function(e) {
-    var btn = e.target.closest('.eap-tab-btn');
-    if (!btn) return;
-    var id = btn.getAttribute('data-tab');
+  navItems.addEventListener('click', function(e) {
+    var item = e.target.closest('.eap-nav-item');
+    if (!item) return;
+    var id = item.getAttribute('data-tab');
     if (id === 'detail' && !state.selectedEventID) return; // require selection first
     switchTab(id);
   });
