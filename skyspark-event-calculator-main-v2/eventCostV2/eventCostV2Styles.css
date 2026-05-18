@@ -5,7 +5,7 @@
 
 /* ── Base font ─────────────────────────────────────────────────── */
 .eap-root * {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   box-sizing: border-box;
 }
 
@@ -19,50 +19,54 @@
 
 /* ── Title bar ─────────────────────────────────────────────────── */
 .eap-title-bar {
-  background: #4A6FA5;
-  color: white;
-  padding: 0 24px;
+  background: #ffffff;
+  color: #111827;
+  padding: 0 28px;
   display: flex;
   align-items: center;
-  gap: 24px;
-  min-height: 48px;
+  gap: 28px;
+  min-height: 52px;
   flex-shrink: 0;
+  border-bottom: 1px solid #E5E7EB;
 }
 
 .eap-title-site {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   white-space: nowrap;
+  color: #111827;
+  letter-spacing: -0.01em;
 }
 
 /* ── Tab bar (inside title bar) ────────────────────────────────── */
 .eap-tab-bar {
   display: flex;
-  gap: 2px;
+  gap: 0;
   flex: 1;
 }
 
 .eap-tab-btn {
-  padding: 14px 16px;
+  padding: 0 16px;
+  height: 52px;
   background: transparent;
   border: none;
-  color: rgba(255, 255, 255, 0.75);
+  color: #6B7280;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
-  border-bottom: 3px solid transparent;
-  transition: all 0.15s;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
   white-space: nowrap;
 }
 
 .eap-tab-btn:hover {
-  color: white;
-  background: rgba(255, 255, 255, 0.08);
+  color: #111827;
 }
 
 .eap-tab-btn--active {
-  color: white;
-  border-bottom-color: white;
+  color: #2563EB;
+  font-weight: 600;
+  border-bottom-color: #2563EB;
 }
 
 /* ── Tab content area ──────────────────────────────────────────── */
@@ -87,45 +91,44 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 16px;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .eap-summary-card {
   background: white;
   border: 1px solid #E5E7EB;
-  border-radius: 8px;
-  padding: 16px 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+  padding: 20px 22px;
 }
 
 .eap-summary-card-label {
   font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #6c757d;
+  letter-spacing: 0.06em;
+  color: #9CA3AF;
   font-weight: 600;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .eap-summary-card-value {
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 700;
-  color: #1565c0;
+  color: #2563EB;
+  letter-spacing: -0.02em;
 }
 
 /* ── Summary table (shared with V1) ───────────────────────────── */
 .eap-summary-table-section {
   background: white;
   border: 1px solid #E5E7EB;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
   overflow: hidden;
 }
 
 .eap-summary-table-title {
   font-size: 14px;
   font-weight: 700;
-  color: #374151;
+  color: #111827;
   margin: 0 0 14px 0;
 }
 
@@ -136,21 +139,23 @@
 }
 
 .eap-summary-table thead th {
-  background: #1565c0;
-  color: white;
-  padding: 10px 12px;
+  background: #F9FAFB;
+  color: #6B7280;
+  padding: 11px 14px;
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.06em;
   text-align: left;
   white-space: nowrap;
   cursor: pointer;
   user-select: none;
+  border-bottom: 1px solid #E5E7EB;
 }
 
 .eap-summary-table thead th:hover {
-  background: #1a76d2;
+  background: #F3F4F6;
+  color: #374151;
 }
 
 .eap-summary-table tbody tr {
@@ -159,19 +164,19 @@
 }
 
 .eap-summary-table tbody tr:hover {
-  background: #EBF5FB !important;
+  background: #EFF6FF !important;
 }
 
 .eap-summary-table tbody td {
-  padding: 9px 12px;
-  border-bottom: 1px solid #f0f0f0;
+  padding: 11px 14px;
+  border-bottom: 1px solid #F3F4F6;
   color: #374151;
 }
 
 /* ── Spinner animation ─────────────────────────────────────────── */
 .edb-spinner {
   border: 3px solid #E5E7EB;
-  border-top-color: #1565c0;
+  border-top-color: #2563EB;
   border-radius: 50%;
   animation: edb-spin 0.8s linear infinite;
 }
@@ -222,18 +227,18 @@
 .ecv2-event-header {
   background: white;
   border: 1px solid #E5E7EB;
-  border-radius: 8px;
-  padding: 28px 24px;
+  border-radius: 10px;
+  padding: 32px 28px;
   margin-bottom: 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   text-align: center;
 }
 
 .ecv2-event-total {
-  font-size: 48px;
+  font-size: 52px;
   font-weight: 900;
-  color: #17a2b8;
+  color: #2563EB;
   line-height: 1;
+  letter-spacing: -0.03em;
 }
 
 /* ── Two-column layout (spaces + meters) ───────────────────────── */
@@ -261,38 +266,39 @@
 }
 
 .pt-title-bar {
-  background: #4A6FA5;
-  color: #fff;
-  padding: 10px 24px;
+  background: #ffffff;
+  color: #111827;
+  padding: 12px 28px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-shrink: 0;
+  border-bottom: 1px solid #E5E7EB;
 }
 
 .pt-title-left { display: flex; align-items: center; gap: 14px; }
-.pt-title-text  { font-size: 15px; font-weight: 700; }
-.pt-subtitle    { font-size: 11px; opacity: 0.6; }
+.pt-title-text  { font-size: 15px; font-weight: 700; color: #111827; }
+.pt-subtitle    { font-size: 11px; color: #9CA3AF; }
 
-.pt-header-stats  { display: flex; gap: 18px; align-items: center; }
+.pt-header-stats  { display: flex; gap: 20px; align-items: center; }
 .pt-header-stat   { text-align: center; }
-.pt-stat-val      { font-size: 18px; font-weight: 800; line-height: 1; }
-.pt-stat-lbl      { font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.6; }
-.pt-header-divider { width: 1px; height: 28px; background: rgba(255,255,255,0.2); }
+.pt-stat-val      { font-size: 18px; font-weight: 800; line-height: 1; color: #2563EB; }
+.pt-stat-lbl      { font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; color: #9CA3AF; }
+.pt-header-divider { width: 1px; height: 28px; background: #E5E7EB; }
 
 .pt-progress-outer {
   width: 120px; height: 5px;
-  background: rgba(255,255,255,0.2);
+  background: #E5E7EB;
   border-radius: 3px; overflow: hidden;
 }
 .pt-progress-inner {
-  height: 100%; background: #fff;
+  height: 100%; background: #2563EB;
   border-radius: 3px; transition: width 0.4s ease;
 }
 
 .pt-filter-bar {
-  padding: 8px 24px;
-  background: #fff;
+  padding: 8px 28px;
+  background: #F9FAFB;
   border-bottom: 1px solid #E5E7EB;
   display: flex;
   align-items: center;
@@ -303,25 +309,25 @@
 
 .pt-filter-label {
   font-size: 11px; font-weight: 600;
-  color: #6B7280; text-transform: uppercase;
+  color: #9CA3AF; text-transform: uppercase;
   letter-spacing: 0.05em; margin-right: 2px;
 }
 
 .pt-filter-btn {
   font-size: 11px; font-weight: 600;
-  padding: 3px 9px;
-  border-radius: 4px;
+  padding: 4px 10px;
+  border-radius: 5px;
   border: 1px solid #E5E7EB;
   background: #fff; color: #6B7280;
   cursor: pointer; transition: all 0.12s;
 }
-.pt-filter-btn:hover       { border-color: #4A6FA5; color: #4A6FA5; }
-.pt-filter-btn--active     { background: #4A6FA5; color: #fff; border-color: #4A6FA5; }
+.pt-filter-btn:hover       { border-color: #2563EB; color: #2563EB; }
+.pt-filter-btn--active     { background: #2563EB; color: #fff; border-color: #2563EB; }
 
 .pt-filter-sep { width: 1px; height: 18px; background: #E5E7EB; margin: 0 4px; }
 
 .pt-view-toggle { margin-left: auto; display: flex; gap: 4px; }
-.pt-view-btn--active { background: #374151 !important; color: #fff !important; border-color: #374151 !important; }
+.pt-view-btn--active { background: #2563EB !important; color: #fff !important; border-color: #2563EB !important; }
 
 /* ── Kanban board ───────────────────────────────────────────────── */
 .pt-board {
@@ -419,10 +425,11 @@
   border: 1px solid #E5E7EB; border-radius: 8px; overflow: hidden;
 }
 .pt-table thead th {
-  background: #4A6FA5; color: #fff;
-  padding: 10px 14px; font-size: 11px; font-weight: 600;
-  text-transform: uppercase; letter-spacing: 0.04em;
+  background: #F9FAFB; color: #6B7280;
+  padding: 11px 14px; font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.06em;
   text-align: left; white-space: nowrap;
+  border-bottom: 1px solid #E5E7EB;
 }
 .pt-table tbody tr { border-bottom: 1px solid #F3F4F6; transition: background 0.1s; }
 .pt-table tbody tr:last-child { border-bottom: none; }
@@ -465,13 +472,13 @@
 .pt-ctx-toggle {
   position: absolute; bottom: 14px; right: 14px;
   width: 38px; height: 38px; border-radius: 8px;
-  background: #4A6FA5; color: #fff; border: none;
+  background: #2563EB; color: #fff; border: none;
   cursor: pointer; font-size: 17px;
   display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.15); z-index: 10;
+  box-shadow: 0 2px 10px rgba(37,99,235,0.25); z-index: 10;
   transition: background 0.15s;
 }
-.pt-ctx-toggle:hover { background: #3d5f8f; }
+.pt-ctx-toggle:hover { background: #1D4ED8; }
 
 .pt-context-drawer {
   position: absolute; top: 0; right: -460px; width: 440px; height: 100%;
@@ -525,7 +532,7 @@
 .pt-ctx-body p  { margin: 4px 0; }
 .pt-ctx-body code {
   background: #F3F4F6; padding: 1px 4px; border-radius: 3px;
-  font-size: 11px; font-family: "SF Mono","Fira Code",Consolas,monospace; color: #1565c0;
+  font-size: 11px; font-family: "SF Mono","Fira Code",Consolas,monospace; color: #2563EB;
 }
 
 .pt-ctx-table { width: 100%; border-collapse: collapse; font-size: 11px; margin: 6px 0; }
@@ -539,19 +546,19 @@
 .doc-section {
   background: white;
   border: 1px solid #E5E7EB;
-  border-radius: 8px;
-  padding: 24px 28px;
+  border-radius: 10px;
+  padding: 28px 32px;
   margin-bottom: 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .doc-section h2 {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 700;
-  color: #1565c0;
+  color: #111827;
   margin: 0 0 16px 0;
   padding-bottom: 12px;
-  border-bottom: 2px solid #E5E7EB;
+  border-bottom: 1px solid #E5E7EB;
+  letter-spacing: -0.01em;
 }
 
 .doc-section h3 {
