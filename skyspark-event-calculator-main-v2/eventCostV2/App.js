@@ -39,6 +39,7 @@ window.EventCostV2.onUpdate = function(arg) {
   state._selectedSite = selectedSite;
   state._startDate    = startDate;
   state._endDate      = endDate;
+  state._view         = view; // kept for write-back to SkySpark dateRange
 
   window.EventCostV2.computeScaling();
 
@@ -122,6 +123,9 @@ window.EventCostV2.onUpdate = function(arg) {
       state.eventCostResults = null;
       state.eventSummaries   = null;
       state.utilityData      = {};
+      // Propagate the new date range back to SkySpark so the view bar and
+      // any other shared views stay in sync
+      skyspark.writeDateRange(view, newStart, newEnd);
       loadData();
     }
   });
