@@ -415,7 +415,7 @@ window.EventCostV2.onUpdate = function(arg) {
 
       state.currentDateRange = { startDate: startDate, endDate: endDate };
       state.visibilityState  = {};
-      state.currentEvents.forEach(function(_, i) { state.visibilityState[i] = false; });
+      state.currentEvents.forEach(function(_, i) { state.visibilityState[i] = true; });
 
       titleSite.textContent = 'Event Utility Cost Tracking — ' + siteName;
 
