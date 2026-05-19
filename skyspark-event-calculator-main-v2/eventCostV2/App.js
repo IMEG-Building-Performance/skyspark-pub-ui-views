@@ -18,6 +18,7 @@ window.EventCostV2.onUpdate = function(arg) {
   var state              = window.EventCostV2.state;
   var skyspark           = window.EventCostV2.skyspark;
   var api                = window.EventCostV2.api;
+  var projectTracker     = window.EventCostV2.projectTracker;
   var monthlyOverview    = window.EventCostV2.monthlyOverview;
   var utilReconciliation = window.EventCostV2.utilityReconciliation;
   var eventDetailV2      = window.EventCostV2.eventDetailV2;
