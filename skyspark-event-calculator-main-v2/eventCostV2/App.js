@@ -113,9 +113,21 @@ window.EventCostV2.onUpdate = function(arg) {
   // ── Body: sidebar nav + content ─────────────────────────────────
   var TAB_IDS    = ['monthly', 'reconciliation', 'detail', 'siteStatus', 'docs'];
   var TAB_LABELS = ['Monthly Overview', 'Utility Reconciliation', 'Event Detail', 'Site Status', 'Documentation'];
+  var TAB_ICONS  = [
+    '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="3" width="13" height="11.5" rx="1.5"/><path d="M1.5 7h13M5 1.5V4M11 1.5V4"/></svg>',
+    '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5h12M10.5 2.5 13 5l-2.5 2.5M14 11H2M5.5 8.5 3 11l2.5 2.5"/></svg>',
+    '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="1.5" width="11" height="13" rx="1.5"/><path d="M5 5.5h6M5 8.5h6M5 11.5h3.5"/></svg>',
+    '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 12.5 5 7.5l3.5 2.5 3-5.5 3 3"/><path d="M1.5 12.5h13"/></svg>',
+    '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.5A6.5 6.5 0 1 1 8 14.5A6.5 6.5 0 0 1 8 1.5z"/><path d="M8 5.5v3l2 1.5"/></svg>'
+  ];
 
   var initialTab = state.activeTab || 'monthly';
   if (initialTab === 'detail' && !state.selectedEventID) initialTab = 'monthly';
+
+  var darkMode = localStorage.getItem('eap-v2-dark') === '1';
+  if (darkMode) root.classList.add('eap-root--dark');
+
+  var sidebarCollapsed = state.sidebarCollapsed || false;
 
   var body = document.createElement('div');
   body.className = 'eap-body';
@@ -123,7 +135,11 @@ window.EventCostV2.onUpdate = function(arg) {
 
   // Sidebar
   var sidebar = document.createElement('nav');
-  sidebar.className = 'eap-sidebar';
+  sidebar.className = 'eap-sidebar' + (sidebarCollapsed ? ' eap-sidebar--collapsed' : '');
+
+  // Nav items
+  var navList = document.createElement('div');
+  navList.className = 'eap-sidebar-nav';
 
   var tabBtns = {};
   TAB_IDS.forEach(function(id, i) {
@@ -131,11 +147,67 @@ window.EventCostV2.onUpdate = function(arg) {
     btn.className = 'eap-tab-btn' +
       (id === initialTab ? ' eap-tab-btn--active' : '') +
       (id === 'detail' && !state.selectedEventID ? ' eap-tab-btn--disabled' : '');
-    btn.textContent = TAB_LABELS[i];
     btn.setAttribute('data-tab', id);
-    sidebar.appendChild(btn);
+    btn.title = TAB_LABELS[i];
+
+    var iconEl = document.createElement('span');
+    iconEl.className = 'eap-tab-btn-icon';
+    iconEl.innerHTML = TAB_ICONS[i];
+
+    var labelEl = document.createElement('span');
+    labelEl.className = 'eap-tab-btn-label';
+    labelEl.textContent = TAB_LABELS[i];
+
+    btn.appendChild(iconEl);
+    btn.appendChild(labelEl);
+    navList.appendChild(btn);
     tabBtns[id] = btn;
   });
+
+  sidebar.appendChild(navList);
+
+  // Sidebar footer: dark mode + collapse
+  var sidebarFooter = document.createElement('div');
+  sidebarFooter.className = 'eap-sidebar-footer';
+
+  var darkBtn = document.createElement('button');
+  darkBtn.className = 'eap-sidebar-icon-btn';
+  darkBtn.title = darkMode ? 'Switch to light mode' : 'Switch to dark mode';
+  darkBtn.innerHTML = darkMode
+    ? '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="3"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3.2 3.2l1 1M11.8 11.8l1 1M12.8 3.2l-1 1M4.2 11.8l-1 1"/></svg>'
+    : '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M13.5 10A5.5 5.5 0 0 1 6 2.5a6 6 0 1 0 7.5 7.5z"/></svg>';
+
+  darkBtn.addEventListener('click', function() {
+    darkMode = !darkMode;
+    localStorage.setItem('eap-v2-dark', darkMode ? '1' : '0');
+    root.classList.toggle('eap-root--dark', darkMode);
+    darkBtn.title = darkMode ? 'Switch to light mode' : 'Switch to dark mode';
+    darkBtn.innerHTML = darkMode
+      ? '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="3"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3.2 3.2l1 1M11.8 11.8l1 1M12.8 3.2l-1 1M4.2 11.8l-1 1"/></svg>'
+      : '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M13.5 10A5.5 5.5 0 0 1 6 2.5a6 6 0 1 0 7.5 7.5z"/></svg>';
+  });
+
+  var collapseBtn = document.createElement('button');
+  collapseBtn.className = 'eap-sidebar-icon-btn';
+  collapseBtn.title = sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar';
+  function updateCollapseIcon() {
+    collapseBtn.innerHTML = sidebarCollapsed
+      ? '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg>'
+      : '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3L5 8l5 5"/></svg>';
+  }
+  updateCollapseIcon();
+
+  collapseBtn.addEventListener('click', function() {
+    sidebarCollapsed = !sidebarCollapsed;
+    state.sidebarCollapsed = sidebarCollapsed;
+    sidebar.classList.toggle('eap-sidebar--collapsed', sidebarCollapsed);
+    collapseBtn.title = sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar';
+    updateCollapseIcon();
+  });
+
+  sidebarFooter.appendChild(darkBtn);
+  sidebarFooter.appendChild(collapseBtn);
+  sidebar.appendChild(sidebarFooter);
 
   body.appendChild(sidebar);
 
