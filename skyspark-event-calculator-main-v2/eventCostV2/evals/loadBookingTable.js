@@ -91,7 +91,7 @@ window.EventCostV2.api.loadConcurrentEvents = function(startDate, endDate) {
     return rows.map(function(row) {
       return {
         eventID:    extractValue(row.eventID),
-        eventName:  extractValue(row.eventName) || extractValue(row.dis) || extractValue(row.event),
+        eventName:  extractValue(row.legalName) || extractValue(row.eventName) || extractValue(row.dis) || extractValue(row.event),
         eventStart: extractValue(row.eventStart) || extractValue(row.startDate),
         eventEnd:   extractValue(row.eventEnd) || extractValue(row.endDate),
         eventSF:    extractValue(row.eventSF)
