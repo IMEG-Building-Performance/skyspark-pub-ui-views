@@ -75,38 +75,53 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   TAB BAR  (below header, light style)
+   BODY ROW  (sidebar nav + content)
    ══════════════════════════════════════════════════════════════════ */
-.eap-tab-bar {
+.eap-body {
   display: flex;
-  gap: 0;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ── Sidebar nav ─────────────────────────────────────────────── */
+.eap-sidebar {
+  width: 192px;
   flex-shrink: 0;
   background: #fff;
-  border-bottom: 1px solid #E5E7EB;
-  padding: 0 20px;
+  border-right: 1px solid #E5E7EB;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0;
+  overflow-y: auto;
 }
 
 .eap-tab-btn {
-  padding: 10px 16px;
+  display: block;
+  width: 100%;
+  padding: 9px 20px;
   background: transparent;
   border: none;
-  border-bottom: 2px solid transparent;
+  border-left: 3px solid transparent;
   color: #6B7280;
   font-size: 13px;
   font-weight: 500;
+  text-align: left;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.12s;
   white-space: nowrap;
-  margin-bottom: -1px;
 }
 
-.eap-tab-btn:hover { color: #1F2937; }
+.eap-tab-btn:hover { color: #1F2937; background: #F9FAFB; }
 
 .eap-tab-btn--active {
   color: #1D4ED8;
   font-weight: 600;
-  border-bottom-color: #1D4ED8;
+  border-left-color: #1D4ED8;
+  background: #EFF6FF;
 }
+
+.eap-tab-btn--active:hover { background: #DBEAFE; }
 
 .eap-tab-btn--disabled {
   opacity: 0.4;
@@ -114,9 +129,10 @@
   pointer-events: none;
 }
 
-/* ── Tab content ────────────────────────────────────────────────── */
+/* ── Tab content ─────────────────────────────────────────────── */
 .eap-tab-content {
   flex: 1;
+  min-width: 0;
   position: relative;
   overflow: hidden;
 }

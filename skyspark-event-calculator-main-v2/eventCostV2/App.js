@@ -110,16 +110,20 @@ window.EventCostV2.onUpdate = function(arg) {
   state._startDate = startDate;
   state._endDate   = endDate;
 
-  // ── Tab bar ──────────────────────────────────────────────────────
+  // ── Body: sidebar nav + content ─────────────────────────────────
   var TAB_IDS    = ['monthly', 'reconciliation', 'detail', 'siteStatus', 'docs'];
   var TAB_LABELS = ['Monthly Overview', 'Utility Reconciliation', 'Event Detail', 'Site Status', 'Documentation'];
 
   var initialTab = state.activeTab || 'monthly';
   if (initialTab === 'detail' && !state.selectedEventID) initialTab = 'monthly';
 
-  var tabBar = document.createElement('div');
-  tabBar.className = 'eap-tab-bar';
-  root.appendChild(tabBar);
+  var body = document.createElement('div');
+  body.className = 'eap-body';
+  root.appendChild(body);
+
+  // Sidebar
+  var sidebar = document.createElement('nav');
+  sidebar.className = 'eap-sidebar';
 
   var tabBtns = {};
   TAB_IDS.forEach(function(id, i) {
@@ -129,14 +133,16 @@ window.EventCostV2.onUpdate = function(arg) {
       (id === 'detail' && !state.selectedEventID ? ' eap-tab-btn--disabled' : '');
     btn.textContent = TAB_LABELS[i];
     btn.setAttribute('data-tab', id);
-    tabBar.appendChild(btn);
+    sidebar.appendChild(btn);
     tabBtns[id] = btn;
   });
+
+  body.appendChild(sidebar);
 
   // ── Tab content ──────────────────────────────────────────────────
   var tabContent = document.createElement('div');
   tabContent.className = 'eap-tab-content';
-  root.appendChild(tabContent);
+  body.appendChild(tabContent);
 
   var tabPanels = {};
   TAB_IDS.forEach(function(id) {
@@ -189,7 +195,7 @@ window.EventCostV2.onUpdate = function(arg) {
     }
   }
 
-  tabBar.addEventListener('click', function(e) {
+  sidebar.addEventListener('click', function(e) {
     var btn = e.target.closest('.eap-tab-btn');
     if (!btn || btn.classList.contains('eap-tab-btn--disabled')) return;
     var id = btn.getAttribute('data-tab');
