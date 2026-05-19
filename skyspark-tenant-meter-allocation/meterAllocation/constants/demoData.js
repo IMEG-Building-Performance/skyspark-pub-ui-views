@@ -1,0 +1,62 @@
+// constants/demoData.js
+// Sample data for demo/offline mode. Cooling rows are from the actual function output shape.
+// Internal format: { groupId, groupName, meterId, meterName, usage, usageUnit, percOfPlant, cost }
+window.meterAllocation = window.meterAllocation || {};
+
+window.meterAllocation.demoData = {
+  Cooling: [
+    { groupId: 'r:305db3f8-3a375e4c', groupName: '2200 Westlake Commercial Total Meter', meterId: 'r:2fd3a174-61289b16', meterName: 'BTU-23 Fitness Center Meter 2 Cooling Energy (70)', usage: 2975750, usageUnit: 'BTU', percOfPlant: 0.5550426202600115, cost: 87.21066544749043 },
+    { groupId: 'r:305db3f8-3a375e4c', groupName: '2200 Westlake Commercial Total Meter', meterId: 'r:2fd3a176-3722cbf6', meterName: 'BTU-27 Hotel EMR 11 Cooling Energy (170)', usage: 7229250, usageUnit: 'BTU', percOfPlant: 1.3484136310223267, cost: 211.86850480929857 },
+    { groupId: 'r:305db3f8-3a375e4c', groupName: '2200 Westlake Commercial Total Meter', meterId: 'r:2fd3a175-a7a7fab3', meterName: 'BTU-08 Suite 14 - Salon Refine Cooling Energy (110)', usage: 2084812.5, usageUnit: 'BTU', percOfPlant: 0.3888632421241117, cost: 61.099852292109944 },
+    { groupId: 'r:305db3f8-3a375e4c', groupName: '2200 Westlake Commercial Total Meter', meterId: 'r:2fd3a174-4104f0ed', meterName: 'BTU-06 Suite 16 Cooling Energy (54)', usage: 151, usageUnit: 'BTU', percOfPlant: 0.000028164810773506424, cost: 0.004425375277684972 },
+    { groupId: 'r:305db3f8-3a375e4c', groupName: '2200 Westlake Commercial Total Meter', meterId: 'r:2fd3a176-c89ad6e3', meterName: 'BTU-02 Bank of America Meter 2 Cooling Energy (154)', usage: 0, usageUnit: 'BTU', percOfPlant: 0, cost: 0 },
+    { groupId: 'r:305db3f8-3a375e4c', groupName: '2200 Westlake Commercial Total Meter', meterId: 'r:2fd3a174-ce072427', meterName: 'BTU-05 Suite 4 - 45th Poke Bar Cooling Energy (74)', usage: 2120000, usageUnit: 'BTU', percOfPlant: 0.39542648238300415, cost: 62.131096613855235 },
+    { groupId: 'r:305db3f8-3a375e4c', groupName: '2200 Westlake Commercial Total Meter', meterId: 'r:2fd3a174-16e17965', meterName: 'BTU-04 Hotel Restaurant Cooling Energy (102)', usage: 5120000, usageUnit: 'BTU', percOfPlant: 0.9549922593400855, cost: 150.05245974666926 },
+    { groupId: 'r:305db3f8-3a375e4c', groupName: '2200 Westlake Commercial Total Meter', meterId: 'r:2fd3a175-db9412e4', meterName: 'BTU-18 Suite 8 - Eyebrow Lounge Cooling Energy (138)', usage: 248.046875, usageUnit: 'BTU', percOfPlant: 0.000046266180777050346, cost: 0.0072695397902782415 },
+    { groupId: 'r:305db3f8-3a375e4c', groupName: '2200 Westlake Commercial Total Meter', meterId: 'r:2fd3a174-9186941d', meterName: 'BTU-03 Suite 3 - Vacant Cooling Energy (106)', usage: 3125, usageUnit: 'BTU', percOfPlant: 0.0005828810176636264, cost: 0.09158475326334793 },
+    { groupId: 'r:305db3f8-3a375e4c', groupName: '2200 Westlake Commercial Total Meter', meterId: 'r:2fd3a174-14b506a7', meterName: 'BTU-07 Suite 15 Cooling Energy (90)', usage: 253750, usageUnit: 'BTU', percOfPlant: 0.04732993863428646, cost: 7.436681964983852 },
+    { groupId: 'r:305db3f8-3a375e4c', groupName: '2200 Westlake Commercial Total Meter', meterId: 'r:2fd3a174-53927a10', meterName: 'BTU-10 Dentist Meter 2 Cooling Energy (62)', usage: 2306281.25, usageUnit: 'BTU', percOfPlant: 0.4301720198459329, cost: 67.5904637558834 },
+    { groupId: 'r:305db3f8-3a375e4c', groupName: '2200 Westlake Commercial Total Meter', meterId: 'r:2fd3a175-8497db2f', meterName: 'BTU-17 Suite 9 - Queen Bee Salon Cooling Energy (142)', usage: 895648.4375, usageUnit: 'BTU', percOfPlant: 0.1670580712700278, cost: 26.248877170924995 },
+    { groupId: 'r:305db3f8-3a375e4c', groupName: '2200 Westlake Commercial Total Meter', meterId: 'r:2fd3a175-4b296ac6', meterName: 'BTU-19 Suite 7 - Funny Bunny Nail Salon Cooling Energy (134)', usage: 75262601.5625, usageUnit: 'BTU', percOfPlant: 14.038125373043853, cost: 2205.730174098953 },
+    { groupId: 'r:305db3f8-3a375e4c', groupName: '2200 Westlake Commercial Total Meter', meterId: 'r:2fd3a175-09d97a51', meterName: 'BTU-16 Suite 10 - Vacant Cooling Energy (146)', usage: 0, usageUnit: 'BTU', percOfPlant: 0, cost: 0 },
+    { groupId: 'r:305db3f8-3a375e4c', groupName: '2200 Westlake Commercial Total Meter', meterId: 'r:2fd3a174-37dba048', meterName: 'BTU-15 Suite 12 - Astound Internat Cooling Energy (98)', usage: 405156.25, usageUnit: 'BTU', percOfPlant: 0.07557052394008916, cost: 11.873963260593058 },
+    { groupId: 'r:305db3f8-3a375e4c', groupName: '2200 Westlake Commercial Total Meter', meterId: 'r:2fd3a174-4db14fa1', meterName: 'BTU-24 Suite 5 - Prime IV Cooling Energy (78)', usage: 429671.875, usageUnit: 'BTU', percOfPlant: 0.08014322552366031, cost: 12.592445649944024 },
+    { groupId: 'r:305db3f8-3a375e4c', groupName: '2200 Westlake Commercial Total Meter', meterId: 'r:2fd3a175-f8825c57', meterName: 'BTU-01 Bank of America Meter 1 Cooling Energy (150)', usage: 187.5, usageUnit: 'BTU', percOfPlant: 0.00003497286105981758, cost: 0.005495085195800876 },
+    { groupId: 'r:305db3f8-3a375e4c', groupName: '2200 Westlake Commercial Total Meter', meterId: 'r:2fd3a176-a192df4a', meterName: 'BTU-12 Yoga Meter 2 Cooling Energy (162)', usage: 0, usageUnit: 'BTU', percOfPlant: 0, cost: 0 },
+    { groupId: 'r:305db3f8-3a375e4c', groupName: '2200 Westlake Commercial Total Meter', meterId: 'r:2fd3a175-9cdc4fa6', meterName: 'Common Back of House Cooling Energy (126)', usage: 3460664.0625, usageUnit: 'BTU', percOfPlant: 0.6454897249734206, cost: 101.42210057324729 },
+    { groupId: 'r:305db3f8-3a375e4c', groupName: '2200 Westlake Commercial Total Meter', meterId: 'r:2fd3a174-948b22af', meterName: 'BTU-09 Dentist Meter 1 Cooling Energy (58)', usage: 78714.84375, usageUnit: 'BTU', percOfPlant: 0.01468204423367467, cost: 2.306905453762155 },
+    { groupId: 'r:305db3f8-3a375e4c', groupName: '2200 Westlake Commercial Total Meter', meterId: 'r:2fd3a175-40fb258b', meterName: 'BTU-20 Suite 6 - FedEx Cooling Energy (130)', usage: 8271250, usageUnit: 'BTU', percOfPlant: 1.5427694775520864, cost: 242.40652493742928 },
+    { groupId: 'r:305db3f8-3a375e4c', groupName: '2200 Westlake Commercial Total Meter', meterId: 'r:2fd3a174-a62ec8bc', meterName: 'BTU-14 Suite 11 - Vacant Cooling Energy (94)', usage: 29164.0625, usageUnit: 'BTU', percOfPlant: 0.005439737097345793, cost: 0.8547147098301946 },
+    { groupId: 'r:305db3f8-3a375e4c', groupName: '2200 Westlake Commercial Total Meter', meterId: 'r:2fd3a176-1b1039a1', meterName: 'BTU-13 Yoga Meter 3 Cooling Energy (166)', usage: 4836753.90625, usageUnit: 'BTU', percOfPlant: 0.9021606525003265, cost: 141.75133219182098 },
+    { groupId: 'r:305db3f8-3a375e4c', groupName: '2200 Westlake Commercial Total Meter', meterId: 'r:2fd3a176-246bfcbf', meterName: 'BTU-11 Yoga Meter 1 Cooling Energy (158)', usage: 195351.5625, usageUnit: 'BTU', percOfPlant: 0.036437349616697444, cost: 5.725191888375038 },
+    { groupId: 'r:305db3f8-3a375e4c', groupName: '2200 Westlake Commercial Total Meter', meterId: 'r:2fd3a173-895ddd99', meterName: 'Rubber Maid Cooling Energy (31)', usage: 5310000, usageUnit: 'BTU', percOfPlant: 0.9904314252140339, cost: 155.6208127450808 },
+    { groupId: 'r:305db3f8-3a375e4c', groupName: '2200 Westlake Commercial Total Meter', meterId: 'r:2fd3a174-524811dd', meterName: 'BTU-22 Fitness Center Meter 1 Cooling Energy (66)', usage: 775062.5, usageUnit: 'BTU', percOfPlant: 0.1445661500009326, cost: 22.71485050437555 },
+    { groupId: 'r:305dad4b-51470ec6', groupName: '2200 Westlake Residential Total Meter', meterId: 'r:2fd3a175-4a505717', meterName: 'BTU-29 North Tower Residence P1 South Cooling Energy (122)', usage: 0, usageUnit: 'BTU', percOfPlant: 0, cost: 0 },
+    { groupId: 'r:305dad4b-51470ec6', groupName: '2200 Westlake Residential Total Meter', meterId: 'r:2fd3a174-d1b5fb16', meterName: 'BTU-26 Residential Meter 2 Cooling Energy (86)', usage: 25359872, usageUnit: 'BTU', percOfPlant: 4.730172159737378, cost: 743.2248383712275 },
+    { groupId: 'r:305dad4b-51470ec6', groupName: '2200 Westlake Residential Total Meter', meterId: 'r:2fd3a176-aeebf0cf', meterName: 'BTU-31 West Tower Cooling Energy (174)', usage: 3619, usageUnit: 'BTU', percOfPlant: 0.0006750228489358923, cost: 0.10606247105921796 },
+    { groupId: 'r:305dad4b-51470ec6', groupName: '2200 Westlake Residential Total Meter', meterId: 'r:2fd3a175-87b35ed3', meterName: 'BTU-28 North Tower Residence P1 North Cooling Energy (118)', usage: 0, usageUnit: 'BTU', percOfPlant: 0, cost: 0 },
+    { groupId: 'r:305dad4b-51470ec6', groupName: '2200 Westlake Residential Total Meter', meterId: 'r:2fd3a175-c76934a8', meterName: 'BTU-30 South Tower Cooling Energy (114)', usage: 199680000, usageUnit: 'BTU', percOfPlant: 37.24469811426333, cost: 5852.045930120101 },
+    { groupId: 'r:305dad4b-51470ec6', groupName: '2200 Westlake Residential Total Meter', meterId: 'r:2fd3a174-7ed41d35', meterName: 'BTU-25 Residential Meter 1 Cooling Energy (82)', usage: 12609792, usageUnit: 'BTU', percOfPlant: 2.3520026859157293, cost: 369.55670048708436 },
+    { groupId: 'r:305db810-863de90d', groupName: '2200 Westlake Hotel Total Meter', meterId: 'r:2fd3a173-548590ff', meterName: 'WCAC Hotel Levels 1 & 2 Cooling Energy (19)', usage: 92170000, usageUnit: 'BTU', percOfPlant: 17.191725887378063, cost: 2701.237346650489 },
+    { groupId: 'r:305db810-863de90d', groupName: '2200 Westlake Hotel Total Meter', meterId: 'r:2fd3a173-1aa3b38e', meterName: 'BTU-21 Back of House (BOH) Cooling Energy (16)', usage: 810000, usageUnit: 'BTU', percOfPlant: 0.15108275977841196, cost: 23.738768045859782 },
+    { groupId: 'r:305db810-863de90d', groupName: '2200 Westlake Hotel Total Meter', meterId: 'r:2fd3a173-5007c36e', meterName: 'Hotel Rms Cooling Energy (22)', usage: 4272000, usageUnit: 'BTU', percOfPlant: 0.7968216663868839, cost: 125.20002110112716 },
+    { groupId: 'r:305da31c-ccf80ca9', groupName: '2200 Westlake Whole Foods Total Meter', meterId: 'r:2fd3a173-0bc9067e', meterName: 'Whole Foods Cooling Energy (25)', usage: 317990000, usageUnit: 'BTU', percOfPlant: 59.312107138194094, cost: 9319.371420867841 }
+  ],
+
+  Heating: [
+    { groupId: 'r:demo-h-comm', groupName: 'Commercial Total Meter', meterId: 'r:demo-h1', meterName: 'HW-04 Hotel Restaurant Heating Energy', usage: 1250000, usageUnit: 'BTU', percOfPlant: 3.12, cost: 31.25 },
+    { groupId: 'r:demo-h-comm', groupName: 'Commercial Total Meter', meterId: 'r:demo-h2', meterName: 'HW-20 FedEx Heating Energy', usage: 890000, usageUnit: 'BTU', percOfPlant: 2.225, cost: 22.25 },
+    { groupId: 'r:demo-h-res', groupName: 'Residential Total Meter', meterId: 'r:demo-h3', meterName: 'HW-30 South Tower Heating Energy', usage: 18450000, usageUnit: 'BTU', percOfPlant: 46.125, cost: 461.25 },
+    { groupId: 'r:demo-h-res', groupName: 'Residential Total Meter', meterId: 'r:demo-h4', meterName: 'HW-26 Residential Meter 2 Heating Energy', usage: 4200000, usageUnit: 'BTU', percOfPlant: 10.5, cost: 105.0 },
+    { groupId: 'r:demo-h-hotel', groupName: 'Hotel Total Meter', meterId: 'r:demo-h5', meterName: 'HW-21 Back of House Heating Energy', usage: 6750000, usageUnit: 'BTU', percOfPlant: 16.875, cost: 168.75 }
+  ],
+
+  Flow: [
+    { groupId: 'r:demo-f-comm', groupName: 'Commercial Total Meter', meterId: 'r:demo-f1', meterName: 'FLW-04 Hotel Restaurant Flow (102)', usage: 42500, usageUnit: 'gal', percOfPlant: 2.83, cost: 361.25 },
+    { groupId: 'r:demo-f-comm', groupName: 'Commercial Total Meter', meterId: 'r:demo-f2', meterName: 'FLW-19 Funny Bunny Flow (134)', usage: 38200, usageUnit: 'gal', percOfPlant: 2.547, cost: 324.70 },
+    { groupId: 'r:demo-f-res', groupName: 'Residential Total Meter', meterId: 'r:demo-f3', meterName: 'FLW-30 South Tower Flow (114)', usage: 512000, usageUnit: 'gal', percOfPlant: 34.13, cost: 4352.0 },
+    { groupId: 'r:demo-f-res', groupName: 'Residential Total Meter', meterId: 'r:demo-f4', meterName: 'FLW-26 Residential Meter 2 Flow (86)', usage: 198000, usageUnit: 'gal', percOfPlant: 13.2, cost: 1683.0 },
+    { groupId: 'r:demo-f-hotel', groupName: 'Hotel Total Meter', meterId: 'r:demo-f5', meterName: 'FLW Hotel Levels 1&2 Flow (19)', usage: 384000, usageUnit: 'gal', percOfPlant: 25.6, cost: 3264.0 },
+    { groupId: 'r:demo-f-wf', groupName: 'Whole Foods Total Meter', meterId: 'r:demo-f6', meterName: 'FLW Whole Foods Flow (25)', usage: 185000, usageUnit: 'gal', percOfPlant: 12.33, cost: 1572.5 }
+  ]
+};

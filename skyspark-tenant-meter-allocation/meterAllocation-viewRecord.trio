@@ -1,0 +1,16 @@
+// Copy this file into your SkySpark project to register the view.
+//
+// Deployment checklist:
+//   1. Copy meterAllocationEntry.js  →  {var}/pub/ui/
+//   2. Copy meterAllocation/         →  {var}/pub/ui/meterAllocation/  (preserve sub-structure)
+//   3. Import this trio into the SkySpark project database
+//   4. Restart SkySpark (or force a reload via Folio → Sync)
+
+dis: "Meter Allocation Dashboard"
+appName: "meterAllocation"
+view: "meterAllocationView"
+src:
+  view:      { inherit:"js" }
+  jsHandler: { var defVal:"meterAllocationHandler" }
+  site:       { var kind:"Ref" }
+  dates:      { var kind:"DateSpan" }

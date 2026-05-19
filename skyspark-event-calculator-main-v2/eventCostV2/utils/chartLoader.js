@@ -29,6 +29,7 @@ window.EventCostV2.loader = {
         return src.substring(0, idx + marker.length);
       }
     }
+    // Fallback
     return 'eventCostV2/';
   },
 

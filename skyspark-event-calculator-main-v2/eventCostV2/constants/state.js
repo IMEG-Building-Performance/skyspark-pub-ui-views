@@ -30,7 +30,7 @@ window.EventCostV2.state = {
   timelineHidden: false,
 
   // ── Tab state ──────────────────────────────────────────────────────
-  activeTab: 'monthly',
+  activeTab: 'tracker',
 
   // ── Site Status tab utility ────────────────────────────────────────
   activeUtility: 'Electric',

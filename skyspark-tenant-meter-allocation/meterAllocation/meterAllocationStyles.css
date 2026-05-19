@@ -1,0 +1,791 @@
+/* meterAllocationStyles.css — Meter Allocation Dashboard */
+
+/* ── Reset / Base ─────────────────────────────────────────────────────────── */
+#meterAllocationRoot *,
+#meterAllocationRoot *::before,
+#meterAllocationRoot *::after {
+  box-sizing: border-box;
+}
+
+#meterAllocationRoot {
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  font-size: 13px;
+  color: #1a1a1a;
+  background: #f2f2ee;
+  min-height: 100%;
+  line-height: 1.4;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+.ma-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding: 0;
+}
+
+.ma-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px 10px;
+  gap: 16px;
+}
+
+.ma-header-left {
+  min-width: 0;
+}
+
+.ma-header-site {
+  font-size: 17px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ma-header-subtitle {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 2px;
+  letter-spacing: 0.02em;
+}
+
+.ma-header-date-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 20px;
+  padding: 5px 13px 5px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.ma-header-tabs {
+  display: flex;
+  gap: 0;
+  padding: 0 24px;
+}
+
+.ma-util-tab {
+  padding: 10px 22px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 6px 6px 0 0;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  background: transparent;
+  transition: background 0.15s, color 0.15s;
+  letter-spacing: 0.02em;
+}
+
+.ma-util-tab:hover:not(.is-active) {
+  color: rgba(255, 255, 255, 0.85) !important;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* ── Page body ───────────────────────────────────────────────────────────── */
+.ma-page {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 22px 20px 52px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ── KPI strip ───────────────────────────────────────────────────────────── */
+.ma-kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 700px) {
+  .ma-kpi-strip { grid-template-columns: repeat(2, 1fr); }
+}
+
+.ma-kpi-card {
+  background: #fff;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+  padding: 16px 18px;
+}
+
+.ma-kpi-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #9ca3af;
+  margin-bottom: 8px;
+}
+
+.ma-kpi-value {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.ma-kpi-unit {
+  font-size: 11px;
+  font-weight: 500;
+  color: #9ca3af;
+}
+
+.ma-kpi-sub {
+  font-size: 11px;
+  color: #6b7280;
+  margin-top: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+/* ── Card ────────────────────────────────────────────────────────────────── */
+.ma-card {
+  background: #fff;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+  overflow: hidden;
+}
+
+/* ── Table card header ───────────────────────────────────────────────────── */
+.ma-table-card {
+  background: #fff;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+  overflow: hidden;
+}
+
+.ma-table-titlebar {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 14px 20px 12px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.ma-table-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.ma-table-hint {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+/* ── Column headers ──────────────────────────────────────────────────────── */
+.ma-col-headers {
+  display: grid;
+  grid-template-columns: 1fr 140px 190px;
+  padding: 6px 20px;
+  border-bottom: 2px solid #e5e7eb;
+  background: #fafaf8;
+}
+
+.ma-col-h {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9ca3af;
+  cursor: default;
+  user-select: none;
+  padding: 4px 0;
+}
+
+.ma-col-h.sortable {
+  cursor: pointer;
+}
+
+.ma-col-h.sortable:hover {
+  color: #6b7280;
+}
+
+.ma-col-h.right {
+  text-align: right;
+}
+
+.ma-sort-na {
+  color: #d1d5db;
+  font-size: 10px;
+  margin-left: 3px;
+}
+
+.ma-sort-active {
+  color: #374151;
+  font-size: 10px;
+  margin-left: 3px;
+}
+
+/* ── Group rows ──────────────────────────────────────────────────────────── */
+.ma-rows {
+  overflow-y: auto;
+}
+
+.ma-group-row {
+  display: grid;
+  grid-template-columns: 28px 1fr 80px 140px 190px;
+  align-items: center;
+  padding: 11px 20px;
+  cursor: pointer;
+  border-bottom: 1px solid #f3f4f6;
+  background: #fff;
+  transition: background 0.1s;
+}
+
+.ma-group-row:hover {
+  background: #f8f8f5;
+}
+
+.ma-group-row.is-open {
+  background: #f5f5f1;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.ma-chevron {
+  font-size: 9px;
+  color: #9ca3af;
+  transition: transform 0.15s;
+}
+
+.ma-group-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1a1a1a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 12px;
+}
+
+.ma-group-count {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.ma-group-usage,
+.ma-meter-usage {
+  text-align: right;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.ma-group-usage small,
+.ma-meter-usage small {
+  font-size: 9px;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.ma-group-pct,
+.ma-meter-pct {
+  padding: 0 4px;
+}
+
+.ma-group-cost,
+.ma-meter-cost {
+  text-align: right;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #1a1a1a;
+}
+
+/* ── Meter rows (expanded) ───────────────────────────────────────────────── */
+.ma-meter-row {
+  display: grid;
+  grid-template-columns: 1fr 140px 190px;
+  align-items: center;
+  padding: 9px 20px;
+  border-bottom: 1px solid #f3f4f6;
+  background: #fff;
+}
+
+.ma-meter-row.stripe {
+  background: #fafaf8;
+}
+
+.ma-meter-indent {
+  /* spacer aligns meter rows under the group chevron */
+}
+
+.ma-meter-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1a1a1a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 12px;
+}
+
+/* ── Percent bar ─────────────────────────────────────────────────────────── */
+.ma-pct-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ma-pct-track {
+  flex: 1;
+  height: 5px;
+  background: #ececea;
+  border-radius: 3px;
+  overflow: hidden;
+  min-width: 60px;
+}
+
+.ma-pct-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.ma-pct-label {
+  font-size: 11px;
+  font-weight: 700;
+  min-width: 52px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Empty state ─────────────────────────────────────────────────────────── */
+.ma-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 52px 24px;
+  color: #9ca3af;
+  text-align: center;
+}
+
+.ma-empty-hint {
+  font-size: 11px;
+  color: #c0bfb8;
+}
+
+/* ── No-site prompt ──────────────────────────────────────────────────────── */
+.ma-no-site {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 64px 24px;
+  text-align: center;
+  max-width: 440px;
+  margin: 0 auto;
+}
+
+.ma-no-site-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #374151;
+}
+
+.ma-no-site-body {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.6;
+}
+
+.ma-no-site-hint {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.ma-no-site-hint code {
+  background: #f3f4f6;
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-family: monospace;
+}
+
+.ma-no-site-missing {
+  font-size: 11px;
+  color: #b91c1c;
+  background: #fef2f2;
+  border-radius: 4px;
+  padding: 6px 12px;
+}
+
+/* ── Residential formula diagram image ───────────────────────────────────── */
+.ma-res-diagram-img-wrap {
+  overflow-x: auto;
+  padding: 16px 20px 20px;
+}
+
+.ma-res-diagram-img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
+
+/* ── Collapsible sections (Summary page) ─────────────────────────────────── */
+.ma-collapse-section {
+  margin: 0 16px 12px;
+}
+
+.ma-section-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 16px;
+  background: #e8e8e3;
+  border: 1px solid #d4d4cd;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.ma-section-toggle:hover {
+  background: #deded8;
+}
+
+.ma-section-toggle-title {
+  letter-spacing: 0.01em;
+}
+
+.ma-toggle-chevron {
+  font-size: 10px;
+  color: #6b7280;
+  margin-left: 8px;
+  flex-shrink: 0;
+}
+
+.ma-section-body {
+  margin-top: 4px;
+}
+
+.ma-section-body .ma-card {
+  margin: 0 0 8px;
+}
+
+.ma-section-body .ma-kpi-strip {
+  margin: 0 0 8px;
+}
+
+.ma-section-body .ma-util-selector {
+  margin: 0 0 4px;
+}
+
+/* ── Footer ──────────────────────────────────────────────────────────────── */
+.ma-footer {
+  text-align: center;
+  font-size: 10px;
+  color: #c5c5be;
+  padding: 8px 0 0;
+  letter-spacing: 0.02em;
+}
+
+/* ── Header navigation bar (page tabs + util tabs) ───────────────────────── */
+.ma-header-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+.ma-page-tabs {
+  display: flex;
+  gap: 0;
+}
+
+.ma-page-tab {
+  padding: 10px 22px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 6px 6px 0 0;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  background: transparent;
+  transition: background 0.15s, color 0.15s;
+  letter-spacing: 0.02em;
+}
+
+.ma-page-tab:hover:not(.is-active) {
+  color: rgba(255,255,255,0.85) !important;
+  background: rgba(255,255,255,0.08);
+}
+
+.ma-util-tabs {
+  display: flex;
+  gap: 0;
+}
+
+/* ── In-page utility selector (Details page) ─────────────────────────────── */
+.ma-util-selector {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.ma-util-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 16px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 20px;
+  background: #fff;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  letter-spacing: 0.01em;
+}
+
+.ma-util-pill:hover:not(.is-active) {
+  background: #f5f5f1;
+  border-color: #9ca3af;
+  color: #374151;
+}
+
+.ma-util-pill.is-active {
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+}
+
+/* ── Summary page notice banner ──────────────────────────────────────────── */
+.ma-sum-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #92400e;
+  line-height: 1.5;
+}
+
+.ma-sum-notice code {
+  font-family: monospace;
+  background: rgba(0,0,0,0.06);
+  border-radius: 3px;
+  padding: 1px 4px;
+  font-size: 11px;
+}
+
+/* ── Summary table ───────────────────────────────────────────────────────── */
+.ma-sum-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.ma-sum-table thead tr:first-child {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.ma-sum-table thead tr:last-child {
+  border-bottom: 2px solid #e5e7eb;
+  background: #fafaf8;
+}
+
+.ma-sum-table tfoot {
+  border-top: 2px solid #e5e7eb;
+}
+
+.ma-sum-name-head {
+  text-align: left;
+  padding: 8px 16px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9ca3af;
+  white-space: nowrap;
+  min-width: 160px;
+}
+
+.ma-sum-util-head {
+  text-align: center;
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.ma-sum-total-head {
+  text-align: right;
+  padding: 8px 16px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9ca3af;
+  white-space: nowrap;
+}
+
+.ma-sum-sub-head {
+  text-align: right;
+  padding: 5px 12px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #c4c4bc;
+  white-space: nowrap;
+}
+
+.ma-sum-row {
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.ma-sum-row.stripe {
+  background: #fafaf8;
+}
+
+.ma-sum-row:hover {
+  background: #f5f5f1;
+}
+
+.ma-sum-name {
+  padding: 10px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1a1a1a;
+  white-space: nowrap;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ma-sum-num {
+  text-align: right;
+  padding: 10px 12px;
+  font-variant-numeric: tabular-nums;
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.ma-sum-total {
+  text-align: right;
+  padding: 10px 16px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #1a1a1a;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.ma-sum-foot {
+  font-weight: 700;
+  color: #1a1a1a !important;
+  background: #fafaf8;
+  border-top: 2px solid #e5e7eb;
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+.ma-sum-no-data {
+  text-align: center;
+  padding: 40px 24px;
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+/* ── BTU reconciliation table ────────────────────────────────────────────── */
+.ma-recon-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.ma-recon-head {
+  padding: 6px 20px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9ca3af;
+  border-bottom: 2px solid #e5e7eb;
+  background: #fafaf8;
+  white-space: nowrap;
+}
+
+.ma-recon-head.right {
+  text-align: right;
+}
+
+.ma-recon-row {
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.ma-recon-row:last-child {
+  border-bottom: none;
+}
+
+.ma-recon-row.stripe {
+  background: #fafaf8;
+}
+
+.ma-recon-util {
+  padding: 12px 20px;
+  font-weight: 700;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.ma-recon-num {
+  text-align: right;
+  padding: 12px 20px;
+  font-variant-numeric: tabular-nums;
+  color: #1a1a1a;
+  white-space: nowrap;
+}
+
+.ma-recon-num small {
+  font-size: 9px;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.ma-recon-bar {
+  padding: 12px 20px;
+  min-width: 160px;
+}
+
+.ma-recon-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ma-recon-pct {
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  min-width: 44px;
+  text-align: right;
+}

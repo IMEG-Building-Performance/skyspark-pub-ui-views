@@ -1,22 +1,20 @@
 /**
  * UtilityReconciliation.js — Tab 2: Event cost vs. utility bill comparison
  *
- * Renders:
- *  - Utility selector (Electric / CHW / Steam / Gas)
- *  - Grouped bar chart: Bill Cost vs Event-Attributed Cost + attribution % line
- *  - Comparison table by month
- *
- * NOTE: Utility bill data uses placeholder/demo values.
- * Replace getDemoBillData() with a real API call when available.
- * Look for the comment "// TODO: REAL API CALL" below.
+ * Sections:
+ *  1. Utility toggle (Electric / CHW / Steam / Gas)
+ *  2. KPI summary cards (Bill Cost, Event Cost, Recovery %, Unrecovered)
+ *  3. Monthly bar + recovery % line chart
+ *  4. Annual Effective Rates panel (demo — TODO: real EnergyCAP API call)
+ *  5. Monthly reconciliation table with recovery badges
  */
 
 window.EventCostV2 = window.EventCostV2 || {};
 window.EventCostV2.utilityReconciliation = {};
 
 window.EventCostV2.utilityReconciliation.render = function(container, eventCostResults) {
-  var cfg    = window.EventCostV2.config;
-  var colors = cfg.utilityCostColors;
+  var cfg          = window.EventCostV2.config;
+  var colors       = cfg.utilityCostColors;
   var interactions = window.EventCostV2.interactions;
 
   container.innerHTML = '';
@@ -25,23 +23,34 @@ window.EventCostV2.utilityReconciliation.render = function(container, eventCostR
   var currentUtility = window.EventCostV2.state.reconciliationUtility || 'Electric';
 
   // ── Placeholder bill data ──────────────────────────────────────────
-  // TODO: REAL API CALL — Replace this function with a call to the
-  //   utility billing system. The real call should return per-month
-  //   total utility costs for the selected utility type and site.
-  //   Expected return: { 'YYYY-MM': dollarAmount, ... }
+  // TODO: REAL API CALL — Replace getDemoBillData() with a query to the
+  //   utility billing system (e.g. EnergyCAP). Return per-month total
+  //   utility costs keyed as { 'YYYY-MM': dollarAmount }.
   function getDemoBillData(utility) {
     var monthlyEventCost = getMonthlyEventCost(utility);
     var months = Object.keys(monthlyEventCost);
+    if (months.length === 0) {
+      var now = new Date();
+      for (var mi = 11; mi >= 0; mi--) {
+        var d = new Date(now.getFullYear(), now.getMonth() - mi, 1);
+        months.push(d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2));
+      }
+    }
+    var baseCosts = { Electric: 180000, CHW: 65000, Steam: 42000, Gas: 18000 };
+    var factors   = { Electric: 4.5,    CHW: 3.8,   Steam: 5.2,   Gas: 4.0 };
     var demo = {};
     months.forEach(function(m) {
       var eventCost = monthlyEventCost[m] || 0;
-      var factor = { Electric: 4.5, CHW: 3.8, Steam: 5.2, Gas: 4.0 }[utility] || 4.0;
-      demo[m] = Math.round(eventCost * factor * (0.9 + Math.random() * 0.2));
+      if (eventCost > 0) {
+        demo[m] = Math.round(eventCost * (factors[utility] || 4.0) * (0.9 + Math.random() * 0.2));
+      } else {
+        demo[m] = Math.round((baseCosts[utility] || 150000) * (0.85 + Math.random() * 0.3));
+      }
     });
     return demo;
   }
 
-  // ── Aggregate event costs by month/utility ──────────────────────
+  // ── Aggregate event costs by month ────────────────────────────────
   function getMonthlyEventCost(utility) {
     var map = {};
     (eventCostResults || []).forEach(function(r) {
@@ -53,7 +62,72 @@ window.EventCostV2.utilityReconciliation.render = function(container, eventCostR
     return map;
   }
 
-  // ── Summary card strip ──────────────────────────────────────────
+  // Count distinct events per month for a utility
+  function getMonthlyEventCounts(utility) {
+    var seen = {};
+    (eventCostResults || []).forEach(function(r) {
+      if (r.utilityType !== utility) return;
+      var m = (r.eventStart || '').substring(0, 7);
+      if (!m) return;
+      if (!seen[m]) seen[m] = {};
+      if (r.eventID) seen[m][r.eventID] = true;
+    });
+    var counts = {};
+    Object.keys(seen).forEach(function(m) { counts[m] = Object.keys(seen[m]).length; });
+    return counts;
+  }
+
+  // Sum distinct event SF per month (each event counted once)
+  function getMonthlyEventSF(utility) {
+    var sfByEvent = {}, monthByEvent = {};
+    (eventCostResults || []).forEach(function(r) {
+      if (r.utilityType !== utility || !r.eventID) return;
+      var m = (r.eventStart || '').substring(0, 7);
+      if (!m) return;
+      if (!sfByEvent[r.eventID]) {
+        sfByEvent[r.eventID] = r.eventSF || 0;
+        monthByEvent[r.eventID] = m;
+      }
+    });
+    var map = {};
+    Object.keys(sfByEvent).forEach(function(id) {
+      var m = monthByEvent[id];
+      map[m] = (map[m] || 0) + sfByEvent[id];
+    });
+    return map;
+  }
+
+  // ── Annual rate demo data ──────────────────────────────────────────
+  // TODO: REAL API CALL — Replace with a query to EnergyCAP / billing system
+  //   returning weighted-average effective rates per utility per year.
+  function getAnnualRates(year) {
+    var allRates = {
+      2024: {
+        Electric: { rate: 0.219, unit: 'per kWh',   trendVal: null,  trendDir: 0  },
+        CHW:      { rate: 0.429, unit: 'per ton-hr', trendVal: null,  trendDir: 0  },
+        Steam:    { rate: 19.02, unit: 'per Mlb',    trendVal: null,  trendDir: 0  },
+        Gas:      { rate: 0.704, unit: 'per therm',  trendVal: null,  trendDir: 0  },
+        Water:    { rate: 7.86,  unit: 'per kgal',   trendVal: null,  trendDir: 0  }
+      },
+      2025: {
+        Electric: { rate: 0.228, unit: 'per kWh',   trendVal: 4.2,   trendDir: 1  },
+        CHW:      { rate: 0.421, unit: 'per ton-hr', trendVal: -1.8,  trendDir: -1 },
+        Steam:    { rate: 19.42, unit: 'per Mlb',    trendVal: 2.1,   trendDir: 1  },
+        Gas:      { rate: 0.794, unit: 'per therm',  trendVal: 12.7,  trendDir: 1  },
+        Water:    { rate: 7.89,  unit: 'per kgal',   trendVal: 0.3,   trendDir: 0  }
+      },
+      2026: {
+        Electric: { rate: 0.236, unit: 'per kWh',   trendVal: 3.5,   trendDir: 1  },
+        CHW:      { rate: 0.435, unit: 'per ton-hr', trendVal: 3.3,   trendDir: 1  },
+        Steam:    { rate: 19.78, unit: 'per Mlb',    trendVal: 1.9,   trendDir: 1  },
+        Gas:      { rate: 0.812, unit: 'per therm',  trendVal: 2.3,   trendDir: 1  },
+        Water:    { rate: 8.12,  unit: 'per kgal',   trendVal: 2.9,   trendDir: 1  }
+      }
+    };
+    return allRates[year] || allRates[2025];
+  }
+
+  // ── Utility toggle ─────────────────────────────────────────────────
   var utilityBar = interactions.createCostUtilityToggle(currentUtility, function(u) {
     currentUtility = u;
     window.EventCostV2.state.reconciliationUtility = u;
@@ -62,96 +136,195 @@ window.EventCostV2.utilityReconciliation.render = function(container, eventCostR
   utilityBar.style.marginBottom = '20px';
   container.appendChild(utilityBar);
 
+  // ── KPI summary cards ──────────────────────────────────────────────
   var cardsRow = document.createElement('div');
   cardsRow.className = 'eap-summary-cards';
   container.appendChild(cardsRow);
 
-  var cardBillCost   = makeCard('Total Bill Cost (est.)', cardsRow);
-  var cardEventCost  = makeCard('Event-Attributed Cost', cardsRow);
-  var cardAttribPct  = makeCard('Attribution %', cardsRow);
-  var cardMonths     = makeCard('Months w/ Data', cardsRow);
-
-  function makeCard(label, parent) {
+  function makeKpiCard(label, colorMod, subText, parent) {
     var card = document.createElement('div');
     card.className = 'eap-summary-card';
+
     var lbl = document.createElement('div');
     lbl.className = 'eap-summary-card-label';
     lbl.textContent = label;
     card.appendChild(lbl);
+
     var val = document.createElement('div');
-    val.className = 'eap-summary-card-value';
+    val.className = 'eap-summary-card-value' + (colorMod ? ' eap-summary-card-value--' + colorMod : '');
     val.textContent = '—';
     card.appendChild(val);
+
+    var sub = document.createElement('div');
+    sub.className = 'eap-summary-card-sub';
+    sub.textContent = subText || '';
+    card.appendChild(sub);
+
     parent.appendChild(card);
-    return val;
+    return { val: val, sub: sub };
   }
 
-  // ── Chart section ───────────────────────────────────────────────
-  var chartSection = document.createElement('div');
-  chartSection.style.cssText = 'background:white;border:1px solid #E5E7EB;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.08);margin-bottom:20px;overflow:hidden;';
-  container.appendChild(chartSection);
+  var cardBillCost    = makeKpiCard('Total Bill Cost',             'dark',  '',                          cardsRow);
+  var cardEventCost   = makeKpiCard('Total Event-Attributed Cost', 'green', 'from eventCostResult records', cardsRow);
+  var cardRecoveryPct = makeKpiCard('Recovery %',                  'amber', 'event cost ÷ bill cost',  cardsRow);
+  var cardUnrecovered = makeKpiCard('Unrecovered Cost',            'dark',  'bill cost − event cost',  cardsRow);
 
-  var chartHeader = document.createElement('div');
-  chartHeader.style.cssText = 'display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid #E5E7EB;';
-  chartSection.appendChild(chartHeader);
+  // ── Chart card ─────────────────────────────────────────────────────
+  var chartCard = document.createElement('div');
+  chartCard.className = 'ur-chart-card';
+  container.appendChild(chartCard);
 
-  var chartTitle = document.createElement('h3');
-  chartTitle.style.cssText = 'font-size:14px;font-weight:700;color:#374151;margin:0;flex:1;';
-  chartHeader.appendChild(chartTitle);
+  var chartCardHeader = document.createElement('div');
+  chartCardHeader.className = 'ur-chart-card-header';
+  chartCard.appendChild(chartCardHeader);
 
-  var demoBadge = document.createElement('span');
-  demoBadge.textContent = '⚠ Bill data is placeholder — replace with real API call';
-  demoBadge.style.cssText = 'font-size:11px;color:#856404;background:#fff3cd;border:1px solid #ffc107;border-radius:4px;padding:3px 8px;';
-  chartHeader.appendChild(demoBadge);
+  var chartTitle = document.createElement('div');
+  chartTitle.className = 'ur-chart-card-title';
+  chartCardHeader.appendChild(chartTitle);
+
+  var chartLegend = document.createElement('div');
+  chartLegend.className = 'ur-chart-legend';
+  chartLegend.innerHTML =
+    '<span class="ur-legend-item"><span class="ur-legend-dot" style="background:#D1D5DB;"></span> Bill Cost</span>' +
+    '<span class="ur-legend-item"><span class="ur-legend-dot ur-legend-dot--event"></span> Event Cost</span>' +
+    '<span class="ur-legend-item"><span class="ur-legend-dot ur-legend-dot--pct"></span> Recovery %</span>';
+  chartCardHeader.appendChild(chartLegend);
 
   var chartBody = document.createElement('div');
-  chartBody.style.cssText = 'padding:16px 20px;height:300px;position:relative;';
-  chartSection.appendChild(chartBody);
+  chartBody.style.cssText = 'padding:4px 4px 20px;height:300px;position:relative;';
+  chartCard.appendChild(chartBody);
 
   var chartCanvas = document.createElement('canvas');
   chartBody.appendChild(chartCanvas);
 
-  // ── Table section ───────────────────────────────────────────────
-  var tableSection = document.createElement('div');
-  tableSection.style.cssText = 'background:white;border:1px solid #E5E7EB;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.08);overflow:hidden;';
-  container.appendChild(tableSection);
+  // ── Annual Effective Rates ─────────────────────────────────────────
+  var rateCard = document.createElement('div');
+  rateCard.className = 'ur-rate-card';
+  container.appendChild(rateCard);
 
-  var tableTitleEl = document.createElement('div');
-  tableTitleEl.style.cssText = 'padding:14px 20px;border-bottom:1px solid #E5E7EB;font-size:14px;font-weight:700;color:#374151;';
-  tableSection.appendChild(tableTitleEl);
+  var rateCardHeader = document.createElement('div');
+  rateCardHeader.className = 'ur-rate-card-header';
+  rateCard.appendChild(rateCardHeader);
 
-  var tableWrap = document.createElement('div');
-  tableWrap.style.cssText = 'overflow-x:auto;';
-  tableSection.appendChild(tableWrap);
+  var rateTitleGroup = document.createElement('div');
+  rateTitleGroup.innerHTML =
+    '<div class="ur-rate-card-title">Annual Effective Rates</div>' +
+    '<div class="ur-rate-card-sub">Weighted average from EnergyCAP billing data (demo — replace with real API)</div>';
+  rateCardHeader.appendChild(rateTitleGroup);
 
-  // ── Render function ─────────────────────────────────────────────
-  function renderContent() {
-    var utility = currentUtility;
-    var utilityCfg = cfg.utilityConfig[utility] || {};
-    var eventCostByMonth = getMonthlyEventCost(utility);
-    var billCostByMonth  = getDemoBillData(utility);
-    var months = Object.keys(Object.assign({}, eventCostByMonth, billCostByMonth)).sort();
+  var rateYearTabs = document.createElement('div');
+  rateYearTabs.className = 'ur-rate-year-tabs';
 
-    chartTitle.textContent = utility + ' — Monthly Bill vs. Event Attribution';
+  var currentYear    = new Date().getFullYear();
+  var years          = [currentYear - 1, currentYear, currentYear + 1];
+  var activeRateYear = currentYear;
+  var yearTabBtns    = {};
 
-    // Update cards
-    var totalBill   = months.reduce(function(s, m) { return s + (billCostByMonth[m]  || 0); }, 0);
-    var totalEvent  = months.reduce(function(s, m) { return s + (eventCostByMonth[m] || 0); }, 0);
-    var pct = totalBill > 0 ? (totalEvent / totalBill * 100) : 0;
-    cardBillCost.textContent  = '$' + Math.round(totalBill).toLocaleString();
-    cardEventCost.textContent = '$' + Math.round(totalEvent).toLocaleString();
-    cardAttribPct.textContent = pct.toFixed(1) + '%';
-    cardMonths.textContent    = String(months.length);
+  years.forEach(function(y) {
+    var btn = document.createElement('button');
+    btn.className = 'ur-rate-year-tab' + (y === activeRateYear ? ' ur-rate-year-tab--active' : '');
+    btn.textContent = y;
+    btn.onclick = function() {
+      activeRateYear = y;
+      years.forEach(function(yr) {
+        yearTabBtns[yr].classList.toggle('ur-rate-year-tab--active', yr === y);
+      });
+      renderRateTiles(y);
+    };
+    rateYearTabs.appendChild(btn);
+    yearTabBtns[y] = btn;
+  });
+  rateCardHeader.appendChild(rateYearTabs);
 
-    // Build chart
-    buildChart(months, eventCostByMonth, billCostByMonth, utility, colors[utility]);
+  var rateGrid = document.createElement('div');
+  rateGrid.className = 'ur-rate-grid';
+  rateCard.appendChild(rateGrid);
 
-    // Build table
-    buildTable(months, eventCostByMonth, billCostByMonth, utility);
-    tableTitleEl.textContent = utility + ' Monthly Reconciliation Table';
+  function renderRateTiles(year) {
+    rateGrid.innerHTML = '';
+    var rates = getAnnualRates(year);
+    var utilOrder  = ['Electric', 'CHW', 'Steam', 'Gas', 'Water'];
+    var utilLabels = { Electric: 'Electric', CHW: 'Chilled Water', Steam: 'Steam', Gas: 'Natural Gas', Water: 'Water' };
+    var utilKeys   = { Electric: 'ur-rt-elec', CHW: 'ur-rt-chw', Steam: 'ur-rt-steam', Gas: 'ur-rt-gas', Water: 'ur-rt-water' };
+
+    utilOrder.forEach(function(u) {
+      var r = rates[u];
+      if (!r) return;
+
+      var rateStr = (r.rate < 1) ? '$' + r.rate.toFixed(3) : '$' + r.rate.toFixed(2);
+
+      var trendHTML = '';
+      if (r.trendVal !== null) {
+        var t = r.trendVal;
+        var cls   = t > 0.5 ? 'ur-trend-up' : (t < -0.5 ? 'ur-trend-down' : 'ur-trend-flat');
+        var arrow = t > 0.5 ? '▲' : (t < -0.5 ? '▼' : '—');
+        var sign  = t > 0 ? '+' : '';
+        trendHTML = '<div class="ur-rate-trend ' + cls + '">' + arrow + ' ' + sign + Math.abs(t).toFixed(1) + '% vs ' + (year - 1) + '</div>';
+      }
+
+      var tile = document.createElement('div');
+      tile.className = 'ur-rate-tile';
+      tile.innerHTML =
+        '<div class="ur-rt-utility ' + utilKeys[u] + '">' + utilLabels[u] + '</div>' +
+        '<div class="ur-rt-rate">' + rateStr + '</div>' +
+        '<div class="ur-rt-unit">' + r.unit + '</div>' +
+        trendHTML;
+      rateGrid.appendChild(tile);
+    });
   }
 
-  function buildChart(months, eventCostByMonth, billCostByMonth, utility, utilColor) {
+  // ── Monthly detail table ───────────────────────────────────────────
+  var tableCard = document.createElement('div');
+  tableCard.className = 'ur-detail-card';
+  container.appendChild(tableCard);
+
+  var tableCardHeader = document.createElement('div');
+  tableCardHeader.className = 'ur-detail-card-header';
+  tableCard.appendChild(tableCardHeader);
+
+  var tableTitleEl = document.createElement('div');
+  tableTitleEl.className = 'ur-detail-card-title';
+  tableCardHeader.appendChild(tableTitleEl);
+
+  var tableWrap = document.createElement('div');
+  tableWrap.style.overflowX = 'auto';
+  tableCard.appendChild(tableWrap);
+
+  // ── Main render ────────────────────────────────────────────────────
+  function renderContent() {
+    var utility    = currentUtility;
+    var utilColor  = colors[utility] || '#4CAF50';
+
+    var eventCostByMonth  = getMonthlyEventCost(utility);
+    var billCostByMonth   = getDemoBillData(utility);
+    var eventCountByMonth = getMonthlyEventCounts(utility);
+    var eventSFByMonth    = getMonthlyEventSF(utility);
+    var months = Object.keys(Object.assign({}, eventCostByMonth, billCostByMonth)).sort();
+
+    // Chart title + legend event color dot
+    chartTitle.textContent = utility + ' — Monthly Bill vs. Event Attribution';
+    var evtDot = chartLegend.querySelector('.ur-legend-dot--event');
+    if (evtDot) evtDot.style.background = utilColor;
+
+    // KPI cards
+    var totalBill  = months.reduce(function(s, m) { return s + (billCostByMonth[m]  || 0); }, 0);
+    var totalEvent = months.reduce(function(s, m) { return s + (eventCostByMonth[m] || 0); }, 0);
+    var totalUnrec = Math.max(0, totalBill - totalEvent);
+    var recovPct   = totalBill > 0 ? totalEvent / totalBill * 100 : 0;
+
+    cardBillCost.val.textContent    = '$' + Math.round(totalBill).toLocaleString();
+    cardEventCost.val.textContent   = '$' + Math.round(totalEvent).toLocaleString();
+    cardRecoveryPct.val.textContent = recovPct.toFixed(1) + '%';
+    cardUnrecovered.val.textContent = '$' + Math.round(totalUnrec).toLocaleString();
+    cardBillCost.sub.textContent    = months.length + ' months · ' + utility;
+
+    buildChart(months, eventCostByMonth, billCostByMonth, utilColor);
+    renderRateTiles(activeRateYear);
+    tableTitleEl.textContent = utility + ' — Monthly Reconciliation';
+    buildTable(months, eventCostByMonth, billCostByMonth, eventCountByMonth, eventSFByMonth, utilColor);
+  }
+
+  function buildChart(months, eventCostByMonth, billCostByMonth, utilColor) {
     var loader = window.EventCostV2.loader;
     loader.loadChartJs(function() {
       var Chart = window.Chart;
@@ -159,12 +332,12 @@ window.EventCostV2.utilityReconciliation.render = function(container, eventCostR
 
       if (window._ecv2ReconcChart) {
         try { window._ecv2ReconcChart.destroy(); } catch(e) {}
+        window._ecv2ReconcChart = null;
       }
 
-      var labels = months.map(function(m) {
+      var labels    = months.map(function(m) {
         return new Date(m + '-01').toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
       });
-
       var billData  = months.map(function(m) { return Math.round(billCostByMonth[m]  || 0); });
       var eventData = months.map(function(m) { return Math.round(eventCostByMonth[m] || 0); });
       var pctData   = months.map(function(m, i) {
@@ -179,33 +352,35 @@ window.EventCostV2.utilityReconciliation.render = function(container, eventCostR
           datasets: [
             {
               type: 'bar',
-              label: 'Bill Cost (est.)',
+              label: 'Bill Cost',
               data: billData,
-              backgroundColor: '#9E9E9ECC',
-              borderColor: '#9E9E9E',
-              borderWidth: 1,
-              borderRadius: 3,
+              backgroundColor: '#D1D5DB',
+              borderColor: '#D1D5DB',
+              borderWidth: 0,
+              borderRadius: 2,
               yAxisID: 'yCost'
             },
             {
               type: 'bar',
               label: 'Event Cost',
               data: eventData,
-              backgroundColor: utilColor + 'CC',
+              backgroundColor: utilColor,
               borderColor: utilColor,
-              borderWidth: 1,
-              borderRadius: 3,
+              borderWidth: 0,
+              borderRadius: 2,
               yAxisID: 'yCost'
             },
             {
               type: 'line',
-              label: 'Attribution %',
+              label: 'Recovery %',
               data: pctData,
-              borderColor: '#E91E63',
+              borderColor: '#DC2626',
               backgroundColor: 'transparent',
               borderWidth: 2,
-              pointRadius: 4,
-              pointBackgroundColor: '#E91E63',
+              pointRadius: 5,
+              pointBackgroundColor: '#DC2626',
+              pointBorderColor: '#fff',
+              pointBorderWidth: 1.5,
               tension: 0.3,
               yAxisID: 'yPct'
             }
@@ -216,27 +391,45 @@ window.EventCostV2.utilityReconciliation.render = function(container, eventCostR
           maintainAspectRatio: false,
           interaction: { mode: 'index', intersect: false },
           plugins: {
-            legend: { position: 'top', labels: { boxWidth: 12, font: { size: 12 } } },
+            legend: { display: false },
             tooltip: {
               callbacks: {
                 label: function(ctx) {
-                  if (ctx.datasetIndex === 2) return ctx.dataset.label + ': ' + ctx.parsed.y + '%';
+                  if (ctx.datasetIndex === 2) return 'Recovery: ' + ctx.parsed.y + '%';
                   return ctx.dataset.label + ': $' + ctx.parsed.y.toLocaleString();
                 }
               }
             }
           },
           scales: {
-            x: { grid: { display: false } },
+            x: {
+              grid: { display: false },
+              ticks: { font: { size: 11 }, color: '#9CA3AF' }
+            },
             yCost: {
-              type: 'linear', position: 'left',
-              ticks: { callback: function(v) { return '$' + (v/1000).toFixed(0) + 'k'; } }
+              type: 'linear',
+              position: 'left',
+              grid: { color: '#F3F4F6' },
+              ticks: {
+                font: { size: 10 },
+                color: '#9CA3AF',
+                callback: function(v) {
+                  if (v >= 1000000) return '$' + (v / 1000000).toFixed(1) + 'M';
+                  return '$' + (v / 1000).toFixed(0) + 'k';
+                }
+              }
             },
             yPct: {
-              type: 'linear', position: 'right',
+              type: 'linear',
+              position: 'right',
+              min: 0,
+              max: 100,
               grid: { drawOnChartArea: false },
-              ticks: { callback: function(v) { return v + '%'; } },
-              min: 0, max: 100
+              ticks: {
+                font: { size: 10 },
+                color: '#DC2626',
+                callback: function(v) { return v + '%'; }
+              }
             }
           }
         }
@@ -244,66 +437,80 @@ window.EventCostV2.utilityReconciliation.render = function(container, eventCostR
     });
   }
 
-  function buildTable(months, eventCostByMonth, billCostByMonth, utility) {
+  function buildTable(months, eventCostByMonth, billCostByMonth, eventCountByMonth, eventSFByMonth, utilColor) {
     tableWrap.innerHTML = '';
     if (months.length === 0) {
-      tableWrap.innerHTML = '<div style="text-align:center;padding:40px;color:#6c757d;font-size:13px;">No data for this utility.</div>';
+      tableWrap.innerHTML = '<div style="text-align:center;padding:40px;color:#6B7280;font-size:13px;">No data for this utility.</div>';
       return;
     }
 
-    // Compute historical average attribution % for variance flagging
-    var attribPcts = months.map(function(m) {
-      var b = billCostByMonth[m] || 0;
-      var e = eventCostByMonth[m] || 0;
-      return b > 0 ? e / b * 100 : 0;
-    }).filter(function(p) { return p > 0; });
-    var avgPct = attribPcts.length > 0 ? attribPcts.reduce(function(s, p) { return s + p; }, 0) / attribPcts.length : 0;
-
     var table = document.createElement('table');
-    table.style.cssText = 'width:100%;border-collapse:collapse;font-size:13px;';
+    table.className = 'ur-detail-table';
 
-    var thStyle = 'padding:10px 14px;background:#1565c0;color:white;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;text-align:right;white-space:nowrap;';
-    var thStyleLeft = thStyle + 'text-align:left;';
     var thead = document.createElement('thead');
-    thead.innerHTML = '<tr>' +
-      '<th style="' + thStyleLeft + '">Month</th>' +
-      '<th style="' + thStyle + '">Bill Cost (est.)</th>' +
-      '<th style="' + thStyle + '">Event Cost</th>' +
-      '<th style="' + thStyle + '">Non-Event Cost</th>' +
-      '<th style="' + thStyle + '">Attribution %</th>' +
-      '<th style="' + thStyle + '">Flag</th>' +
+    thead.innerHTML =
+      '<tr>' +
+        '<th>Month</th>' +
+        '<th class="right">Bill Cost</th>' +
+        '<th class="right">Event Cost</th>' +
+        '<th class="right">Unrecovered</th>' +
+        '<th class="right">Recovery %</th>' +
+        '<th class="right">Events</th>' +
+        '<th class="right">Event SF</th>' +
       '</tr>';
     table.appendChild(thead);
 
     var tbody = document.createElement('tbody');
-    months.forEach(function(m, i) {
-      var bill   = billCostByMonth[m]  || 0;
-      var event  = eventCostByMonth[m] || 0;
+    var totBill = 0, totEvent = 0, totEvents = 0;
+
+    months.forEach(function(m) {
+      var bill   = billCostByMonth[m]   || 0;
+      var event  = eventCostByMonth[m]  || 0;
       var nonEvt = Math.max(0, bill - event);
       var pct    = bill > 0 ? event / bill * 100 : 0;
-      var isHighVariance = avgPct > 0 && (pct > avgPct * 1.5 || pct < avgPct * 0.5) && pct > 0;
-      var label = new Date(m + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      var evtCnt = eventCountByMonth[m] || 0;
+      var sf     = eventSFByMonth[m]    || 0;
+
+      totBill   += bill;
+      totEvent  += event;
+      totEvents += evtCnt;
+
+      var label     = new Date(m + '-01').toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      var badgeCls  = pct >= 30 ? 'ur-recovery-high' : (pct >= 20 ? 'ur-recovery-mid' : 'ur-recovery-low');
+      var pctCell   = pct ? '<span class="ur-recovery-badge ' + badgeCls + '">' + pct.toFixed(1) + '%</span>' : '—';
 
       var tr = document.createElement('tr');
-      tr.style.cssText = 'background:' + (i % 2 === 0 ? 'white' : '#f9fafb') + ';';
-      tr.onmouseover = function() { tr.style.background = '#EBF5FB'; };
-      tr.onmouseout  = function() { tr.style.background = i % 2 === 0 ? 'white' : '#f9fafb'; };
-
-      var tdStyle = 'padding:9px 14px;border-bottom:1px solid #f0f0f0;color:#374151;';
       tr.innerHTML =
-        '<td style="' + tdStyle + 'font-weight:600;">' + label + '</td>' +
-        '<td style="' + tdStyle + 'text-align:right;">' + (bill ? '$' + Math.round(bill).toLocaleString() : '—') + '</td>' +
-        '<td style="' + tdStyle + 'text-align:right;color:' + (colors[utility] || '#374151') + ';font-weight:600;">' + (event ? '$' + Math.round(event).toLocaleString() : '—') + '</td>' +
-        '<td style="' + tdStyle + 'text-align:right;">' + (nonEvt ? '$' + Math.round(nonEvt).toLocaleString() : '—') + '</td>' +
-        '<td style="' + tdStyle + 'text-align:right;font-weight:600;">' + (pct ? pct.toFixed(1) + '%' : '—') + '</td>' +
-        '<td style="' + tdStyle + 'text-align:center;">' + (isHighVariance ? '<span title="Unusual attribution %" style="padding:2px 8px;background:#FEF3C7;color:#92400E;border-radius:4px;font-size:11px;font-weight:600;">⚠ Flag</span>' : '<span style="color:#adb5bd;font-size:11px;">OK</span>') + '</td>';
-
+        '<td class="bold">' + label + '</td>' +
+        '<td class="right">' + (bill  ? '$' + Math.round(bill).toLocaleString()  : '—') + '</td>' +
+        '<td class="right" style="color:' + utilColor + ';font-weight:600;">' + (event ? '$' + Math.round(event).toLocaleString() : '—') + '</td>' +
+        '<td class="right">' + (nonEvt ? '$' + Math.round(nonEvt).toLocaleString() : '—') + '</td>' +
+        '<td class="right">' + pctCell + '</td>' +
+        '<td class="right">' + (evtCnt || '—') + '</td>' +
+        '<td class="right">' + (sf ? Math.round(sf).toLocaleString() : '—') + '</td>';
       tbody.appendChild(tr);
     });
     table.appendChild(tbody);
+
+    var totUnrec   = Math.max(0, totBill - totEvent);
+    var totPct     = totBill > 0 ? totEvent / totBill * 100 : 0;
+    var totBadgeCls = totPct >= 30 ? 'ur-recovery-high' : (totPct >= 20 ? 'ur-recovery-mid' : 'ur-recovery-low');
+
+    var tfoot = document.createElement('tfoot');
+    tfoot.innerHTML =
+      '<tr>' +
+        '<td class="bold">Total</td>' +
+        '<td class="right">$' + Math.round(totBill).toLocaleString() + '</td>' +
+        '<td class="right">$' + Math.round(totEvent).toLocaleString() + '</td>' +
+        '<td class="right">$' + Math.round(totUnrec).toLocaleString() + '</td>' +
+        '<td class="right"><span class="ur-recovery-badge ' + totBadgeCls + '">' + totPct.toFixed(1) + '%</span></td>' +
+        '<td class="right">' + totEvents + '</td>' +
+        '<td class="right">—</td>' +
+      '</tr>';
+    table.appendChild(tfoot);
+
     tableWrap.appendChild(table);
   }
 
-  // ── Initial render ──────────────────────────────────────────────
   renderContent();
 };
