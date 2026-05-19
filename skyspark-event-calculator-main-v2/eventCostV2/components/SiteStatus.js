@@ -67,7 +67,7 @@ window.EventCostV2.siteStatus.render = function(container, onChartReady) {
   plotSection.appendChild(plotBody);
 
   // ── Chart container ───────────────────────────────────────────
-  var chartH = Math.max(350, Math.min(Math.round(window.innerHeight * 0.45), 550));
+  var chartH = Math.max(450, Math.min(Math.round(window.innerHeight * 0.6), 800));
   var chartContainer = document.createElement('div');
   chartContainer.style.cssText = 'width:100%;height:' + chartH + 'px;box-sizing:border-box;position:relative;display:flex;flex-direction:column;';
   plotBody.appendChild(chartContainer);
@@ -315,6 +315,7 @@ window.EventCostV2.siteStatus.render = function(container, onChartReady) {
     state._siteStatus_refreshUtility = refreshUtilityData;
 
     function rebuildChart() {
+      if (state.siteStatusPlaceholder) state.siteStatusPlaceholder.style.display = 'none';
       var active = state.activeUtility;
       var activeData = {};
       if (state.utilityData[active]) activeData[active] = state.utilityData[active];
@@ -334,7 +335,7 @@ window.EventCostV2.siteStatus.render = function(container, onChartReady) {
 
     window.addEventListener('resize', function() {
       window.EventCostV2.computeScaling();
-      var newH = Math.max(350, Math.min(Math.round(window.innerHeight * 0.45), 550));
+      var newH = Math.max(450, Math.min(Math.round(window.innerHeight * 0.6), 800));
       chartContainer.style.height = newH + 'px';
       syncOverlaySize();
       updateTimelineSize();

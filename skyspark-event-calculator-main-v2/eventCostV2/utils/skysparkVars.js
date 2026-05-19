@@ -80,16 +80,63 @@ window.EventCostV2.skyspark.readVariables = function(arg, view) {
   return { selectedSite: selectedSite, startDate: startDate, endDate: endDate, attestKey: attestKey, projectName: projectName };
 };
 
+/**
+ * Write a new dateRange Span back to SkySpark so the native view bar picker
+ * and any other shared views stay in sync.
+ *
+ * SkySpark's client JS compiles Fantom pods into window.fan.*
+ * We try the most common paths and fail silently if the API isn't available.
+ */
+window.EventCostV2.skyspark.writeDateRange = function(view, startIso, endIso) {
+  try {
+    var parentView = null;
+    if (typeof view.parent === 'function') parentView = view.parent();
+    else if (typeof view.root === 'function') parentView = view.root();
+
+    // Build a haystack HSpan using SkySpark's Fantom-compiled JS runtime
+    var span = null;
+    try {
+      var hs = window.fan && window.fan.haystack;
+      if (hs && hs.HDate && hs.HSpan) {
+        var p1 = startIso.split('-');
+        var p2 = endIso.split('-');
+        var d1 = hs.HDate.make(+p1[0], +p1[1], +p1[2]);
+        var d2 = hs.HDate.make(+p2[0], +p2[1], +p2[2]);
+        span = hs.HSpan.make(d1, d2);
+      }
+    } catch(e) {}
+
+    if (!span) return; // SkySpark runtime not available — no-op
+
+    // Try parent first (shared variable propagates to all bound child views),
+    // then fall back to the sub-view itself
+    var targets = [parentView, view].filter(Boolean);
+    for (var i = 0; i < targets.length; i++) {
+      var t = targets[i];
+      // pub() propagates to the parent view's var binding
+      if (typeof t.pub === 'function') {
+        try { t.pub('dateRange', span); return; } catch(e) {}
+      }
+      if (typeof t.setVar === 'function') {
+        try { t.setVar('dateRange', span); return; } catch(e) {}
+      }
+    }
+  } catch(e) {
+    console.warn('writeDateRange failed:', e);
+  }
+};
+
 window.EventCostV2.skyspark.startPolling = function(view, initialValues, onChangeCallback) {
   var tryReadVar = window.EventCostV2.skyspark.tryReadVar;
-  var lastSite = initialValues.selectedSite;
+  var lastSite  = initialValues.selectedSite;
   var lastStart = initialValues.startDate;
-  var lastEnd = initialValues.endDate;
+  var lastEnd   = initialValues.endDate;
 
   setInterval(function() {
-    var currentSite = null;
-    var currentStart = '2025-12-01';
-    var currentEnd = '2025-12-07';
+    // Default to last-known values so a failed read never fires a spurious reset
+    var currentSite  = lastSite;
+    var currentStart = lastStart;
+    var currentEnd   = lastEnd;
     try {
       var parentView = null;
       if (typeof view.parent === 'function') parentView = view.parent();
@@ -112,9 +159,9 @@ window.EventCostV2.skyspark.startPolling = function(view, initialValues, onChang
       }
 
       if (currentSite !== lastSite || currentStart !== lastStart || currentEnd !== lastEnd) {
-        lastSite = currentSite;
+        lastSite  = currentSite;
         lastStart = currentStart;
-        lastEnd = currentEnd;
+        lastEnd   = currentEnd;
         onChangeCallback(currentSite, currentStart, currentEnd);
       }
     } catch (e) {}
