@@ -27,16 +27,6 @@ window.EventCostV2.onUpdate = function(arg) {
 
   view.removeAll();
 
-  // ── Full-page: force every ancestor of elem to fill the viewport ──
-  try {
-    document.documentElement.style.cssText += ';height:100%!important;overflow:hidden!important;';
-    document.body.style.cssText += ';height:100%!important;overflow:hidden!important;margin:0!important;';
-    var _el = elem;
-    while (_el && _el !== document.body) {
-      _el.style.cssText += ';height:100%!important;overflow:hidden!important;display:block!important;';
-      _el = _el.parentElement;
-    }
-  } catch(e) {}
 
   // ── Read SkySpark variables ──────────────────────────────────────
   var vars = skyspark.readVariables(arg, view);
