@@ -66,7 +66,7 @@ window.EventCostV2.onUpdate = function(arg) {
   backBtn.addEventListener('click', function() {
     // Navigate to the SkySpark project home
     var proj = state.projectName || '';
-    window.location.href = proj ? '/proj/' + proj : '/';
+    window.location.href = proj ? '/ui/' + proj : '/';
   });
   header.appendChild(backBtn);
 
