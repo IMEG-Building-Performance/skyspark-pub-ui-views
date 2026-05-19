@@ -1,9 +1,18 @@
 /**
- * DateRangePicker.js — SkySpark-style compact date range picker
+ * DateRangePicker.js — SkySpark-style date range picker
  *
- * Renders a compact control:  [<]  Past Week  [>]
- * Clicking the label opens a dropdown with period buttons + dual calendar
- * for "Other" mode — matching SkySpark's native date picker layout.
+ * Compact control: [‹] [label] [›]
+ * Dropdown layout matches SkySpark native:
+ *   Period tabs + two-column (selector grid | shortcut buttons) + Ok
+ *
+ * Modes:
+ *   Day     → single calendar   | Today / Yesterday
+ *   Week    → calendar (week)   | This Week / Last Week / Past Week
+ *   Month   → year grid + month grid | This Month / Last Month / Past Month
+ *   Quarter → year grid + Q grid    | This Quarter / Last Quarter / Past Quarter
+ *   Year    → year grid (2-col)     | This Year / Last Year / Past Year
+ *   Other   → dual calendar + date/time inputs + Ok
+ *   Recent  → shortcut buttons only
  */
 
 window.EventCostV2 = window.EventCostV2 || {};
@@ -12,501 +21,636 @@ window.EventCostV2.datePicker = (function () {
 
   var MONTHS = ['January','February','March','April','May','June',
                 'July','August','September','October','November','December'];
-  var MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun',
-                      'Jul','Aug','Sep','Oct','Nov','Dec'];
+  var MONTHS_ABB = ['Jan','Feb','Mar','Apr','May','Jun',
+                    'Jul','Aug','Sep','Oct','Nov','Dec'];
   var DOW = ['S','M','T','W','T','F','S'];
 
-  // ── Date helpers ─────────────────────────────────────────────────
+  // ── Date helpers ────────────────────────────────────────────────
 
-  function today() {
-    var d = new Date();
-    d.setHours(0,0,0,0);
-    return d;
-  }
-
-  function fmt(d) {
-    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
-  }
-
-  function pad(n) { return n < 10 ? '0' + n : '' + n; }
+  function today() { var d = new Date(); d.setHours(0,0,0,0); return d; }
+  function fmt(d)  { return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+  function pad(n)  { return n < 10 ? '0'+n : ''+n; }
 
   function parseDate(s) {
     if (!s) return null;
-    var parts = s.split('-');
-    return new Date(+parts[0], +parts[1] - 1, +parts[2]);
+    var p = s.split('-');
+    return new Date(+p[0], +p[1]-1, +p[2]);
   }
 
-  function addDays(d, n) {
-    var r = new Date(d);
-    r.setDate(r.getDate() + n);
-    return r;
-  }
+  function addDays(d, n) { var r = new Date(d); r.setDate(r.getDate()+n); return r; }
 
-  function startOfWeek(d) {
+  function startOfWeek(d) {           // Monday-based
     var r = new Date(d);
     var dow = r.getDay();
-    var delta = dow === 0 ? -6 : 1 - dow;
-    r.setDate(r.getDate() + delta);
+    r.setDate(r.getDate() - (dow === 0 ? 6 : dow-1));
     return r;
   }
+  function endOfWeek(d) { return addDays(startOfWeek(d), 6); }
 
-  function startOfMonth(d)  { return new Date(d.getFullYear(), d.getMonth(), 1); }
-  function endOfMonth(d)    { return new Date(d.getFullYear(), d.getMonth() + 1, 0); }
+  function startOfMonth(d) { return new Date(d.getFullYear(), d.getMonth(), 1); }
+  function endOfMonth(d)   { return new Date(d.getFullYear(), d.getMonth()+1, 0); }
 
-  function startOfQuarter(d) {
-    var q = Math.floor(d.getMonth() / 3);
-    return new Date(d.getFullYear(), q * 3, 1);
-  }
-  function endOfQuarter(d) {
-    var q = Math.floor(d.getMonth() / 3);
-    return new Date(d.getFullYear(), q * 3 + 3, 0);
-  }
-
-  function startOfYear(d) { return new Date(d.getFullYear(), 0, 1); }
-  function endOfYear(d)   { return new Date(d.getFullYear(), 11, 31); }
+  function qStart(y, q) { return new Date(y, q*3, 1); }
+  function qEnd(y, q)   { return new Date(y, q*3+3, 0); }
 
   function sameDay(a, b) {
     return a && b &&
-      a.getFullYear() === b.getFullYear() &&
-      a.getMonth()    === b.getMonth()    &&
-      a.getDate()     === b.getDate();
+      a.getFullYear()===b.getFullYear() &&
+      a.getMonth()===b.getMonth() &&
+      a.getDate()===b.getDate();
   }
 
-  function fmtShort(d)     { return MONTHS_SHORT[d.getMonth()] + ' ' + d.getDate(); }
-  function fmtShortYear(d) { return fmtShort(d) + ', ' + d.getFullYear(); }
-
-  // Format as  MM - DD - YYYY  (display style matching SkySpark)
-  function fmtDisplay(isoStr) {
-    if (!isoStr) return '';
-    var p = isoStr.split('-');
-    return p[1] + ' - ' + p[2] + ' - ' + p[0];
+  function fmtShort(d)     { return MONTHS_ABB[d.getMonth()]+' '+d.getDate(); }
+  function fmtShortY(d)    { return fmtShort(d)+', '+d.getFullYear(); }
+  function fmtDisplay(iso) {       // YYYY-MM-DD → MM - DD - YYYY
+    if (!iso) return '';
+    var p = iso.split('-');
+    return p[1]+' - '+p[2]+' - '+p[0];
   }
-
-  // Parse  MM - DD - YYYY  or  MM-DD-YYYY  → ISO
-  function parseDisplayDate(s) {
-    s = s.replace(/\s/g, '');
+  function parseDisplay(s) {       // MM - DD - YYYY → YYYY-MM-DD
+    s = (s||'').replace(/\s/g,'');
     var m = s.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
-    if (!m) return null;
-    return m[3] + '-' + pad(+m[1]) + '-' + pad(+m[2]);
+    return m ? m[3]+'-'+pad(+m[1])+'-'+pad(+m[2]) : null;
   }
 
-  // ── Period math ──────────────────────────────────────────────────
+  // ── Range builders ───────────────────────────────────────────────
 
-  function computeRange(period, offset) {
+  function rangeDay(d) {
+    var iso = fmt(d), t = today();
+    var lbl = sameDay(d,t) ? 'Today' : sameDay(d,addDays(t,-1)) ? 'Yesterday' : fmtShortY(d);
+    return { start: iso, end: iso, label: lbl };
+  }
+
+  function rangeWeek(anchorDate) {
+    var s = startOfWeek(anchorDate), e = endOfWeek(anchorDate);
     var t = today();
-    var s, e, label;
-
-    if (period === 'day') {
-      s = addDays(t, offset); e = new Date(s);
-      label = offset === 0 ? 'Today' : offset === -1 ? 'Yesterday' : fmtShortYear(s);
-    } else if (period === 'week') {
-      var mon = startOfWeek(t);
-      s = addDays(mon, offset * 7); e = addDays(s, 6);
-      if (offset === 0) label = 'This Week';
-      else if (offset === -1) label = 'Past Week';
-      else {
-        label = fmtShort(s) + ' – ' + fmtShort(e);
-        if (s.getFullYear() !== t.getFullYear()) label += ', ' + s.getFullYear();
-      }
-    } else if (period === 'month') {
-      var base = new Date(t.getFullYear(), t.getMonth() + offset, 1);
-      s = startOfMonth(base); e = endOfMonth(base);
-      label = offset === 0
-        ? MONTHS[base.getMonth()] + ' ' + base.getFullYear()
-        : MONTHS_SHORT[base.getMonth()] + ' ' + base.getFullYear();
-    } else if (period === 'quarter') {
-      var qBase = new Date(t.getFullYear(), t.getMonth(), 1);
-      qBase.setMonth(qBase.getMonth() + offset * 3);
-      s = startOfQuarter(qBase); e = endOfQuarter(qBase);
-      label = 'Q' + (Math.floor(s.getMonth() / 3) + 1) + ' ' + s.getFullYear();
-    } else if (period === 'year') {
-      var yBase = new Date(t.getFullYear() + offset, 0, 1);
-      s = startOfYear(yBase); e = endOfYear(yBase);
-      label = '' + yBase.getFullYear();
-    } else if (period === 'recent') {
-      s = addDays(t, -29); e = t;
-      label = 'Last 30 Days';
-    }
-
-    return { start: fmt(s), end: fmt(e), label: label };
+    var lbl;
+    if (sameDay(s, startOfWeek(t)))          lbl = 'This Week';
+    else if (sameDay(s, startOfWeek(addDays(t,-7)))) lbl = 'Last Week';
+    else lbl = fmtShort(s)+' – '+fmtShort(e);
+    return { start: fmt(s), end: fmt(e), label: lbl };
   }
 
-  function canGoForward(period, offset) {
-    if (period === 'recent' || period === 'other') return false;
-    return parseDate(computeRange(period, offset + 1).start) <= today();
+  function rangeMonth(y, m) {
+    var d = new Date(y, m, 1), t = today();
+    var lbl = (y===t.getFullYear() && m===t.getMonth())
+      ? MONTHS[m]+' '+y : MONTHS_ABB[m]+' '+y;
+    return { start: fmt(startOfMonth(d)), end: fmt(endOfMonth(d)), label: lbl };
   }
 
-  // ── DOM helpers ──────────────────────────────────────────────────
+  function rangeQuarter(y, q) {
+    return {
+      start: fmt(qStart(y,q)), end: fmt(qEnd(y,q)),
+      label: 'Q'+(q+1)+' '+y
+    };
+  }
 
-  function el(tag, cls, text) {
+  function rangeYear(y) {
+    return { start: y+'-01-01', end: y+'-12-31', label: ''+y };
+  }
+
+  // ── DOM helper ───────────────────────────────────────────────────
+
+  function el(tag, cls, txt) {
     var n = document.createElement(tag);
     if (cls) n.className = cls;
-    if (text != null) n.textContent = text;
+    if (txt != null) n.textContent = txt;
     return n;
   }
 
-  // ── Calendar renderer ────────────────────────────────────────────
+  // ── Year grid (shared by month/quarter/year modes) ────────────────
 
-  function renderCalendar(container, year, month, selStart, selEnd, onDayClick, onNavigate) {
-    container.innerHTML = '';
+  function buildYearGrid(selectedYear, onSelect) {
+    var cur = today().getFullYear();
+    var years = [];
+    for (var y = cur+2; y >= 2010; y--) years.push(y);
+    var half = Math.ceil(years.length / 2);
 
-    // Normalise month overflow
+    var grid = el('div', 'dp-year-grid');
+    [years.slice(0, half), years.slice(half)].forEach(function(col) {
+      var colEl = el('div', 'dp-year-col');
+      col.forEach(function(y) {
+        var b = el('button', 'dp-grid-btn'+(y===selectedYear?' dp-grid-btn--active':''), ''+y);
+        b.addEventListener('click', function(e) { e.stopPropagation(); onSelect(y); });
+        colEl.appendChild(b);
+      });
+      grid.appendChild(colEl);
+    });
+    return grid;
+  }
+
+  // ── Calendar renderer (Day & Week modes) ──────────────────────────
+
+  function buildCalendar(year, month, opts) {
+    // opts: { mode:'day'|'week', selectedDay, weekAnchor, onDayClick, onNavigate }
     while (month > 11) { month -= 12; year++; }
     while (month < 0)  { month += 12; year--; }
 
-    // ── Header: [‹] [Month ▲▼] [Year ▲▼] [›]
-    var hdr = el('div', 'dp-cal-hdr');
+    var wrap = el('div', 'dp-cal-wrap');
 
+    // Header
+    var hdr = el('div', 'dp-cal-hdr');
     var prev = el('button', 'dp-cal-nav', '‹');
     prev.addEventListener('click', function(e) {
-      e.stopPropagation();
-      onNavigate(year, month - 1);
+      e.stopPropagation(); opts.onNavigate(year, month-1);
     });
 
-    // Month select
-    var monthSel = document.createElement('select');
-    monthSel.className = 'dp-cal-month-sel';
+    var mSel = document.createElement('select');
+    mSel.className = 'dp-cal-month-sel';
     MONTHS.forEach(function(m, i) {
-      var opt = document.createElement('option');
-      opt.value = i;
-      opt.textContent = m;
-      if (i === month) opt.selected = true;
-      monthSel.appendChild(opt);
+      var o = document.createElement('option');
+      o.value = i; o.textContent = m;
+      if (i === month) o.selected = true;
+      mSel.appendChild(o);
     });
-    monthSel.addEventListener('change', function(e) {
-      e.stopPropagation();
-      onNavigate(year, +monthSel.value);
+    mSel.addEventListener('change', function(e) {
+      e.stopPropagation(); opts.onNavigate(year, +mSel.value);
     });
 
-    // Year spinner
-    var yearWrap = el('div', 'dp-cal-year-wrap');
-    var yearVal  = el('span', 'dp-cal-year-val', '' + year);
-    var yearBtns = el('div', 'dp-cal-year-btns');
+    var yWrap = el('div', 'dp-cal-year-wrap');
+    var yVal  = el('span', 'dp-cal-year-val', ''+year);
+    var yBtns = el('div', 'dp-cal-year-btns');
     var yUp   = el('button', 'dp-cal-spin-btn', '▲');
-    var yDown = el('button', 'dp-cal-spin-btn', '▼');
-    yUp.addEventListener('click',   function(e) { e.stopPropagation(); onNavigate(year + 1, month); });
-    yDown.addEventListener('click', function(e) { e.stopPropagation(); onNavigate(year - 1, month); });
-    yearBtns.appendChild(yUp);
-    yearBtns.appendChild(yDown);
-    yearWrap.appendChild(yearVal);
-    yearWrap.appendChild(yearBtns);
+    var yDn   = el('button', 'dp-cal-spin-btn', '▼');
+    yUp.addEventListener('click', function(e) { e.stopPropagation(); opts.onNavigate(year+1, month); });
+    yDn.addEventListener('click', function(e) { e.stopPropagation(); opts.onNavigate(year-1, month); });
+    yBtns.appendChild(yUp); yBtns.appendChild(yDn);
+    yWrap.appendChild(yVal); yWrap.appendChild(yBtns);
 
     var next = el('button', 'dp-cal-nav', '›');
     next.addEventListener('click', function(e) {
-      e.stopPropagation();
-      onNavigate(year, month + 1);
+      e.stopPropagation(); opts.onNavigate(year, month+1);
     });
 
-    hdr.appendChild(prev);
-    hdr.appendChild(monthSel);
-    hdr.appendChild(yearWrap);
-    hdr.appendChild(next);
-    container.appendChild(hdr);
+    hdr.appendChild(prev); hdr.appendChild(mSel);
+    hdr.appendChild(yWrap); hdr.appendChild(next);
+    wrap.appendChild(hdr);
 
-    // ── Day-of-week header
+    // DOW
     var dowRow = el('div', 'dp-cal-dow');
-    DOW.forEach(function(d) { dowRow.appendChild(el('span', 'dp-cal-dow-cell', d)); });
-    container.appendChild(dowRow);
+    DOW.forEach(function(d) { dowRow.appendChild(el('span','dp-cal-dow-cell',d)); });
+    wrap.appendChild(dowRow);
 
-    // ── Day grid
+    // Grid
     var grid = el('div', 'dp-cal-grid');
-    var firstDay    = new Date(year, month, 1).getDay();
-    var daysInMonth = new Date(year, month + 1, 0).getDate();
-    var startD = selStart ? parseDate(selStart) : null;
-    var endD   = selEnd   ? parseDate(selEnd)   : null;
+    var firstDay = new Date(year, month, 1).getDay();
+    var daysInMonth = new Date(year, month+1, 0).getDate();
 
     for (var i = 0; i < firstDay; i++) {
-      grid.appendChild(el('span', 'dp-cal-cell dp-cal-blank', ''));
+      grid.appendChild(el('span','dp-cal-cell dp-cal-blank',''));
     }
+
+    var wkStart = opts.weekAnchor ? startOfWeek(opts.weekAnchor) : null;
+    var wkEnd   = wkStart ? endOfWeek(opts.weekAnchor) : null;
 
     for (var d = 1; d <= daysInMonth; d++) {
       var cellDate = new Date(year, month, d);
-      var cell = el('span', 'dp-cal-cell', '' + d);
-      var isStart = startD && sameDay(cellDate, startD);
-      var isEnd   = endD   && sameDay(cellDate, endD);
-      var inRange = startD && endD && cellDate > startD && cellDate < endD;
-      if (isStart) cell.classList.add('dp-cal-cell--start');
-      if (isEnd)   cell.classList.add('dp-cal-cell--end');
-      if (inRange) cell.classList.add('dp-cal-cell--range');
-      if (isStart || isEnd) cell.classList.add('dp-cal-cell--sel');
+      var cell = el('span', 'dp-cal-cell', ''+d);
+
+      if (opts.mode === 'day') {
+        if (opts.selectedDay && sameDay(cellDate, opts.selectedDay)) {
+          cell.classList.add('dp-cal-cell--sel');
+        }
+      } else if (opts.mode === 'week' && wkStart) {
+        var inWk = cellDate >= wkStart && cellDate <= wkEnd;
+        if (inWk) {
+          cell.classList.add('dp-cal-cell--range');
+          if (sameDay(cellDate, wkStart)) cell.classList.add('dp-cal-cell--sel','dp-cal-cell--start');
+          if (sameDay(cellDate, wkEnd))   cell.classList.add('dp-cal-cell--sel','dp-cal-cell--end');
+        }
+      }
+
       (function(date) {
         cell.addEventListener('click', function(e) {
-          e.stopPropagation(); onDayClick(date);
+          e.stopPropagation(); opts.onDayClick(date);
         });
       })(cellDate);
+
       grid.appendChild(cell);
     }
-    container.appendChild(grid);
+    wrap.appendChild(grid);
+    return wrap;
   }
 
   // ── Main factory ─────────────────────────────────────────────────
 
   function create(opts) {
     var onChange = opts.onChange || function() {};
-
-    var period = 'week';
-    var offset = -1;
-    var otherStart = null;
-    var otherEnd   = null;
-    var otherSelecting = 'start';
-
-    if (opts.startDate && opts.endDate) {
-      otherStart = opts.startDate;
-      otherEnd   = opts.endDate;
-    }
-
     var t = today();
-    var leftCal  = { year: t.getFullYear(), month: t.getMonth() };
-    var rightCal = { year: t.getFullYear(), month: t.getMonth() + 1 };
-    if (rightCal.month > 11) { rightCal.month = 0; rightCal.year++; }
+
+    // Applied range
+    var period = 'week';
+    var currentLabel = 'Last Week';
+    var currentStart = null;
+    var currentEnd   = null;
+
+    // Per-period pending state
+    var dayPick  = addDays(t, -1);                    // yesterday
+    var weekAnchor = startOfWeek(addDays(t, -7));      // last week
+    var monthY = t.getMonth()>0 ? t.getFullYear() : t.getFullYear()-1;
+    var monthM = t.getMonth()>0 ? t.getMonth()-1  : 11;
+    var qtrY   = Math.floor(t.getMonth()/3)>0 ? t.getFullYear() : t.getFullYear()-1;
+    var qtrQ   = Math.floor(t.getMonth()/3)>0 ? Math.floor(t.getMonth()/3)-1 : 3;
+    var yearPick = t.getFullYear() - 1;
+    var otherStart = null, otherEnd = null, otherSel = 'start';
+    var leftCalY = t.getFullYear(), leftCalM = t.getMonth();
+    var rightCalY = t.getFullYear(), rightCalM = t.getMonth()+1;
+    if (rightCalM > 11) { rightCalM = 0; rightCalY++; }
+
+    // Calendar nav for day/week
+    var calNavY = t.getFullYear(), calNavM = t.getMonth();
 
     var dropdownOpen = false;
 
-    // ── Wrapper
-    var wrapper = el('div', 'dp-wrapper');
+    // Init default
+    (function() {
+      var r = rangeWeek(weekAnchor);
+      currentStart = r.start; currentEnd = r.end; currentLabel = r.label;
+    })();
 
-    // ── Compact control
+    // ── DOM: compact control
+    var wrapper = el('div', 'dp-wrapper');
     var control = el('div', 'dp-control');
     var btnPrev  = el('button', 'dp-nav-btn', '‹');
     var labelBtn = el('button', 'dp-label-btn');
-    var labelText = el('span', 'dp-label-text');
+    var labelText = el('span', 'dp-label-text', currentLabel);
     labelBtn.appendChild(labelText);
     var btnNext = el('button', 'dp-nav-btn', '›');
-    control.appendChild(btnPrev);
-    control.appendChild(labelBtn);
-    control.appendChild(btnNext);
+    control.appendChild(btnPrev); control.appendChild(labelBtn); control.appendChild(btnNext);
     wrapper.appendChild(control);
 
-    // ── Dropdown
+    // ── DOM: dropdown
     var dropdown = el('div', 'dp-dropdown');
     wrapper.appendChild(dropdown);
 
-    // Period buttons
-    var periodRow = el('div', 'dp-period-row');
-    var PERIODS = [
-      { id: 'day',     label: 'Day'     },
-      { id: 'week',    label: 'Week'    },
-      { id: 'month',   label: 'Month'   },
-      { id: 'quarter', label: 'Quarter' },
-      { id: 'year',    label: 'Year'    },
-      { id: 'other',   label: 'Other'   },
-      { id: 'recent',  label: 'Recent'  }
-    ];
-    var periodBtns = {};
-    PERIODS.forEach(function(p) {
-      var b = el('button', 'dp-period-btn', p.label);
-      b.setAttribute('data-period', p.id);
-      periodRow.appendChild(b);
-      periodBtns[p.id] = b;
+    // Period tabs
+    var tabRow = el('div', 'dp-period-row');
+    var PERIODS = ['day','week','month','quarter','year','other','recent'];
+    var PLABELS = { day:'Day',week:'Week',month:'Month',quarter:'Quarter',year:'Year',other:'Other',recent:'Recent' };
+    var pBtns = {};
+    PERIODS.forEach(function(pid) {
+      var b = el('button', 'dp-period-btn', PLABELS[pid]);
+      b.addEventListener('click', function(e) {
+        e.stopPropagation();
+        period = pid;
+        renderAll();
+      });
+      pBtns[pid] = b;
+      tabRow.appendChild(b);
     });
-    dropdown.appendChild(periodRow);
+    dropdown.appendChild(tabRow);
 
-    // Dual calendars (Other mode)
-    var calArea = el('div', 'dp-cal-area');
-    var calLeft  = el('div', 'dp-cal');
-    var calRight = el('div', 'dp-cal');
-    calArea.appendChild(calLeft);
-    calArea.appendChild(calRight);
-    dropdown.appendChild(calArea);
+    // Two-column content area
+    var contentArea = el('div', 'dp-content-area');
+    var selectorPane = el('div', 'dp-selector-pane');
+    var shortcutPane = el('div', 'dp-shortcut-pane');
+    contentArea.appendChild(selectorPane);
+    contentArea.appendChild(shortcutPane);
+    dropdown.appendChild(contentArea);
 
-    // ── Date+time input row (SkySpark style)
-    //    [MM - DD - YYYY  00 : 00 : 00 am]  [MM - DD - YYYY  00 : 00 : 00 am]  [Ok]
+    // Footer: date inputs (Other mode) + Ok
+    var footer = el('div', 'dp-footer');
+
     var dateInputRow = el('div', 'dp-date-input-row');
-
     function makeDtField() {
-      var wrap = el('div', 'dp-dt-field');
-      var dateInput = el('input', 'dp-dt-date-input');
-      dateInput.type = 'text';
-      dateInput.placeholder = 'MM - DD - YYYY';
-      dateInput.maxLength = 14;
-      var timePart = el('span', 'dp-dt-time', '  00 : 00 : 00 am');
-      wrap.appendChild(dateInput);
-      wrap.appendChild(timePart);
-      return { wrap: wrap, input: dateInput };
+      var w = el('div', 'dp-dt-field');
+      var inp = el('input', 'dp-dt-date-input');
+      inp.type = 'text'; inp.placeholder = 'MM - DD - YYYY'; inp.maxLength = 14;
+      var t2 = el('span', 'dp-dt-time', '  00 : 00 : 00 am');
+      w.appendChild(inp); w.appendChild(t2);
+      return { wrap: w, input: inp };
     }
-
     var startField = makeDtField();
     var endField   = makeDtField();
-    var okBtn = el('button', 'dp-ok-btn', 'Ok');
-
     dateInputRow.appendChild(startField.wrap);
     dateInputRow.appendChild(endField.wrap);
-    dateInputRow.appendChild(okBtn);
-    dropdown.appendChild(dateInputRow);
+    footer.appendChild(dateInputRow);
 
-    // ── Update functions
+    var okBtn = el('button', 'dp-ok-btn', 'Ok');
+    footer.appendChild(okBtn);
+    dropdown.appendChild(footer);
 
-    function fmtForInput(isoStr) { return fmtDisplay(isoStr); }
+    dropdown.addEventListener('click', function(e) { e.stopPropagation(); });
 
-    function updateLabel() {
-      if (period === 'other') {
-        if (otherStart && otherEnd) {
-          var s = parseDate(otherStart), e = parseDate(otherEnd);
-          labelText.textContent = s.getFullYear() === e.getFullYear()
-            ? fmtShort(s) + ' – ' + fmtShort(e) + ', ' + s.getFullYear()
-            : fmtShortYear(s) + ' – ' + fmtShortYear(e);
-        } else {
-          labelText.textContent = 'Custom Range';
-        }
-      } else if (period === 'recent') {
-        labelText.textContent = 'Last 30 Days';
-      } else {
-        labelText.textContent = computeRange(period, offset).label;
-      }
+    // ── Shortcuts config
+    var SHORTCUTS = {
+      day: [
+        { label:'Today',     fn: function() { return rangeDay(today()); } },
+        { label:'Yesterday', fn: function() { return rangeDay(addDays(today(),-1)); } }
+      ],
+      week: [
+        { label:'This Week', fn: function() { return rangeWeek(today()); } },
+        { label:'Last Week', fn: function() { return rangeWeek(addDays(today(),-7)); } },
+        { label:'Past Week', fn: function() {
+          var t2=today();
+          return { start:fmt(addDays(t2,-6)), end:fmt(t2), label:'Past Week' };
+        }}
+      ],
+      month: [
+        { label:'This Month', fn: function() { var t2=today(); return rangeMonth(t2.getFullYear(),t2.getMonth()); } },
+        { label:'Last Month', fn: function() {
+          var t2=today(), m=t2.getMonth()-1, y=t2.getFullYear();
+          if (m<0){m=11;y--;} return rangeMonth(y,m);
+        }},
+        { label:'Past Month', fn: function() {
+          var t2=today();
+          return { start:fmt(addDays(t2,-29)), end:fmt(t2), label:'Past Month' };
+        }}
+      ],
+      quarter: [
+        { label:'This Quarter', fn: function() { var t2=today(); return rangeQuarter(t2.getFullYear(),Math.floor(t2.getMonth()/3)); } },
+        { label:'Last Quarter', fn: function() {
+          var t2=today(), q=Math.floor(t2.getMonth()/3)-1, y=t2.getFullYear();
+          if (q<0){q=3;y--;} return rangeQuarter(y,q);
+        }},
+        { label:'Past Quarter', fn: function() {
+          var t2=today(), q=Math.floor(t2.getMonth()/3)-1, y=t2.getFullYear();
+          if (q<0){q=3;y--;} return rangeQuarter(y,q);
+        }}
+      ],
+      year: [
+        { label:'This Year', fn: function() { return rangeYear(today().getFullYear()); } },
+        { label:'Last Year', fn: function() { return rangeYear(today().getFullYear()-1); } },
+        { label:'Past Year', fn: function() { return rangeYear(today().getFullYear()-1); } }
+      ],
+      recent: [
+        { label:'Last 7 Days',  fn: function() { var t2=today(); return { start:fmt(addDays(t2,-6)),  end:fmt(t2), label:'Last 7 Days' }; } },
+        { label:'Last 14 Days', fn: function() { var t2=today(); return { start:fmt(addDays(t2,-13)), end:fmt(t2), label:'Last 14 Days' }; } },
+        { label:'Last 30 Days', fn: function() { var t2=today(); return { start:fmt(addDays(t2,-29)), end:fmt(t2), label:'Last 30 Days' }; } },
+        { label:'Last 90 Days', fn: function() { var t2=today(); return { start:fmt(addDays(t2,-89)), end:fmt(t2), label:'Last 90 Days' }; } }
+      ]
+    };
+
+    // ── Apply a confirmed range
+    function applyRange(start, end, label) {
+      currentStart = start; currentEnd = end; currentLabel = label;
+      labelText.textContent = label;
+      closeDropdown();
+      onChange(start, end);
     }
 
-    function updatePeriodBtns() {
-      PERIODS.forEach(function(p) {
-        periodBtns[p.id].classList.toggle('dp-period-btn--active', p.id === period);
+    // ── Render helpers
+    function renderShortcuts() {
+      shortcutPane.innerHTML = '';
+      (SHORTCUTS[period] || []).forEach(function(s) {
+        var b = el('button', 'dp-shortcut-btn', s.label);
+        b.addEventListener('click', function(e) {
+          e.stopPropagation();
+          var r = s.fn();
+          // For week/month/quarter/year shortcuts also sync the pending pick
+          if (period === 'week') weekAnchor = parseDate(r.start);
+          if (period === 'month') { var d=parseDate(r.start); monthY=d.getFullYear(); monthM=d.getMonth(); }
+          if (period === 'quarter') { var d=parseDate(r.start); qtrY=d.getFullYear(); qtrQ=Math.floor(d.getMonth()/3); }
+          if (period === 'year') yearPick=parseDate(r.start).getFullYear();
+          if (period === 'day') dayPick=parseDate(r.start);
+          applyRange(r.start, r.end, r.label);
+        });
+        shortcutPane.appendChild(b);
       });
     }
 
-    function updateNavBtns() {
-      btnPrev.disabled = false;
-      btnNext.disabled = period === 'other' || period === 'recent' || !canGoForward(period, offset);
+    function renderDayPane() {
+      selectorPane.innerHTML = '';
+      selectorPane.appendChild(buildCalendar(calNavY, calNavM, {
+        mode: 'day',
+        selectedDay: dayPick,
+        onDayClick: function(d) { dayPick = d; calNavY=d.getFullYear(); calNavM=d.getMonth(); renderDayPane(); },
+        onNavigate: function(y,m) { calNavY=y; calNavM=m; renderDayPane(); }
+      }));
     }
 
-    function updateCalendars() {
-      var showOther = period === 'other';
-      calArea.style.display      = showOther ? 'flex' : 'none';
-      dateInputRow.style.display = showOther ? 'flex' : 'none';
-      if (!showOther) return;
-
-      renderCalendar(calLeft, leftCal.year, leftCal.month, otherStart, otherEnd,
-        onCalDayClick,
-        function(y, m) { leftCal.year = y; leftCal.month = m; updateCalendars(); }
-      );
-      renderCalendar(calRight, rightCal.year, rightCal.month, otherStart, otherEnd,
-        onCalDayClick,
-        function(y, m) { rightCal.year = y; rightCal.month = m; updateCalendars(); }
-      );
-
-      startField.input.value = fmtForInput(otherStart);
-      endField.input.value   = fmtForInput(otherEnd);
+    function renderWeekPane() {
+      selectorPane.innerHTML = '';
+      selectorPane.appendChild(buildCalendar(calNavY, calNavM, {
+        mode: 'week',
+        weekAnchor: weekAnchor,
+        onDayClick: function(d) {
+          weekAnchor = startOfWeek(d);
+          calNavY=d.getFullYear(); calNavM=d.getMonth();
+          renderWeekPane(); renderShortcuts();
+        },
+        onNavigate: function(y,m) { calNavY=y; calNavM=m; renderWeekPane(); }
+      }));
     }
 
-    function onCalDayClick(date) {
+    function renderMonthPane() {
+      selectorPane.innerHTML = '';
+      var row = el('div', 'dp-month-year-row');
+
+      // Year grid
+      var yg = buildYearGrid(monthY, function(y) {
+        monthY = y; renderMonthPane();
+      });
+
+      // Month grid: two columns Jan-Jun / Jul-Dec
+      var mg = el('div', 'dp-month-grid');
+      [MONTHS_ABB.slice(0,6), MONTHS_ABB.slice(6)].forEach(function(col, ci) {
+        var colEl = el('div', 'dp-month-col');
+        col.forEach(function(abbr, ri) {
+          var mi = ci*6 + ri;
+          var b = el('button', 'dp-grid-btn'+(mi===monthM?' dp-grid-btn--active':''), abbr);
+          b.addEventListener('click', function(e) {
+            e.stopPropagation(); monthM = mi; renderMonthPane();
+          });
+          colEl.appendChild(b);
+        });
+        mg.appendChild(colEl);
+      });
+
+      row.appendChild(yg);
+      row.appendChild(mg);
+      selectorPane.appendChild(row);
+    }
+
+    function renderQuarterPane() {
+      selectorPane.innerHTML = '';
+      var row = el('div', 'dp-month-year-row');
+
+      var yg = buildYearGrid(qtrY, function(y) {
+        qtrY = y; renderQuarterPane();
+      });
+
+      var qg = el('div', 'dp-quarter-grid');
+      ['Q1','Q2','Q3','Q4'].forEach(function(ql, qi) {
+        var b = el('button', 'dp-grid-btn'+(qi===qtrQ?' dp-grid-btn--active':''), ql);
+        b.addEventListener('click', function(e) {
+          e.stopPropagation(); qtrQ = qi; renderQuarterPane();
+        });
+        qg.appendChild(b);
+      });
+
+      row.appendChild(yg);
+      row.appendChild(qg);
+      selectorPane.appendChild(row);
+    }
+
+    function renderYearPane() {
+      selectorPane.innerHTML = '';
+      selectorPane.appendChild(buildYearGrid(yearPick, function(y) {
+        yearPick = y; renderYearPane();
+      }));
+    }
+
+    function renderOtherPane() {
+      selectorPane.innerHTML = '';
+      // Left calendar
+      var leftCal = buildCalendar(leftCalY, leftCalM, {
+        mode: 'day',
+        selectedDay: otherStart ? parseDate(otherStart) : null,
+        onDayClick: onOtherDayClick,
+        onNavigate: function(y,m) { leftCalY=y; leftCalM=m; renderOtherPane(); }
+      });
+      // Right calendar
+      var rightCal = buildCalendar(rightCalY, rightCalM, {
+        mode: 'day',
+        selectedDay: otherEnd ? parseDate(otherEnd) : null,
+        onDayClick: onOtherDayClick,
+        onNavigate: function(y,m) { rightCalY=y; rightCalM=m; renderOtherPane(); }
+      });
+      // Color range across both calendars
+      markOtherRange(leftCal, leftCalY, leftCalM);
+      markOtherRange(rightCal, rightCalY, rightCalM);
+
+      var dualWrap = el('div', 'dp-cal-dual');
+      dualWrap.appendChild(leftCal);
+      dualWrap.appendChild(rightCal);
+      selectorPane.appendChild(dualWrap);
+
+      startField.input.value = fmtDisplay(otherStart);
+      endField.input.value   = fmtDisplay(otherEnd);
+    }
+
+    function markOtherRange(calEl, year, month) {
+      if (!otherStart || !otherEnd) return;
+      var s = parseDate(otherStart), e = parseDate(otherEnd);
+      calEl.querySelectorAll('.dp-cal-cell').forEach(function(cell) {
+        var d = +cell.textContent;
+        if (!d) return;
+        var date = new Date(year, month, d);
+        var isS = sameDay(date,s), isE = sameDay(date,e);
+        var inR = date > s && date < e;
+        if (isS) { cell.classList.add('dp-cal-cell--sel','dp-cal-cell--start'); }
+        if (isE) { cell.classList.add('dp-cal-cell--sel','dp-cal-cell--end'); }
+        if (inR) { cell.classList.add('dp-cal-cell--range'); }
+      });
+    }
+
+    function onOtherDayClick(date) {
       var iso = fmt(date);
-      if (otherSelecting === 'start' || !otherStart) {
-        otherStart = iso; otherEnd = null; otherSelecting = 'end';
+      if (otherSel === 'start' || !otherStart) {
+        otherStart = iso; otherEnd = null; otherSel = 'end';
       } else {
         if (iso < otherStart) { otherEnd = otherStart; otherStart = iso; }
-        else { otherEnd = iso; }
-        otherSelecting = 'start';
+        else otherEnd = iso;
+        otherSel = 'start';
       }
-      updateCalendars();
-      updateLabel();
+      renderOtherPane();
     }
 
-    function fireChange() {
-      var range;
-      if (period === 'other') {
-        if (!otherStart || !otherEnd) return;
-        range = { start: otherStart, end: otherEnd };
-      } else if (period === 'recent') {
-        range = computeRange('recent', 0);
-      } else {
-        range = computeRange(period, offset);
-      }
-      onChange(range.start, range.end);
-    }
-
-    function refresh() {
-      updateLabel(); updatePeriodBtns(); updateNavBtns(); updateCalendars();
-    }
-
-    // ── Event wiring
-
-    PERIODS.forEach(function(p) {
-      periodBtns[p.id].addEventListener('click', function(e) {
-        e.stopPropagation();
-        period = p.id;
-        offset = p.id === 'week' ? -1 : 0;
-        refresh();
-        if (p.id !== 'other') { closeDropdown(); fireChange(); }
+    function renderAll() {
+      // Update tabs
+      PERIODS.forEach(function(pid) {
+        pBtns[pid].classList.toggle('dp-period-btn--active', pid === period);
       });
+
+      // Show/hide date inputs + Ok
+      dateInputRow.style.display = period === 'other' ? 'flex' : 'none';
+      okBtn.style.display = (period === 'other') ? 'inline-block' : 'inline-block'; // always show
+
+      // Render selector pane
+      if      (period === 'day')     { renderDayPane();     renderShortcuts(); }
+      else if (period === 'week')    { renderWeekPane();    renderShortcuts(); }
+      else if (period === 'month')   { renderMonthPane();   renderShortcuts(); }
+      else if (period === 'quarter') { renderQuarterPane(); renderShortcuts(); }
+      else if (period === 'year')    { renderYearPane();    renderShortcuts(); }
+      else if (period === 'other')   { renderOtherPane();   shortcutPane.innerHTML = ''; }
+      else if (period === 'recent')  { selectorPane.innerHTML = ''; renderShortcuts(); }
+    }
+
+    // ── Ok button
+    okBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var r;
+      if      (period === 'day')     r = rangeDay(dayPick);
+      else if (period === 'week')    r = rangeWeek(weekAnchor);
+      else if (period === 'month')   r = rangeMonth(monthY, monthM);
+      else if (period === 'quarter') r = rangeQuarter(qtrY, qtrQ);
+      else if (period === 'year')    r = rangeYear(yearPick);
+      else if (period === 'other') {
+        var ns = parseDisplay(startField.input.value);
+        var ne = parseDisplay(endField.input.value);
+        if (ns) otherStart = ns;
+        if (ne) otherEnd   = ne;
+        if (!otherStart || !otherEnd) return;
+        if (otherEnd < otherStart) { var tmp=otherStart; otherStart=otherEnd; otherEnd=tmp; }
+        var s=parseDate(otherStart), e=parseDate(otherEnd);
+        var lbl = s.getFullYear()===e.getFullYear()
+          ? fmtShort(s)+' – '+fmtShort(e)+', '+s.getFullYear()
+          : fmtShortY(s)+' – '+fmtShortY(e);
+        r = { start: otherStart, end: otherEnd, label: lbl };
+      }
+      if (r) applyRange(r.start, r.end, r.label);
     });
 
+    // ── Compact nav (prev/next)
     btnPrev.addEventListener('click', function(e) {
       e.stopPropagation();
-      if (period === 'other' || period === 'recent') return;
-      offset--; refresh(); fireChange();
+      var r;
+      if      (period==='day')     { dayPick=addDays(dayPick,-1); r=rangeDay(dayPick); }
+      else if (period==='week')    { weekAnchor=addDays(weekAnchor,-7); r=rangeWeek(weekAnchor); }
+      else if (period==='month')   {
+        monthM--; if(monthM<0){monthM=11;monthY--;} r=rangeMonth(monthY,monthM);
+      }
+      else if (period==='quarter') {
+        qtrQ--; if(qtrQ<0){qtrQ=3;qtrY--;} r=rangeQuarter(qtrY,qtrQ);
+      }
+      else if (period==='year')    { yearPick--; r=rangeYear(yearPick); }
+      if (r) applyRange(r.start, r.end, r.label);
     });
 
     btnNext.addEventListener('click', function(e) {
       e.stopPropagation();
-      if (period === 'other' || period === 'recent') return;
-      if (!canGoForward(period, offset)) return;
-      offset++; refresh(); fireChange();
+      var t2=today(), r;
+      if (period==='day') {
+        var nd=addDays(dayPick,1); if(nd>t2)return; dayPick=nd; r=rangeDay(dayPick);
+      } else if (period==='week') {
+        var nw=addDays(weekAnchor,7); if(nw>t2)return; weekAnchor=nw; r=rangeWeek(weekAnchor);
+      } else if (period==='month') {
+        var nm=monthM+1, ny=monthY; if(nm>11){nm=0;ny++;} if(new Date(ny,nm,1)>t2)return; monthM=nm;monthY=ny; r=rangeMonth(monthY,monthM);
+      } else if (period==='quarter') {
+        var nq=qtrQ+1, nqy=qtrY; if(nq>3){nq=0;nqy++;} if(qStart(nqy,nq)>t2)return; qtrQ=nq;qtrY=nqy; r=rangeQuarter(qtrY,qtrQ);
+      } else if (period==='year') {
+        if(yearPick>=t2.getFullYear())return; yearPick++; r=rangeYear(yearPick);
+      }
+      if (r) applyRange(r.start, r.end, r.label);
     });
 
+    // ── Dropdown open/close
     labelBtn.addEventListener('click', function(e) {
       e.stopPropagation();
       dropdownOpen ? closeDropdown() : openDropdown();
     });
 
-    okBtn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      var ns = parseDisplayDate(startField.input.value);
-      var ne = parseDisplayDate(endField.input.value);
-      if (ns) otherStart = ns;
-      if (ne) otherEnd   = ne;
-      if (otherStart && otherEnd) {
-        if (otherEnd < otherStart) { var tmp = otherStart; otherStart = otherEnd; otherEnd = tmp; }
-        closeDropdown(); updateLabel(); fireChange();
-      }
-    });
-
-    startField.input.addEventListener('change', function() {
-      var v = parseDisplayDate(startField.input.value);
-      if (v) { otherStart = v; otherSelecting = 'end'; updateCalendars(); }
-    });
-    endField.input.addEventListener('change', function() {
-      var v = parseDisplayDate(endField.input.value);
-      if (v) { otherEnd = v; otherSelecting = 'start'; updateCalendars(); }
-    });
-
-    // ── Dropdown management
-
     function openDropdown() {
       dropdownOpen = true;
       dropdown.classList.add('dp-dropdown--open');
-      if (period === 'other' && otherStart) {
-        var d = parseDate(otherStart);
-        leftCal  = { year: d.getFullYear(), month: d.getMonth() };
-        rightCal = { year: d.getFullYear(), month: d.getMonth() + 1 };
-        if (rightCal.month > 11) { rightCal.month = 0; rightCal.year++; }
-      }
-      refresh();
+      renderAll();
       setTimeout(function() { document.addEventListener('click', outsideClick); }, 0);
     }
-
     function closeDropdown() {
       dropdownOpen = false;
       dropdown.classList.remove('dp-dropdown--open');
       document.removeEventListener('click', outsideClick);
     }
-
     function outsideClick(e) {
       if (!wrapper.contains(e.target)) closeDropdown();
     }
 
-    dropdown.addEventListener('click', function(e) { e.stopPropagation(); });
-
-    refresh();
     opts.container.appendChild(wrapper);
 
     return {
-      getStartDate: function() {
-        if (period === 'other') return otherStart;
-        if (period === 'recent') return computeRange('recent', 0).start;
-        return computeRange(period, offset).start;
-      },
-      getEndDate: function() {
-        if (period === 'other') return otherEnd;
-        if (period === 'recent') return computeRange('recent', 0).end;
-        return computeRange(period, offset).end;
-      },
+      getStartDate: function() { return currentStart; },
+      getEndDate:   function() { return currentEnd; },
       destroy: function() {
         document.removeEventListener('click', outsideClick);
         if (wrapper.parentNode) wrapper.parentNode.removeChild(wrapper);
