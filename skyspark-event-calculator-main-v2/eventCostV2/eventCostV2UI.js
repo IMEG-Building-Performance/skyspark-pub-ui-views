@@ -44,7 +44,7 @@
     'utils/rendering/tooltips.js',
 
     // UI components
-    'components/ProjectTracker.js',
+    'components/DateRangePicker.js',
     'components/MonthlyOverview.js',
     'components/UtilityReconciliation.js',
     'components/EventDetailV2.js',
