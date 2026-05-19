@@ -53,6 +53,17 @@ window.EventCostV2.onUpdate = function(arg) {
   root.className = 'eap-root' + (darkMode ? ' eap-root--dark' : '');
   elem.appendChild(root);
 
+  // Go full-screen only when rendering as a primary view (not a small dashboard tile).
+  // Wait one frame so SkySpark's layout has set elem's dimensions.
+  setTimeout(function() {
+    try {
+      var w = elem.getBoundingClientRect().width;
+      if (w > window.innerWidth * 0.5) {
+        root.classList.add('eap-root--fullscreen');
+      }
+    } catch(e) {}
+  }, 0);
+
   // ── Header bar ──────────────────────────────────────────────────
   var header = document.createElement('div');
   header.className = 'eap-header';
