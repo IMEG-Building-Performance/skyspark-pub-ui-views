@@ -380,10 +380,13 @@ window.EventCostV2.onUpdate = function(arg) {
     Promise.all([
       api.loadSiteName(selectedSite),
       api.loadEventCostResults(selectedSite, startDate, endDate)
-        .catch(function(err) { console.error('loadEventCostResults:', err); return []; })
+        .catch(function(err) { console.error('loadEventCostResults:', err); return []; }),
+      api.loadConcurrentEvents(startDate, endDate)
+        .catch(function() { return []; })
     ]).then(function(results) {
-      var siteName   = results[0];
-      var rawResults = results[1];
+      var siteName         = results[0];
+      var rawResults       = results[1];
+      var concurrentEvents = results[2];
 
       state.siteName         = siteName;
       state.eventCostResults = rawResults;
@@ -391,24 +394,36 @@ window.EventCostV2.onUpdate = function(arg) {
       var eventSummaries = api.aggregateEventSummaries(rawResults);
       state.eventSummaries = eventSummaries;
 
+      // Build a cost lookup keyed by eventID so concurrent events can show cost data
+      var costByID = {};
+      eventSummaries.forEach(function(ev) { costByID[String(ev.eventID)] = ev; });
+
       var chartColors = [
         'rgba(54,162,235,0.8)', 'rgba(255,99,132,0.8)', 'rgba(75,192,192,0.8)',
         'rgba(255,159,64,0.8)', 'rgba(153,102,255,0.8)', 'rgba(255,205,86,0.8)',
         'rgba(201,203,207,0.8)'
       ];
-      state.currentEvents = eventSummaries.map(function(ev, i) {
-        var start = ev.eventStart ? new Date(ev.eventStart) : null;
-        var end   = ev.eventEnd   ? new Date(ev.eventEnd)   : null;
+
+      // Use concurrent events (from booking system) for chart annotations so events
+      // appear even before cost calculation has been run.  Enrich with cost data where available.
+      var sourceEvents = concurrentEvents.length > 0 ? concurrentEvents : eventSummaries;
+      state.currentEvents = sourceEvents.map(function(ev, i) {
+        var startStr = ev.eventStart;
+        var endStr   = ev.eventEnd;
+        var start = startStr ? new Date(startStr) : null;
+        var end   = endStr   ? new Date(endStr)   : null;
         var durationMs = (start && end) ? end - start : 0;
         var hrs = Math.floor(durationMs / 3600000);
         var durationStr = hrs >= 24 ? Math.floor(hrs/24) + 'd ' + (hrs%24) + 'h' : hrs + 'h';
+        var costData = costByID[String(ev.eventID)] || {};
+        var totalCost = costData.totalCost || null;
         return {
           label:       ev.eventName || 'Event ' + ev.eventID,
           startTime:   start, endTime: end, time: start,
           color:       chartColors[i % chartColors.length],
-          cost:        ev.totalCost, duration: durationStr,
+          cost:        totalCost, duration: durationStr,
           area:        ev.eventSF ? Math.round(ev.eventSF).toLocaleString() + ' sq ft' : null,
-          costDisplay: ev.totalCost ? '$' + Math.round(ev.totalCost).toLocaleString() : null,
+          costDisplay: totalCost ? '$' + Math.round(totalCost).toLocaleString() : null,
           rawData:     ev
         };
       }).filter(function(e) { return e.startTime && !isNaN(e.startTime.getTime()); });
