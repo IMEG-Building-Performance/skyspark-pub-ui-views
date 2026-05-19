@@ -27,13 +27,15 @@ window.EventCostV2.onUpdate = function(arg) {
 
   view.removeAll();
 
-  // ── Full-screen: expand html/body to fill the SkySpark frame ──────
+  // ── Full-page: force every ancestor of elem to fill the viewport ──
   try {
-    document.documentElement.style.height = '100%';
-    document.documentElement.style.overflow = 'hidden';
-    document.body.style.height = '100%';
-    document.body.style.overflow = 'hidden';
-    document.body.style.margin = '0';
+    document.documentElement.style.cssText += ';height:100%!important;overflow:hidden!important;';
+    document.body.style.cssText += ';height:100%!important;overflow:hidden!important;margin:0!important;';
+    var _el = elem;
+    while (_el && _el !== document.body) {
+      _el.style.cssText += ';height:100%!important;overflow:hidden!important;display:block!important;';
+      _el = _el.parentElement;
+    }
   } catch(e) {}
 
   // ── Read SkySpark variables ──────────────────────────────────────
