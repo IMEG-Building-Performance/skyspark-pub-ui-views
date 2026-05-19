@@ -128,14 +128,15 @@ window.EventCostV2.skyspark.writeDateRange = function(view, startIso, endIso) {
 
 window.EventCostV2.skyspark.startPolling = function(view, initialValues, onChangeCallback) {
   var tryReadVar = window.EventCostV2.skyspark.tryReadVar;
-  var lastSite = initialValues.selectedSite;
+  var lastSite  = initialValues.selectedSite;
   var lastStart = initialValues.startDate;
-  var lastEnd = initialValues.endDate;
+  var lastEnd   = initialValues.endDate;
 
   setInterval(function() {
-    var currentSite = null;
-    var currentStart = '2025-12-01';
-    var currentEnd = '2025-12-07';
+    // Default to last-known values so a failed read never fires a spurious reset
+    var currentSite  = lastSite;
+    var currentStart = lastStart;
+    var currentEnd   = lastEnd;
     try {
       var parentView = null;
       if (typeof view.parent === 'function') parentView = view.parent();
@@ -158,9 +159,9 @@ window.EventCostV2.skyspark.startPolling = function(view, initialValues, onChang
       }
 
       if (currentSite !== lastSite || currentStart !== lastStart || currentEnd !== lastEnd) {
-        lastSite = currentSite;
+        lastSite  = currentSite;
         lastStart = currentStart;
-        lastEnd = currentEnd;
+        lastEnd   = currentEnd;
         onChangeCallback(currentSite, currentStart, currentEnd);
       }
     } catch (e) {}

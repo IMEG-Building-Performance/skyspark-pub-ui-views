@@ -262,10 +262,29 @@ window.EventCostV2.datePicker = (function () {
 
     var dropdownOpen = false;
 
-    // Init default
+    // Init: prefer SkySpark-provided dates (opts.startDate/endDate) so the
+    // first loadData() uses the correct range; fall back to Last Week.
     (function() {
-      var r = rangeWeek(weekAnchor);
-      currentStart = r.start; currentEnd = r.end; currentLabel = r.label;
+      if (opts.startDate && opts.endDate) {
+        currentStart = opts.startDate;
+        currentEnd   = opts.endDate;
+        // Show dates as a compact label
+        var s = parseDate(opts.startDate), e = parseDate(opts.endDate);
+        if (s && e) {
+          currentLabel = s.getFullYear() === e.getFullYear()
+            ? fmtShort(s) + ' – ' + fmtShort(e) + ', ' + s.getFullYear()
+            : fmtShortY(s) + ' – ' + fmtShortY(e);
+        } else {
+          currentLabel = opts.startDate + ' – ' + opts.endDate;
+        }
+        // Also prime the "Other" fields so reopening the dropdown is coherent
+        otherStart = opts.startDate;
+        otherEnd   = opts.endDate;
+        period = 'other';
+      } else {
+        var r = rangeWeek(weekAnchor);
+        currentStart = r.start; currentEnd = r.end; currentLabel = r.label;
+      }
     })();
 
     // ── DOM: compact control
