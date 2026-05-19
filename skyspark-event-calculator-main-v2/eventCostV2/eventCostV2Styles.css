@@ -398,6 +398,7 @@
   z-index: 9999;
   padding: 14px;
   min-width: 340px;
+  width: max-content;
 }
 
 .dp-dropdown--open { display: block; }
@@ -407,6 +408,7 @@
   display: flex;
   gap: 4px;
   margin-bottom: 12px;
+  min-width: 560px;
 }
 
 .dp-period-btn {
@@ -436,9 +438,10 @@
   display: flex;
   gap: 20px;
   margin-bottom: 12px;
+  min-width: 560px;
 }
 
-.dp-cal { flex: 1; min-width: 0; }
+.dp-cal { flex: 1; min-width: 220px; }
 
 .dp-cal-hdr {
   display: flex;
@@ -478,6 +481,7 @@
   cursor: pointer;
   outline: none;
   flex: 1;
+  min-width: 90px;
 }
 .dp-cal-month-sel:focus { border-color: #4A6FA5; }
 
@@ -557,7 +561,7 @@
   gap: 8px;
   border-top: 1px solid #F3F4F6;
   padding-top: 12px;
-  justify-content: flex-end;
+  min-width: 560px;
 }
 
 /* Each date+time block: [MM - DD - YYYY  00 : 00 : 00 am] */
