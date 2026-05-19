@@ -315,6 +315,7 @@ window.EventCostV2.siteStatus.render = function(container, onChartReady) {
     state._siteStatus_refreshUtility = refreshUtilityData;
 
     function rebuildChart() {
+      if (state.siteStatusPlaceholder) state.siteStatusPlaceholder.style.display = 'none';
       var active = state.activeUtility;
       var activeData = {};
       if (state.utilityData[active]) activeData[active] = state.utilityData[active];
