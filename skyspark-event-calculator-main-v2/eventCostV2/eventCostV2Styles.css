@@ -86,10 +86,10 @@
 
 /* ── Sidebar ─────────────────────────────────────────────────── */
 .eap-sidebar {
-  width: 192px;
+  width: 188px;
   flex-shrink: 0;
-  background: #fff;
-  border-right: 1px solid #E5E7EB;
+  background: #1e2d4a;
+  border-right: none;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -109,14 +109,14 @@
 .eap-tab-btn {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
   width: 100%;
-  padding: 9px 14px;
+  padding: 8px 14px;
   background: transparent;
   border: none;
   border-left: 3px solid transparent;
-  color: #6B7280;
-  font-size: 13px;
+  color: rgba(255,255,255,0.55);
+  font-size: 12px;
   font-weight: 500;
   text-align: left;
   cursor: pointer;
@@ -125,33 +125,35 @@
   overflow: hidden;
 }
 
-.eap-tab-btn:hover { color: #1F2937; background: #F9FAFB; }
+.eap-tab-btn:hover { color: rgba(255,255,255,0.9); background: rgba(255,255,255,0.07); }
 
 .eap-tab-btn--active {
-  color: #1D4ED8;
+  color: #fff;
   font-weight: 600;
-  border-left-color: #1D4ED8;
-  background: #EFF6FF;
+  border-left-color: #60a5fa;
+  background: rgba(255,255,255,0.1);
 }
 
-.eap-tab-btn--active:hover { background: #DBEAFE; }
+.eap-tab-btn--active:hover { background: rgba(255,255,255,0.13); }
 
 .eap-tab-btn--disabled {
-  opacity: 0.4;
+  opacity: 0.3;
   cursor: default;
   pointer-events: none;
 }
 
 .eap-tab-btn-icon {
   flex-shrink: 0;
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
   display: flex;
   align-items: center;
   justify-content: center;
+  opacity: 0.7;
 }
 
-.eap-tab-btn-icon svg { width: 16px; height: 16px; }
+.eap-tab-btn--active .eap-tab-btn-icon { opacity: 1; }
+.eap-tab-btn-icon svg { width: 15px; height: 15px; }
 
 .eap-tab-btn-label {
   overflow: hidden;
@@ -161,11 +163,11 @@
 
 .eap-sidebar--collapsed .eap-tab-btn-label { opacity: 0; width: 0; }
 .eap-sidebar--collapsed .eap-tab-btn { padding: 10px 0; justify-content: center; border-left: none; }
-.eap-sidebar--collapsed .eap-tab-btn--active { background: #EFF6FF; }
+.eap-sidebar--collapsed .eap-tab-btn--active { background: rgba(255,255,255,0.1); }
 
 /* Sidebar footer */
 .eap-sidebar-footer {
-  border-top: 1px solid #F3F4F6;
+  border-top: 1px solid rgba(255,255,255,0.08);
   padding: 6px 4px;
   display: flex;
   flex-direction: column;
@@ -180,7 +182,7 @@
   background: transparent;
   border-radius: 6px;
   cursor: pointer;
-  color: #9CA3AF;
+  color: rgba(255,255,255,0.4);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -188,8 +190,8 @@
   transition: background 0.12s, color 0.12s;
 }
 
-.eap-sidebar-icon-btn svg { width: 16px; height: 16px; }
-.eap-sidebar-icon-btn:hover { background: #F3F4F6; color: #374151; }
+.eap-sidebar-icon-btn svg { width: 15px; height: 15px; }
+.eap-sidebar-icon-btn:hover { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.9); }
 
 /* ── Tab content ─────────────────────────────────────────────── */
 .eap-tab-content {
@@ -251,18 +253,8 @@
 .eap-root--dark .dp-date-input { background: #0f172a; border-color: #334155; color: #e2e8f0; }
 .eap-root--dark .dp-date-sep { color: #64748b; }
 
-.eap-root--dark .eap-sidebar {
-  background: #1e293b;
-  border-color: #334155;
-}
-.eap-root--dark .eap-sidebar-footer { border-color: #334155; }
-.eap-root--dark .eap-tab-btn { color: #94a3b8; }
-.eap-root--dark .eap-tab-btn:hover { background: #334155; color: #f1f5f9; }
-.eap-root--dark .eap-tab-btn--active { background: #1e3a5f; color: #60a5fa; border-left-color: #60a5fa; }
-.eap-root--dark .eap-tab-btn--active:hover { background: #1e3a5f; }
-.eap-root--dark .eap-sidebar--collapsed .eap-tab-btn--active { background: #1e3a5f; }
-.eap-root--dark .eap-sidebar-icon-btn { color: #64748b; }
-.eap-root--dark .eap-sidebar-icon-btn:hover { background: #334155; color: #e2e8f0; }
+/* Dark mode sidebar: deepen slightly, everything else inherits fine */
+.eap-root--dark .eap-sidebar { background: #151f33; }
 
 .eap-root--dark .eap-tab-content { background: #0f172a; }
 .eap-root--dark .eap-summary-card { background: #1e293b; border-color: #334155; }
