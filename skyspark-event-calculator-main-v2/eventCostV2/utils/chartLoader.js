@@ -23,14 +23,13 @@ window.EventCostV2.loader = {
     var scripts = document.getElementsByTagName('script');
     for (var i = scripts.length - 1; i >= 0; i--) {
       var src = scripts[i].src || '';
-      var marker = 'eventAnnotationsPlot/';
+      var marker = 'eventCostV2/';
       var idx = src.indexOf(marker);
       if (idx !== -1) {
         return src.substring(0, idx + marker.length);
       }
     }
-    // Fallback: assume vendor is a sibling of the current page
-    return 'eventAnnotationsPlot/';
+    return 'eventCostV2/';
   },
 
   /**
