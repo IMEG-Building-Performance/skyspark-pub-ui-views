@@ -24,28 +24,26 @@ window.EventCostV2.siteStatus.render = function(container, onChartReady) {
 
   // ── Plot card ────────────────────────────────────────────────────
   var plotSection = document.createElement('div');
-  plotSection.style.cssText = 'background:white;border:1px solid #E5E7EB;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.08);overflow:hidden;';
+  plotSection.className = 'ss-plot-card';
   container.appendChild(plotSection);
 
   var plotHeader = document.createElement('div');
-  plotHeader.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid #E5E7EB;';
+  plotHeader.className = 'ss-plot-header';
   plotSection.appendChild(plotHeader);
 
-  var plotTitle = document.createElement('h3');
+  var plotTitle = document.createElement('div');
+  plotTitle.className = 'ss-plot-title';
   plotTitle.textContent = 'Utility Consumption with Event Annotations';
-  plotTitle.style.cssText = 'font-size:14px;font-weight:700;color:#374151;margin:0;';
   plotHeader.appendChild(plotTitle);
 
   var plotBtns = document.createElement('div');
-  plotBtns.style.cssText = 'display:flex;gap:6px;';
+  plotBtns.className = 'ss-header-btns';
   plotHeader.appendChild(plotBtns);
 
   function makeHeaderBtn(label, onClick) {
     var b = document.createElement('button');
+    b.className = 'ss-header-btn';
     b.textContent = label;
-    b.style.cssText = 'padding:5px 14px;border:1px solid #dee2e6;border-radius:6px;background:white;color:#6c757d;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.15s;';
-    b.onmouseover = function() { b.style.borderColor = '#4A6FA5'; b.style.color = '#4A6FA5'; };
-    b.onmouseout  = function() { b.style.borderColor = '#dee2e6'; b.style.color = '#6c757d'; };
     b.onclick = onClick;
     plotBtns.appendChild(b);
     return b;
@@ -63,7 +61,7 @@ window.EventCostV2.siteStatus.render = function(container, onChartReady) {
   });
 
   var plotBody = document.createElement('div');
-  plotBody.style.cssText = 'padding:16px 20px;';
+  plotBody.className = 'ss-plot-body';
   plotSection.appendChild(plotBody);
 
   // ── Chart container ───────────────────────────────────────────
@@ -84,11 +82,9 @@ window.EventCostV2.siteStatus.render = function(container, onChartReady) {
   chartContainer.appendChild(btnGroup);
 
   var expandBtn = document.createElement('button');
+  expandBtn.className = 'ss-expand-btn';
   expandBtn.title = 'Expand chart';
   expandBtn.textContent = '⛶';
-  expandBtn.style.cssText = 'width:32px;height:32px;border:1px solid #dee2e6;border-radius:6px;background:white;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;color:#6c757d;box-shadow:0 1px 3px rgba(0,0,0,0.08);';
-  expandBtn.onmouseover = function() { expandBtn.style.backgroundColor = '#e8f4fd'; expandBtn.style.color = '#1565c0'; expandBtn.style.borderColor = '#1565c0'; };
-  expandBtn.onmouseout  = function() { expandBtn.style.backgroundColor = 'white';  expandBtn.style.color = '#6c757d'; expandBtn.style.borderColor = '#dee2e6'; };
   expandBtn.onclick = function() {
     if (window.EventCostV2.expandView) {
       window.EventCostV2.expandView.open(state, interactions, annotations, timeline, chart);
@@ -113,16 +109,16 @@ window.EventCostV2.siteStatus.render = function(container, onChartReady) {
   chartContainer.appendChild(timelineWrapper);
 
   var timelineHeader = document.createElement('div');
-  timelineHeader.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:2px 4px;cursor:pointer;';
+  timelineHeader.className = 'ss-timeline-header';
   timelineWrapper.appendChild(timelineHeader);
 
   var timelineLabel = document.createElement('span');
+  timelineLabel.className = 'ss-timeline-label';
   timelineLabel.textContent = 'Event Timeline';
-  timelineLabel.style.cssText = 'font-size:10px;font-weight:600;color:#adb5bd;text-transform:uppercase;letter-spacing:0.5px;';
   timelineHeader.appendChild(timelineLabel);
 
   var timelineToggle = document.createElement('button');
-  timelineToggle.style.cssText = 'border:none;background:transparent;cursor:pointer;font-size:11px;color:#adb5bd;padding:2px 6px;';
+  timelineToggle.className = 'ss-timeline-toggle';
   timelineHeader.appendChild(timelineToggle);
 
   var timelineContainer = document.createElement('div');
@@ -152,8 +148,8 @@ window.EventCostV2.siteStatus.render = function(container, onChartReady) {
 
   // Loading placeholder
   var loadingMsg = document.createElement('div');
-  loadingMsg.style.cssText = 'text-align:center;padding:40px;color:#666;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);';
-  loadingMsg.innerHTML = '<div class="edb-spinner" style="width:40px;height:40px;margin:0 auto 16px;"></div><div style="font-size:15px;font-weight:600;">Loading chart data…</div>';
+  loadingMsg.className = 'ss-loading';
+  loadingMsg.innerHTML = '<div class="edb-spinner" style="width:36px;height:36px;margin:0 auto;"></div><div class="ss-loading-text">Loading chart data…</div>';
   chartContainer.appendChild(loadingMsg);
 
   function redraw() {
@@ -169,8 +165,8 @@ window.EventCostV2.siteStatus.render = function(container, onChartReady) {
     if (loadingMsg.parentNode) loadingMsg.parentNode.removeChild(loadingMsg);
 
     var placeholder = document.createElement('div');
-    placeholder.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:#666;font-size:15px;';
-    placeholder.innerHTML = '<div style="font-size:40px;margin-bottom:12px;">📊</div><div style="font-weight:600;">Select a site and date range</div>';
+    placeholder.className = 'ss-placeholder';
+    placeholder.innerHTML = '<div class="ss-placeholder-icon">▦</div><div class="ss-placeholder-text">Select a site and date range</div>';
     chartContainer.appendChild(placeholder);
     state.siteStatusPlaceholder = placeholder;
 
