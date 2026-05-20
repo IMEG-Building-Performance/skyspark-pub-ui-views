@@ -3,6 +3,12 @@
    Element selectors (header, footer) are prefixed accordingly. */
 
 :root {
+  /* Primary chrome (sidebar, headers, buttons) — EC2 blue */
+  --primary:      #1565c0;
+  --primary-d:    #104ea8;
+  --primary-h:    #1976d2;
+  --primary-lt:   #e8f4fd;
+  /* IMEG data accents (charts, KPIs, badges) */
   --imeg-blue:    #4A6FA5;
   --imeg-blue-d:  #3d5d8a;
   --imeg-blue-lt: #EBF0F8;
@@ -28,8 +34,8 @@
 }
 
 #mbcxDashboard {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  background: var(--gray-50);
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: #f0f2f5;
   color: var(--gray-900);
   font-size: 13px;
   line-height: 1.5;
@@ -586,51 +592,126 @@
 #mbcxTerminalUnitsSection:fullscreen { background: #fff; padding: 24px; overflow-y: auto; }
 #mbcxTerminalUnitsSection:-webkit-full-screen { background: #fff; padding: 24px; overflow-y: auto; }
 
-/* ── Dashboard title bar ── */
-#mbcxDashboard .dash-title-bar {
-  background: var(--imeg-blue);
+/* ── App shell (sidebar + main) ── */
+#mbcxDashboard .dash-shell {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ── Sidebar ── */
+#mbcxDashboard .dash-sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: #fff;
+  border-right: 1px solid #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-shadow: 1px 0 4px rgba(0,0,0,0.04);
+  z-index: 10;
+}
+
+/* Brand */
+#mbcxDashboard .dash-sb-brand {
+  background: var(--primary);
   color: #fff;
-  padding: 12px 32px;
+  padding: 18px 16px 16px;
   display: flex;
-  align-items: baseline;
-  gap: 20px;
+  align-items: center;
+  gap: 10px;
   flex-shrink: 0;
 }
-#mbcxDashboard .dash-title-site {
-  font-size: 17px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
+#mbcxDashboard .dash-sb-brand-icon {
+  width: 32px; height: 32px; flex-shrink: 0;
 }
-#mbcxDashboard .dash-title-dates {
-  font-size: 12px;
-  opacity: 0.78;
-  font-weight: 400;
+#mbcxDashboard .dash-sb-brand-title {
+  font-size: 16px; font-weight: 800; letter-spacing: -0.01em; line-height: 1.1;
 }
-/* ── Tab navigation ── */
-#mbcxDashboard .dash-tab-bar {
+#mbcxDashboard .dash-sb-brand-sub {
+  font-size: 10px; font-weight: 500; opacity: 0.7; letter-spacing: 0.04em; margin-top: 1px;
+}
+
+/* Context (site + date picker) */
+#mbcxDashboard .dash-sb-context {
+  padding: 14px 14px 10px;
+  border-bottom: 1px solid #f0f0f0;
   display: flex;
-  align-items: flex-end;
-  gap: 0;
-  background: var(--imeg-blue);
-  padding: 0 28px;
+  flex-direction: column;
+  gap: 6px;
   flex-shrink: 0;
 }
-#mbcxDashboard .dash-tab {
-  padding: 9px 22px 8px;
-  font-size: 13px; font-weight: 500;
-  color: rgba(255,255,255,0.65);
-  background: transparent;
-  border: none; border-bottom: 3px solid transparent;
-  cursor: pointer; transition: color 0.15s, background 0.15s;
-  border-radius: 4px 4px 0 0;
-  margin-bottom: 0;
-  letter-spacing: 0.01em;
+#mbcxDashboard .dash-sb-field-label {
+  font-size: 10px; font-weight: 700; color: var(--gray-400);
+  text-transform: uppercase; letter-spacing: 0.07em;
+  margin-bottom: 1px;
 }
-#mbcxDashboard .dash-tab:hover { color: rgba(255,255,255,0.9); background: rgba(255,255,255,0.08); }
-#mbcxDashboard .dash-tab.active {
-  color: #fff; font-weight: 600;
-  border-bottom-color: #fff;
-  background: rgba(255,255,255,0.12);
+#mbcxDashboard .dash-sb-select,
+#mbcxDashboard .dash-sb-date {
+  width: 100%; box-sizing: border-box;
+  font-size: 12px; font-family: inherit; color: var(--gray-800);
+  background: var(--gray-50); border: 1px solid #E5E7EB; border-radius: 5px;
+  padding: 6px 8px; outline: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+#mbcxDashboard .dash-sb-select:focus,
+#mbcxDashboard .dash-sb-date:focus {
+  border-color: var(--primary); background: #fff;
+  box-shadow: 0 0 0 2px rgba(21,101,192,0.12);
+}
+#mbcxDashboard .dash-sb-date-row { display: flex; gap: 6px; }
+#mbcxDashboard .dash-sb-date-group { flex: 1; min-width: 0; }
+#mbcxDashboard .dash-sb-load-btn {
+  width: 100%; margin-top: 2px;
+  background: var(--primary); color: #fff; border: none;
+  padding: 7px 0; border-radius: 5px;
+  font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit;
+  letter-spacing: 0.03em; transition: background 0.15s;
+}
+#mbcxDashboard .dash-sb-load-btn:hover { background: var(--primary-h); }
+#mbcxDashboard .dash-sb-load-btn:disabled { opacity: 0.6; cursor: default; }
+#mbcxDashboard .dash-sb-loaded-site {
+  font-size: 11px; font-weight: 600; color: var(--primary);
+  text-align: center; padding: 2px 0; line-height: 1.3;
+  word-break: break-word;
+}
+
+/* Nav */
+#mbcxDashboard .dash-sb-nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 10px 8px;
+  gap: 2px;
+}
+#mbcxDashboard .dash-sb-nav-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 9px 10px; border-radius: 6px;
+  border: none; background: none;
+  font-size: 13px; font-weight: 500; color: var(--gray-600);
+  cursor: pointer; text-align: left; font-family: inherit;
+  transition: background 0.12s, color 0.12s;
+  width: 100%;
+}
+#mbcxDashboard .dash-sb-nav-item svg { flex-shrink: 0; opacity: 0.65; }
+#mbcxDashboard .dash-sb-nav-item:hover {
+  background: var(--primary-lt); color: var(--primary);
+}
+#mbcxDashboard .dash-sb-nav-item:hover svg { opacity: 1; }
+#mbcxDashboard .dash-sb-nav-item.active {
+  background: var(--primary-lt); color: var(--primary); font-weight: 700;
+}
+#mbcxDashboard .dash-sb-nav-item.active svg { opacity: 1; }
+
+/* ── Main content area ── */
+#mbcxDashboard .dash-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 /* ── Scrollable content area ── */
@@ -638,7 +719,7 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  background: var(--gray-50);
+  background: #f0f2f5;
 }
 #mbcxDashboard .dash-content--fixed { overflow: hidden; }
 
