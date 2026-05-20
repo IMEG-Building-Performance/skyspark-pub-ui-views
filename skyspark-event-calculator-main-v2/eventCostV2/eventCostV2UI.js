@@ -52,6 +52,9 @@
     'components/ExpandView.js',
     'components/Documentation.js',
 
+    // Fixtures / demo data
+    'fixtures/generators.js',
+
     // Root application
     'App.js'
   ];
