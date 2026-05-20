@@ -389,6 +389,11 @@ window.EventCostV2.onUpdate = function(arg) {
       var rawResults       = results[1];
       var concurrentEvents = results[2];
 
+      // Fall back to demo data when no real records exist
+      if (rawResults.length === 0) {
+        rawResults = window.EventCostV2.generators.generateDemoEventCostResults();
+      }
+
       state.siteName         = siteName;
       state.eventCostResults = rawResults;
 
