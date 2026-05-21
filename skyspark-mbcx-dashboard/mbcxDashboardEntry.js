@@ -8,9 +8,6 @@ var mbcxDashboardHandler = {};
 
 (function () {
   var BASE = '/pub/ui/mbcxDashboard/';
-  // Bump MODULE_VERSION whenever the module list changes — forces a fresh load
-  // even if SkySpark reuses this closure across navigations.
-  var MODULE_VERSION = 'v20';
 
   var modules = [
     { src: 'vendor/chart.umd.min.js' },
@@ -20,7 +17,6 @@ var mbcxDashboardHandler = {};
     { src: 'evals/loadData.js' },
     { src: 'evals/loadAhuData.js' },
     { src: 'components/Header.js' },
-    { src: 'components/HealthBanner.js' },
     { src: 'components/BuildingMeters.js' },
     { src: 'components/CUP.js' },
     { src: 'components/AHU.js' },
@@ -35,10 +31,10 @@ var mbcxDashboardHandler = {};
     { src: 'mbcxDashboardUI.js' }
   ];
 
-  var loadedVersion = null, loading = false, pendingCalls = [];
+  var loaded = false, loading = false, pendingCalls = [];
 
   function loadModules(cb) {
-    var bust = '?_v=' + MODULE_VERSION + '.' + Date.now();
+    var bust = '?_v=' + Date.now();
     var i = 0;
     function next() {
       if (i >= modules.length) { cb(); return; }
@@ -57,7 +53,7 @@ var mbcxDashboardHandler = {};
   }
 
   mbcxDashboardHandler.onUpdate = function (arg) {
-    if (loadedVersion === MODULE_VERSION) {
+    if (loaded) {
       window.mbcxDashboardApp.onUpdate(arg);
       return;
     }
@@ -65,10 +61,10 @@ var mbcxDashboardHandler = {};
     if (!loading) {
       loading = true;
       loadModules(function () {
-        loadedVersion = MODULE_VERSION;
+        loaded = true;
         loading = false;
         var comps = Object.keys((window.mbcxDashboard || {}).components || {});
-        console.log('[mbcxDashboard] ' + MODULE_VERSION + ' loaded. Components: ' + comps.join(', '));
+        console.log('[mbcxDashboard] loaded. Components: ' + comps.join(', '));
         pendingCalls.forEach(function (a) { window.mbcxDashboardApp.onUpdate(a); });
         pendingCalls = [];
       });

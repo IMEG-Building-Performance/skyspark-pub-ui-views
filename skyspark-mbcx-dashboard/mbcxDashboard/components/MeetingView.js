@@ -25,10 +25,11 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
   };
 
   function _refreshBadge() {
-    var btn = document.querySelector('#mbcxDashboard .dash-tab[data-tab="meetings"]');
+    var btn = document.querySelector('#mbcxDashboard .dash-sb-nav-item[data-tab="meetings"]');
     if (!btn) return;
-    var n = _agenda.length;
-    btn.textContent = n > 0 ? 'Meetings (' + n + ')' : 'Meetings';
+    var n    = _agenda.length;
+    var span = btn.querySelector('span');
+    if (span) span.textContent = n > 0 ? 'Meetings (' + n + ')' : 'Meetings';
   }
 
   function _guessType(equip) {
