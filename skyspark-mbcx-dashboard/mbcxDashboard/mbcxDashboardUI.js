@@ -16,21 +16,6 @@ window.mbcxDashboard = window.mbcxDashboard || {};
     document.head.appendChild(link);
   }
 
-  function renderNoSite(container) {
-    container.innerHTML = [
-      '<div class="no-site-screen">',
-      '  <div class="no-site-icon">',
-      '    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">',
-      '      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
-      '    </svg>',
-      '  </div>',
-      '  <div class="no-site-title">No Site Selected</div>',
-      '  <div class="no-site-body">Configure a site in the view properties to load the MBCX dashboard.</div>',
-      '  <div class="no-site-hint">View Properties &rarr; Variables &rarr; <code>site</code></div>',
-      '</div>'
-    ].join('\n');
-  }
-
   // Nav refs (@nav:type.sub.BASE64) encode "id:@p:project:r:UUID" in base64.
   // Extract the full project-qualified ref (@p:project:r:UUID) — that is
   // what SkySpark Axon functions expect as a Ref argument.
@@ -120,12 +105,6 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       if (deVal != null) datesEnd = typeof deVal.toStr === 'function' ? deVal.toStr() : String(deVal);
     } catch (e) { /* not set */ }
 
-    // No site configured — show prompt instead of dashboard
-    if (attestKey && !siteRef) {
-      renderNoSite(container);
-      return;
-    }
-
     var ctx = { attestKey: attestKey, projectName: projectName, siteRef: siteRef,
                 datesStart: datesStart, datesEnd: datesEnd, siteName: null };
     console.log('[mbcxDashboard] ctx:', {
@@ -145,7 +124,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
             if (dis) {
               ctx.siteName = dis;
               var el = container.querySelector('#mbcxDashTitleSite');
-              if (el) el.textContent = dis;
+              if (el) el.textContent = 'MBCx Dashboard — ' + dis;
             }
           })
           .catch(function () {});

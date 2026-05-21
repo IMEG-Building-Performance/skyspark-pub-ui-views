@@ -1,14 +1,14 @@
-// App.js — sidebar layout: Summary | Faults | Trends | Meetings
+// App.js — dark sidebar + topbar layout: Summary | Faults | Trends | Meetings
 window.mbcxDashboard = window.mbcxDashboard || {};
 
 (function (NS) {
 
-  // ── Inline SVG icons (16×16) ──────────────────────────────────────────────
   var _icons = {
     summary:  '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path d="M2 4a2 2 0 012-2h4v7H2V4zm0 7h6v7H4a2 2 0 01-2-2v-5zm8 7v-7h8v5a2 2 0 01-2 2h-6zm0-9V2h4a2 2 0 012 2v5h-6z"/></svg>',
     faults:   '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>',
     trends:   '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L8 10.414l1.293 1.293a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>',
-    meetings: '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/></svg>'
+    meetings: '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/></svg>',
+    chevron:  '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>'
   };
 
   function _fmtDate(s) {
@@ -43,51 +43,25 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       };
       NS.Components = co;
 
-      ['HealthBanner','BuildingMeters','CUP','AHU','TerminalUnits','FaultList','TrendingView'].forEach(function (n) {
-        if (!co[n]) console.warn('[mbcxDashboard] Component not loaded:', n);
-      });
-
       var startVal = _fmtDate(ctx && ctx.datesStart);
       var endVal   = _fmtDate(ctx && ctx.datesEnd);
+      var titleTxt = (ctx && ctx.siteName)
+        ? 'MBCx Dashboard — ' + ctx.siteName
+        : 'MBCx Dashboard';
 
       container.innerHTML = [
         '<div class="dash-shell">',
 
         // ── Sidebar ──────────────────────────────────────────────────────
-        '<aside class="dash-sidebar">',
-
-        '  <div class="dash-sb-brand">',
-        '    <svg class="dash-sb-brand-icon" viewBox="0 0 24 24" aria-hidden="true">',
-        '      <rect x="3"  y="3"  width="8" height="8"  rx="1.5" fill="#fff" fill-opacity=".95"/>',
-        '      <rect x="13" y="3"  width="8" height="8"  rx="1.5" fill="#fff" fill-opacity=".95"/>',
-        '      <rect x="3"  y="13" width="8" height="8"  rx="1.5" fill="#fff" fill-opacity=".95"/>',
-        '      <rect x="13" y="13" width="8" height="8"  rx="1.5" fill="#fff" fill-opacity=".5"/>',
+        '<aside class="dash-sidebar" id="mbcxSidebar">',
+        '  <div class="dash-sb-logomark">',
+        '    <svg class="dash-sb-logo-icon" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true">',
+        '      <rect x="3"  y="3"  width="8" height="8"  rx="1.5" fill="currentColor" opacity=".9"/>',
+        '      <rect x="13" y="3"  width="8" height="8"  rx="1.5" fill="currentColor" opacity=".9"/>',
+        '      <rect x="3"  y="13" width="8" height="8"  rx="1.5" fill="currentColor" opacity=".9"/>',
+        '      <rect x="13" y="13" width="8" height="8"  rx="1.5" fill="currentColor" opacity=".4"/>',
         '    </svg>',
-        '    <div>',
-        '      <div class="dash-sb-brand-title">MBCx</div>',
-        '      <div class="dash-sb-brand-sub">Dashboard</div>',
-        '    </div>',
-        '  </div>',
-
-        '  <div class="dash-sb-context">',
-        '    <label class="dash-sb-field-label" for="sbSiteSelect">Site</label>',
-        '    <select class="dash-sb-select" id="sbSiteSelect">',
-        '      <option value="">Loading sites…</option>',
-        '    </select>',
-        '    <div class="dash-sb-date-row">',
-        '      <div class="dash-sb-date-group">',
-        '        <label class="dash-sb-field-label" for="sbDateStart">From</label>',
-        '        <input type="date" class="dash-sb-date" id="sbDateStart"' + (startVal ? ' value="' + startVal + '"' : '') + ' />',
-        '      </div>',
-        '      <div class="dash-sb-date-group">',
-        '        <label class="dash-sb-field-label" for="sbDateEnd">To</label>',
-        '        <input type="date" class="dash-sb-date" id="sbDateEnd"' + (endVal ? ' value="' + endVal + '"' : '') + ' />',
-        '      </div>',
-        '    </div>',
-        '    <button class="dash-sb-load-btn" id="sbLoadBtn">Load</button>',
-        '    <div class="dash-sb-loaded-site" id="sbLoadedSite"' + (ctx && ctx.siteName ? '' : ' style="display:none"') + '>',
-        (ctx && ctx.siteName ? ctx.siteName : ''),
-        '    </div>',
+        '    <span class="dash-sb-logo-text">MBCx<br>Dashboard</span>',
         '  </div>',
 
         '  <nav class="dash-sb-nav">',
@@ -97,27 +71,61 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         '    <button class="dash-sb-nav-item" data-tab="meetings">' + _icons.meetings + '<span>Meetings</span></button>',
         '  </nav>',
 
+        '  <div class="dash-sb-footer">',
+        '    <button class="dash-sb-collapse-btn" id="sbCollapseBtn" title="Collapse sidebar">',
+        _icons.chevron,
+        '    </button>',
+        '  </div>',
         '</aside>',
 
         // ── Main ─────────────────────────────────────────────────────────
         '<div class="dash-main">',
+
+        '  <div class="dash-topbar">',
+        '    <div class="dash-topbar-title" id="mbcxDashTitleSite">' + titleTxt + '</div>',
+        '    <div class="dash-topbar-controls">',
+        '      <select class="dash-topbar-site" id="sbSiteSelect">',
+        '        <option value="">Loading sites…</option>',
+        '      </select>',
+        '      <div class="dash-topbar-daterange">',
+        '        <button class="dash-topbar-arr" id="sbDatePrev" title="Previous period">‹</button>',
+        '        <input type="date" class="dash-topbar-date" id="sbDateStart"' + (startVal ? ' value="' + startVal + '"' : '') + ' />',
+        '        <span class="dash-topbar-dash">–</span>',
+        '        <input type="date" class="dash-topbar-date" id="sbDateEnd"'   + (endVal   ? ' value="' + endVal   + '"' : '') + ' />',
+        '        <button class="dash-topbar-arr" id="sbDateNext" title="Next period">›</button>',
+        '      </div>',
+        '      <button class="dash-topbar-load-btn" id="sbLoadBtn">Load</button>',
+        '    </div>',
+        '  </div>',
+
         '  <div class="dash-content" id="mbcxContent"></div>',
         '</div>',
 
         '</div>'
       ].join('\n');
 
-      // ── Populate site list ────────────────────────────────────────────
-      var siteSelect = container.querySelector('#sbSiteSelect');
-      var dateStart  = container.querySelector('#sbDateStart');
-      var dateEnd    = container.querySelector('#sbDateEnd');
-      var loadBtn    = container.querySelector('#sbLoadBtn');
-      var loadedSite = container.querySelector('#sbLoadedSite');
+      // ── Refs ──────────────────────────────────────────────────────────
+      var siteSelect  = container.querySelector('#sbSiteSelect');
+      var dateStart   = container.querySelector('#sbDateStart');
+      var dateEnd     = container.querySelector('#sbDateEnd');
+      var loadBtn     = container.querySelector('#sbLoadBtn');
+      var collapseBtn = container.querySelector('#sbCollapseBtn');
+      var sidebar     = container.querySelector('#mbcxSidebar');
+      var titleEl     = container.querySelector('#mbcxDashTitleSite');
 
+      // ── Sidebar collapse ──────────────────────────────────────────────
+      if (collapseBtn) {
+        collapseBtn.addEventListener('click', function () {
+          sidebar.classList.toggle('dash-sidebar--collapsed');
+        });
+      }
+
+      // ── Populate site list ────────────────────────────────────────────
       if (ctx && ctx.attestKey && ctx.projectName) {
         NS.api.evalAxon(ctx.attestKey, ctx.projectName, 'readAll(site).sortCol("dis")')
           .then(function (grid) {
             siteSelect.innerHTML = '<option value="">— Select site —</option>';
+            var ctxRef = ctx.siteRef ? ctx.siteRef.replace(/^@/, '') : null;
             (grid.rows || []).forEach(function (row) {
               var refObj = row.id;
               var ref    = refObj && (refObj.val || String(refObj));
@@ -125,7 +133,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
               var opt    = document.createElement('option');
               opt.value       = String(ref);
               opt.textContent = String(dis);
-              if (ctx.siteRef && String(ref) === ctx.siteRef) opt.selected = true;
+              if (ctxRef && String(ref).replace(/^@/, '') === ctxRef) opt.selected = true;
               siteSelect.appendChild(opt);
             });
           })
@@ -138,8 +146,21 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         siteSelect.innerHTML = '<option value="">Demo mode</option>';
       }
 
-      // ── Load button ───────────────────────────────────────────────────
-      loadBtn.addEventListener('click', function () {
+      // ── Date navigation ───────────────────────────────────────────────
+      function shiftDates(dir) {
+        var s = dateStart.value, e = dateEnd.value;
+        if (!s || !e) return;
+        var d1   = new Date(s + 'T00:00:00');
+        var d2   = new Date(e + 'T00:00:00');
+        var span = d2 - d1 + 86400000;
+        d1.setTime(d1.getTime() + dir * span);
+        d2.setTime(d2.getTime() + dir * span);
+        dateStart.value = d1.toISOString().slice(0, 10);
+        dateEnd.value   = d2.toISOString().slice(0, 10);
+      }
+
+      // ── Load handler ──────────────────────────────────────────────────
+      function doLoad() {
         var newSiteRef = siteSelect.value;
         var newStart   = dateStart.value;
         var newEnd     = dateEnd.value;
@@ -158,7 +179,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
           siteName:    selOpt && selOpt.value ? selOpt.textContent : (ctx && ctx.siteName)
         };
 
-        function doLaunch(d) {
+        function finish(d) {
           loadBtn.disabled    = false;
           loadBtn.textContent = 'Load';
           NS.App.init(container, d, newCtx);
@@ -166,15 +187,19 @@ window.mbcxDashboard = window.mbcxDashboard || {};
 
         if (newCtx.attestKey && newCtx.projectName) {
           NS.evals.loadData(newCtx.attestKey, newCtx.projectName)
-            .then(doLaunch)
-            .catch(function (err) {
-              console.warn('[mbcxDashboard] Load failed, using demo data:', err);
-              doLaunch(NS.demoData);
-            });
+            .then(finish)
+            .catch(function () { finish(NS.demoData); });
         } else {
-          doLaunch(NS.demoData);
+          finish(NS.demoData);
         }
-      });
+      }
+
+      loadBtn.addEventListener('click', doLoad);
+
+      var prevBtn = container.querySelector('#sbDatePrev');
+      var nextBtn = container.querySelector('#sbDateNext');
+      if (prevBtn) prevBtn.addEventListener('click', function () { shiftDates(-1); doLoad(); });
+      if (nextBtn) nextBtn.addEventListener('click', function () { shiftDates(1);  doLoad(); });
 
       // ── Nav ───────────────────────────────────────────────────────────
       container.querySelectorAll('.dash-sb-nav-item').forEach(function (btn) {
@@ -185,14 +210,14 @@ window.mbcxDashboard = window.mbcxDashboard || {};
 
       NS.App._showTab(container, 'summary', co, data, ctx);
 
-      // ── Resolve site name if not known ────────────────────────────────
+      // ── Resolve site display name if needed ───────────────────────────
       if (ctx && ctx.attestKey && ctx.siteRef && !ctx.siteName) {
         NS.api.evalAxonVal(ctx.attestKey, ctx.projectName, 'readById(' + ctx.siteRef + ').dis')
           .then(function (val) {
             var dis = val && (typeof val === 'string' ? val : (val.val || null));
             if (!dis) return;
             ctx.siteName = dis;
-            if (loadedSite) { loadedSite.textContent = dis; loadedSite.style.display = ''; }
+            if (titleEl) titleEl.textContent = 'MBCx Dashboard — ' + dis;
           })
           .catch(function () {});
       }
