@@ -30,7 +30,6 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       NS.App._activeTab = null;
 
       var co = {
-        HealthBanner:  window.mbcxDashboard.components.HealthBanner,
         BuildingMeters:window.mbcxDashboard.components.BuildingMeters,
         CUP:           window.mbcxDashboard.components.CUP,
         AHU:           window.mbcxDashboard.components.AHU,
@@ -48,9 +47,16 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       var titleTxt = (ctx && ctx.siteName)
         ? 'MBCx Dashboard — ' + ctx.siteName
         : 'MBCx Dashboard';
+      var backHref = (ctx && ctx.projectName) ? '/ui/' + ctx.projectName : '/ui/';
 
       container.innerHTML = [
         '<div class="dash-shell">',
+
+        // ── Hover-reveal back button ──────────────────────────────────────
+        '<a class="dash-back-btn" href="' + backHref + '" title="Back to SkySpark">',
+        '  <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M10.354 3.646a.5.5 0 0 1 0 .708L6.707 8l3.647 3.646a.5.5 0 0 1-.708.708l-4-4a.5.5 0 0 1 0-.708l4-4a.5.5 0 0 1 .708 0z"/></svg>',
+        '  Back',
+        '</a>',
 
         // ── Sidebar ──────────────────────────────────────────────────────
         '<aside class="dash-sidebar" id="mbcxSidebar">',
@@ -262,7 +268,6 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       if (tab === 'summary') {
         content.innerHTML = [
           '<div class="page">',
-          co.HealthBanner   ? co.HealthBanner.render(data)   : '',
           co.BuildingMeters ? co.BuildingMeters.render(data)  : '',
           co.CUP            ? co.CUP.render(data)             : '',
           co.AHU            ? co.AHU.render(data)             : '',

@@ -17,7 +17,6 @@ var mbcxDashboardHandler = {};
     { src: 'evals/loadData.js' },
     { src: 'evals/loadAhuData.js' },
     { src: 'components/Header.js' },
-    { src: 'components/HealthBanner.js' },
     { src: 'components/BuildingMeters.js' },
     { src: 'components/CUP.js' },
     { src: 'components/AHU.js' },

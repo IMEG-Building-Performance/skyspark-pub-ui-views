@@ -41,8 +41,9 @@
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   box-sizing: border-box;
-  width: 100%;
-  height: 100%;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -117,22 +118,18 @@
 @keyframes mbcxBlink { 0%,100%{opacity:1} 50%{opacity:0.2} }
 
 /* ── Health Banner ── */
-#mbcxDashboard .health-banner {
-  background: var(--imeg-blue); border-radius: 10px;
-  padding: 20px 28px; display: flex; align-items: center;
-  gap: 32px; flex-wrap: wrap; margin-bottom: 18px;
+/* ── Back button (hover-reveal, top-left) ── */
+#mbcxDashboard .dash-back-btn {
+  position: absolute; top: 10px; left: 10px; z-index: 200;
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 13px 6px 10px;
+  background: rgba(0,0,0,0.55); color: #fff;
+  border-radius: 6px; font-size: 12px; font-weight: 600;
+  text-decoration: none; white-space: nowrap;
+  opacity: 0; transition: opacity 0.18s ease;
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
 }
-#mbcxDashboard .hb-score-num { font-size: 48px; font-weight: 700; line-height: 1; color: #FCD34D; letter-spacing: -0.03em; }
-#mbcxDashboard .hb-label { font-size: 10px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: rgba(255,255,255,0.5); margin-bottom: 4px; }
-#mbcxDashboard .hb-sub { font-size: 11px; color: rgba(255,255,255,0.45); margin-top: 3px; }
-#mbcxDashboard .hb-divider { width: 1px; height: 56px; background: rgba(255,255,255,0.15); flex-shrink: 0; }
-#mbcxDashboard .hb-stats { display: flex; gap: 28px; flex-wrap: wrap; }
-#mbcxDashboard .hbs-num { font-size: 26px; font-weight: 700; line-height: 1; letter-spacing: -0.02em; }
-#mbcxDashboard .hbs-num.crit  { color: #FCA5A5; }
-#mbcxDashboard .hbs-num.warn  { color: #FCD34D; }
-#mbcxDashboard .hbs-num.ok    { color: #86EFAC; }
-#mbcxDashboard .hbs-num.plain { color: rgba(255,255,255,0.85); }
-#mbcxDashboard .hbs-sub { font-size: 10.5px; color: rgba(255,255,255,0.38); margin-top: 2px; }
+#mbcxDashboard .dash-back-btn:hover { opacity: 1; background: rgba(0,0,0,0.72); }
 
 /* ── Equipment Section — card style ── */
 #mbcxDashboard .equip-section {
@@ -595,6 +592,7 @@
 /* ── App shell ── */
 #mbcxDashboard .dash-shell {
   display: flex; width: 100%; height: 100%; overflow: hidden;
+  position: relative;
 }
 
 /* ── Sidebar (always dark) ── */
