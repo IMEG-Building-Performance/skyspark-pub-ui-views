@@ -287,8 +287,9 @@ window.mbcxDashboard = window.mbcxDashboard || {};
           co.TerminalUnits  ? co.TerminalUnits.render()       : '',
           '</div>'
         ].join('\n');
-        if (co.AHU)           co.AHU.initLive(container, ctx || null);
-        if (co.TerminalUnits) co.TerminalUnits.initLive(container, ctx || null);
+        if (co.CUP && co.CUP.initCard)    co.CUP.initCard(content);
+        if (co.AHU)                        co.AHU.initLive(container, ctx || null);
+        if (co.TerminalUnits)              co.TerminalUnits.initLive(container, ctx || null);
       }
       else if (tab === 'faults') {
         content.innerHTML = co.FaultList
