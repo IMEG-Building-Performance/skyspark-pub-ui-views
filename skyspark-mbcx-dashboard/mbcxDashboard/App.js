@@ -17,6 +17,12 @@ window.mbcxDashboard = window.mbcxDashboard || {};
     return m ? m[1] : '';
   }
 
+  function _isoDate(offsetDays) {
+    var d = new Date();
+    d.setDate(d.getDate() + offsetDays);
+    return d.toISOString().slice(0, 10);
+  }
+
   NS.Components = {};
 
   NS.App = {
@@ -42,8 +48,8 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       };
       NS.Components = co;
 
-      var startVal = _fmtDate(ctx && ctx.datesStart);
-      var endVal   = _fmtDate(ctx && ctx.datesEnd);
+      var startVal = _fmtDate(ctx && ctx.datesStart) || _isoDate(-30);
+      var endVal   = _fmtDate(ctx && ctx.datesEnd)   || _isoDate(0);
       var titleTxt = (ctx && ctx.siteName)
         ? 'MBCx Dashboard — ' + ctx.siteName
         : 'MBCx Dashboard';
@@ -88,19 +94,21 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         '<div class="dash-main">',
 
         '  <div class="dash-topbar">',
-        '    <div class="dash-topbar-title" id="mbcxDashTitleSite">' + titleTxt + '</div>',
+        '    <div class="dash-topbar-title" id="mbcxDashTitleSite">',
+        '      ' + titleTxt,
+        '      <span class="dash-topbar-spinner" id="mbcxSpinner" style="display:none" aria-label="Loading"></span>',
+        '    </div>',
         '    <div class="dash-topbar-controls">',
         '      <select class="dash-topbar-site" id="sbSiteSelect">',
         '        <option value="">Loading sites…</option>',
         '      </select>',
         '      <div class="dash-topbar-daterange">',
         '        <button class="dash-topbar-arr" id="sbDatePrev" title="Previous period">‹</button>',
-        '        <input type="date" class="dash-topbar-date" id="sbDateStart"' + (startVal ? ' value="' + startVal + '"' : '') + ' />',
+        '        <input type="date" class="dash-topbar-date" id="sbDateStart" value="' + startVal + '" />',
         '        <span class="dash-topbar-dash">–</span>',
-        '        <input type="date" class="dash-topbar-date" id="sbDateEnd"'   + (endVal   ? ' value="' + endVal   + '"' : '') + ' />',
+        '        <input type="date" class="dash-topbar-date" id="sbDateEnd"   value="' + endVal   + '" />',
         '        <button class="dash-topbar-arr" id="sbDateNext" title="Next period">›</button>',
         '      </div>',
-        '      <button class="dash-topbar-load-btn" id="sbLoadBtn">Load</button>',
         '    </div>',
         '  </div>',
 
@@ -114,7 +122,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       var siteSelect  = container.querySelector('#sbSiteSelect');
       var dateStart   = container.querySelector('#sbDateStart');
       var dateEnd     = container.querySelector('#sbDateEnd');
-      var loadBtn     = container.querySelector('#sbLoadBtn');
+      var spinner     = container.querySelector('#mbcxSpinner');
       var collapseBtn = container.querySelector('#sbCollapseBtn');
       var sidebar     = container.querySelector('#mbcxSidebar');
       var titleEl     = container.querySelector('#mbcxDashTitleSite');
@@ -166,14 +174,15 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       }
 
       // ── Load handler ──────────────────────────────────────────────────
+      var _loadTimer = null;
+
       function doLoad() {
         var newSiteRef = siteSelect.value;
         var newStart   = dateStart.value;
         var newEnd     = dateEnd.value;
-        if (!newSiteRef && ctx && ctx.attestKey) { siteSelect.focus(); return; }
+        if (!newSiteRef && ctx && ctx.attestKey) return;
 
-        loadBtn.disabled    = true;
-        loadBtn.textContent = 'Loading…';
+        if (spinner) spinner.style.display = 'inline-block';
 
         var selOpt = siteSelect.options[siteSelect.selectedIndex];
         var newCtx = {
@@ -186,8 +195,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         };
 
         function finish(d) {
-          loadBtn.disabled    = false;
-          loadBtn.textContent = 'Load';
+          if (spinner) spinner.style.display = 'none';
           NS.App.init(container, d, newCtx);
         }
 
@@ -200,7 +208,17 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         }
       }
 
-      loadBtn.addEventListener('click', doLoad);
+      function _scheduleLoad() {
+        clearTimeout(_loadTimer);
+        _loadTimer = setTimeout(doLoad, 600);
+      }
+
+      // Site: immediate load on change
+      siteSelect.addEventListener('change', doLoad);
+
+      // Dates: debounced load so both inputs can be set before fetching
+      dateStart.addEventListener('change', _scheduleLoad);
+      dateEnd.addEventListener('change',   _scheduleLoad);
 
       var prevBtn = container.querySelector('#sbDatePrev');
       var nextBtn = container.querySelector('#sbDateNext');

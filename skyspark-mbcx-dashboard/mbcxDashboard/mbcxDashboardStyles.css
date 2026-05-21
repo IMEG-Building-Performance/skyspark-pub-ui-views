@@ -717,15 +717,16 @@
   transition: color 0.12s;
 }
 #mbcxDashboard .dash-topbar-arr:hover { color: #fff; }
-#mbcxDashboard .dash-topbar-load-btn {
-  background: var(--imeg-blue); color: #fff; border: none;
-  padding: 6px 14px; border-radius: 5px;
-  font-size: 12px; font-weight: 600; cursor: pointer;
-  font-family: inherit; white-space: nowrap;
-  transition: background 0.15s;
+/* ── Topbar loading spinner ── */
+#mbcxDashboard .dash-topbar-spinner {
+  width: 12px; height: 12px; margin-left: 8px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  vertical-align: middle;
+  animation: mbcxSpin 0.7s linear infinite;
 }
-#mbcxDashboard .dash-topbar-load-btn:hover { background: var(--imeg-blue-d); }
-#mbcxDashboard .dash-topbar-load-btn:disabled { opacity: 0.5; cursor: default; }
+@keyframes mbcxSpin { to { transform: rotate(360deg); } }
 
 /* ── Scrollable content area ── */
 #mbcxDashboard .dash-content {
