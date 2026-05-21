@@ -129,17 +129,36 @@ window.mbcxDashboard = window.mbcxDashboard || {};
 
       // ── Populate site list ────────────────────────────────────────────
       if (ctx && ctx.attestKey && ctx.projectName) {
-        NS.api.evalAxon(ctx.attestKey, ctx.projectName, 'readAll(site).sortCol("dis")')
+        console.log('[mbcxDashboard] Loading sites — project:', ctx.projectName, 'siteRef:', ctx.siteRef);
+        NS.api.evalAxon(ctx.attestKey, ctx.projectName, 'readAll(site)')
           .then(function (grid) {
+            console.log('[mbcxDashboard] Sites grid rows:', (grid.rows || []).length,
+              '| first row:', grid.rows && grid.rows[0] ? JSON.stringify(grid.rows[0]).slice(0, 200) : 'none');
+            var rows = (grid.rows || []).slice();
+            // Sort client-side by dis
+            rows.sort(function (a, b) {
+              var da = String(a.dis || a.navName || '');
+              var db = String(b.dis || b.navName || '');
+              return da.localeCompare(db);
+            });
             siteSelect.innerHTML = '<option value="">— Select site —</option>';
             var ctxRef = ctx.siteRef ? ctx.siteRef.replace(/^@/, '') : null;
-            (grid.rows || []).forEach(function (row) {
+            rows.forEach(function (row) {
               var refObj = row.id;
-              var refRaw = refObj && (refObj.val || String(refObj));
-              var refStr = String(refRaw).replace(/^@/, ''); // plain uuid portion
-              var dis    = row.dis || (refObj && refObj.dis) || refRaw || '?';
-              var opt    = document.createElement('option');
-              opt.value       = '@' + refStr;               // always @-prefixed for Axon
+              // refObj may be Haystack Ref: {_kind:"Ref", val:"p:proj:r:uuid", dis:"..."}
+              // or already unwrapped by haystackParser (object with id/dis keys)
+              // or a plain string
+              var refVal = '';
+              if (refObj && typeof refObj === 'object') {
+                refVal = refObj.val || refObj.id || String(refObj);
+              } else if (refObj) {
+                refVal = String(refObj);
+              }
+              var refStr = refVal.replace(/^@/, '');
+              var dis = row.dis || (refObj && (refObj.dis || refObj.val)) || refStr || '?';
+              console.log('[mbcxDashboard] site row — refStr:', refStr, 'dis:', dis);
+              var opt = document.createElement('option');
+              opt.value       = '@' + refStr;
               opt.textContent = String(dis);
               if (ctxRef && refStr === ctxRef) opt.selected = true;
               siteSelect.appendChild(opt);
@@ -151,6 +170,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
               (ctx.siteName || ctx.siteRef || 'Current site') + '</option>';
           });
       } else {
+        console.warn('[mbcxDashboard] No credentials — demo mode. attestKey:', !!ctx.attestKey, 'project:', ctx.projectName);
         siteSelect.innerHTML = '<option value="">Demo mode</option>';
       }
 
