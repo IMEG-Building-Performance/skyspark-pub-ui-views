@@ -102,13 +102,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         '      <select class="dash-topbar-site" id="sbSiteSelect">',
         '        <option value="">Loading sites…</option>',
         '      </select>',
-        '      <div class="dash-topbar-daterange">',
-        '        <button class="dash-topbar-arr" id="sbDatePrev" title="Previous period">‹</button>',
-        '        <input type="date" class="dash-topbar-date" id="sbDateStart" value="' + startVal + '" />',
-        '        <span class="dash-topbar-dash">–</span>',
-        '        <input type="date" class="dash-topbar-date" id="sbDateEnd"   value="' + endVal   + '" />',
-        '        <button class="dash-topbar-arr" id="sbDateNext" title="Next period">›</button>',
-        '      </div>',
+        '      <div class="dash-topbar-daterange" id="sbDateRangePicker"></div>',
         '    </div>',
         '  </div>',
 
@@ -120,8 +114,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
 
       // ── Refs ──────────────────────────────────────────────────────────
       var siteSelect  = container.querySelector('#sbSiteSelect');
-      var dateStart   = container.querySelector('#sbDateStart');
-      var dateEnd     = container.querySelector('#sbDateEnd');
+      var pickerEl    = container.querySelector('#sbDateRangePicker');
       var spinner     = container.querySelector('#mbcxSpinner');
       var collapseBtn = container.querySelector('#sbCollapseBtn');
       var sidebar     = container.querySelector('#mbcxSidebar');
@@ -136,18 +129,38 @@ window.mbcxDashboard = window.mbcxDashboard || {};
 
       // ── Populate site list ────────────────────────────────────────────
       if (ctx && ctx.attestKey && ctx.projectName) {
-        NS.api.evalAxon(ctx.attestKey, ctx.projectName, 'readAll(site).sortCol("dis")')
+        console.log('[mbcxDashboard] Loading sites — project:', ctx.projectName, 'siteRef:', ctx.siteRef);
+        NS.api.evalAxon(ctx.attestKey, ctx.projectName, 'readAll(site)')
           .then(function (grid) {
+            console.log('[mbcxDashboard] Sites grid rows:', (grid.rows || []).length,
+              '| first row:', grid.rows && grid.rows[0] ? JSON.stringify(grid.rows[0]).slice(0, 200) : 'none');
+            var rows = (grid.rows || []).slice();
+            // Sort client-side by dis
+            rows.sort(function (a, b) {
+              var da = String(a.dis || a.navName || '');
+              var db = String(b.dis || b.navName || '');
+              return da.localeCompare(db);
+            });
             siteSelect.innerHTML = '<option value="">— Select site —</option>';
             var ctxRef = ctx.siteRef ? ctx.siteRef.replace(/^@/, '') : null;
-            (grid.rows || []).forEach(function (row) {
+            rows.forEach(function (row) {
               var refObj = row.id;
-              var ref    = refObj && (refObj.val || String(refObj));
-              var dis    = row.dis || (refObj && refObj.dis) || ref || '?';
-              var opt    = document.createElement('option');
-              opt.value       = String(ref);
+              // refObj may be Haystack Ref: {_kind:"Ref", val:"p:proj:r:uuid", dis:"..."}
+              // or already unwrapped by haystackParser (object with id/dis keys)
+              // or a plain string
+              var refVal = '';
+              if (refObj && typeof refObj === 'object') {
+                refVal = refObj.val || refObj.id || String(refObj);
+              } else if (refObj) {
+                refVal = String(refObj);
+              }
+              var refStr = refVal.replace(/^@/, '');
+              var dis = row.dis || (refObj && (refObj.dis || refObj.val)) || refStr || '?';
+              console.log('[mbcxDashboard] site row — refStr:', refStr, 'dis:', dis);
+              var opt = document.createElement('option');
+              opt.value       = '@' + refStr;
               opt.textContent = String(dis);
-              if (ctxRef && String(ref).replace(/^@/, '') === ctxRef) opt.selected = true;
+              if (ctxRef && refStr === ctxRef) opt.selected = true;
               siteSelect.appendChild(opt);
             });
           })
@@ -157,29 +170,17 @@ window.mbcxDashboard = window.mbcxDashboard || {};
               (ctx.siteName || ctx.siteRef || 'Current site') + '</option>';
           });
       } else {
+        console.warn('[mbcxDashboard] No credentials — demo mode. attestKey:', !!ctx.attestKey, 'project:', ctx.projectName);
         siteSelect.innerHTML = '<option value="">Demo mode</option>';
       }
 
-      // ── Date navigation ───────────────────────────────────────────────
-      function shiftDates(dir) {
-        var s = dateStart.value, e = dateEnd.value;
-        if (!s || !e) return;
-        var d1   = new Date(s + 'T00:00:00');
-        var d2   = new Date(e + 'T00:00:00');
-        var span = d2 - d1 + 86400000;
-        d1.setTime(d1.getTime() + dir * span);
-        d2.setTime(d2.getTime() + dir * span);
-        dateStart.value = d1.toISOString().slice(0, 10);
-        dateEnd.value   = d2.toISOString().slice(0, 10);
-      }
-
       // ── Load handler ──────────────────────────────────────────────────
-      var _loadTimer = null;
+      var picker; // assigned after doLoad is defined
 
       function doLoad() {
         var newSiteRef = siteSelect.value;
-        var newStart   = dateStart.value;
-        var newEnd     = dateEnd.value;
+        var newStart   = picker ? picker.getStartDate() : startVal;
+        var newEnd     = picker ? picker.getEndDate()   : endVal;
         if (!newSiteRef && ctx && ctx.attestKey) return;
 
         if (spinner) spinner.style.display = 'inline-block';
@@ -208,22 +209,16 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         }
       }
 
-      function _scheduleLoad() {
-        clearTimeout(_loadTimer);
-        _loadTimer = setTimeout(doLoad, 600);
-      }
+      // ── Date range picker ─────────────────────────────────────────────
+      picker = NS.datePicker.create({
+        container:  pickerEl,
+        startDate:  startVal,
+        endDate:    endVal,
+        onChange:   doLoad
+      });
 
-      // Site: immediate load on change
+      // ── Site: immediate load on change ────────────────────────────────
       siteSelect.addEventListener('change', doLoad);
-
-      // Dates: debounced load so both inputs can be set before fetching
-      dateStart.addEventListener('change', _scheduleLoad);
-      dateEnd.addEventListener('change',   _scheduleLoad);
-
-      var prevBtn = container.querySelector('#sbDatePrev');
-      var nextBtn = container.querySelector('#sbDateNext');
-      if (prevBtn) prevBtn.addEventListener('click', function () { shiftDates(-1); doLoad(); });
-      if (nextBtn) nextBtn.addEventListener('click', function () { shiftDates(1);  doLoad(); });
 
       // ── Nav ───────────────────────────────────────────────────────────
       container.querySelectorAll('.dash-sb-nav-item').forEach(function (btn) {

@@ -27,6 +27,7 @@ var mbcxDashboardHandler = {};
     { src: 'components/MeetingView.js' },
     { src: 'components/TrendingView.js' },
     { src: 'components/Footer.js' },
+    { src: 'components/DateRangePicker.js' },
     { src: 'App.js' },
     { src: 'mbcxDashboardUI.js' }
   ];
