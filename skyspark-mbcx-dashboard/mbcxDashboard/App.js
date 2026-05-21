@@ -135,12 +135,13 @@ window.mbcxDashboard = window.mbcxDashboard || {};
             var ctxRef = ctx.siteRef ? ctx.siteRef.replace(/^@/, '') : null;
             (grid.rows || []).forEach(function (row) {
               var refObj = row.id;
-              var ref    = refObj && (refObj.val || String(refObj));
-              var dis    = row.dis || (refObj && refObj.dis) || ref || '?';
+              var refRaw = refObj && (refObj.val || String(refObj));
+              var refStr = String(refRaw).replace(/^@/, ''); // plain uuid portion
+              var dis    = row.dis || (refObj && refObj.dis) || refRaw || '?';
               var opt    = document.createElement('option');
-              opt.value       = String(ref);
+              opt.value       = '@' + refStr;               // always @-prefixed for Axon
               opt.textContent = String(dis);
-              if (ctxRef && String(ref).replace(/^@/, '') === ctxRef) opt.selected = true;
+              if (ctxRef && refStr === ctxRef) opt.selected = true;
               siteSelect.appendChild(opt);
             });
           })
