@@ -116,8 +116,8 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     var allVals = prior.concat(current.filter(function (v) { return v != null; }));
     var maxVal  = Math.max.apply(null, allVals.concat([1])) * 1.15;
 
-    var W = 700, H = 140;
-    var padL = 48, padR = 12, padT = 10, padB = 30;
+    var W = 700, H = 80;
+    var padL = 36, padR = 8, padT = 6, padB = 20;
     var chartW = W - padL - padR;
     var chartH = H - padT - padB;
     var groupW = chartW / 12;
@@ -137,8 +137,8 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       var y = padT + chartH - (tick / maxVal) * chartH;
       svg += '<line x1="' + padL + '" y1="' + y + '" x2="' + (W - padR) + '" y2="' + y +
         '" stroke="#eef0f3" stroke-width="1"/>';
-      svg += '<text x="' + (padL - 8) + '" y="' + (y + 4) + '" text-anchor="end"' +
-        ' fill="#9aa8b8" font-size="10">' + tick.toLocaleString() + '</text>';
+      svg += '<text x="' + (padL - 4) + '" y="' + (y + 3) + '" text-anchor="end"' +
+        ' fill="#9aa8b8" font-size="8">' + tick.toLocaleString() + '</text>';
     });
 
     months.forEach(function (m, i) {
@@ -160,8 +160,8 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
           '" height="' + cuH + '" fill="' + d.accentColor + '" rx="2"/>';
       }
 
-      svg += '<text x="' + x + '" y="' + (H - 8) +
-        '" text-anchor="middle" fill="#9aa8b8" font-size="11">' + m + '</text>';
+      svg += '<text x="' + x + '" y="' + (H - 4) +
+        '" text-anchor="middle" fill="#9aa8b8" font-size="8">' + m + '</text>';
     });
 
     svg += '</svg>';
@@ -276,7 +276,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
               '</div>' +
             '</div>' +
             '<div class="cup-bar-chart-container">' + chartSvg + '</div>' +
-            '<div style="height:12px;"></div>'
+            '<div style="height:6px;"></div>'
           : '') +
 
         '<div class="cup-kpi-row">' + kpisHtml + '</div>' +
