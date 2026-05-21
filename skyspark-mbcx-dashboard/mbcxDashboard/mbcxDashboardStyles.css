@@ -870,40 +870,40 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 24px;
+  padding: 10px 16px;
   border-bottom: 1px solid #e8ecf0;
 }
 #mbcxDashboard .cup-card-header-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 #mbcxDashboard .cup-card-icon {
-  width: 32px; height: 32px;
-  border-radius: 6px;
+  width: 26px; height: 26px;
+  border-radius: 5px;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
-#mbcxDashboard .cup-card-icon svg { width: 18px; height: 18px; }
-#mbcxDashboard .cup-card-title    { font-size: 15px; font-weight: 600; color: #1a2332; }
-#mbcxDashboard .cup-card-subtitle { font-size: 12px; color: #6b7a8d; margin-top: 1px; }
+#mbcxDashboard .cup-card-icon svg { width: 14px; height: 14px; }
+#mbcxDashboard .cup-card-title    { font-size: 13px; font-weight: 600; color: #1a2332; }
+#mbcxDashboard .cup-card-subtitle { font-size: 11px; color: #6b7a8d; margin-top: 1px; }
 
-#mbcxDashboard .cup-card-actions { display: flex; gap: 8px; }
+#mbcxDashboard .cup-card-actions { display: flex; gap: 6px; }
 #mbcxDashboard .cup-toggle-body-btn {
   background: none; border: none; color: #7b8ea0;
-  cursor: pointer; padding: 4px; border-radius: 4px;
+  cursor: pointer; padding: 3px; border-radius: 4px;
   display: flex; align-items: center; justify-content: center;
 }
 #mbcxDashboard .cup-toggle-body-btn:hover { background: #f0f2f5; }
 
-#mbcxDashboard .cup-card-body { padding: 20px 24px 24px; }
+#mbcxDashboard .cup-card-body { padding: 12px 16px 16px; }
 
 /* System toggle pills */
-#mbcxDashboard .cup-system-toggle { display: flex; gap: 6px; margin-bottom: 18px; flex-wrap: wrap; }
+#mbcxDashboard .cup-system-toggle { display: flex; gap: 5px; margin-bottom: 10px; flex-wrap: wrap; }
 #mbcxDashboard .cup-system-pill {
-  padding: 6px 16px;
+  padding: 4px 11px;
   border-radius: 20px;
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 500;
   border: 1px solid #e8ecf0;
   background: #fff;
@@ -921,73 +921,73 @@
   display: flex;
   border-top: 1px solid #e8ecf0;
   border-bottom: 1px solid #e8ecf0;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
   flex-wrap: wrap;
 }
 #mbcxDashboard .cup-kpi-item {
   flex: 1;
-  padding: 14px 20px;
+  padding: 8px 14px;
   border-right: 1px solid #e8ecf0;
-  min-width: 120px;
+  min-width: 100px;
 }
 #mbcxDashboard .cup-kpi-item:last-child { border-right: none; }
 #mbcxDashboard .cup-kpi-label {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: #9aa8b8;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
-#mbcxDashboard .cup-kpi-value { font-size: 26px; font-weight: 600; line-height: 1.2; color: #1a2332; }
-#mbcxDashboard .cup-kpi-unit  { font-size: 13px; font-weight: 400; color: #6b7a8d; margin-left: 3px; }
+#mbcxDashboard .cup-kpi-value { font-size: 17px; font-weight: 600; line-height: 1.2; color: #1a2332; }
+#mbcxDashboard .cup-kpi-unit  { font-size: 11px; font-weight: 400; color: #6b7a8d; margin-left: 2px; }
 
 /* Section label */
 #mbcxDashboard .cup-section-label {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: #9aa8b8;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
 }
 
 /* Chart */
 #mbcxDashboard .cup-chart-legend {
   display: flex;
   justify-content: center;
-  gap: 18px;
-  margin-bottom: 12px;
-  font-size: 12px;
+  gap: 14px;
+  margin-bottom: 6px;
+  font-size: 11px;
   color: #6b7a8d;
 }
-#mbcxDashboard .cup-legend-item  { display: flex; align-items: center; gap: 6px; }
-#mbcxDashboard .cup-legend-swatch { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
+#mbcxDashboard .cup-legend-item  { display: flex; align-items: center; gap: 5px; }
+#mbcxDashboard .cup-legend-swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
 #mbcxDashboard .cup-bar-chart-container svg { width: 100%; height: auto; display: block; }
 
 /* Equipment table */
-#mbcxDashboard .cup-table-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+#mbcxDashboard .cup-table-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
 #mbcxDashboard .cup-table-filter {
-  padding: 5px 12px;
-  font-size: 12px;
+  padding: 4px 10px;
+  font-size: 11px;
   border: 1px solid #e8ecf0;
   border-radius: 4px;
   color: #6b7a8d;
   background: #fff;
   outline: none;
-  width: 140px;
+  width: 120px;
   font-family: inherit;
 }
 #mbcxDashboard .cup-table-filter:focus { border-color: #4a90a4; }
-#mbcxDashboard .cup-table-count { font-size: 12px; color: #9aa8b8; }
+#mbcxDashboard .cup-table-count { font-size: 11px; color: #9aa8b8; }
 
-#mbcxDashboard .cup-equip-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+#mbcxDashboard .cup-equip-table { width: 100%; border-collapse: collapse; font-size: 12px; }
 #mbcxDashboard .cup-equip-table thead th {
   text-align: left;
-  padding: 8px 12px;
+  padding: 5px 10px;
   font-weight: 600;
   color: #6b7a8d;
-  font-size: 11px;
+  font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.4px;
   border-bottom: 2px solid #e8ecf0;
@@ -996,14 +996,14 @@
 }
 #mbcxDashboard .cup-equip-table tbody tr { border-bottom: 1px solid #f0f2f4; }
 #mbcxDashboard .cup-equip-table tbody tr:hover { background: #fafbfc; }
-#mbcxDashboard .cup-equip-table tbody td { padding: 8px 12px; font-variant-numeric: tabular-nums; }
+#mbcxDashboard .cup-equip-table tbody td { padding: 5px 10px; font-variant-numeric: tabular-nums; }
 #mbcxDashboard .cup-equip-table tbody td:first-child { font-weight: 600; }
 
 #mbcxDashboard .cup-status-dot {
   display: inline-block;
-  width: 8px; height: 8px;
+  width: 7px; height: 7px;
   border-radius: 50%;
-  margin-right: 6px;
+  margin-right: 5px;
   vertical-align: middle;
 }
 #mbcxDashboard .cup-status-dot.running { background: #4a7c59; }

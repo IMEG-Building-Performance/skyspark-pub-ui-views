@@ -116,7 +116,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     var allVals = prior.concat(current.filter(function (v) { return v != null; }));
     var maxVal  = Math.max.apply(null, allVals.concat([1])) * 1.15;
 
-    var W = 700, H = 240;
+    var W = 700, H = 140;
     var padL = 48, padR = 12, padT = 10, padB = 30;
     var chartW = W - padL - padR;
     var chartH = H - padT - padB;
@@ -276,7 +276,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
               '</div>' +
             '</div>' +
             '<div class="cup-bar-chart-container">' + chartSvg + '</div>' +
-            '<div style="height:24px;"></div>'
+            '<div style="height:12px;"></div>'
           : '') +
 
         '<div class="cup-kpi-row">' + kpisHtml + '</div>' +
