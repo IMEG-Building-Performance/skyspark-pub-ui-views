@@ -36,15 +36,17 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       NS.App._activeTab = null;
 
       var co = {
-        BuildingMeters:window.mbcxDashboard.components.BuildingMeters,
-        CUP:           window.mbcxDashboard.components.CUP,
-        AHU:           window.mbcxDashboard.components.AHU,
-        TerminalUnits: window.mbcxDashboard.components.TerminalUnits,
-        FaultList:     window.mbcxDashboard.components.FaultList,
-        FaultDetail:   window.mbcxDashboard.components.FaultDetail,
-        MeetingView:   window.mbcxDashboard.components.MeetingView,
-        TrendingView:  window.mbcxDashboard.components.TrendingView,
-        Footer:        window.mbcxDashboard.components.Footer
+        BuildingMeters: window.mbcxDashboard.components.BuildingMeters,
+        CUP:            window.mbcxDashboard.components.CUP,
+        CUPPlantDetail: window.mbcxDashboard.components.CUPPlantDetail,
+        CUPEquipDetail: window.mbcxDashboard.components.CUPEquipDetail,
+        AHU:            window.mbcxDashboard.components.AHU,
+        TerminalUnits:  window.mbcxDashboard.components.TerminalUnits,
+        FaultList:      window.mbcxDashboard.components.FaultList,
+        FaultDetail:    window.mbcxDashboard.components.FaultDetail,
+        MeetingView:    window.mbcxDashboard.components.MeetingView,
+        TrendingView:   window.mbcxDashboard.components.TrendingView,
+        Footer:         window.mbcxDashboard.components.Footer
       };
       NS.Components = co;
 
@@ -242,6 +244,32 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       }
     },
 
+    showCupPlantDetail: function (container, systemKey, co, data, ctx) {
+      if (NS.App._activeTab === 'trends'       && co.TrendingView) co.TrendingView.destroy();
+      if (NS.App._activeTab === 'fault-detail' && co.FaultDetail)  co.FaultDetail.destroy();
+      if (NS.App._activeTab === 'meetings'     && co.MeetingView)  co.MeetingView.destroy(co);
+      NS.App._activeTab = 'cup-plant-detail';
+      container.querySelectorAll('.dash-sb-nav-item').forEach(function (btn) {
+        btn.classList.toggle('active', btn.getAttribute('data-tab') === 'summary');
+      });
+      if (co.CUPPlantDetail) {
+        co.CUPPlantDetail.show(container, systemKey, co, data, ctx);
+      }
+    },
+
+    showCupEquipDetail: function (container, equipName, systemKey, co, data, ctx) {
+      if (NS.App._activeTab === 'trends'       && co.TrendingView) co.TrendingView.destroy();
+      if (NS.App._activeTab === 'fault-detail' && co.FaultDetail)  co.FaultDetail.destroy();
+      if (NS.App._activeTab === 'meetings'     && co.MeetingView)  co.MeetingView.destroy(co);
+      NS.App._activeTab = 'cup-equip-detail';
+      container.querySelectorAll('.dash-sb-nav-item').forEach(function (btn) {
+        btn.classList.toggle('active', btn.getAttribute('data-tab') === 'summary');
+      });
+      if (co.CUPEquipDetail) {
+        co.CUPEquipDetail.show(container, equipName, systemKey, co, data, ctx);
+      }
+    },
+
     showFaultDetail: function (container, fault, co) {
       if (NS.App._activeTab === 'trends' && co.TrendingView) co.TrendingView.destroy();
       if (NS.App._activeTab === 'fault-detail' && co.FaultDetail) co.FaultDetail.destroy();
@@ -287,7 +315,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
           co.TerminalUnits  ? co.TerminalUnits.render()       : '',
           '</div>'
         ].join('\n');
-        if (co.CUP && co.CUP.initCard)    co.CUP.initCard(content);
+        if (co.CUP && co.CUP.initCard)    co.CUP.initCard(content, container, co, data, ctx || null);
         if (co.AHU)                        co.AHU.initLive(container, ctx || null);
         if (co.TerminalUnits)              co.TerminalUnits.initLive(container, ctx || null);
       }

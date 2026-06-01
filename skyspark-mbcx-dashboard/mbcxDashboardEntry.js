@@ -19,6 +19,8 @@ var mbcxDashboardHandler = {};
     { src: 'components/Header.js' },
     { src: 'components/BuildingMeters.js' },
     { src: 'components/CUP.js' },
+    { src: 'components/CUPPlantDetail.js' },
+    { src: 'components/CUPEquipDetail.js' },
     { src: 'components/AHU.js' },
     { src: 'components/ReheatScatter.js' },
     { src: 'components/TerminalUnits.js' },

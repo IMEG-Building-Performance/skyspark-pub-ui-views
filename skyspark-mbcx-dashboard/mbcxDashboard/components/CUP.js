@@ -104,6 +104,10 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
 
   var _activeSystem = 'cooling';
   var _plantData    = null;
+  var _container    = null;
+  var _co           = null;
+  var _data         = null;
+  var _ctx          = null;
 
   // ── Bar chart SVG ────────────────────────────────────────────────────────
   function _renderBarChart(d) {
@@ -292,6 +296,11 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
           '<thead><tr>' + theadHtml + '</tr></thead>' +
           '<tbody>' + tbodyHtml + '</tbody>' +
         '</table>' +
+        '<div class="cup-details-link-row">' +
+          '<button class="cup-details-link" id="cupDetailsLink">' +
+            'View ' + systemLabels[_activeSystem] + ' plant details →' +
+          '</button>' +
+        '</div>' +
       '</div>';
 
     // ── System pill listeners ──────────────────────────────────────────────
@@ -332,6 +341,14 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         }
       });
     }
+
+    // ── Plant details link ────────────────────────────────────────────────
+    var detailsBtn = mountEl.querySelector('#cupDetailsLink');
+    if (detailsBtn && _container && _co) {
+      detailsBtn.addEventListener('click', function () {
+        NS.App.showCupPlantDetail(_container, _activeSystem, _co, _data, _ctx);
+      });
+    }
   }
 
   // ── Public API ───────────────────────────────────────────────────────────
@@ -342,8 +359,12 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       return '<div class="cup-card" id="cupCard"></div>';
     },
 
-    initCard: function (container) {
-      var mountEl = container.querySelector('#cupCard');
+    initCard: function (contentEl, container, co, data, ctx) {
+      _container = container;
+      _co        = co;
+      _data      = data;
+      _ctx       = ctx;
+      var mountEl = contentEl.querySelector('#cupCard');
       if (!mountEl || !_plantData) return;
       _renderInner(mountEl, _plantData);
     }
