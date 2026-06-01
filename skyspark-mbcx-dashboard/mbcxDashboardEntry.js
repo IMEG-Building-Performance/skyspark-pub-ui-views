@@ -16,6 +16,7 @@ var mbcxDashboardHandler = {};
     { src: 'utils/haystackParser.js' },
     { src: 'evals/loadData.js' },
     { src: 'evals/loadAhuData.js' },
+    { src: 'evals/loadCupData.js' },
     { src: 'components/Header.js' },
     { src: 'components/BuildingMeters.js' },
     { src: 'components/CUP.js' },

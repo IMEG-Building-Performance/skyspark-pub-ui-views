@@ -368,6 +368,31 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       var mountEl = contentEl.querySelector('#cupCard');
       if (!mountEl || !_plantData) return;
       _renderInner(mountEl, _plantData);
+
+      // Load real chart data when credentials are available
+      if (ctx && ctx.attestKey && ctx.projectName && ctx.siteRef &&
+          NS.evals && NS.evals.loadCupSummary) {
+        NS.evals.loadCupSummary(ctx.attestKey, ctx.projectName, ctx.siteRef)
+          .then(function (chartData) {
+            if (!mountEl.isConnected) return;
+            var systems = ['cooling', 'heating', 'condenser', 'dhw'];
+            systems.forEach(function (sys) {
+              var cd = chartData[sys];
+              if (!cd || !_plantData[sys]) return;
+              _plantData[sys].monthlyRuntime = {
+                prior:   cd.prior   || _plantData[sys].monthlyRuntime.prior,
+                current: cd.current || _plantData[sys].monthlyRuntime.current
+              };
+              if (cd.unit) {
+                _plantData[sys].runtimeLabel = 'Monthly Energy Consumption (' + cd.unit + ')';
+              }
+            });
+            _renderInner(mountEl, _plantData);
+          })
+          .catch(function (err) {
+            console.warn('[mbcxDashboard] CUP chart load failed:', err);
+          });
+      }
     }
   };
 
