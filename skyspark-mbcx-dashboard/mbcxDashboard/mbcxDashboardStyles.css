@@ -874,6 +874,8 @@
   padding: 14px 20px;
   background: var(--gray-50);
   border-bottom: 1px solid #e8ecf0;
+  cursor: pointer;
+  user-select: none;
 }
 #mbcxDashboard .cup-card-header-left {
   display: flex;

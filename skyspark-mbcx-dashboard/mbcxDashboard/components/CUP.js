@@ -120,8 +120,8 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     var allVals = prior.concat(current.filter(function (v) { return v != null; }));
     var maxVal  = Math.max.apply(null, allVals.concat([1])) * 1.15;
 
-    var W = 700, H = 200;
-    var padL = 44, padR = 12, padT = 8, padB = 26;
+    var W = 700, H = 130;
+    var padL = 44, padR = 12, padT = 6, padB = 22;
     var chartW = W - padL - padR;
     var chartH = H - padT - padB;
     var groupW = chartW / 12;
@@ -142,7 +142,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       svg += '<line x1="' + padL + '" y1="' + y + '" x2="' + (W - padR) + '" y2="' + y +
         '" stroke="#eef0f3" stroke-width="1"/>';
       svg += '<text x="' + (padL - 6) + '" y="' + (y + 4) + '" text-anchor="end"' +
-        ' fill="#9aa8b8" font-size="10">' + tick.toLocaleString() + '</text>';
+        ' fill="#9aa8b8" font-size="9">' + tick.toLocaleString() + '</text>';
     });
 
     months.forEach(function (m, i) {
@@ -164,8 +164,8 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
           '" height="' + cuH + '" fill="' + d.accentColor + '" rx="2"/>';
       }
 
-      svg += '<text x="' + x + '" y="' + (H - 7) +
-        '" text-anchor="middle" fill="#9aa8b8" font-size="11">' + m + '</text>';
+      svg += '<text x="' + x + '" y="' + (H - 5) +
+        '" text-anchor="middle" fill="#9aa8b8" font-size="10">' + m + '</text>';
     });
 
     svg += '</svg>';
@@ -312,14 +312,15 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     });
 
     // ── Collapse / expand toggle ──────────────────────────────────────────
+    var headerEl  = mountEl.querySelector('.cup-card-header');
     var toggleBtn = mountEl.querySelector('.cup-toggle-body-btn');
     var bodyEl    = mountEl.querySelector('#cupCardBody');
-    if (toggleBtn && bodyEl) {
-      toggleBtn.addEventListener('click', function () {
+    if (headerEl && bodyEl) {
+      headerEl.addEventListener('click', function () {
         var hidden = bodyEl.style.display === 'none';
         bodyEl.style.display = hidden ? '' : 'none';
-        var svg = toggleBtn.querySelector('svg polyline');
-        if (svg) svg.setAttribute('points', hidden ? '18 15 12 9 6 15' : '6 9 12 15 18 9');
+        var poly = toggleBtn && toggleBtn.querySelector('svg polyline');
+        if (poly) poly.setAttribute('points', hidden ? '18 15 12 9 6 15' : '6 9 12 15 18 9');
       });
     }
 
