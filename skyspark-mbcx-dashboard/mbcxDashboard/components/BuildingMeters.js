@@ -14,50 +14,81 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       label: 'Electric',
       unit: 'kWh',
       accentColor: '#4A6FA5',
-      monthly: {
-        prior:   [285000, 262000, 271000, 248000, 310000, 385000, 420000, 435000, 378000, 295000, 268000, 290000],
-        current: [278000, 255000, 264000, 241000, 302000, null, null, null, null, null, null, null]
+      utility: {
+        monthly: {
+          prior:   [285000, 262000, 271000, 248000, 310000, 385000, 420000, 435000, 378000, 295000, 268000, 290000],
+          current: [278000, 255000, 264000, 241000, 302000, null, null, null, null, null, null, null]
+        },
+        meters: [
+          { name: 'Main Electric Meter', value: 302000 }
+        ]
       },
-      meters: [
-        { name: 'Main Electric',        type: 'Utility',  value: 302000 },
-        { name: 'Lighting Panel LP-1',   type: 'Submeter', value: 45200  },
-        { name: 'Mechanical Panel MP-1', type: 'Submeter', value: 128000 },
-        { name: 'Plug Loads PL-1',       type: 'Submeter', value: 62800  },
-        { name: 'Data Center DC-1',      type: 'Submeter', value: 66000  }
-      ]
+      submeters: {
+        monthly: {
+          prior:   [268000, 247000, 256000, 234000, 293000, 364000, 397000, 411000, 357000, 279000, 253000, 274000],
+          current: [262000, 241000, 249000, 228000, 286000, null, null, null, null, null, null, null]
+        },
+        meters: [
+          { name: 'Lighting Panel LP-1',   value: 45200  },
+          { name: 'Mechanical Panel MP-1', value: 128000 },
+          { name: 'Plug Loads PL-1',       value: 62800  },
+          { name: 'Data Center DC-1',      value: 66000  }
+        ]
+      }
     },
     gas: {
       label: 'Natural Gas',
       unit: 'therms',
       accentColor: '#C2410C',
-      monthly: {
-        prior:   [18500, 16200, 12800, 8400, 4200, 1800, 1200, 1100, 2400, 6800, 12400, 17800],
-        current: [17900, 15600, 12200, 7800, 3900, null, null, null, null, null, null, null]
+      utility: {
+        monthly: {
+          prior:   [18500, 16200, 12800, 8400, 4200, 1800, 1200, 1100, 2400, 6800, 12400, 17800],
+          current: [17900, 15600, 12200, 7800, 3900, null, null, null, null, null, null, null]
+        },
+        meters: [
+          { name: 'Main Gas Meter', value: 3900 }
+        ]
       },
-      meters: [
-        { name: 'Main Gas',     type: 'Utility',  value: 3900 },
-        { name: 'Boiler Plant', type: 'Submeter', value: 2800 },
-        { name: 'DHW System',   type: 'Submeter', value: 680  },
-        { name: 'Kitchen',      type: 'Submeter', value: 420  }
-      ]
+      submeters: {
+        monthly: {
+          prior:   [17200, 15100, 11900, 7800, 3900, 1600, 1100, 1000, 2200, 6300, 11500, 16500],
+          current: [16600, 14500, 11300, 7200, 3600, null, null, null, null, null, null, null]
+        },
+        meters: [
+          { name: 'Boiler Plant', value: 2800 },
+          { name: 'DHW System',   value: 680  },
+          { name: 'Kitchen',      value: 420  }
+        ]
+      }
     },
     water: {
       label: 'Water',
       unit: 'gal',
       accentColor: '#0E7490',
-      monthly: {
-        prior:   [142000, 128000, 135000, 148000, 165000, 195000, 218000, 225000, 198000, 162000, 138000, 130000],
-        current: [138000, 124000, 131000, 144000, 160000, null, null, null, null, null, null, null]
+      utility: {
+        monthly: {
+          prior:   [142000, 128000, 135000, 148000, 165000, 195000, 218000, 225000, 198000, 162000, 138000, 130000],
+          current: [138000, 124000, 131000, 144000, 160000, null, null, null, null, null, null, null]
+        },
+        meters: [
+          { name: 'Main Water Meter', value: 160000 }
+        ]
       },
-      meters: [
-        { name: 'Main Water',        type: 'Utility',  value: 160000 },
-        { name: 'Cooling Tower CT-M', type: 'Submeter', value: 82000  },
-        { name: 'Irrigation',         type: 'Submeter', value: 35000  },
-        { name: 'Domestic',           type: 'Submeter', value: 43000  }
-      ]
+      submeters: {
+        monthly: {
+          prior:   [130000, 117000, 124000, 136000, 152000, 180000, 201000, 208000, 183000, 149000, 127000, 119000],
+          current: [127000, 114000, 120000, 132000, 148000, null, null, null, null, null, null, null]
+        },
+        meters: [
+          { name: 'Cooling Tower CT-M', value: 82000 },
+          { name: 'Irrigation',         value: 35000 },
+          { name: 'Domestic',           value: 43000 }
+        ]
+      }
     }
   };
 
+  var _activeView    = 'utility';   // 'utility' | 'submeters'
   var _activeSystem  = 'electric';
   var _meterData     = null;
   var _chartInstance = null;
@@ -86,11 +117,11 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
   }
 
   // ── Chart.js initializer ────────────────────────────────────────────────
-  function _initChart(canvas, d) {
+  function _initChart(canvas, sys, stream) {
     var C = window.Chart;
     if (!C) return null;
 
-    var monthly = d.monthly;
+    var monthly = stream.monthly;
     var prior   = monthly.prior   || [];
     var current = monthly.current || [];
     var prevPalette = { bg: 'rgba(156,163,175,0.45)', border: 'rgba(156,163,175,0.7)' };
@@ -112,13 +143,13 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       datasets.push({
         label: String(currentYear),
         data: current,
-        backgroundColor: _hexToRgba(d.accentColor, 0.7),
-        borderColor: d.accentColor,
+        backgroundColor: _hexToRgba(sys.accentColor, 0.7),
+        borderColor: sys.accentColor,
         borderWidth: 1, barPercentage: 0.8, categoryPercentage: 0.85
       });
     }
 
-    var unit = d.unit || '';
+    var unit = sys.unit || '';
 
     return new C(canvas, {
       type: 'bar',
@@ -164,15 +195,13 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
   }
 
   // ── Meter table ─────────────────────────────────────────────────────────
-  function _renderMeterTable(d) {
-    var meters = d.meters || [];
-    if (!meters.length) return '';
+  function _renderMeterTable(sys, stream) {
+    var meters = stream.meters || [];
+    if (!meters.length) return '<p class="ahu-no-rows">No meters found.</p>';
 
     var rows = meters.map(function (m) {
-      var typeCls = m.type === 'Utility' ? ' style="font-weight:600;color:var(--gray-800);"' : '';
       return '<tr>' +
-        '<td class="ahu-td"' + typeCls + '>' + m.name + '</td>' +
-        '<td class="ahu-td" style="color:var(--gray-400);font-size:10px;text-transform:uppercase;letter-spacing:0.04em;">' + m.type + '</td>' +
+        '<td class="ahu-td" style="font-weight:500;">' + m.name + '</td>' +
         '<td class="ahu-td ahu-td-num">' + _fmtVal(m.value) + '</td>' +
         '</tr>';
     }).join('');
@@ -180,8 +209,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     return '<table class="ahu-table">' +
       '<thead><tr>' +
         '<th class="ahu-th">Meter</th>' +
-        '<th class="ahu-th">Type</th>' +
-        '<th class="ahu-th">Current Mo (' + d.unit + ')</th>' +
+        '<th class="ahu-th">Current Mo (' + sys.unit + ')</th>' +
       '</tr></thead>' +
       '<tbody>' + rows + '</tbody>' +
       '</table>';
@@ -189,20 +217,21 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
 
   // ── Inner render ────────────────────────────────────────────────────────
   function _renderInner(mountEl) {
-    var data = _meterData;
-    var eui  = data.eui;
-    var d    = data[_activeSystem];
+    var data   = _meterData;
+    var eui    = data.eui;
+    var sys    = data[_activeSystem];
+    var stream = sys[_activeView];
 
     // EUI change
-    var euiDelta   = eui.prior ? ((eui.current - eui.prior) / eui.prior * 100) : 0;
-    var euiSign    = euiDelta > 0 ? '+' : '';
-    var euiCls     = euiDelta > 0 ? 'warn' : 'ok';
-    var euiLabel   = euiDelta > 0 ? 'above prior year' : 'below prior year';
+    var euiDelta = eui.prior ? ((eui.current - eui.prior) / eui.prior * 100) : 0;
+    var euiSign  = euiDelta > 0 ? '+' : '';
+    var euiCls   = euiDelta > 0 ? 'warn' : 'ok';
+    var euiLabel = euiDelta > 0 ? 'above prior year' : 'below prior year';
 
-    // YTD totals for KPI strip
-    var elecYtd = _ytd(data.electric.monthly.current);
-    var gasYtd  = _ytd(data.gas.monthly.current);
-    var waterYtd = _ytd(data.water.monthly.current);
+    // YTD totals — always from utility meters (building-level)
+    var elecYtd  = _ytd(data.electric.utility.monthly.current);
+    var gasYtd   = _ytd(data.gas.utility.monthly.current);
+    var waterYtd = _ytd(data.water.utility.monthly.current);
 
     // KPI strip
     var kpiHtml = [
@@ -237,26 +266,41 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         euiLabel + ' (' + eui.prior.toFixed(1) + ' ' + eui.unit + ')' +
       '</div>';
 
-    // System toggle pills
+    // View toggle (Utility Meters / Submeters)
+    var viewLabels = { utility: 'Utility Meters', submeters: 'Submeters' };
+    var viewToggleHtml = '<div class="ahu-toggle" style="margin-top:16px;margin-bottom:10px;">' +
+      ['utility', 'submeters'].map(function (v) {
+        var isActive  = v === _activeView;
+        var styleAttr = isActive
+          ? ' style="background:var(--gray-800);color:#fff;border-color:var(--gray-800);"'
+          : '';
+        return '<button class="ahu-toggle-btn' + (isActive ? ' ahu-toggle-btn--active' : '') + '"' +
+          styleAttr + ' data-bm-view="' + v + '">' + viewLabels[v] + '</button>';
+      }).join('') +
+    '</div>';
+
+    // System toggle pills (Electric / Gas / Water)
     var systemKeys   = ['electric', 'gas', 'water'];
     var systemLabels = { electric: 'Electric', gas: 'Natural Gas', water: 'Water' };
-    var pillsHtml = systemKeys.map(function (s) {
-      var isActive  = s === _activeSystem;
-      var sd        = data[s];
-      var styleAttr = isActive
-        ? ' style="background:' + sd.accentColor + ';color:#fff;border-color:' + sd.accentColor + ';"'
-        : '';
-      return '<button class="ahu-toggle-btn' + (isActive ? ' ahu-toggle-btn--active' : '') + '"' +
-        styleAttr + ' data-bm-system="' + s + '">' + systemLabels[s] + '</button>';
-    }).join('');
+    var systemPillsHtml = '<div class="ahu-toggle" style="margin-bottom:16px;">' +
+      systemKeys.map(function (s) {
+        var isActive  = s === _activeSystem;
+        var sd        = data[s];
+        var styleAttr = isActive
+          ? ' style="background:' + sd.accentColor + ';color:#fff;border-color:' + sd.accentColor + ';"'
+          : '';
+        return '<button class="ahu-toggle-btn' + (isActive ? ' ahu-toggle-btn--active' : '') + '"' +
+          styleAttr + ' data-bm-system="' + s + '">' + systemLabels[s] + '</button>';
+      }).join('') +
+    '</div>';
 
     // Meter table
-    var tableHtml = _renderMeterTable(d);
+    var tableHtml = _renderMeterTable(sys, stream);
 
-    // Check for chart data
-    var hasChartData = d.monthly && (
-      (d.monthly.prior   && d.monthly.prior.some(function (v) { return v != null; })) ||
-      (d.monthly.current && d.monthly.current.some(function (v) { return v != null; }))
+    // Chart data check
+    var hasChartData = stream.monthly && (
+      (stream.monthly.prior   && stream.monthly.prior.some(function (v) { return v != null; })) ||
+      (stream.monthly.current && stream.monthly.current.some(function (v) { return v != null; }))
     );
 
     var chartBodyHtml = hasChartData
@@ -275,10 +319,19 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     mountEl.innerHTML =
       kpiHtml +
       euiContextHtml +
-      '<div class="ahu-toggle" style="margin-top:16px;margin-bottom:16px;">' + pillsHtml + '</div>' +
+      viewToggleHtml +
+      systemPillsHtml +
       chartBodyHtml;
 
-    // Pill listeners
+    // View toggle listeners
+    mountEl.querySelectorAll('[data-bm-view]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        _activeView = btn.getAttribute('data-bm-view');
+        _renderInner(mountEl);
+      });
+    });
+
+    // System pill listeners
     mountEl.querySelectorAll('[data-bm-system]').forEach(function (btn) {
       btn.addEventListener('click', function () {
         _activeSystem = btn.getAttribute('data-bm-system');
@@ -289,7 +342,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     // Init chart
     var canvas = mountEl.querySelector('#bmChart');
     if (canvas && hasChartData) {
-      _chartInstance = _initChart(canvas, d);
+      _chartInstance = _initChart(canvas, sys, stream);
     }
   }
 
@@ -297,6 +350,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
   NS.components.BuildingMeters = {
     render: function (data) {
       _meterData     = (data && data.meters) ? data.meters : _DEMO;
+      _activeView    = 'utility';
       _activeSystem  = 'electric';
       return [
         '<div class="equip-section equip-section--collapsible equip-section--open" style="border-left-color:#4A6FA5;">',
