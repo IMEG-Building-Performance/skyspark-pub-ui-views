@@ -188,32 +188,9 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
 
   // ── Inner card render + event wiring ────────────────────────────────────
   function _renderInner(mountEl, plantData) {
-    var d     = plantData[_activeSystem];
-    var equip = d.equipment || [];
+    var d = plantData[_activeSystem];
 
-    function has(field) {
-      return equip.some(function (e) { return e[field] != null; });
-    }
-    var hasLwt = has('lwt');
-    var hasEwt = has('ewt');
-
-    var running = equip.filter(function (e) { return e.status === 'running'; }).length;
-
-    var kpis = [
-      { label: d.equipLabelPlural, value: running + '/' + equip.length, unit: 'running' },
-      d.plantLeavingTemp  != null ? { label: 'Avg ' + d.plantLeavingLabel,  value: d.plantLeavingTemp,  unit: d.tempUnit } : null,
-      d.plantEnteringTemp != null ? { label: 'Avg ' + d.plantEnteringLabel, value: d.plantEnteringTemp, unit: d.tempUnit } : null,
-      d.plantEfficiency   != null ? { label: 'Plant Efficiency', value: d.plantEfficiency, unit: 'kW/ton' } : null
-    ].filter(Boolean);
-
-    var cols = [
-      { key: 'name',   label: d.equipLabel },
-      { key: 'status', label: 'Status' }
-    ];
-    if (hasLwt) cols.push({ key: 'lwt', label: 'LWT (' + d.tempUnit + ')' });
-    if (hasEwt) cols.push({ key: 'ewt', label: 'EWT (' + d.tempUnit + ')' });
-
-    var chartSvg = _renderBarChart(d);
+    var chartSvg    = _renderBarChart(d);
     var currentYear = new Date().getFullYear();
     var priorYear   = currentYear - 1;
 
@@ -229,32 +206,20 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         styleAttr + ' data-system="' + s + '">' + systemLabels[s] + '</button>';
     }).join('');
 
-    var kpisHtml = kpis.map(function (k) {
-      return '<div class="cup-kpi-item">' +
-        '<div class="cup-kpi-label">' + k.label + '</div>' +
-        '<div class="cup-kpi-value">' + k.value +
-          '<span class="cup-kpi-unit">' + k.unit + '</span>' +
+    var chartBodyHtml = chartSvg
+      ? '<div class="cup-section-label">' + d.runtimeLabel + '</div>' +
+        '<div class="cup-chart-legend">' +
+          '<div class="cup-legend-item">' +
+            '<div class="cup-legend-swatch" style="background:#c8cdd3;"></div> ' + priorYear +
+          '</div>' +
+          '<div class="cup-legend-item">' +
+            '<div class="cup-legend-swatch" style="background:' + d.accentColor + ';"></div> ' + currentYear +
+          '</div>' +
         '</div>' +
-        '</div>';
-    }).join('');
-
-    var theadHtml = cols.map(function (c) { return '<th>' + c.label + '</th>'; }).join('');
-
-    var tbodyHtml = equip.map(function (e) {
-      return '<tr>' + cols.map(function (c) {
-        if (c.key === 'name') return '<td>' + e.name + '</td>';
-        if (c.key === 'status') {
-          var cls = e.status === 'running' ? 'running' : e.status === 'fault' ? 'fault' : 'off';
-          var lbl = e.status.charAt(0).toUpperCase() + e.status.slice(1);
-          return '<td><span class="cup-status-dot ' + cls + '"></span>' + lbl + '</td>';
-        }
-        var val = e[c.key];
-        return '<td>' + (val != null ? val : '—') + '</td>';
-      }).join('') + '</tr>';
-    }).join('');
+        '<div class="cup-bar-chart-container">' + chartSvg + '</div>'
+      : '<div class="cup-no-data">No data available for this system.</div>';
 
     mountEl.innerHTML =
-      // ── Header ──────────────────────────────────────────────────────────
       '<div class="cup-card-header">' +
         '<div class="cup-card-header-left">' +
           '<div class="cup-card-icon" style="background:' + d.iconBg + ';color:' + d.accentColor + ';">' +
@@ -278,43 +243,9 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
           '</button>' +
         '</div>' +
       '</div>' +
-
-      // ── Body ─────────────────────────────────────────────────────────────
       '<div class="cup-card-body" id="cupCardBody">' +
         '<div class="cup-system-toggle">' + pillsHtml + '</div>' +
-
-        (chartSvg
-          ? '<div class="cup-section-label">' + d.runtimeLabel + '</div>' +
-            '<div class="cup-chart-legend">' +
-              '<div class="cup-legend-item">' +
-                '<div class="cup-legend-swatch" style="background:#c8cdd3;"></div> ' + priorYear +
-              '</div>' +
-              '<div class="cup-legend-item">' +
-                '<div class="cup-legend-swatch" style="background:' + d.accentColor + ';"></div> ' + currentYear +
-              '</div>' +
-            '</div>' +
-            '<div class="cup-bar-chart-container">' + chartSvg + '</div>' +
-            '<div style="height:16px;"></div>'
-          : '') +
-
-        '<div class="cup-kpi-row">' + kpisHtml + '</div>' +
-
-        '<div class="cup-section-label">' + d.equipLabel + ' Status</div>' +
-        '<div class="cup-table-header">' +
-          '<input type="text" class="cup-table-filter" placeholder="Filter…" id="cupEquipFilter">' +
-          '<span class="cup-table-count" id="cupTableCount">' +
-            equip.length + ' / ' + equip.length + ' ' + d.equipLabelPlural +
-          '</span>' +
-        '</div>' +
-        '<table class="cup-equip-table" id="cupEquipTable">' +
-          '<thead><tr>' + theadHtml + '</tr></thead>' +
-          '<tbody>' + tbodyHtml + '</tbody>' +
-        '</table>' +
-        '<div class="cup-details-link-row">' +
-          '<button class="cup-details-link" id="cupDetailsLink">' +
-            'View ' + systemLabels[_activeSystem] + ' plant details →' +
-          '</button>' +
-        '</div>' +
+        chartBodyHtml +
       '</div>';
 
     // ── System pill listeners ──────────────────────────────────────────────
@@ -335,33 +266,6 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         bodyEl.style.display = hidden ? '' : 'none';
         var poly = toggleBtn && toggleBtn.querySelector('svg polyline');
         if (poly) poly.setAttribute('points', hidden ? '18 15 12 9 6 15' : '6 9 12 15 18 9');
-      });
-    }
-
-    // ── Filter table ──────────────────────────────────────────────────────
-    var filterInput = mountEl.querySelector('#cupEquipFilter');
-    if (filterInput) {
-      filterInput.addEventListener('input', function () {
-        var q       = filterInput.value.toLowerCase();
-        var rows    = mountEl.querySelectorAll('#cupEquipTable tbody tr');
-        var visible = 0;
-        rows.forEach(function (r) {
-          var match = r.textContent.toLowerCase().indexOf(q) !== -1;
-          r.style.display = match ? '' : 'none';
-          if (match) visible++;
-        });
-        var countEl = mountEl.querySelector('#cupTableCount');
-        if (countEl) {
-          countEl.textContent = visible + ' / ' + rows.length + ' ' + d.equipLabelPlural;
-        }
-      });
-    }
-
-    // ── Plant details link ────────────────────────────────────────────────
-    var detailsBtn = mountEl.querySelector('#cupDetailsLink');
-    if (detailsBtn && _container && _co) {
-      detailsBtn.addEventListener('click', function () {
-        NS.App.showCupPlantDetail(_container, _activeSystem, _co, _data, _ctx);
       });
     }
   }

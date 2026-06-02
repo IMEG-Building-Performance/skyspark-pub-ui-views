@@ -121,6 +121,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       var collapseBtn = container.querySelector('#sbCollapseBtn');
       var sidebar     = container.querySelector('#mbcxSidebar');
       var titleEl     = container.querySelector('#mbcxDashTitleSite');
+      var content     = container.querySelector('#mbcxContent');
 
       // ── Sidebar collapse ──────────────────────────────────────────────
       if (collapseBtn) {
@@ -232,18 +233,31 @@ window.mbcxDashboard = window.mbcxDashboard || {};
 
       // ── "Select a site" prompt ────────────────────────────────────────
       function _showNoSitePrompt(contentEl) {
+        if (!contentEl) return;
         contentEl.innerHTML =
           '<div class="dash-no-site">' +
-            '<div class="dash-no-site-icon">' +
-              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"' +
-                ' stroke-linecap="round" stroke-linejoin="round">' +
-                '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>' +
-                '<polyline points="9 22 9 12 15 12 15 22"/>' +
+            // Arrow anchored top-right, pointing up toward the site dropdown
+            '<div class="dash-no-site-hint">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"' +
+                ' stroke-linecap="round" stroke-linejoin="round" width="22" height="22">' +
+                '<line x1="12" y1="19" x2="12" y2="5"/>' +
+                '<polyline points="5 12 12 5 19 12"/>' +
               '</svg>' +
+              'Select a site above to get started' +
             '</div>' +
-            '<div class="dash-no-site-title">Select a Site</div>' +
-            '<div class="dash-no-site-sub">' +
-              'Choose a site from the dropdown in the top bar to load the MBCx Dashboard.' +
+            // Centred body
+            '<div class="dash-no-site-body">' +
+              '<div class="dash-no-site-icon">' +
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"' +
+                  ' stroke-linecap="round" stroke-linejoin="round">' +
+                  '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>' +
+                  '<polyline points="9 22 9 12 15 12 15 22"/>' +
+                '</svg>' +
+              '</div>' +
+              '<div class="dash-no-site-title">No Site Selected</div>' +
+              '<div class="dash-no-site-sub">' +
+                'Use the <strong>site dropdown</strong> in the top right corner to load the MBCx Dashboard for a building.' +
+              '</div>' +
             '</div>' +
           '</div>';
       }
@@ -341,17 +355,8 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       content.classList.toggle('dash-content--fixed', tab === 'trends');
 
       if (tab === 'summary') {
-        content.innerHTML = [
-          '<div class="page">',
-          co.BuildingMeters ? co.BuildingMeters.render(data)  : '',
-          co.CUP            ? co.CUP.render(data)             : '',
-          co.AHU            ? co.AHU.render(data)             : '',
-          co.TerminalUnits  ? co.TerminalUnits.render()       : '',
-          '</div>'
-        ].join('\n');
-        if (co.CUP && co.CUP.initCard)    co.CUP.initCard(content, container, co, data, ctx || null);
-        if (co.AHU)                        co.AHU.initLive(container, ctx || null);
-        if (co.TerminalUnits)              co.TerminalUnits.initLive(container, ctx || null);
+        content.innerHTML = '<div class="page">' + (co.CUP ? co.CUP.render(data) : '') + '</div>';
+        if (co.CUP && co.CUP.initCard) co.CUP.initCard(content, container, co, data, ctx || null);
       }
       else if (tab === 'faults') {
         content.innerHTML = co.FaultList
