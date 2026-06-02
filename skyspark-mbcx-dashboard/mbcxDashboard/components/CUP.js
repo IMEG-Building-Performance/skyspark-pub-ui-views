@@ -120,94 +120,102 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     return out;
   }
 
-  var _activeSystem = 'cooling';
-  var _plantData    = null;
-  var _container    = null;
-  var _co           = null;
-  var _data         = null;
-  var _ctx          = null;
+  var _activeSystem  = 'cooling';
+  var _plantData     = null;
+  var _container     = null;
+  var _co            = null;
+  var _data          = null;
+  var _ctx           = null;
+  var _chartInstance = null;
 
-  // ── Bar chart SVG ────────────────────────────────────────────────────────
-  function _renderBarChart(d, priorYear, currentYear) {
-    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    var rt = d.monthlyRuntime;
-    if (!rt) return '';
+  var CHART_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
+  function _hexToRgba(hex, alpha) {
+    var r = parseInt(hex.slice(1,3), 16);
+    var g = parseInt(hex.slice(3,5), 16);
+    var b = parseInt(hex.slice(5,7), 16);
+    return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
+  }
+
+  function _fmtTick(v) {
+    if (v >= 1000000) return (v / 1000000).toFixed(v % 1000000 === 0 ? 0 : 1) + 'M';
+    if (v >= 1000)    return (v / 1000).toFixed(v % 1000 === 0 ? 0 : 1) + 'K';
+    return String(v);
+  }
+
+  function _initCupChart(canvas, d, priorYear, currentYear) {
+    var C = window.Chart;
+    if (!C) return null;
+
+    var rt      = d.monthlyRuntime;
     var prior   = rt.prior   || [];
     var current = rt.current || [];
-    var allVals = prior.concat(current.filter(function (v) { return v != null; }));
-    var maxVal  = Math.max.apply(null, allVals.concat([1])) * 1.15;
+    var prevPalette = { bg: 'rgba(156,163,175,0.45)', border: 'rgba(156,163,175,0.7)' };
 
-    // H=340 targets ~260px rendered height when chart column is ~920px wide
-    // (total card ~1300px minus 280px equipment table minus 20px gap).
-    var W = 1200, H = 340;
-    var padL = 54, padR = 16, padT = 10, padB = 32;
-    var chartW = W - padL - padR;
-    var chartH = H - padT - padB;
-    var groupW = chartW / 12;
-    var barW   = groupW * 0.40;
-    var gap    = 3;
-
-    function _fmt(v) {
-      if (v >= 1000000) return (v / 1000000).toFixed(v % 1000000 === 0 ? 0 : 1) + 'M';
-      if (v >= 1000)    return (v / 1000).toFixed(v % 1000 === 0 ? 0 : 1) + 'K';
-      return String(v);
+    var datasets = [];
+    if (prior.some(function (v) { return v != null; })) {
+      datasets.push({
+        label: String(priorYear),
+        data: prior,
+        backgroundColor: prevPalette.bg,
+        borderColor: prevPalette.border,
+        borderWidth: 1, barPercentage: 0.8, categoryPercentage: 0.85
+      });
+    }
+    if (current.some(function (v) { return v != null; })) {
+      datasets.push({
+        label: String(currentYear),
+        data: current,
+        backgroundColor: _hexToRgba(d.accentColor, 0.7),
+        borderColor: d.accentColor,
+        borderWidth: 1, barPercentage: 0.8, categoryPercentage: 0.85
+      });
     }
 
-    var rawStep = maxVal / 4;
-    var mag  = Math.pow(10, Math.floor(Math.log10(rawStep)));
-    var step = Math.ceil(rawStep / mag) * mag;
-    var ticks = [];
-    for (var t = 0; t <= maxVal; t += step) ticks.push(t);
+    var unitMatch = d.runtimeLabel && d.runtimeLabel.match(/\(([^)]+)\)/);
+    var unit      = unitMatch ? unitMatch[1] : '';
 
-    var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg"' +
-      ' style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,sans-serif;">';
-
-    ticks.forEach(function (tick) {
-      var y = padT + chartH - (tick / maxVal) * chartH;
-      svg += '<line x1="' + padL + '" y1="' + y + '" x2="' + (W - padR) + '" y2="' + y +
-        '" stroke="#eef0f3" stroke-width="1.5"/>';
-      svg += '<text x="' + (padL - 8) + '" y="' + (y + 4) + '" text-anchor="end"' +
-        ' fill="#9aa8b8" font-size="11">' + _fmt(tick) + '</text>';
-    });
-
-    months.forEach(function (m, i) {
-      var x    = padL + i * groupW + groupW / 2;
-      var pRaw = prior[i] != null   ? prior[i]   : null;
-      var cRaw = current[i] != null ? current[i] : null;
-
-      if (pRaw != null && pRaw > 0) {
-        var prH = (pRaw / maxVal) * chartH;
-        var prY = padT + chartH - prH;
-        svg += '<rect x="' + (x - barW - gap / 2) + '" y="' + prY + '" width="' + barW +
-          '" height="' + prH + '" fill="#c8cdd3" rx="2"/>';
+    return new C(canvas, {
+      type: 'bar',
+      data: { labels: CHART_MONTHS, datasets: datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: datasets.length > 1,
+            position: 'top',
+            labels: { font: { size: 10 }, color: '#6B7280', boxWidth: 12 }
+          },
+          tooltip: {
+            backgroundColor: '#1F2937',
+            titleFont: { size: 11 }, bodyFont: { size: 12 }, padding: 9, cornerRadius: 5,
+            callbacks: {
+              label: function (c) {
+                var v = c.parsed.y;
+                if (v == null) return '';
+                var formatted = v >= 1000 ? Math.round(v).toLocaleString() : v.toFixed(1);
+                return c.dataset.label + ': ' + formatted + (unit ? ' ' + unit : '');
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: { font: { size: 10 }, color: '#9CA3AF' },
+            grid: { display: false }, border: { display: false }
+          },
+          y: {
+            min: 0,
+            ticks: {
+              font: { size: 10 }, color: '#9CA3AF', maxTicksLimit: 6,
+              callback: function (v) { return _fmtTick(v); }
+            },
+            grid: { color: '#F3F4F6' }, border: { display: false }
+          }
+        }
       }
-
-      if (cRaw != null && cRaw > 0) {
-        var cuH = (cRaw / maxVal) * chartH;
-        var cuY = padT + chartH - cuH;
-        svg += '<rect x="' + (x + gap / 2) + '" y="' + cuY + '" width="' + barW +
-          '" height="' + cuH + '" fill="' + d.accentColor + '" rx="2"/>';
-      }
-
-      svg += '<text x="' + x + '" y="' + (H - 6) +
-        '" text-anchor="middle" fill="#9aa8b8" font-size="11">' + m + '</text>';
-
-      // Invisible hover zone covering the full chart height for this month column
-      svg += '<rect class="cup-hz"' +
-        ' x="' + (padL + i * groupW).toFixed(1) + '" y="' + padT + '"' +
-        ' width="' + groupW.toFixed(1) + '" height="' + chartH + '"' +
-        ' fill="transparent" style="cursor:crosshair;"' +
-        ' data-m="' + m + '"' +
-        ' data-py="' + (priorYear   || '') + '"' +
-        ' data-cy="' + (currentYear || '') + '"' +
-        ' data-pri="' + (pRaw != null ? pRaw.toFixed(1) : '') + '"' +
-        ' data-cur="' + (cRaw != null ? cRaw.toFixed(1) : '') + '"' +
-        '/>';
     });
-
-    svg += '</svg>';
-    return svg;
   }
 
   // ── Equipment table (names + placeholder dashes) ─────────────────────────
@@ -242,7 +250,6 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
 
     var currentYear = new Date().getFullYear();
     var priorYear   = currentYear - 1;
-    var chartSvg    = _renderBarChart(d, priorYear, currentYear);
 
     var systemKeys   = ['cooling', 'heating', 'condenser', 'dhw'];
     var systemLabels = { cooling: 'Cooling', heating: 'Heating', condenser: 'Condenser Water', dhw: 'DHW' };
@@ -265,23 +272,22 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         '</div>'
       : '';
 
-    var chartBodyHtml = chartSvg
-      ? '<div class="cup-content-grid">' +
-          '<div>' +
-            '<div class="cup-section-label">' + d.runtimeLabel + '</div>' +
-            '<div class="cup-chart-legend">' +
-              '<div class="cup-legend-item">' +
-                '<div class="cup-legend-swatch" style="background:#c8cdd3;"></div> ' + priorYear +
-              '</div>' +
-              '<div class="cup-legend-item">' +
-                '<div class="cup-legend-swatch" style="background:' + d.accentColor + ';"></div> ' + currentYear +
-              '</div>' +
-            '</div>' +
-            '<div class="cup-bar-chart-container">' + chartSvg + '</div>' +
-          '</div>' +
-          '<div>' + equipLabel + equipHtml + '</div>' +
+    var hasChartData = d.monthlyRuntime && (
+      (d.monthlyRuntime.prior   && d.monthlyRuntime.prior.some(function (v) { return v != null; })) ||
+      (d.monthlyRuntime.current && d.monthlyRuntime.current.some(function (v) { return v != null; }))
+    );
+
+    var chartBodyHtml = hasChartData
+      ? '<div class="ahu-metric-block">' +
+          '<div class="ahu-chart-wrap"><canvas id="cupChart"></canvas></div>' +
+          '<div class="ahu-table-wrap">' + equipLabel + equipHtml + '</div>' +
         '</div>'
       : '<div class="cup-no-data">No data available for this system.</div>';
+
+    if (_chartInstance) {
+      _chartInstance.destroy();
+      _chartInstance = null;
+    }
 
     mountEl.innerHTML =
       '<div class="cup-system-toggle">' + pillsHtml + '</div>' +
@@ -295,71 +301,10 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       });
     });
 
-    // ── Chart hover tooltips ──────────────────────────────────────────────
-    var unitMatch = d.runtimeLabel && d.runtimeLabel.match(/\(([^)]+)\)/);
-    var tipUnit   = unitMatch ? unitMatch[1] : '';
-    var tipAccent = d.accentColor;
-
-    // Reuse or create a single tooltip element anchored to the dashboard root
-    var dashRoot = document.getElementById('mbcxDashboard');
-    var tipEl = document.getElementById('cupChartTip');
-    if (!tipEl && dashRoot) {
-      tipEl = document.createElement('div');
-      tipEl.id = 'cupChartTip';
-      tipEl.style.cssText =
-        'position:fixed;z-index:10000;background:#1f2937;color:#fff;' +
-        'padding:8px 12px;border-radius:6px;font-size:12px;line-height:1.7;' +
-        'pointer-events:none;white-space:nowrap;display:none;' +
-        'box-shadow:0 4px 12px rgba(0,0,0,0.3);';
-      dashRoot.appendChild(tipEl);
-    }
-
-    if (tipEl) {
-      mountEl.querySelectorAll('.cup-hz').forEach(function (hz) {
-        hz.addEventListener('mouseenter', function () {
-          var month = hz.getAttribute('data-m');
-          var py    = hz.getAttribute('data-py');
-          var cy    = hz.getAttribute('data-cy');
-          var pri   = hz.getAttribute('data-pri');
-          var cur   = hz.getAttribute('data-cur');
-
-          function fmtVal(raw) {
-            var n = parseFloat(raw);
-            return isNaN(n) ? null : Math.round(n).toLocaleString() + (tipUnit ? ' ' + tipUnit : '');
-          }
-
-          var html = '<strong style="font-size:13px;display:block;margin-bottom:4px;">' + month + '</strong>';
-          if (pri) {
-            html += '<div style="display:flex;align-items:center;gap:7px;">' +
-              '<span style="width:10px;height:10px;border-radius:2px;background:#c8cdd3;flex-shrink:0;display:inline-block;"></span>' +
-              '<span>' + py + ':&nbsp;' + fmtVal(pri) + '</span></div>';
-          }
-          if (cur) {
-            html += '<div style="display:flex;align-items:center;gap:7px;">' +
-              '<span style="width:10px;height:10px;border-radius:2px;background:' + tipAccent + ';flex-shrink:0;display:inline-block;"></span>' +
-              '<span>' + cy + ':&nbsp;' + fmtVal(cur) + '</span></div>';
-          }
-          if (!pri && !cur) {
-            html += '<span style="color:#9ca3af;font-size:11px;">No data</span>';
-          }
-
-          tipEl.innerHTML = html;
-          tipEl.style.display = 'block';
-        });
-
-        hz.addEventListener('mousemove', function (e) {
-          var x = e.clientX + 16;
-          var y = e.clientY - 12;
-          if (x + 210 > window.innerWidth)  x = e.clientX - 225;
-          if (y + 100 > window.innerHeight) y = e.clientY - 115;
-          tipEl.style.left = x + 'px';
-          tipEl.style.top  = y + 'px';
-        });
-
-        hz.addEventListener('mouseleave', function () {
-          tipEl.style.display = 'none';
-        });
-      });
+    // ── Init Chart.js ─────────────────────────────────────────────────────
+    var canvas = mountEl.querySelector('#cupChart');
+    if (canvas && hasChartData) {
+      _chartInstance = _initCupChart(canvas, d, priorYear, currentYear);
     }
   }
 
