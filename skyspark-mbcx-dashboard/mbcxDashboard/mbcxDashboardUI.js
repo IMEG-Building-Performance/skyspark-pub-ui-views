@@ -138,11 +138,11 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         .then(function (data) { if (gen !== _fetchGen) return; launch(data); })
         .catch(function (err) {
           if (gen !== _fetchGen) return;
-          console.warn('[mbcxDashboard] Live data failed, falling back to demo:', err);
-          launch(NS.demoData);
+          console.warn('[mbcxDashboard] Data load failed:', err);
+          launch(null);
         });
     } else {
-      launch(NS.demoData);
+      launch(null);
     }
   };
 

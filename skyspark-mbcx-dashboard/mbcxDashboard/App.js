@@ -36,15 +36,17 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       NS.App._activeTab = null;
 
       var co = {
-        BuildingMeters:window.mbcxDashboard.components.BuildingMeters,
-        CUP:           window.mbcxDashboard.components.CUP,
-        AHU:           window.mbcxDashboard.components.AHU,
-        TerminalUnits: window.mbcxDashboard.components.TerminalUnits,
-        FaultList:     window.mbcxDashboard.components.FaultList,
-        FaultDetail:   window.mbcxDashboard.components.FaultDetail,
-        MeetingView:   window.mbcxDashboard.components.MeetingView,
-        TrendingView:  window.mbcxDashboard.components.TrendingView,
-        Footer:        window.mbcxDashboard.components.Footer
+        BuildingMeters: window.mbcxDashboard.components.BuildingMeters,
+        CUP:            window.mbcxDashboard.components.CUP,
+        CUPPlantDetail: window.mbcxDashboard.components.CUPPlantDetail,
+        CUPEquipDetail: window.mbcxDashboard.components.CUPEquipDetail,
+        AHU:            window.mbcxDashboard.components.AHU,
+        TerminalUnits:  window.mbcxDashboard.components.TerminalUnits,
+        FaultList:      window.mbcxDashboard.components.FaultList,
+        FaultDetail:    window.mbcxDashboard.components.FaultDetail,
+        MeetingView:    window.mbcxDashboard.components.MeetingView,
+        TrendingView:   window.mbcxDashboard.components.TrendingView,
+        Footer:         window.mbcxDashboard.components.Footer
       };
       NS.Components = co;
 
@@ -119,6 +121,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       var collapseBtn = container.querySelector('#sbCollapseBtn');
       var sidebar     = container.querySelector('#mbcxSidebar');
       var titleEl     = container.querySelector('#mbcxDashTitleSite');
+      var content     = container.querySelector('#mbcxContent');
 
       // ── Sidebar collapse ──────────────────────────────────────────────
       if (collapseBtn) {
@@ -181,7 +184,11 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         var newSiteRef = siteSelect.value;
         var newStart   = picker ? picker.getStartDate() : startVal;
         var newEnd     = picker ? picker.getEndDate()   : endVal;
-        if (!newSiteRef && ctx && ctx.attestKey) return;
+
+        if (!newSiteRef) {
+          _showNoSitePrompt(content);
+          return;
+        }
 
         if (spinner) spinner.style.display = 'inline-block';
 
@@ -203,9 +210,13 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         if (newCtx.attestKey && newCtx.projectName) {
           NS.evals.loadData(newCtx.attestKey, newCtx.projectName)
             .then(finish)
-            .catch(function () { finish(NS.demoData); });
+            .catch(function (err) {
+              if (spinner) spinner.style.display = 'none';
+              console.warn('[mbcxDashboard] Data load failed:', err);
+              finish(null);
+            });
         } else {
-          finish(NS.demoData);
+          finish(null);
         }
       }
 
@@ -220,14 +231,53 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       // ── Site: immediate load on change ────────────────────────────────
       siteSelect.addEventListener('change', doLoad);
 
+      // ── "Select a site" prompt ────────────────────────────────────────
+      function _showNoSitePrompt(contentEl) {
+        if (!contentEl) return;
+        contentEl.innerHTML =
+          '<div class="dash-no-site">' +
+            // Arrow anchored top-right, pointing up toward the site dropdown
+            '<div class="dash-no-site-hint">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"' +
+                ' stroke-linecap="round" stroke-linejoin="round" width="22" height="22">' +
+                '<line x1="12" y1="19" x2="12" y2="5"/>' +
+                '<polyline points="5 12 12 5 19 12"/>' +
+              '</svg>' +
+              'Select a site above to get started' +
+            '</div>' +
+            // Centred body
+            '<div class="dash-no-site-body">' +
+              '<div class="dash-no-site-icon">' +
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"' +
+                  ' stroke-linecap="round" stroke-linejoin="round">' +
+                  '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>' +
+                  '<polyline points="9 22 9 12 15 12 15 22"/>' +
+                '</svg>' +
+              '</div>' +
+              '<div class="dash-no-site-title">No Site Selected</div>' +
+              '<div class="dash-no-site-sub">' +
+                'Use the <strong>site dropdown</strong> in the top right corner to load the MBCx Dashboard for a building.' +
+              '</div>' +
+            '</div>' +
+          '</div>';
+      }
+
       // ── Nav ───────────────────────────────────────────────────────────
       container.querySelectorAll('.dash-sb-nav-item').forEach(function (btn) {
         btn.addEventListener('click', function () {
+          if (!ctx.siteRef) {
+            _showNoSitePrompt(content);
+            return;
+          }
           NS.App._showTab(container, btn.getAttribute('data-tab'), co, data, ctx);
         });
       });
 
-      NS.App._showTab(container, 'summary', co, data, ctx);
+      if (ctx.siteRef) {
+        NS.App._showTab(container, 'summary', co, data, ctx);
+      } else {
+        _showNoSitePrompt(content);
+      }
 
       // ── Resolve site display name if needed ───────────────────────────
       if (ctx && ctx.attestKey && ctx.siteRef && !ctx.siteName) {
@@ -239,6 +289,32 @@ window.mbcxDashboard = window.mbcxDashboard || {};
             if (titleEl) titleEl.textContent = 'MBCx Dashboard — ' + dis;
           })
           .catch(function () {});
+      }
+    },
+
+    showCupPlantDetail: function (container, systemKey, co, data, ctx) {
+      if (NS.App._activeTab === 'trends'       && co.TrendingView) co.TrendingView.destroy();
+      if (NS.App._activeTab === 'fault-detail' && co.FaultDetail)  co.FaultDetail.destroy();
+      if (NS.App._activeTab === 'meetings'     && co.MeetingView)  co.MeetingView.destroy(co);
+      NS.App._activeTab = 'cup-plant-detail';
+      container.querySelectorAll('.dash-sb-nav-item').forEach(function (btn) {
+        btn.classList.toggle('active', btn.getAttribute('data-tab') === 'summary');
+      });
+      if (co.CUPPlantDetail) {
+        co.CUPPlantDetail.show(container, systemKey, co, data, ctx);
+      }
+    },
+
+    showCupEquipDetail: function (container, equipName, systemKey, co, data, ctx) {
+      if (NS.App._activeTab === 'trends'       && co.TrendingView) co.TrendingView.destroy();
+      if (NS.App._activeTab === 'fault-detail' && co.FaultDetail)  co.FaultDetail.destroy();
+      if (NS.App._activeTab === 'meetings'     && co.MeetingView)  co.MeetingView.destroy(co);
+      NS.App._activeTab = 'cup-equip-detail';
+      container.querySelectorAll('.dash-sb-nav-item').forEach(function (btn) {
+        btn.classList.toggle('active', btn.getAttribute('data-tab') === 'summary');
+      });
+      if (co.CUPEquipDetail) {
+        co.CUPEquipDetail.show(container, equipName, systemKey, co, data, ctx);
       }
     },
 
@@ -281,14 +357,15 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       if (tab === 'summary') {
         content.innerHTML = [
           '<div class="page">',
-          co.BuildingMeters ? co.BuildingMeters.render(data)  : '',
-          co.CUP            ? co.CUP.render(data)             : '',
-          co.AHU            ? co.AHU.render(data)             : '',
-          co.TerminalUnits  ? co.TerminalUnits.render()       : '',
+          co.BuildingMeters ? co.BuildingMeters.render(data) : '',
+          co.CUP            ? co.CUP.render(data)            : '',
+          co.AHU            ? co.AHU.render(data)            : '',
+          co.TerminalUnits  ? co.TerminalUnits.render()      : '',
           '</div>'
         ].join('\n');
-        if (co.AHU)           co.AHU.initLive(container, ctx || null);
-        if (co.TerminalUnits) co.TerminalUnits.initLive(container, ctx || null);
+        if (co.CUP && co.CUP.initCard) co.CUP.initCard(content, container, co, data, ctx || null);
+        if (co.AHU)                     co.AHU.initLive(container, ctx || null);
+        if (co.TerminalUnits)           co.TerminalUnits.initLive(container, ctx || null);
       }
       else if (tab === 'faults') {
         content.innerHTML = co.FaultList
