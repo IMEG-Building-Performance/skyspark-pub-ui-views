@@ -483,7 +483,7 @@
 /* ── Terminal Units KPI strip ── */
 #mbcxDashboard .tu-kpi-strip {
   display: grid; grid-template-columns: repeat(4, 1fr);
-  padding-bottom: 20px; margin-bottom: 20px;
+  padding-bottom: 16px; margin-bottom: 16px;
   border-bottom: 1px solid var(--gray-100);
 }
 #mbcxDashboard .tu-kpi { padding: 0 24px; border-right: 1px solid var(--gray-100); }
@@ -493,24 +493,21 @@
   font-size: 10px; font-weight: 600; letter-spacing: 0.08em;
   text-transform: uppercase; color: var(--gray-400); margin-bottom: 8px;
 }
-#mbcxDashboard .tu-kpi-row {
-  display: flex; align-items: flex-end; gap: 8px;
-}
 #mbcxDashboard .tu-kpi-val {
   font-size: 38px; font-weight: 300; letter-spacing: -0.03em;
   line-height: 1; color: var(--gray-900);
 }
-#mbcxDashboard .tu-spark { display: block; margin-bottom: 4px; }
 #mbcxDashboard .tu-kpi-unit { font-size: 11px; color: var(--gray-400); margin-top: 4px; }
 
 /* ── Terminal Units table ── */
-#mbcxDashboard .tu-table { width: auto; border-collapse: collapse; font-size: 12px; }
+#mbcxDashboard .tu-table-scroll { overflow-x: auto; }
+#mbcxDashboard .tu-table { width: 100%; border-collapse: collapse; font-size: 12px; }
 #mbcxDashboard .tu-th {
   padding: 6px 14px;
   font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
   color: var(--gray-400); background: var(--gray-50);
   border-bottom: 1px solid var(--gray-200); white-space: nowrap;
-  text-align: center;
+  text-align: center; position: sticky; top: 0; z-index: 1;
 }
 #mbcxDashboard .tu-td {
   padding: 7px 14px; border-bottom: 1px solid var(--gray-100);
@@ -532,7 +529,6 @@
 /* Filter bar */
 #mbcxDashboard .tu-filter-bar {
   display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
-  flex-wrap: wrap;
 }
 #mbcxDashboard .tu-filter-input {
   font-size: 12px; font-family: inherit; color: var(--gray-700);
@@ -543,105 +539,8 @@
 #mbcxDashboard .tu-filter-input:focus { border-color: var(--imeg-blue); background: #fff; }
 #mbcxDashboard .tu-filter-count { font-size: 11px; color: var(--gray-400); margin-left: auto; }
 
-/* Table details toggle */
-#mbcxDashboard .tu-table-details { border: none; }
-#mbcxDashboard .tu-table-details summary { list-style: none; }
-#mbcxDashboard .tu-table-details summary::-webkit-details-marker { display: none; }
-#mbcxDashboard .tu-table-toggle {
-  display: flex; align-items: center; gap: 6px;
-  cursor: pointer; user-select: none;
-  font-size: 13px; font-weight: 600; color: var(--gray-600);
-  padding: 10px 0; transition: color 0.15s;
-}
-#mbcxDashboard .tu-table-toggle:hover { color: var(--gray-900); }
-#mbcxDashboard .tu-table-toggle-chevron {
-  transition: transform 0.2s ease;
-}
-#mbcxDashboard .tu-table-details[open] .tu-table-toggle-chevron {
-  transform: rotate(180deg);
-}
-#mbcxDashboard .tu-table-toggle-sub {
-  font-weight: 400; font-size: 12px; color: var(--gray-400);
-  margin-left: 8px;
-}
-#mbcxDashboard .tu-table-content { padding-top: 8px; }
-
 #mbcxDashboard .tu-loading {
   padding: 2rem; text-align: center; color: var(--gray-400); font-size: 13px;
-}
-
-/* ── Distribution histograms ── */
-#mbcxDashboard .tu-dist-section {
-  padding-bottom: 16px; margin-bottom: 16px;
-  border-bottom: 1px solid var(--gray-100);
-}
-#mbcxDashboard .tu-dist-header {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 14px;
-}
-#mbcxDashboard .tu-dist-title {
-  font-size: 11px; font-weight: 600; text-transform: uppercase;
-  letter-spacing: 0.08em; color: var(--gray-500);
-}
-#mbcxDashboard .tu-hist-hint {
-  font-size: 11px; color: var(--gray-400); font-style: italic;
-}
-
-#mbcxDashboard .tu-dist-row {
-  display: grid; grid-template-columns: 100px 1fr;
-  align-items: center; gap: 12px; margin-bottom: 16px;
-}
-#mbcxDashboard .tu-dist-label {
-  font-size: 12px; font-weight: 500; color: var(--gray-700);
-  white-space: nowrap;
-}
-#mbcxDashboard .tu-dist-bar-outer { position: relative; }
-#mbcxDashboard .tu-dist-bar {
-  display: flex; height: 26px; border-radius: 4px; overflow: hidden;
-  background: var(--gray-100); gap: 1px;
-}
-#mbcxDashboard .tu-dist-seg {
-  display: flex; align-items: center; justify-content: center;
-  transition: opacity 0.2s ease; cursor: pointer;
-  border-radius: 2px;
-}
-#mbcxDashboard .tu-dist-seg:hover { filter: brightness(1.1); }
-#mbcxDashboard .tu-dist-seg--dim { opacity: 0.25; }
-#mbcxDashboard .tu-dist-seg--active { outline: 2px solid var(--gray-900); outline-offset: -2px; }
-#mbcxDashboard .tu-dist-pct {
-  font-size: 10px; font-weight: 600;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.15);
-  pointer-events: none;
-}
-
-/* Median tick on histogram */
-#mbcxDashboard .tu-hist-med-tick {
-  position: absolute; top: -3px; bottom: -3px; width: 2px;
-  background: var(--gray-700); border-radius: 1px;
-  pointer-events: none;
-}
-
-/* Range labels below histogram */
-#mbcxDashboard .tu-hist-range {
-  display: flex; justify-content: space-between; align-items: center;
-  font-size: 10px; color: var(--gray-400); margin-top: 3px;
-}
-#mbcxDashboard .tu-hist-avg {
-  font-weight: 500; color: var(--gray-500);
-}
-
-/* Filter chip */
-#mbcxDashboard .tu-dist-chip {
-  display: inline-flex; align-items: center; gap: 5px;
-  font-size: 11px; font-weight: 500; color: var(--gray-700);
-  background: var(--gray-100); border: 1px solid var(--gray-200);
-  border-radius: 12px; padding: 3px 10px; cursor: pointer;
-  transition: background 0.15s;
-}
-#mbcxDashboard .tu-dist-chip:hover { background: var(--gray-200); }
-#mbcxDashboard .tu-dist-chip-x {
-  font-size: 14px; line-height: 1; color: var(--gray-400);
-  margin-left: 2px;
 }
 
 /* Fullscreen */
