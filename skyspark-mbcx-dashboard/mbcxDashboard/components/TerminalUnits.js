@@ -46,9 +46,48 @@ function _tuClassify(val, m) {
   return 'problem';
 }
 
+// Classify a row across ALL dist metrics; returns worst category found
+function _tuRowWorst(row, distMeta) {
+  var worst = 'good'; // good < watch < problem
+  for (var i = 0; i < distMeta.length; i++) {
+    var cls = _tuClassify(row[distMeta[i].col], distMeta[i].metric);
+    if (cls === 'problem') return 'problem';
+    if (cls === 'watch') worst = 'watch';
+  }
+  return worst;
+}
+
+// Compute fleet health score: % of (metric, row) pairs that are "good"
+function _tuFleetScore(rows, distMeta) {
+  if (!distMeta.length || !rows.length) return null;
+  var good = 0, total = 0;
+  distMeta.forEach(function (dm) {
+    rows.forEach(function (row) {
+      var cls = _tuClassify(row[dm.col], dm.metric);
+      if (cls) { total++; if (cls === 'good') good++; }
+    });
+  });
+  return total ? Math.round(good / total * 100) : null;
+}
+
+function _tuScoreColor(score) {
+  if (score >= 80) return '#5C8A3C';
+  if (score >= 60) return '#D97706';
+  return '#9B2335';
+}
+
+function _tuScoreGrade(score) {
+  if (score >= 90) return 'A';
+  if (score >= 80) return 'B';
+  if (score >= 70) return 'C';
+  if (score >= 60) return 'D';
+  return 'F';
+}
+
 window.mbcxDashboard.components.TerminalUnits = {
 
   _state: null,
+  _distMeta: [],
 
   render: function () {
     return [
@@ -81,6 +120,7 @@ window.mbcxDashboard.components.TerminalUnits = {
       '      <div class="tu-kpi"><div class="tu-kpi-label">Avg Reheat Valve</div><div class="tu-kpi-val" id="tuKpiReheat">&mdash;</div><div class="tu-kpi-unit">%</div></div>',
       '    </div>',
 
+      '    <div id="tuScoreBar"></div>',
       '    <div id="tuDistBars"></div>',
 
       '    <div id="tuTableView">',
@@ -183,10 +223,38 @@ window.mbcxDashboard.components.TerminalUnits = {
     set('tuMeta', rows.length + ' VAVs');
 
     this._renderDistBars(container, rows, cols);
+    this._renderScore(container, rows);
     this._buildTable(container, rows, cols);
   },
 
-  _distMeta: [],
+  _renderScore: function (container, rows) {
+    var el = container.querySelector('#tuScoreBar');
+    if (!el || !this._distMeta.length) return;
+
+    var score = _tuFleetScore(rows, this._distMeta);
+    if (score === null) { el.innerHTML = ''; return; }
+
+    var color = _tuScoreColor(score);
+    var grade = _tuScoreGrade(score);
+
+    // Count units needing attention
+    var self = this;
+    var attentionCount = 0;
+    rows.forEach(function (row) {
+      var w = _tuRowWorst(row, self._distMeta);
+      if (w !== 'good') attentionCount++;
+    });
+
+    el.innerHTML = [
+      '<div class="tu-score-bar">',
+      '  <div class="tu-score-grade" style="color:' + color + ';">' + grade + '</div>',
+      '  <div class="tu-score-detail">',
+      '    <div class="tu-score-pct" style="color:' + color + ';">' + score + '% Fleet Health</div>',
+      '    <div class="tu-score-sub">' + attentionCount + ' of ' + rows.length + ' units need attention</div>',
+      '  </div>',
+      '</div>',
+    ].join('\n');
+  },
 
   _renderDistBars: function (container, rows, cols) {
     var self = this;
@@ -238,7 +306,6 @@ window.mbcxDashboard.components.TerminalUnits = {
         if (m.watchLo !== m.goodLo) ticks.push({ val: m.watchLo, label: m.watchLo + m.unit });
         if (m.watchHi !== m.goodHi) ticks.push({ val: m.watchHi, label: m.watchHi + m.unit });
 
-        // Deduplicate
         var seen = {};
         ticks = ticks.filter(function (t) {
           if (seen[t.val]) return false;
@@ -295,7 +362,6 @@ window.mbcxDashboard.components.TerminalUnits = {
       var st = self._state;
       if (!st) return;
 
-      // Toggle: clicking same segment again clears the filter
       if (st.distCol === col && st.distCls === cls) {
         st.distCol = null;
         st.distCls = null;
@@ -303,6 +369,11 @@ window.mbcxDashboard.components.TerminalUnits = {
         st.distCol = col;
         st.distCls = cls;
       }
+
+      // Open the table if it's collapsed
+      var details = container.querySelector('#tuTableDetails');
+      if (details && !details.open) details.open = true;
+
       self._updateDistHighlight(container);
       self._rebuildTbody(container);
     });
@@ -319,7 +390,6 @@ window.mbcxDashboard.components.TerminalUnits = {
       seg.classList.toggle('tu-dist-seg--dim', active && !isMatch);
     });
 
-    // Show/hide filter chip
     var chip = container.querySelector('#tuDistChip');
     if (!chip) return;
     if (st.distCol && st.distCls) {
@@ -338,23 +408,47 @@ window.mbcxDashboard.components.TerminalUnits = {
 
   _buildTable: function (container, rows, cols) {
     var self = this;
-    this._state = { rows: rows, cols: cols, sortCol: null, sortDir: 1, filter: '', distCol: null, distCls: null };
+    // Default to showing only "needs attention" rows
+    this._state = { rows: rows, cols: cols, sortCol: null, sortDir: 1, filter: '', distCol: null, distCls: null, showAll: false };
 
     var tableView = container.querySelector('#tuTableView');
     if (!tableView) return;
 
+    // Count attention rows for the summary text
+    var attentionCount = 0;
+    rows.forEach(function (row) {
+      if (_tuRowWorst(row, self._distMeta) !== 'good') attentionCount++;
+    });
+
+    var summaryText = attentionCount
+      ? attentionCount + ' units need attention'
+      : 'All units operating normally';
+
     tableView.innerHTML = [
-      '<div class="tu-filter-bar">',
-      '  <input class="tu-filter-input" id="tuFilterInput" type="text" placeholder="Filter…" autocomplete="off" />',
-      '  <span class="tu-dist-chip" id="tuDistChip" style="display:none;"></span>',
-      '  <span class="tu-filter-count" id="tuFilterCount">' + rows.length + ' / ' + rows.length + ' VAVs</span>',
-      '</div>',
-      '<div style="overflow-x:auto;">',
-      '  <table class="tu-table">',
-      '    <thead id="tuThead"></thead>',
-      '    <tbody id="tuTbody"></tbody>',
-      '  </table>',
-      '</div>'
+      '<details class="tu-table-details" id="tuTableDetails">',
+      '  <summary class="tu-table-toggle">',
+      '    <svg class="tu-table-toggle-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>',
+      '    <span>View Details</span>',
+      '    <span class="tu-table-toggle-sub">' + summaryText + '</span>',
+      '  </summary>',
+      '  <div class="tu-table-content">',
+      '    <div class="tu-filter-bar">',
+      '      <input class="tu-filter-input" id="tuFilterInput" type="text" placeholder="Filter…" autocomplete="off" />',
+      '      <div class="tu-filter-pills">',
+      '        <button class="tu-scope-btn tu-scope-btn--active" id="tuScopeAttention">Needs Attention (' + attentionCount + ')</button>',
+      '        <button class="tu-scope-btn" id="tuScopeAll">All VAVs (' + rows.length + ')</button>',
+      '      </div>',
+      '      <span class="tu-dist-chip" id="tuDistChip" style="display:none;"></span>',
+      '      <span class="tu-filter-count" id="tuFilterCount"></span>',
+      '    </div>',
+      '    <div style="overflow-x:auto;">',
+      '      <table class="tu-table">',
+      '        <thead id="tuThead"></thead>',
+      '        <tbody id="tuTbody"></tbody>',
+      '      </table>',
+      '    </div>',
+      '  </div>',
+      '</details>'
     ].join('\n');
 
     var thead = container.querySelector('#tuThead');
@@ -397,6 +491,24 @@ window.mbcxDashboard.components.TerminalUnits = {
       });
     }
 
+    // Scope toggle: Needs Attention / All VAVs
+    var btnAttention = container.querySelector('#tuScopeAttention');
+    var btnAll = container.querySelector('#tuScopeAll');
+    if (btnAttention && btnAll) {
+      btnAttention.addEventListener('click', function () {
+        self._state.showAll = false;
+        btnAttention.classList.add('tu-scope-btn--active');
+        btnAll.classList.remove('tu-scope-btn--active');
+        self._rebuildTbody(container);
+      });
+      btnAll.addEventListener('click', function () {
+        self._state.showAll = true;
+        btnAll.classList.add('tu-scope-btn--active');
+        btnAttention.classList.remove('tu-scope-btn--active');
+        self._rebuildTbody(container);
+      });
+    }
+
     this._rebuildTbody(container);
   },
 
@@ -418,11 +530,11 @@ window.mbcxDashboard.components.TerminalUnits = {
     var inds = container.querySelectorAll('#tuThead .tu-sort-ind');
     inds.forEach(function (ind) {
       var col = ind.getAttribute('data-col');
-      ind.textContent = s.sortCol === col ? (s.sortDir === 1 ? ' ▲' : ' ▼') : '';
+      ind.textContent = s.sortCol === col ? (s.sortDir === 1 ? ' ▲' : ' ▼') : '';
     });
 
     var countEl = container.querySelector('#tuFilterCount');
-    if (countEl) countEl.textContent = rows.length + ' / ' + s.rows.length + ' VAVs';
+    if (countEl) countEl.textContent = rows.length + ' / ' + s.rows.length + ' VAVs';
   },
 
   _getDisplayRows: function () {
@@ -430,7 +542,14 @@ window.mbcxDashboard.components.TerminalUnits = {
     var s = this._state;
     var rows = s.rows;
 
-    // Distribution bar filter
+    // Scope filter: needs attention only (default) vs all
+    if (!s.showAll && self._distMeta.length) {
+      rows = rows.filter(function (row) {
+        return _tuRowWorst(row, self._distMeta) !== 'good';
+      });
+    }
+
+    // Distribution bar click filter
     if (s.distCol && s.distCls) {
       var dm = self._distMeta.filter(function (d) { return d.col === s.distCol; })[0];
       if (dm) {
