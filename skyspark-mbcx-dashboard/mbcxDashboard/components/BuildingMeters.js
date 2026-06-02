@@ -403,7 +403,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       _activeView   = 'utility';
       _activeType   = 'all';
       return [
-        '<div class="equip-section" style="border-left-color:#4A6FA5;">',
+        '<div class="equip-section">',
         '  <div class="equip-header">',
         '    <div class="equip-header-left">',
         '      <div class="equip-icon" style="background:var(--imeg-blue-lt);">',

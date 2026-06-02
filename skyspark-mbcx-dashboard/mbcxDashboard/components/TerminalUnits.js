@@ -107,7 +107,7 @@ window.mbcxDashboard.components.TerminalUnits = {
 
   render: function () {
     return [
-      '<div class="equip-section" id="mbcxTerminalUnitsSection" style="border-left-color:#C2410C;">',
+      '<div class="equip-section" id="mbcxTerminalUnitsSection">',
       '  <div class="equip-header">',
       '    <div class="equip-header-left">',
       '      <div class="equip-icon" style="background:var(--orange-lt);">',

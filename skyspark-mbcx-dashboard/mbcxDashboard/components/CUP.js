@@ -314,7 +314,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       _plantData    = _makePlantData((data && data.plant) ? data.plant : _DEMO);
       _activeSystem = 'cooling';
       return [
-        '<div class="equip-section" style="border-left-color:#7C3AED;">',
+        '<div class="equip-section">',
         '  <div class="equip-header">',
         '    <div class="equip-header-left">',
         '      <div class="equip-icon" style="background:#EDE9FE;">',

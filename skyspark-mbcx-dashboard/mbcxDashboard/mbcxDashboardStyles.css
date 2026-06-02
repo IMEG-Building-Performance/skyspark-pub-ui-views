@@ -133,25 +133,24 @@
 
 /* ── Equipment Section ── */
 #mbcxDashboard .equip-section {
-  background: #fff;
-  border: 1px solid var(--gray-200);
-  border-left: 4px solid var(--gray-300);
-  border-radius: 10px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-  margin-bottom: 18px;
-  overflow: hidden;
+  border-bottom: 1px solid var(--gray-200);
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+}
+#mbcxDashboard .equip-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
 }
 
 #mbcxDashboard .equip-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 20px;
-  background: var(--gray-50);
-  border-bottom: 1px solid var(--gray-200);
+  padding: 12px 4px 8px;
   gap: 12px;
 }
 
 #mbcxDashboard .equip-body {
-  padding: 20px;
+  padding: 4px 4px 12px;
 }
 
 #mbcxDashboard .equip-header-left { display: flex; align-items: center; gap: 12px; }

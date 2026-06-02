@@ -58,7 +58,7 @@ window.mbcxDashboard.components.FaultList = {
 
   render: function () {
     return [
-      '<div class="equip-section" id="mbcxFaultListSection" style="border-left-color:#9B2335;">',
+      '<div class="equip-section" id="mbcxFaultListSection">',
       '  <div class="equip-header">',
       '    <div class="equip-header-left">',
       '      <div class="equip-icon" style="background:var(--imeg-red-lt);">',
