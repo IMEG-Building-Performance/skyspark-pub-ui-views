@@ -136,8 +136,9 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
 
     // Wide viewBox so SVG scales close to 1:1 at typical card widths,
     // keeping font sizes readable and bars proportionally wide.
-    var W = 1200, H = 150;
-    var padL = 54, padR = 16, padT = 8, padB = 26;
+    // H=240 targets ~260px rendered height at typical 1300px card widths.
+    var W = 1200, H = 240;
+    var padL = 54, padR = 16, padT = 8, padB = 28;
     var chartW = W - padL - padR;
     var chartH = H - padT - padB;
     var groupW = chartW / 12;

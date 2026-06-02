@@ -968,6 +968,7 @@
 }
 #mbcxDashboard .cup-legend-item  { display: flex; align-items: center; gap: 5px; }
 #mbcxDashboard .cup-legend-swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+#mbcxDashboard .cup-bar-chart-container { min-height: 220px; }
 #mbcxDashboard .cup-bar-chart-container svg { width: 100%; height: auto; display: block; }
 
 /* Equipment table — match .ahu-th / .ahu-td sizing */
