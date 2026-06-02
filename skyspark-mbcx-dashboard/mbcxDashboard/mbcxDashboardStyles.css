@@ -475,17 +475,6 @@
 }
 #mbcxDashboard .ahu-metric-block--hidden { display: none; }
 
-/* ── AHU side-by-side layout ── */
-#mbcxDashboard .ahu-metric-block {
-  display: flex; gap: 20px; align-items: flex-start;
-}
-#mbcxDashboard .ahu-metric-block .ahu-chart-wrap {
-  flex: 1; min-width: 0; position: relative; height: 260px;
-}
-#mbcxDashboard .ahu-metric-block .ahu-table-wrap {
-  width: 420px; flex-shrink: 0; overflow-x: auto; max-height: 280px; overflow-y: auto;
-}
-
 /* ── AHU fullscreen button ── */
 #mbcxDashboard .ahu-fs-btn {
   display: flex; align-items: center; justify-content: center;
