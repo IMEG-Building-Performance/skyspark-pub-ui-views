@@ -585,6 +585,62 @@
   padding: 2rem; text-align: center; color: var(--gray-400); font-size: 13px;
 }
 
+/* ── Distribution bars ── */
+#mbcxDashboard .tu-dist-section {
+  padding-bottom: 20px; margin-bottom: 20px;
+  border-bottom: 1px solid var(--gray-100);
+}
+#mbcxDashboard .tu-dist-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px;
+}
+#mbcxDashboard .tu-dist-title {
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--gray-500);
+}
+#mbcxDashboard .tu-dist-legend {
+  display: flex; align-items: center; gap: 12px;
+  font-size: 11px; color: var(--gray-500);
+}
+#mbcxDashboard .tu-dist-dot {
+  display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  margin-right: 4px;
+}
+#mbcxDashboard .tu-dist-dot--good    { background: #5C8A3C; }
+#mbcxDashboard .tu-dist-dot--watch   { background: #D97706; }
+#mbcxDashboard .tu-dist-dot--problem { background: #9B2335; }
+
+#mbcxDashboard .tu-dist-row {
+  display: grid; grid-template-columns: 100px 1fr 120px;
+  align-items: center; gap: 12px; margin-bottom: 10px;
+}
+#mbcxDashboard .tu-dist-label {
+  font-size: 12px; font-weight: 500; color: var(--gray-700);
+  white-space: nowrap;
+}
+#mbcxDashboard .tu-dist-bar-wrap { min-width: 0; }
+#mbcxDashboard .tu-dist-bar {
+  display: flex; height: 20px; border-radius: 4px; overflow: hidden;
+  background: var(--gray-100);
+}
+#mbcxDashboard .tu-dist-seg { transition: width 0.3s ease; }
+#mbcxDashboard .tu-dist-good    { background: #5C8A3C; }
+#mbcxDashboard .tu-dist-watch   { background: #D97706; }
+#mbcxDashboard .tu-dist-problem { background: #9B2335; }
+
+#mbcxDashboard .tu-dist-ranges {
+  display: flex; justify-content: space-between;
+  font-size: 10px; color: var(--gray-400); margin-top: 3px;
+}
+
+#mbcxDashboard .tu-dist-counts {
+  display: flex; gap: 8px; font-size: 12px; font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+#mbcxDashboard .tu-dist-count--good    { color: #5C8A3C; }
+#mbcxDashboard .tu-dist-count--watch   { color: #D97706; }
+#mbcxDashboard .tu-dist-count--problem { color: #9B2335; }
+
 /* Fullscreen */
 #mbcxTerminalUnitsSection:fullscreen { background: #fff; padding: 24px; overflow-y: auto; }
 #mbcxTerminalUnitsSection:-webkit-full-screen { background: #fff; padding: 24px; overflow-y: auto; }

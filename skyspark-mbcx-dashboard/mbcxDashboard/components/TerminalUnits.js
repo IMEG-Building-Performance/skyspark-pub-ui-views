@@ -15,6 +15,13 @@ var TU_COL_LABELS = {
   occPct:           'Occ %',
 };
 
+/* ── Distribution bar metric definitions ── */
+var TU_DIST_METRICS = [
+  { patterns: ['zonetemp', 'zone_temp'], label: 'Zone Temp',    unit: '°F', goodLo: 70, goodHi: 75, watchLo: 68, watchHi: 77 },
+  { patterns: ['reheat'],                label: 'Reheat Valve', unit: '%',        goodLo: 0,  goodHi: 20, watchLo: 0,  watchHi: 50 },
+  { patterns: ['damper'],                label: 'Damper',        unit: '%',        goodLo: 20, goodHi: 80, watchLo: 10, watchHi: 95 },
+];
+
 function _tuAvg(rows, key) {
   var vals = rows.map(function(r) { return r[key]; }).filter(function(v) {
     return v !== null && v !== undefined && !isNaN(+v);
@@ -31,9 +38,17 @@ function _tuFindCol(cols, patterns) {
   return null;
 }
 
+function _tuClassify(val, m) {
+  if (val === null || val === undefined || isNaN(+val)) return null;
+  var v = +val;
+  if (v >= m.goodLo && v <= m.goodHi) return 'good';
+  if (v >= m.watchLo && v <= m.watchHi) return 'watch';
+  return 'problem';
+}
+
 window.mbcxDashboard.components.TerminalUnits = {
 
-  _state: null, // { rows, cols, sortCol, sortDir, filter }
+  _state: null,
 
   render: function () {
     return [
@@ -66,21 +81,10 @@ window.mbcxDashboard.components.TerminalUnits = {
       '      <div class="tu-kpi"><div class="tu-kpi-label">Avg Reheat Valve</div><div class="tu-kpi-val" id="tuKpiReheat">&mdash;</div><div class="tu-kpi-unit">%</div></div>',
       '    </div>',
 
-      '    <div class="ahu-toggle" style="margin-bottom:16px;">',
-      '      <button class="ahu-toggle-btn ahu-toggle-btn--active" id="tuBtnTable">VAV Table</button>',
-      '      <button class="ahu-toggle-btn" id="tuBtnScatter">VAV Reheat Scatter</button>',
-      '    </div>',
+      '    <div id="tuDistBars"></div>',
 
       '    <div id="tuTableView">',
-      '      <div class="tu-loading">Loading VAV data\u2026</div>',
-      '    </div>',
-
-      '    <div id="tuScatterView" style="display:none;">',
-      '      <div class="rs-legend" id="tuScatterLegend"></div>',
-      '      <div class="rs-summary" id="tuScatterSummary"></div>',
-      '      <div style="position:relative;">',
-      '        <svg class="rs-svg" id="tuScatterSvg"></svg>',
-      '      </div>',
+      '      <div class="tu-loading">Loading VAV data…</div>',
       '    </div>',
 
       '  </div>',
@@ -98,14 +102,12 @@ window.mbcxDashboard.components.TerminalUnits = {
       if (ctx && ctx.attestKey && ctx.siteRef) {
         self._fetchLive(container, ctx);
       } else {
-        self._showEmpty(container, 'No site selected \u2014 configure a site to load VAV data.');
+        self._showEmpty(container, 'No site selected — configure a site to load VAV data.');
       }
     }
 
-    // Section is open by default — load immediately
     load();
 
-    // Re-trigger is a no-op after first load
     var header = container.querySelector('#mbcxTerminalUnitsSection .equip-header--clickable');
     if (header) header.addEventListener('click', function () { setTimeout(load, 50); });
 
@@ -129,30 +131,6 @@ window.mbcxDashboard.components.TerminalUnits = {
       document.addEventListener('fullscreenchange', function () {
         if (!document.fullscreenElement && fsIcon) {
           fsIcon.innerHTML = '<polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>';
-        }
-      });
-    }
-
-    // Toggle wiring (done once, before data arrives)
-    var btnTable    = container.querySelector('#tuBtnTable');
-    var btnScatter  = container.querySelector('#tuBtnScatter');
-    var tableView   = container.querySelector('#tuTableView');
-    var scatterView = container.querySelector('#tuScatterView');
-    var scatterInited = false;
-
-    if (btnTable) {
-      btnTable.addEventListener('click', function () {
-        btnTable.classList.add('ahu-toggle-btn--active'); btnScatter.classList.remove('ahu-toggle-btn--active');
-        tableView.style.display = ''; scatterView.style.display = 'none';
-      });
-    }
-    if (btnScatter) {
-      btnScatter.addEventListener('click', function () {
-        btnScatter.classList.add('ahu-toggle-btn--active'); btnTable.classList.remove('ahu-toggle-btn--active');
-        tableView.style.display = 'none'; scatterView.style.display = '';
-        if (!scatterInited) {
-          scatterInited = true;
-          setTimeout(function () { self._initScatter(container, ctx); }, 30);
         }
       });
     }
@@ -187,7 +165,7 @@ window.mbcxDashboard.components.TerminalUnits = {
     var el = container.querySelector('#tuTableView');
     if (el) el.innerHTML = '<div class="tu-loading">' + msg + '</div>';
     var el2 = container.querySelector('#tuMeta');
-    if (el2) el2.textContent = '\u2014 VAVs';
+    if (el2) el2.textContent = '— VAVs';
   },
 
   _populate: function (container, rows, cols) {
@@ -197,14 +175,76 @@ window.mbcxDashboard.components.TerminalUnits = {
     var satCol    = _tuFindCol(cols, ['satavg', 'sat_f', 'supplyair', 'sat']);
     var reheatCol = _tuFindCol(cols, ['reheat']);
 
-    var fmt = function (v) { return v !== null ? v.toFixed(1) : '\u2014'; };
+    var fmt = function (v) { return v !== null ? v.toFixed(1) : '—'; };
     set('tuKpiTotal',  rows.length);
-    set('tuKpiZone',   zoneCol   ? fmt(_tuAvg(rows, zoneCol))   : '\u2014');
-    set('tuKpiDat',    satCol    ? fmt(_tuAvg(rows, satCol))    : '\u2014');
-    set('tuKpiReheat', reheatCol ? fmt(_tuAvg(rows, reheatCol)) : '\u2014');
+    set('tuKpiZone',   zoneCol   ? fmt(_tuAvg(rows, zoneCol))   : '—');
+    set('tuKpiDat',    satCol    ? fmt(_tuAvg(rows, satCol))    : '—');
+    set('tuKpiReheat', reheatCol ? fmt(_tuAvg(rows, reheatCol)) : '—');
     set('tuMeta', rows.length + ' VAVs');
 
+    this._renderDistBars(container, rows, cols);
     this._buildTable(container, rows, cols);
+  },
+
+  _renderDistBars: function (container, rows, cols) {
+    var el = container.querySelector('#tuDistBars');
+    if (!el) return;
+
+    var bars = [];
+    TU_DIST_METRICS.forEach(function (m) {
+      var col = _tuFindCol(cols, m.patterns);
+      if (!col) return;
+
+      var counts = { good: 0, watch: 0, problem: 0, noData: 0 };
+      rows.forEach(function (r) {
+        var cls = _tuClassify(r[col], m);
+        if (cls) counts[cls]++; else counts.noData++;
+      });
+      var total = counts.good + counts.watch + counts.problem;
+      if (!total) return;
+
+      var pGood  = (counts.good    / total * 100).toFixed(1);
+      var pWatch = (counts.watch   / total * 100).toFixed(1);
+      var pProb  = (counts.problem / total * 100).toFixed(1);
+
+      bars.push([
+        '<div class="tu-dist-row">',
+        '  <div class="tu-dist-label">' + m.label + '</div>',
+        '  <div class="tu-dist-bar-wrap">',
+        '    <div class="tu-dist-bar">',
+             counts.good    ? '<div class="tu-dist-seg tu-dist-good" style="width:' + pGood + '%" title="Good: ' + counts.good + ' (' + pGood + '%)"></div>' : '',
+             counts.watch   ? '<div class="tu-dist-seg tu-dist-watch" style="width:' + pWatch + '%" title="Watch: ' + counts.watch + ' (' + pWatch + '%)"></div>' : '',
+             counts.problem ? '<div class="tu-dist-seg tu-dist-problem" style="width:' + pProb + '%" title="Problem: ' + counts.problem + ' (' + pProb + '%)"></div>' : '',
+        '    </div>',
+        '    <div class="tu-dist-ranges">',
+        '      <span>Good: ' + m.goodLo + '–' + m.goodHi + m.unit + '</span>',
+        '      <span>Watch: ' + m.watchLo + '–' + m.watchHi + m.unit + '</span>',
+        '    </div>',
+        '  </div>',
+        '  <div class="tu-dist-counts">',
+        '    <span class="tu-dist-count tu-dist-count--good">' + counts.good + '</span>',
+        '    <span class="tu-dist-count tu-dist-count--watch">' + counts.watch + '</span>',
+        '    <span class="tu-dist-count tu-dist-count--problem">' + counts.problem + '</span>',
+        '  </div>',
+        '</div>'
+      ].join('\n'));
+    });
+
+    if (!bars.length) { el.innerHTML = ''; return; }
+
+    el.innerHTML = [
+      '<div class="tu-dist-section">',
+      '  <div class="tu-dist-header">',
+      '    <span class="tu-dist-title">Fleet Health</span>',
+      '    <span class="tu-dist-legend">',
+      '      <span class="tu-dist-dot tu-dist-dot--good"></span>Good',
+      '      <span class="tu-dist-dot tu-dist-dot--watch"></span>Watch',
+      '      <span class="tu-dist-dot tu-dist-dot--problem"></span>Problem',
+      '    </span>',
+      '  </div>',
+      bars.join('\n'),
+      '</div>'
+    ].join('\n');
   },
 
   _buildTable: function (container, rows, cols) {
@@ -216,8 +256,8 @@ window.mbcxDashboard.components.TerminalUnits = {
 
     tableView.innerHTML = [
       '<div class="tu-filter-bar">',
-      '  <input class="tu-filter-input" id="tuFilterInput" type="text" placeholder="Filter\u2026" autocomplete="off" />',
-      '  <span class="tu-filter-count" id="tuFilterCount">' + rows.length + '\u2009/\u2009' + rows.length + ' VAVs</span>',
+      '  <input class="tu-filter-input" id="tuFilterInput" type="text" placeholder="Filter…" autocomplete="off" />',
+      '  <span class="tu-filter-count" id="tuFilterCount">' + rows.length + ' / ' + rows.length + ' VAVs</span>',
       '</div>',
       '<div style="overflow-x:auto;">',
       '  <table class="tu-table">',
@@ -227,7 +267,6 @@ window.mbcxDashboard.components.TerminalUnits = {
       '</div>'
     ].join('\n');
 
-    // Build sortable header
     var thead = container.querySelector('#tuThead');
     thead.innerHTML = '<tr>' + cols.map(function (k) {
       return '<th class="tu-th tu-th-sort" data-col="' + k + '">' +
@@ -236,7 +275,6 @@ window.mbcxDashboard.components.TerminalUnits = {
         '</th>';
     }).join('') + '</tr>';
 
-    // Sort click handlers
     var ths = thead.querySelectorAll('.tu-th-sort');
     ths.forEach(function (th) {
       th.addEventListener('click', function () {
@@ -251,7 +289,6 @@ window.mbcxDashboard.components.TerminalUnits = {
       });
     });
 
-    // Filter input handler
     var filterInput = container.querySelector('#tuFilterInput');
     if (filterInput) {
       filterInput.addEventListener('input', function () {
@@ -274,20 +311,18 @@ window.mbcxDashboard.components.TerminalUnits = {
         var val = row[k];
         if (val && typeof val === 'object' && val.dis) val = val.dis;
         var cls = i === 0 ? 'tu-td tu-td-name' : 'tu-td';
-        return '<td class="' + cls + '">' + (val !== null && val !== undefined ? val : '\u2014') + '</td>';
+        return '<td class="' + cls + '">' + (val !== null && val !== undefined ? val : '—') + '</td>';
       }).join('') + '</tr>';
     }).join('');
 
-    // Update sort indicators
     var inds = container.querySelectorAll('#tuThead .tu-sort-ind');
     inds.forEach(function (ind) {
       var col = ind.getAttribute('data-col');
-      ind.textContent = s.sortCol === col ? (s.sortDir === 1 ? '\u00a0\u25b2' : '\u00a0\u25bc') : '';
+      ind.textContent = s.sortCol === col ? (s.sortDir === 1 ? ' ▲' : ' ▼') : '';
     });
 
-    // Update count
     var countEl = container.querySelector('#tuFilterCount');
-    if (countEl) countEl.textContent = rows.length + '\u2009/\u2009' + s.rows.length + ' VAVs';
+    if (countEl) countEl.textContent = rows.length + ' / ' + s.rows.length + ' VAVs';
   },
 
   _getDisplayRows: function () {
@@ -319,90 +354,5 @@ window.mbcxDashboard.components.TerminalUnits = {
     }
 
     return rows;
-  },
-
-  _initScatter: function (container, ctx) {
-    var RS  = window.mbcxDashboard.components.ReheatScatter;
-    var API = window.mbcxDashboard.api;
-    var HP  = window.mbcxDashboard.haystackParser;
-    if (!RS) return;
-
-    var svgEl  = container.querySelector('#tuScatterSvg');
-    var legEl  = container.querySelector('#tuScatterLegend');
-    var sumEl  = container.querySelector('#tuScatterSummary');
-    var viewEl = container.querySelector('#tuScatterView');
-    if (!svgEl) return;
-
-    // Tooltip appended to body so it isn't clipped by any overflow:hidden ancestor
-    var tipEl = document.getElementById('tuScatterTip');
-    if (!tipEl) {
-      tipEl = document.createElement('div');
-      tipEl.id = 'tuScatterTip';
-      tipEl.className = 'rs-tooltip';
-      document.body.appendChild(tipEl);
-    }
-
-    function renderData(data) {
-      if (legEl) legEl.innerHTML = RS.legendHTML();
-      if (sumEl) sumEl.innerHTML = RS.summaryHTML(data);
-      var selectedId = null;
-      function redraw() {
-        RS.render(svgEl, tipEl, data, selectedId, function (id) {
-          selectedId = id === selectedId ? null : id;
-          redraw();
-        });
-      }
-      redraw();
-    }
-
-    function showError(msg) {
-      if (legEl) legEl.innerHTML = '';
-      if (sumEl) sumEl.innerHTML = '';
-      svgEl.innerHTML = '';
-      if (viewEl) {
-        var errDiv = viewEl.querySelector('.rs-error-screen');
-        if (!errDiv) { errDiv = document.createElement('div'); errDiv.className = 'rs-error-screen'; viewEl.appendChild(errDiv); }
-        errDiv.innerHTML =
-          '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#9B2335" stroke-width="1.5">' +
-          '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="16" r="1" fill="#9B2335"/></svg>' +
-          '<div class="rs-error-title">Unable to Load Reheat Data</div>' +
-          '<div class="rs-error-msg">' + msg + '</div>';
-      }
-    }
-
-    function clearError() {
-      if (viewEl) { var e = viewEl.querySelector('.rs-error-screen'); if (e) e.remove(); }
-    }
-
-    if (ctx && ctx.attestKey && ctx.siteRef) {
-      // Loading state
-      clearError();
-      if (legEl) legEl.innerHTML = '<span style="color:#9CA3AF;font-size:12px">Loading\u2026</span>';
-      if (sumEl) sumEl.innerHTML = '';
-      svgEl.innerHTML = '';
-
-      var dateArg = (ctx.datesStart && ctx.datesEnd)
-        ? ctx.datesStart + '..' + ctx.datesEnd
-        : 'today()';
-      var axon = 'view_reheatReport_pubUI(readAll(vav and siteRef==' + ctx.siteRef + '), ' + dateArg + ')';
-      console.log('[ReheatScatter] Axon:', axon);
-
-      API.evalAxon(ctx.attestKey, ctx.projectName, axon)
-        .then(function (grid) {
-          var parsed = HP.parseGrid(grid);
-          if (!parsed.rows.length) {
-            showError('No reheat data returned for this site and date range.');
-            return;
-          }
-          clearError();
-          renderData(RS.fromReheatGrid(parsed.rows));
-        })
-        .catch(function (err) {
-          console.error('[TU] Reheat scatter fetch failed:', err);
-          showError(err && err.message ? err.message : 'Failed to load reheat data. Check console for details.');
-        });
-    } else {
-      renderData(RS.generateDemo());
-    }
   }
 };
