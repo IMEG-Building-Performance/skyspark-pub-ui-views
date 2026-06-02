@@ -3,46 +3,22 @@ window.mbcxDashboard = window.mbcxDashboard || {};
 window.mbcxDashboard.components = window.mbcxDashboard.components || {};
 
 var FL_DEMO_FAULTS = [
-  { id:1,  ts:'2026-03-24 14:32', equip:'AHU-1',      type:'AHU', fault:'Cooling valve stuck open — valve 94% at low load',     sev:'critical', dur:'4d 2h',  status:'Active' },
-  { id:2,  ts:'2026-03-23 08:15', equip:'VAV-L1-02',  type:'VAV', fault:'Faulty reheat coil — SAT 95°F at low zone temp',        sev:'critical', dur:'5d 16h', status:'Active' },
-  { id:3,  ts:'2026-03-19 09:00', equip:'CUP-CHW-1',  type:'CUP', fault:'Chiller differential pressure below threshold',          sev:'critical', dur:'10d 15h',status:'Active' },
-  { id:4,  ts:'2026-03-25 09:00', equip:'VAV-L1-05',  type:'VAV', fault:'Faulty reheat coil — SAT 88°F, reheat valve 85%',        sev:'critical', dur:'3d 0h',  status:'Active' },
-  { id:5,  ts:'2026-03-22 11:00', equip:'AHU-2',      type:'AHU', fault:'OA damper not responding to setpoint',                   sev:'warning',  dur:'6d 23h', status:'Active' },
-  { id:6,  ts:'2026-03-26 07:30', equip:'VAV-L2-04',  type:'VAV', fault:'Leaking reheat valve — RH 88% at warm zone temp',        sev:'warning',  dur:'2d 16h', status:'Active' },
-  { id:7,  ts:'2026-03-27 06:00', equip:'AHU-2',      type:'AHU', fault:'Discharge air temp elevated — 62°F setpoint',            sev:'warning',  dur:'1d 18h', status:'Active' },
-  { id:8,  ts:'2026-03-26 11:00', equip:'VAV-L1-01',  type:'VAV', fault:'Zone temp above setpoint by 4°F for >2h occupied',       sev:'warning',  dur:'2d 13h', status:'Active' },
-  { id:9,  ts:'2026-03-20 16:45', equip:'AHU-3',      type:'AHU', fault:'Supply air temp sensor drift — reading 12°F off avg',    sev:'warning',  dur:'9d 7h',  status:'Acknowledged' },
-  { id:10, ts:'2026-03-21 13:15', equip:'AHU-1',      type:'AHU', fault:'VFD speed oscillation >15% within 5-min window',         sev:'warning',  dur:'8d 1h',  status:'Acknowledged' },
-  { id:11, ts:'2026-03-28 05:00', equip:'VAV-L2-06',  type:'VAV', fault:'Damper at minimum — airflow 10 CFM vs 300 SP',           sev:'warning',  dur:'1d 0h',  status:'Active' },
-  { id:12, ts:'2026-03-15 10:00', equip:'CUP-HW-1',   type:'CUP', fault:'HW supply temp below setpoint by 8°F',                   sev:'warning',  dur:'14d 4h', status:'Acknowledged' },
+  { id:1,  equip:'AHU-1',     fault:'Cooling valve stuck open — valve 94% at low load',     sev:4, dur:'4d 2h',  status:'Active' },
+  { id:2,  equip:'VAV-L1-02', fault:'Faulty reheat coil — SAT 95°F at low zone temp',       sev:4, dur:'5d 16h', status:'Active' },
+  { id:3,  equip:'CUP-CHW-1', fault:'Chiller differential pressure below threshold',         sev:4, dur:'10d 15h',status:'Active' },
+  { id:4,  equip:'VAV-L1-05', fault:'Faulty reheat coil — SAT 88°F, reheat valve 85%',      sev:3, dur:'3d 0h',  status:'Active' },
+  { id:5,  equip:'AHU-2',     fault:'OA damper not responding to setpoint',                  sev:3, dur:'6d 23h', status:'Active' },
+  { id:6,  equip:'VAV-L2-04', fault:'Leaking reheat valve — RH 88% at warm zone temp',      sev:2, dur:'2d 16h', status:'Active' },
+  { id:7,  equip:'AHU-2',     fault:'Discharge air temp elevated — 62°F setpoint',          sev:2, dur:'1d 18h', status:'Active' },
+  { id:8,  equip:'VAV-L1-01', fault:'Zone temp above setpoint by 4°F for >2h occupied',     sev:2, dur:'2d 13h', status:'Active' },
+  { id:9,  equip:'AHU-3',     fault:'Supply air temp sensor drift — reading 12°F off avg',  sev:1, dur:'9d 7h',  status:'Acknowledged' },
+  { id:10, equip:'AHU-1',     fault:'VFD speed oscillation >15% within 5-min window',       sev:1, dur:'8d 1h',  status:'Acknowledged' },
+  { id:11, equip:'VAV-L2-06', fault:'Damper at minimum — airflow 10 CFM vs 300 SP',         sev:2, dur:'1d 0h',  status:'Active' },
+  { id:12, equip:'CUP-HW-1',  fault:'HW supply temp below setpoint by 8°F',                 sev:1, dur:'14d 4h', status:'Acknowledged' },
 ];
 
-var FL_COLS = ['ts', 'equip', 'type', 'fault', 'sev', 'dur', 'status'];
-var FL_LABELS = { ts:'Timestamp', equip:'Equipment', type:'Type', fault:'Fault', sev:'Severity', dur:'Duration', status:'Status' };
-
-function _flSevOrder(s) { return s === 'critical' ? 0 : s === 'warning' ? 1 : 2; }
-
-function _flGuessType(equipName) {
-  var s = String(equipName).toUpperCase();
-  if (s.indexOf('AHU') !== -1 || s.indexOf('FCU') !== -1 || s.indexOf('RTU') !== -1 || s.indexOf('MAU') !== -1) return 'AHU';
-  if (s.indexOf('VAV') !== -1 || s.indexOf('TERM') !== -1 || s.indexOf('FPB') !== -1) return 'VAV';
-  if (s.indexOf('CHP') !== -1 || s.indexOf('CHIL') !== -1 || s.indexOf('CUP') !== -1 || s.indexOf('COOL') !== -1 || s.indexOf('BOIL') !== -1 || s.indexOf('HW') !== -1) return 'CUP';
-  return 'Other';
-}
-
-function _flFormatDur(v) {
-  if (typeof v === 'string' && v) return v;
-  if (typeof v === 'number') {
-    var total = Math.round(v);
-    var days = Math.floor(total / 1440);
-    var hrs  = Math.floor((total % 1440) / 60);
-    var mins = total % 60;
-    if (days > 0) return days + 'd ' + hrs + 'h';
-    if (hrs > 0)  return hrs + 'h ' + mins + 'm';
-    return mins + 'm';
-  }
-  return String(v || '');
-}
+var FL_COLS = ['equip', 'fault', 'sev', 'dur', 'status'];
+var FL_LABELS = { equip:'Equipment', fault:'Fault', sev:'Severity', dur:'Duration', status:'Status' };
 
 function _flFindCol(cols, patterns) {
   for (var i = 0; i < patterns.length; i++)
@@ -73,13 +49,8 @@ window.mbcxDashboard.components.FaultList = {
       '  <div class="equip-body">',
 
       /* KPI strip */
-      '    <div class="tu-kpi-strip fl-kpi-strip">',
-      '      <div class="tu-kpi"><div class="tu-kpi-label">Total Faults</div><div class="tu-kpi-val" id="flKpiTotal">&mdash;</div><div class="tu-kpi-unit">active</div></div>',
-      '      <div class="tu-kpi"><div class="tu-kpi-label">Critical</div><div class="tu-kpi-val fl-kpi-critical" id="flKpiCritical">&mdash;</div><div class="tu-kpi-unit">faults</div></div>',
-      '      <div class="tu-kpi"><div class="tu-kpi-label">Warnings</div><div class="tu-kpi-val fl-kpi-warning" id="flKpiWarning">&mdash;</div><div class="tu-kpi-unit">faults</div></div>',
-      '      <div class="tu-kpi"><div class="tu-kpi-label">AHU Faults</div><div class="tu-kpi-val" id="flKpiAhu">&mdash;</div><div class="tu-kpi-unit">units</div></div>',
-      '      <div class="tu-kpi"><div class="tu-kpi-label">VAV Faults</div><div class="tu-kpi-val" id="flKpiVav">&mdash;</div><div class="tu-kpi-unit">units</div></div>',
-      '      <div class="tu-kpi"><div class="tu-kpi-label">Acknowledged</div><div class="tu-kpi-val" id="flKpiAck">&mdash;</div><div class="tu-kpi-unit">faults</div></div>',
+      '    <div class="tu-kpi-strip">',
+      '      <div class="tu-kpi"><div class="tu-kpi-label">Total Faults</div><div class="tu-kpi-val" id="flKpiTotal">&mdash;</div><div class="tu-kpi-unit">faults</div></div>',
       '    </div>',
 
       /* Filter bar */
@@ -109,13 +80,8 @@ window.mbcxDashboard.components.FaultList = {
       '    <div class="fl-page-meta" id="flMeta">Active faults</div>',
       '  </div>',
 
-      '  <div class="tu-kpi-strip fl-kpi-strip">',
-      '    <div class="tu-kpi"><div class="tu-kpi-label">Total Faults</div><div class="tu-kpi-val" id="flKpiTotal">&mdash;</div><div class="tu-kpi-unit">active</div></div>',
-      '    <div class="tu-kpi"><div class="tu-kpi-label">Critical</div><div class="tu-kpi-val fl-kpi-critical" id="flKpiCritical">&mdash;</div><div class="tu-kpi-unit">faults</div></div>',
-      '    <div class="tu-kpi"><div class="tu-kpi-label">Warnings</div><div class="tu-kpi-val fl-kpi-warning" id="flKpiWarning">&mdash;</div><div class="tu-kpi-unit">faults</div></div>',
-      '    <div class="tu-kpi"><div class="tu-kpi-label">AHU Faults</div><div class="tu-kpi-val" id="flKpiAhu">&mdash;</div><div class="tu-kpi-unit">units</div></div>',
-      '    <div class="tu-kpi"><div class="tu-kpi-label">VAV Faults</div><div class="tu-kpi-val" id="flKpiVav">&mdash;</div><div class="tu-kpi-unit">units</div></div>',
-      '    <div class="tu-kpi"><div class="tu-kpi-label">Acknowledged</div><div class="tu-kpi-val" id="flKpiAck">&mdash;</div><div class="tu-kpi-unit">faults</div></div>',
+      '  <div class="tu-kpi-strip">',
+      '    <div class="tu-kpi"><div class="tu-kpi-label">Total Faults</div><div class="tu-kpi-val" id="flKpiTotal">&mdash;</div><div class="tu-kpi-unit">faults</div></div>',
       '  </div>',
 
       '  <div class="tu-filter-bar">',
@@ -157,19 +123,15 @@ window.mbcxDashboard.components.FaultList = {
   },
 
   _populate: function (container, faults) {
-    var active = faults.filter(function (f) { return f.status !== 'Acknowledged'; });
     var set = function (id, v) { var el = container.querySelector('#' + id); if (el) el.textContent = v; };
-    set('flKpiTotal',    active.length);
-    set('flKpiCritical', active.filter(function (f) { return f.sev === 'critical'; }).length);
-    set('flKpiWarning',  active.filter(function (f) { return f.sev === 'warning';  }).length);
-    set('flKpiAhu',      active.filter(function (f) { return f.type === 'AHU';     }).length);
-    set('flKpiVav',      active.filter(function (f) { return f.type === 'VAV';     }).length);
-    set('flKpiAck',      faults.filter(function (f) { return f.status === 'Acknowledged'; }).length);
-    set('flMeta',        active.length + ' active faults · ' + faults.filter(function (f) { return f.sev === 'critical'; }).length + ' critical');
+    set('flKpiTotal', faults.length);
+    set('flMeta',     faults.length + ' faults');
 
+    // Default sort: severity descending (higher number = more severe)
     var sorted = faults.slice().sort(function (a, b) {
-      var sd = _flSevOrder(a.sev) - _flSevOrder(b.sev);
-      return sd !== 0 ? sd : b.ts.localeCompare(a.ts);
+      var as = typeof a.sev === 'number' ? a.sev : 0;
+      var bs = typeof b.sev === 'number' ? b.sev : 0;
+      return bs - as;
     });
     this._state = { rows: sorted, sortCol: null, sortDir: 1, filter: '' };
     this._buildTable(container);
@@ -208,52 +170,29 @@ window.mbcxDashboard.components.FaultList = {
   },
 
   _mapLiveRows: function (rows, cols) {
-    var tsCol     = _flFindCol(cols, ['ts', 'start', 'time', 'date']);
     var equipCol  = _flFindCol(cols, ['equip', 'dis', 'target', 'name', 'ref']);
-    var typeCol   = _flFindCol(cols, ['equiptype', 'type', 'kind']);
     var faultCol  = _flFindCol(cols, ['fault', 'rule', 'msg', 'desc', 'detail', 'issue']);
     var sevCol    = _flFindCol(cols, ['sev', 'severity', 'priority', 'level', 'rank']);
     var durCol    = _flFindCol(cols, ['dur', 'duration', 'elapsed', 'age']);
     var statusCol = _flFindCol(cols, ['status', 'state', 'ack']);
 
     return rows.map(function (r, i) {
-      function strVal(col) {
+      function rawVal(col) {
         if (!col) return '';
         var v = r[col];
         if (v === null || v === undefined) return '';
         if (typeof v === 'object' && v.dis) return v.dis;
         if (typeof v === 'object' && v.id)  return v.id;
-        return String(v);
+        return v;
       }
-
-      var equip  = equipCol ? strVal(equipCol) : ('Unit-' + (i + 1));
-      var rawSev = sevCol ? r[sevCol] : null;
-      var rawSta = statusCol ? r[statusCol] : null;
-
-      var sev = 'warning';
-      if (rawSev !== null && rawSev !== undefined) {
-        var ss = String(rawSev).toLowerCase();
-        if (ss.indexOf('crit') !== -1 || ss === '1' || ss === 'high') sev = 'critical';
-      }
-
-      var status = 'Active';
-      if (rawSta !== null && rawSta !== undefined) {
-        var st = String(rawSta).toLowerCase();
-        if (st.indexOf('ack') !== -1 || st.indexOf('clos') !== -1 || st === 'resolved') status = 'Acknowledged';
-      }
-
-      var type = typeCol ? strVal(typeCol) : _flGuessType(equip);
-      if (!type) type = _flGuessType(equip);
 
       return {
         id:     i,
-        ts:     tsCol    ? strVal(tsCol)    : '',
-        equip:  equip,
-        type:   type,
-        fault:  faultCol ? strVal(faultCol) : strVal(cols[0]),
-        sev:    sev,
-        dur:    durCol   ? _flFormatDur(r[durCol]) : '',
-        status: status
+        equip:  equipCol  ? rawVal(equipCol)  : ('Unit-' + (i + 1)),
+        fault:  faultCol  ? rawVal(faultCol)  : rawVal(cols[0]),
+        sev:    sevCol    ? rawVal(sevCol)     : '',
+        dur:    durCol    ? rawVal(durCol)     : '',
+        status: statusCol ? rawVal(statusCol) : ''
       };
     });
   },
@@ -332,8 +271,10 @@ window.mbcxDashboard.components.FaultList = {
       var col = s.sortCol, dir = s.sortDir;
       rows = rows.slice().sort(function(a, b){
         var av = a[col], bv = b[col];
-        if (col === 'sev') { av = _flSevOrder(av); bv = _flSevOrder(bv); }
-        if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * dir;
+        if (av === null || av === undefined) return dir;
+        if (bv === null || bv === undefined) return -dir;
+        var an = parseFloat(av), bn = parseFloat(bv);
+        if (!isNaN(an) && !isNaN(bn)) return (an - bn) * dir;
         return String(av).localeCompare(String(bv)) * dir;
       });
     }
@@ -341,21 +282,14 @@ window.mbcxDashboard.components.FaultList = {
     var tbody = container.querySelector('#flTbody');
     if (!tbody) return;
     tbody.innerHTML = rows.map(function(r){
-      var sevBadge = r.sev === 'critical'
-        ? '<span class="fl-badge fl-badge-critical">Critical</span>'
-        : '<span class="fl-badge fl-badge-warning">Warning</span>';
-      var statusBadge = r.status === 'Active'
-        ? '<span class="fl-badge fl-badge-active">Active</span>'
-        : '<span class="fl-badge fl-badge-ack">Ack</span>';
       var inAgenda = !!(window.mbcxDashboard && window.mbcxDashboard.meeting && window.mbcxDashboard.meeting.has(r.id));
-      return '<tr class="fl-row fl-row-' + r.sev + ' fl-row-clickable" data-fid="' + r.id + '">' +
-        '<td class="tu-td fl-td-mono">' + r.ts + '</td>' +
-        '<td class="tu-td tu-td-name">' + r.equip + '</td>' +
-        '<td class="tu-td">' + r.type + '</td>' +
-        '<td class="tu-td fl-td-fault">' + r.fault + '</td>' +
-        '<td class="tu-td">' + sevBadge + '</td>' +
-        '<td class="tu-td fl-td-mono">' + r.dur + '</td>' +
-        '<td class="tu-td">' + statusBadge + '</td>' +
+      return '<tr class="fl-row fl-row-clickable" data-fid="' + r.id + '">' +
+        FL_COLS.map(function (k) {
+          var val = r[k];
+          if (val && typeof val === 'object' && val.dis) val = val.dis;
+          var cls = k === 'equip' ? 'tu-td tu-td-name' : k === 'fault' ? 'tu-td fl-td-fault' : 'tu-td';
+          return '<td class="' + cls + '">' + (val !== null && val !== undefined ? val : '—') + '</td>';
+        }).join('') +
         '<td class="tu-td fl-td-act"><button class="fl-agenda-btn' + (inAgenda ? ' fl-agenda-btn-in' : '') + '" data-fid="' + r.id + '" title="' + (inAgenda ? 'Remove from Meeting Agenda' : 'Add to Meeting Agenda') + '">' + (inAgenda ? '&#10003;' : '+') + '</button></td>' +
         '</tr>';
     }).join('');

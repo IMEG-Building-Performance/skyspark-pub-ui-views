@@ -1125,21 +1125,6 @@
 .rs-flag-sensor  { color: #94a3b8; }
 
 /* ── Fault List (fl-*) ── */
-#mbcxDashboard .fl-kpi-strip {
-  grid-template-columns: repeat(6, 1fr) !important;
-}
-#mbcxDashboard .fl-kpi-critical { color: #9B2335; }
-#mbcxDashboard .fl-kpi-warning  { color: #D97706; }
-
-#mbcxDashboard .fl-badge {
-  display: inline-block; font-size: 11px; font-weight: 600;
-  border-radius: 4px; padding: 2px 8px; white-space: nowrap;
-}
-#mbcxDashboard .fl-badge-critical { background: #fee2e2; color: #991b1b; }
-#mbcxDashboard .fl-badge-warning  { background: #fef3c7; color: #92400e; }
-#mbcxDashboard .fl-badge-active   { background: #dbeafe; color: #1e40af; }
-#mbcxDashboard .fl-badge-ack      { background: #f1f5f9; color: #475569; }
-
 #mbcxDashboard .fl-table { width: 100%; }
 #mbcxDashboard .fl-table .tu-th,
 #mbcxDashboard .fl-table .tu-td { text-align: left; }
@@ -1147,12 +1132,6 @@
   max-width: 380px; white-space: normal;
   font-family: inherit;
 }
-#mbcxDashboard .fl-td-mono {
-  font-family: ui-monospace,'SFMono-Regular',Consolas,monospace;
-  font-size: 11px;
-}
-#mbcxDashboard .fl-row-critical td:first-child { border-left: 3px solid #ef4444; }
-#mbcxDashboard .fl-row-warning  td:first-child { border-left: 3px solid #f59e0b; }
 
 /* ── Reheat Scatter error screen ── */
 #mbcxDashboard .rs-error-screen {
