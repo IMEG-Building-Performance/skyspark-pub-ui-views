@@ -314,8 +314,8 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       _plantData    = _makePlantData((data && data.plant) ? data.plant : _DEMO);
       _activeSystem = 'cooling';
       return [
-        '<div class="equip-section equip-section--collapsible equip-section--open" style="border-left-color:#7C3AED;">',
-        '  <div class="equip-header equip-header--clickable" onclick="this.closest(\'.equip-section\').classList.toggle(\'equip-section--open\');">',
+        '<div class="equip-section" style="border-left-color:#7C3AED;">',
+        '  <div class="equip-header">',
         '    <div class="equip-header-left">',
         '      <div class="equip-icon" style="background:#EDE9FE;">',
         '        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2"',
@@ -327,9 +327,6 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         '        </svg>',
         '      </div>',
         '      <div><div class="equip-title">Central Utility Plant</div><div class="equip-meta">Chillers &middot; Heating &middot; Condenser &middot; Domestic Hot Water</div></div>',
-        '    </div>',
-        '    <div class="equip-collapse-btn" title="Expand / Collapse">',
-        '      <svg class="equip-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>',
         '    </div>',
         '  </div>',
         '  <div class="equip-body" id="cupCard"></div>',

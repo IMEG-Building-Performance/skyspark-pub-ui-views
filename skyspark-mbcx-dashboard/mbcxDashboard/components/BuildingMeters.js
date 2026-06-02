@@ -403,16 +403,13 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       _activeView   = 'utility';
       _activeType   = 'all';
       return [
-        '<div class="equip-section equip-section--collapsible equip-section--open" style="border-left-color:#4A6FA5;">',
-        '  <div class="equip-header equip-header--clickable" onclick="this.closest(\'.equip-section\').classList.toggle(\'equip-section--open\');">',
+        '<div class="equip-section" style="border-left-color:#4A6FA5;">',
+        '  <div class="equip-header">',
         '    <div class="equip-header-left">',
         '      <div class="equip-icon" style="background:var(--imeg-blue-lt);">',
         '        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4A6FA5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>',
         '      </div>',
         '      <div><div class="equip-title">Building Meters</div><div class="equip-meta">Site EUI &amp; normalized energy use</div></div>',
-        '    </div>',
-        '    <div class="equip-collapse-btn" title="Expand / Collapse">',
-        '      <svg class="equip-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>',
         '    </div>',
         '  </div>',
         '  <div class="equip-body" id="bmContent">',

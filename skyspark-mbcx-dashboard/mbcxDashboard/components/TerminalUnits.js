@@ -107,25 +107,20 @@ window.mbcxDashboard.components.TerminalUnits = {
 
   render: function () {
     return [
-      '<div class="equip-section equip-section--collapsible equip-section--open" id="mbcxTerminalUnitsSection" style="border-left-color:#C2410C;">',
-      '  <div class="equip-header equip-header--clickable" onclick="this.closest(\'.equip-section\').classList.toggle(\'equip-section--open\');">',
+      '<div class="equip-section" id="mbcxTerminalUnitsSection" style="border-left-color:#C2410C;">',
+      '  <div class="equip-header">',
       '    <div class="equip-header-left">',
       '      <div class="equip-icon" style="background:var(--orange-lt);">',
       '        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C2410C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M2 12h4M18 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>',
       '      </div>',
       '      <div><div class="equip-title">Terminal Units</div><div class="equip-meta" id="tuMeta">&mdash; VAVs</div></div>',
       '    </div>',
-      '    <div style="display:flex;align-items:center;gap:8px;">',
-      '      <button class="ahu-fs-btn" id="tuFsBtn" title="Toggle fullscreen" onclick="event.stopPropagation();">',
-      '        <svg id="tuFsIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">',
-      '          <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>',
-      '          <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>',
-      '        </svg>',
-      '      </button>',
-      '      <div class="equip-collapse-btn" title="Expand / Collapse">',
-      '        <svg class="equip-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>',
-      '      </div>',
-      '    </div>',
+      '    <button class="ahu-fs-btn" id="tuFsBtn" title="Toggle fullscreen">',
+      '      <svg id="tuFsIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">',
+      '        <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>',
+      '        <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>',
+      '      </svg>',
+      '    </button>',
       '  </div>',
       '  <div class="equip-body">',
 
@@ -162,9 +157,6 @@ window.mbcxDashboard.components.TerminalUnits = {
     }
 
     load();
-
-    var header = container.querySelector('#mbcxTerminalUnitsSection .equip-header--clickable');
-    if (header) header.addEventListener('click', function () { setTimeout(load, 50); });
 
     // Fullscreen button
     var fsBtn    = container.querySelector('#tuFsBtn');

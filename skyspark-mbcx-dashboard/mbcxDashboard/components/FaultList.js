@@ -58,8 +58,8 @@ window.mbcxDashboard.components.FaultList = {
 
   render: function () {
     return [
-      '<div class="equip-section equip-section--collapsible" id="mbcxFaultListSection" style="border-left-color:#9B2335;">',
-      '  <div class="equip-header equip-header--clickable" onclick="this.closest(\'.equip-section\').classList.toggle(\'equip-section--open\');">',
+      '<div class="equip-section" id="mbcxFaultListSection" style="border-left-color:#9B2335;">',
+      '  <div class="equip-header">',
       '    <div class="equip-header-left">',
       '      <div class="equip-icon" style="background:var(--imeg-red-lt);">',
       '        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9B2335" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">',
@@ -68,9 +68,6 @@ window.mbcxDashboard.components.FaultList = {
       '        </svg>',
       '      </div>',
       '      <div><div class="equip-title">MBCx Fault List</div><div class="equip-meta" id="flMeta">Active faults</div></div>',
-      '    </div>',
-      '    <div class="equip-collapse-btn" title="Expand / Collapse">',
-      '      <svg class="equip-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>',
       '    </div>',
       '  </div>',
       '  <div class="equip-body">',
