@@ -536,10 +536,14 @@
   font-size: 10px; font-weight: 600; letter-spacing: 0.08em;
   text-transform: uppercase; color: var(--gray-400); margin-bottom: 8px;
 }
+#mbcxDashboard .tu-kpi-row {
+  display: flex; align-items: flex-end; gap: 8px;
+}
 #mbcxDashboard .tu-kpi-val {
   font-size: 38px; font-weight: 300; letter-spacing: -0.03em;
   line-height: 1; color: var(--gray-900);
 }
+#mbcxDashboard .tu-spark { display: block; margin-bottom: 4px; }
 #mbcxDashboard .tu-kpi-unit { font-size: 11px; color: var(--gray-400); margin-top: 4px; }
 
 /* ── Terminal Units table ── */
@@ -653,8 +657,8 @@
   pointer-events: none;
 }
 
-/* Average tick on histogram */
-#mbcxDashboard .tu-hist-avg-tick {
+/* Median tick on histogram */
+#mbcxDashboard .tu-hist-med-tick {
   position: absolute; top: -3px; bottom: -3px; width: 2px;
   background: var(--gray-700); border-radius: 1px;
   pointer-events: none;

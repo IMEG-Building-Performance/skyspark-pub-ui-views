@@ -34,6 +34,35 @@ function _tuAvg(rows, key) {
   return vals.length ? vals.reduce(function(s, v) { return s + (+v); }, 0) / vals.length : null;
 }
 
+function _tuMedian(rows, key) {
+  var vals = rows.map(function(r) { return r[key]; }).filter(function(v) {
+    return v !== null && v !== undefined && !isNaN(+v);
+  }).map(Number).sort(function (a, b) { return a - b; });
+  if (!vals.length) return null;
+  var mid = Math.floor(vals.length / 2);
+  return vals.length % 2 ? vals[mid] : (vals[mid - 1] + vals[mid]) / 2;
+}
+
+function _tuSparkSvg(points, w, h, color) {
+  if (!points || points.length < 2) return '';
+  var filtered = points.filter(function (v) { return v !== null; });
+  if (filtered.length < 2) return '';
+  var min = Math.min.apply(null, filtered);
+  var max = Math.max.apply(null, filtered);
+  if (max === min) { max = min + 1; }
+  var step = w / (points.length - 1);
+  var coords = [];
+  points.forEach(function (v, i) {
+    if (v === null) return;
+    var x = (i * step).toFixed(1);
+    var y = (h - (v - min) / (max - min) * h).toFixed(1);
+    coords.push(x + ',' + y);
+  });
+  return '<svg class="tu-spark" width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '">'
+    + '<polyline points="' + coords.join(' ') + '" fill="none" stroke="' + color + '" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>'
+    + '</svg>';
+}
+
 function _tuFindCol(cols, patterns) {
   for (var i = 0; i < patterns.length; i++) {
     for (var j = 0; j < cols.length; j++) {
@@ -101,10 +130,10 @@ window.mbcxDashboard.components.TerminalUnits = {
       '  <div class="equip-body">',
 
       '    <div class="tu-kpi-strip">',
-      '      <div class="tu-kpi"><div class="tu-kpi-label">Total VAVs</div><div class="tu-kpi-val" id="tuKpiTotal">&mdash;</div><div class="tu-kpi-unit">units</div></div>',
-      '      <div class="tu-kpi"><div class="tu-kpi-label">Avg Zone Temp</div><div class="tu-kpi-val" id="tuKpiZone">&mdash;</div><div class="tu-kpi-unit">&deg;F</div></div>',
-      '      <div class="tu-kpi"><div class="tu-kpi-label">Avg Supply Air Temp</div><div class="tu-kpi-val" id="tuKpiDat">&mdash;</div><div class="tu-kpi-unit">&deg;F</div></div>',
-      '      <div class="tu-kpi"><div class="tu-kpi-label">Avg Reheat Valve</div><div class="tu-kpi-val" id="tuKpiReheat">&mdash;</div><div class="tu-kpi-unit">%</div></div>',
+      '      <div class="tu-kpi"><div class="tu-kpi-label">Total VAVs</div><div class="tu-kpi-row"><div class="tu-kpi-val" id="tuKpiTotal">&mdash;</div></div><div class="tu-kpi-unit">units</div></div>',
+      '      <div class="tu-kpi"><div class="tu-kpi-label">Zone Temp</div><div class="tu-kpi-row"><div class="tu-kpi-val" id="tuKpiZone">&mdash;</div><div id="tuSparkZone"></div></div><div class="tu-kpi-unit">&deg;F median</div></div>',
+      '      <div class="tu-kpi"><div class="tu-kpi-label">Supply Air Temp</div><div class="tu-kpi-row"><div class="tu-kpi-val" id="tuKpiDat">&mdash;</div><div id="tuSparkDat"></div></div><div class="tu-kpi-unit">&deg;F median</div></div>',
+      '      <div class="tu-kpi"><div class="tu-kpi-label">Reheat Valve</div><div class="tu-kpi-row"><div class="tu-kpi-val" id="tuKpiReheat">&mdash;</div><div id="tuSparkReheat"></div></div><div class="tu-kpi-unit">% median</div></div>',
       '    </div>',
 
       '    <div id="tuDistBars"></div>',
@@ -196,6 +225,7 @@ window.mbcxDashboard.components.TerminalUnits = {
 
   _populate: function (container, rows, cols) {
     var set = function (id, val) { var el = container.querySelector('#' + id); if (el) el.textContent = val; };
+    var setHtml = function (id, html) { var el = container.querySelector('#' + id); if (el) el.innerHTML = html; };
 
     var zoneCol   = _tuFindCol(cols, ['zonetemp', 'zone_temp']);
     var satCol    = _tuFindCol(cols, ['satavg', 'sat_f', 'supplyair', 'sat']);
@@ -203,13 +233,40 @@ window.mbcxDashboard.components.TerminalUnits = {
 
     var fmt = function (v) { return v !== null ? v.toFixed(1) : '—'; };
     set('tuKpiTotal',  rows.length);
-    set('tuKpiZone',   zoneCol   ? fmt(_tuAvg(rows, zoneCol))   : '—');
-    set('tuKpiDat',    satCol    ? fmt(_tuAvg(rows, satCol))    : '—');
-    set('tuKpiReheat', reheatCol ? fmt(_tuAvg(rows, reheatCol)) : '—');
+    set('tuKpiZone',   zoneCol   ? fmt(_tuMedian(rows, zoneCol))   : '—');
+    set('tuKpiDat',    satCol    ? fmt(_tuMedian(rows, satCol))    : '—');
+    set('tuKpiReheat', reheatCol ? fmt(_tuMedian(rows, reheatCol)) : '—');
     set('tuMeta', rows.length + ' VAVs');
+
+    // Sparklines — demo trend data until a historical Axon query is wired
+    this._renderSparklines(container, rows, zoneCol, satCol, reheatCol);
 
     this._renderHistograms(container, rows, cols);
     this._buildTable(container, rows, cols);
+  },
+
+  _renderSparklines: function (container, rows, zoneCol, satCol, reheatCol) {
+    var setHtml = function (id, html) { var el = container.querySelector('#' + id); if (el) el.innerHTML = html; };
+    var color = '#C2410C';
+
+    // Generate plausible 12-month trend centered on the current fleet value
+    function demoTrend(currentVal, variance) {
+      if (currentVal === null) return null;
+      var pts = [];
+      for (var i = 0; i < 12; i++) {
+        pts.push(currentVal + (Math.sin(i * 0.8) * variance) + (Math.random() - 0.5) * variance * 0.5);
+      }
+      pts[11] = currentVal;
+      return pts;
+    }
+
+    var zoneAvg   = zoneCol   ? _tuAvg(rows, zoneCol)   : null;
+    var satAvg    = satCol    ? _tuAvg(rows, satCol)    : null;
+    var reheatAvg = reheatCol ? _tuAvg(rows, reheatCol) : null;
+
+    setHtml('tuSparkZone',   _tuSparkSvg(demoTrend(zoneAvg, 1.5),   60, 24, color));
+    setHtml('tuSparkDat',    _tuSparkSvg(demoTrend(satAvg, 3),      60, 24, color));
+    setHtml('tuSparkReheat', _tuSparkSvg(demoTrend(reheatAvg, 5),   60, 24, color));
   },
 
   _renderHistograms: function (container, rows, cols) {
@@ -247,18 +304,26 @@ window.mbcxDashboard.components.TerminalUnits = {
           : '';
       }).join('');
 
-      // Range labels: min and max
       var minLabel = result.lo.toFixed(0) + m.unit;
       var maxLabel = result.hi.toFixed(0) + m.unit;
       var avgVal = _tuAvg(rows, col);
-      var avgLabel = avgVal !== null ? ('avg ' + avgVal.toFixed(1) + m.unit) : '';
+      var medVal = _tuMedian(rows, col);
+      var span   = result.hi - result.lo;
 
-      // Median position tick
-      var medianTick = '';
-      if (avgVal !== null && result.hi > result.lo) {
-        var pos = ((avgVal - result.lo) / (result.hi - result.lo) * 100);
-        if (pos > 2 && pos < 98) {
-          medianTick = '<div class="tu-hist-avg-tick" style="left:' + pos.toFixed(1) + '%;" title="Fleet average: ' + avgVal.toFixed(1) + m.unit + '"></div>';
+      // Center label: show median (and avg if they diverge)
+      var centerParts = [];
+      if (medVal !== null) centerParts.push('med ' + medVal.toFixed(1) + m.unit);
+      if (avgVal !== null && medVal !== null && Math.abs(avgVal - medVal) > span * 0.03) {
+        centerParts.push('avg ' + avgVal.toFixed(1) + m.unit);
+      }
+      var centerLabel = centerParts.join(' · ');
+
+      // Median tick on bar
+      var medTick = '';
+      if (medVal !== null && span > 0) {
+        var medPos = ((medVal - result.lo) / span * 100);
+        if (medPos > 2 && medPos < 98) {
+          medTick = '<div class="tu-hist-med-tick" style="left:' + medPos.toFixed(1) + '%;" title="Median: ' + medVal.toFixed(1) + m.unit + '"></div>';
         }
       }
 
@@ -267,10 +332,10 @@ window.mbcxDashboard.components.TerminalUnits = {
         '  <div class="tu-dist-label">' + m.label + '</div>',
         '  <div class="tu-dist-bar-outer">',
         '    <div class="tu-dist-bar">' + segs + '</div>',
-        medianTick,
+        medTick,
         '    <div class="tu-hist-range">',
         '      <span>' + minLabel + '</span>',
-        '      <span class="tu-hist-avg">' + avgLabel + '</span>',
+        '      <span class="tu-hist-avg">' + centerLabel + '</span>',
         '      <span>' + maxLabel + '</span>',
         '    </div>',
         '  </div>',
