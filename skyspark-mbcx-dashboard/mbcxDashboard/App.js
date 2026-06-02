@@ -355,8 +355,17 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       content.classList.toggle('dash-content--fixed', tab === 'trends');
 
       if (tab === 'summary') {
-        content.innerHTML = '<div class="page">' + (co.CUP ? co.CUP.render(data) : '') + '</div>';
+        content.innerHTML = [
+          '<div class="page">',
+          co.BuildingMeters ? co.BuildingMeters.render(data) : '',
+          co.CUP            ? co.CUP.render(data)            : '',
+          co.AHU            ? co.AHU.render(data)            : '',
+          co.TerminalUnits  ? co.TerminalUnits.render()      : '',
+          '</div>'
+        ].join('\n');
         if (co.CUP && co.CUP.initCard) co.CUP.initCard(content, container, co, data, ctx || null);
+        if (co.AHU)                     co.AHU.initLive(container, ctx || null);
+        if (co.TerminalUnits)           co.TerminalUnits.initLive(container, ctx || null);
       }
       else if (tab === 'faults') {
         content.innerHTML = co.FaultList
