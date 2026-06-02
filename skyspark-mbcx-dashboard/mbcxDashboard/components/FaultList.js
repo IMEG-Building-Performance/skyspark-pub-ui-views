@@ -3,22 +3,51 @@ window.mbcxDashboard = window.mbcxDashboard || {};
 window.mbcxDashboard.components = window.mbcxDashboard.components || {};
 
 var FL_DEMO_FAULTS = [
-  { id:1,  equip:'AHU-1',     fault:'Cooling valve stuck open — valve 94% at low load',     sev:4, dur:'4d 2h',  status:'Active' },
-  { id:2,  equip:'VAV-L1-02', fault:'Faulty reheat coil — SAT 95°F at low zone temp',       sev:4, dur:'5d 16h', status:'Active' },
-  { id:3,  equip:'CUP-CHW-1', fault:'Chiller differential pressure below threshold',         sev:4, dur:'10d 15h',status:'Active' },
-  { id:4,  equip:'VAV-L1-05', fault:'Faulty reheat coil — SAT 88°F, reheat valve 85%',      sev:3, dur:'3d 0h',  status:'Active' },
-  { id:5,  equip:'AHU-2',     fault:'OA damper not responding to setpoint',                  sev:3, dur:'6d 23h', status:'Active' },
-  { id:6,  equip:'VAV-L2-04', fault:'Leaking reheat valve — RH 88% at warm zone temp',      sev:2, dur:'2d 16h', status:'Active' },
-  { id:7,  equip:'AHU-2',     fault:'Discharge air temp elevated — 62°F setpoint',          sev:2, dur:'1d 18h', status:'Active' },
-  { id:8,  equip:'VAV-L1-01', fault:'Zone temp above setpoint by 4°F for >2h occupied',     sev:2, dur:'2d 13h', status:'Active' },
-  { id:9,  equip:'AHU-3',     fault:'Supply air temp sensor drift — reading 12°F off avg',  sev:1, dur:'9d 7h',  status:'Acknowledged' },
-  { id:10, equip:'AHU-1',     fault:'VFD speed oscillation >15% within 5-min window',       sev:1, dur:'8d 1h',  status:'Acknowledged' },
-  { id:11, equip:'VAV-L2-06', fault:'Damper at minimum — airflow 10 CFM vs 300 SP',         sev:2, dur:'1d 0h',  status:'Active' },
-  { id:12, equip:'CUP-HW-1',  fault:'HW supply temp below setpoint by 8°F',                 sev:1, dur:'14d 4h', status:'Acknowledged' },
+  { id:1,  equip:'AHU-1',     fault:'Cooling valve stuck open — valve 94% at low load',     sev:8, dur:98,   pct:68, status:'Active' },
+  { id:2,  equip:'VAV-L1-02', fault:'Faulty reheat coil — SAT 95°F at low zone temp',       sev:9, dur:136,  pct:94, status:'Active' },
+  { id:3,  equip:'CUP-CHW-1', fault:'Chiller differential pressure below threshold',         sev:7, dur:255,  pct:88, status:'Active' },
+  { id:4,  equip:'VAV-L1-05', fault:'Faulty reheat coil — SAT 88°F, reheat valve 85%',      sev:6, dur:72,   pct:50, status:'Active' },
+  { id:5,  equip:'AHU-2',     fault:'OA damper not responding to setpoint',                  sev:5, dur:167,  pct:58, status:'Active' },
+  { id:6,  equip:'VAV-L2-04', fault:'Leaking reheat valve — RH 88% at warm zone temp',      sev:4, dur:64,   pct:22, status:'Active' },
+  { id:7,  equip:'AHU-2',     fault:'Discharge air temp elevated — 62°F setpoint',          sev:3, dur:42,   pct:15, status:'Active' },
+  { id:8,  equip:'VAV-L1-01', fault:'Zone temp above setpoint by 4°F for >2h occupied',     sev:5, dur:61,   pct:21, status:'Active' },
+  { id:9,  equip:'AHU-3',     fault:'Supply air temp sensor drift — reading 12°F off avg',  sev:2, dur:223,  pct:77, status:'Acknowledged' },
+  { id:10, equip:'AHU-1',     fault:'VFD speed oscillation >15% within 5-min window',       sev:2, dur:193,  pct:67, status:'Acknowledged' },
+  { id:11, equip:'VAV-L2-06', fault:'Damper at minimum — airflow 10 CFM vs 300 SP',         sev:4, dur:24,   pct:8,  status:'Active' },
+  { id:12, equip:'CUP-HW-1',  fault:'HW supply temp below setpoint by 8°F',                 sev:1, dur:340,  pct:47, status:'Acknowledged' },
 ];
 
-var FL_COLS = ['equip', 'fault', 'sev', 'dur', 'status'];
-var FL_LABELS = { equip:'Equipment', fault:'Fault', sev:'Severity', dur:'Duration', status:'Status' };
+var FL_COLS = ['equip', 'fault', 'sev', 'dur', 'pct', 'status'];
+var FL_LABELS = { equip:'Equipment', fault:'Fault', sev:'Severity', dur:'Duration', pct:'%', status:'Status' };
+
+var FL_CONDITIONS = [
+  { id: 'sevHigh',  label: 'Severity ≥ 7',  test: function (r) { return typeof r.sev === 'number' && r.sev >= 7; }, color: '#FEE2E2', activeColor: '#DC2626', activeText: '#fff' },
+  { id: 'sevMed',   label: 'Severity 4–6',  test: function (r) { return typeof r.sev === 'number' && r.sev >= 4 && r.sev <= 6; }, color: '#FEF3C7', activeColor: '#D97706', activeText: '#fff' },
+  { id: 'pctHigh',  label: '% ≥ 75',        test: function (r) { return typeof r.pct === 'number' && r.pct >= 75; }, color: '#FEE2E2', activeColor: '#DC2626', activeText: '#fff' },
+];
+
+function _flFormatHours(v) {
+  if (typeof v === 'number') return v.toFixed(0) + 'h';
+  if (typeof v === 'string') {
+    var n = parseFloat(v);
+    if (!isNaN(n)) return n.toFixed(0) + 'h';
+  }
+  return v !== null && v !== undefined ? String(v) : '—';
+}
+
+function _flSevClass(v) {
+  if (typeof v !== 'number') return '';
+  if (v >= 8) return ' tu-cf-hot';
+  if (v >= 5) return ' tu-cf-warm';
+  return '';
+}
+
+function _flPctClass(v) {
+  if (typeof v !== 'number') return '';
+  if (v >= 75) return ' tu-cf-hot';
+  if (v >= 50) return ' tu-cf-warm';
+  return '';
+}
 
 function _flFindCol(cols, patterns) {
   for (var i = 0; i < patterns.length; i++)
@@ -174,6 +203,7 @@ window.mbcxDashboard.components.FaultList = {
     var faultCol  = _flFindCol(cols, ['fault', 'rule', 'msg', 'desc', 'detail', 'issue']);
     var sevCol    = _flFindCol(cols, ['sev', 'severity', 'priority', 'level', 'rank']);
     var durCol    = _flFindCol(cols, ['dur', 'duration', 'elapsed', 'age']);
+    var pctCol    = _flFindCol(cols, ['pct', 'percent', '%']);
     var statusCol = _flFindCol(cols, ['status', 'state', 'ack']);
 
     return rows.map(function (r, i) {
@@ -192,6 +222,7 @@ window.mbcxDashboard.components.FaultList = {
         fault:  faultCol  ? rawVal(faultCol)  : rawVal(cols[0]),
         sev:    sevCol    ? rawVal(sevCol)     : '',
         dur:    durCol    ? rawVal(durCol)     : '',
+        pct:    pctCol    ? rawVal(pctCol)     : '',
         status: statusCol ? rawVal(statusCol) : ''
       };
     });
@@ -199,6 +230,56 @@ window.mbcxDashboard.components.FaultList = {
 
   _buildTable: function (container) {
     var self = this;
+    this._state.activeConditions = {};
+
+    // Condition filter chips
+    var condCounts = {};
+    var stateRows = this._state.rows;
+    FL_CONDITIONS.forEach(function (c) {
+      condCounts[c.id] = stateRows.filter(c.test).length;
+    });
+    var chipHtml = FL_CONDITIONS.map(function (c) {
+      if (!condCounts[c.id]) return '';
+      return '<button class="tu-cond-chip" data-cond="' + c.id + '"'
+        + ' data-color="' + c.color + '" data-active-color="' + c.activeColor + '" data-active-text="' + c.activeText + '"'
+        + ' style="background:' + c.color + ';">'
+        + c.label + '<span class="tu-cond-count">' + condCounts[c.id] + '</span></button>';
+    }).filter(Boolean).join('');
+
+    var condBar = container.querySelector('#flCondBar');
+    if (!condBar) {
+      var filterBar = container.querySelector('#flFilterInput');
+      if (filterBar && filterBar.parentNode && chipHtml) {
+        var bar = document.createElement('div');
+        bar.className = 'tu-cond-bar';
+        bar.id = 'flCondBar';
+        bar.innerHTML = chipHtml;
+        filterBar.parentNode.parentNode.insertBefore(bar, filterBar.parentNode);
+      }
+    }
+
+    var condBarEl = container.querySelector('#flCondBar');
+    if (condBarEl) {
+      condBarEl.addEventListener('click', function (e) {
+        var chip = e.target.closest('[data-cond]');
+        if (!chip) return;
+        var id = chip.getAttribute('data-cond');
+        var active = self._state.activeConditions;
+        if (active[id]) {
+          delete active[id];
+          chip.classList.remove('tu-cond-chip--on');
+          chip.style.background = chip.getAttribute('data-color');
+          chip.style.color = '';
+        } else {
+          active[id] = true;
+          chip.classList.add('tu-cond-chip--on');
+          chip.style.background = chip.getAttribute('data-active-color');
+          chip.style.color = chip.getAttribute('data-active-text');
+        }
+        self._rebuildTbody(container);
+      });
+    }
+
     var thead = container.querySelector('#flThead');
     if (!thead) return;
 
@@ -260,6 +341,17 @@ window.mbcxDashboard.components.FaultList = {
     var s = this._state;
     var rows = s.rows;
 
+    // Condition filters
+    var activeIds = Object.keys(s.activeConditions || {});
+    if (activeIds.length) {
+      rows = rows.filter(function (r) {
+        return activeIds.some(function (id) {
+          var cond = FL_CONDITIONS.filter(function (c) { return c.id === id; })[0];
+          return cond && cond.test(r);
+        });
+      });
+    }
+
     if (s.filter) {
       var q = s.filter.toLowerCase();
       rows = rows.filter(function(r){
@@ -288,7 +380,17 @@ window.mbcxDashboard.components.FaultList = {
           var val = r[k];
           if (val && typeof val === 'object' && val.dis) val = val.dis;
           var cls = k === 'equip' ? 'tu-td tu-td-name' : k === 'fault' ? 'tu-td fl-td-fault' : 'tu-td';
-          return '<td class="' + cls + '">' + (val !== null && val !== undefined ? val : '—') + '</td>';
+          var cf = '';
+          var display = val;
+
+          if (k === 'sev') cf = _flSevClass(val);
+          if (k === 'pct') {
+            cf = _flPctClass(typeof val === 'number' ? val : parseFloat(val));
+            if (typeof val === 'number') display = val.toFixed(0) + '%';
+          }
+          if (k === 'dur') display = _flFormatHours(val);
+
+          return '<td class="' + cls + cf + '">' + (display !== null && display !== undefined && display !== '' ? display : '—') + '</td>';
         }).join('') +
         '<td class="tu-td fl-td-act"><button class="fl-agenda-btn' + (inAgenda ? ' fl-agenda-btn-in' : '') + '" data-fid="' + r.id + '" title="' + (inAgenda ? 'Remove from Meeting Agenda' : 'Add to Meeting Agenda') + '">' + (inAgenda ? '&#10003;' : '+') + '</button></td>' +
         '</tr>';
