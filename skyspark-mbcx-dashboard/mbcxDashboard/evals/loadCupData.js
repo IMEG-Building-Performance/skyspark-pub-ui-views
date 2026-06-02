@@ -12,19 +12,21 @@ window.mbcxDashboard.evals = window.mbcxDashboard.evals || {};
     dhw:       'DHW'
   };
 
-  // Parse a CUPSummary grid into { vals: [12 nulls/numbers], unit: string|null }.
-  // Uses the first non-ts column dynamically so the column name doesn't matter.
-  function _parseMonthlyGrid(grid) {
-    var vals = [null, null, null, null, null, null, null, null, null, null, null, null];
-    var unit = null;
+  // Parse a multi-year CUPSummary grid into { current:[12], prior:[12], unit }.
+  // The grid has one row per calendar month spanning two years.
+  // Rows are split into current/prior by comparing the ts year to currentYear.
+  // Uses the first non-ts column for values so column name doesn't matter.
+  function _parseMultiYearGrid(grid, currentYear, priorYear) {
+    var current = [null,null,null,null,null,null,null,null,null,null,null,null];
+    var prior   = [null,null,null,null,null,null,null,null,null,null,null,null];
+    var unit    = null;
 
-    // Find the first non-ts column
     var cols = (grid && grid.cols) || [];
     var valCol = null;
     for (var ci = 0; ci < cols.length; ci++) {
       if (cols[ci].name !== 'ts') { valCol = cols[ci].name; break; }
     }
-    if (!valCol) return { vals: vals, unit: unit };
+    if (!valCol) return { current: current, prior: prior, unit: unit };
 
     var rows = (grid && grid.rows) || [];
     rows.forEach(function (row) {
@@ -32,23 +34,34 @@ window.mbcxDashboard.evals = window.mbcxDashboard.evals || {};
       var tsStr = (tsObj && typeof tsObj === 'object') ? (tsObj.val || '') : String(tsObj || '');
       var m = tsStr.match(/^(\d{4})-(\d{2})/);
       if (!m) return;
+
+      var year     = parseInt(m[1], 10);
       var monthIdx = parseInt(m[2], 10) - 1;
       if (monthIdx < 0 || monthIdx > 11) return;
 
       var v = row[valCol];
       if (v === null || v === undefined) return;
+
+      var numVal = null, valUnit = null;
       if (typeof v === 'object' && v.val !== undefined) {
-        vals[monthIdx] = v.val;
-        if (!unit && v.unit) unit = v.unit;
+        numVal  = v.val;
+        valUnit = v.unit;
       } else if (typeof v === 'number') {
-        vals[monthIdx] = v;
+        numVal = v;
       }
+      if (numVal === null) return;
+      if (!unit && valUnit) unit = valUnit;
+
+      if (year === currentYear)  current[monthIdx] = numVal;
+      else if (year === priorYear) prior[monthIdx] = numVal;
     });
-    return { vals: vals, unit: unit };
+
+    return { current: current, prior: prior, unit: unit };
   }
 
   /**
-   * Load monthly CUP energy data for all 4 systems × 2 years.
+   * Load monthly CUP energy data for all 4 systems.
+   * Each call returns a single grid spanning priorYear + currentYear.
    *
    * Returns Promise<{
    *   cooling:   { current: [12], prior: [12], unit: string },
@@ -56,28 +69,20 @@ window.mbcxDashboard.evals = window.mbcxDashboard.evals || {};
    *   condenser: { ... },
    *   dhw:       { ... }
    * }>
-   *
-   * Any individual call failure silently returns nulls for that system/year.
    */
   NS.evals.loadCupSummary = function (attestKey, projectName, siteRef) {
-    var API = NS.api;
-    var thisYear = new Date().getFullYear();
-    var lastYear = thisYear - 1;
-    var systems  = Object.keys(_SYSTEM_ARGS);
+    var API       = NS.api;
+    var thisYear  = new Date().getFullYear();
+    var lastYear  = thisYear - 1;
+    var systems   = Object.keys(_SYSTEM_ARGS);
 
-    var calls = [];
-    systems.forEach(function (sys) {
+    // One call per system; pass lastYear so the function returns both years.
+    var calls = systems.map(function (sys) {
       var arg = _SYSTEM_ARGS[sys];
-      calls.push({
+      return {
         sys:  sys,
-        slot: 'current',
-        expr: 'view_pub_mbcxDashboard_CUPSummary(' + siteRef + ',' + thisYear + ',"' + arg + '")'
-      });
-      calls.push({
-        sys:  sys,
-        slot: 'prior',
         expr: 'view_pub_mbcxDashboard_CUPSummary(' + siteRef + ',' + lastYear + ',"' + arg + '")'
-      });
+      };
     });
 
     console.log('[mbcxDashboard] loadCupSummary — firing', calls.length, 'API calls for siteRef:', siteRef);
@@ -85,27 +90,24 @@ window.mbcxDashboard.evals = window.mbcxDashboard.evals || {};
     return Promise.all(calls.map(function (c) {
       return API.evalAxon(attestKey, projectName, c.expr)
         .then(function (grid) {
-          return { sys: c.sys, slot: c.slot, grid: grid };
+          return { sys: c.sys, grid: grid };
         })
         .catch(function (err) {
-          console.warn('[mbcxDashboard] CUPSummary failed (' + c.sys + '/' + c.slot + '):', err);
-          return { sys: c.sys, slot: c.slot, grid: { rows: [] } };
+          console.warn('[mbcxDashboard] CUPSummary failed (' + c.sys + '):', err);
+          return { sys: c.sys, grid: { rows: [], cols: [] } };
         });
     })).then(function (results) {
       var out = {};
       results.forEach(function (r) {
-        if (!out[r.sys]) out[r.sys] = { current: null, prior: null, unit: null };
-        var parsed = _parseMonthlyGrid(r.grid);
-        out[r.sys][r.slot] = parsed.vals;
-        if (parsed.unit && !out[r.sys].unit) out[r.sys].unit = parsed.unit;
+        out[r.sys] = _parseMultiYearGrid(r.grid, thisYear, lastYear);
       });
 
-      // Summary diagnostic — shows which system/year combos have real data
+      // Summary diagnostic
       var summary = {};
       Object.keys(out).forEach(function (sys) {
         summary[sys] = {
-          current: out[sys].current ? out[sys].current.filter(function(v){return v!==null;}).length + ' months' : 'null',
-          prior:   out[sys].prior   ? out[sys].prior.filter(function(v){return v!==null;}).length   + ' months' : 'null',
+          current: out[sys].current.filter(function(v){return v!==null;}).length + ' months',
+          prior:   out[sys].prior.filter(function(v){return v!==null;}).length   + ' months',
           unit:    out[sys].unit
         };
       });
