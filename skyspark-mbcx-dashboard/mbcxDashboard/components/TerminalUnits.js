@@ -26,6 +26,42 @@ function _tuMedian(rows, key) {
   return vals.length % 2 ? vals[mid] : (vals[mid - 1] + vals[mid]) / 2;
 }
 
+var TU_CONDITIONS = [
+  { id: 'zoneHigh',  label: 'Zone > 75°F',    color: '#FEE2E2', activeColor: '#DC2626', activeText: '#fff' },
+  { id: 'zoneLow',   label: 'Zone < 67°F',    color: '#DBEAFE', activeColor: '#2563EB', activeText: '#fff' },
+  { id: 'spDiff',    label: 'SP Diff ≥ 3',     color: '#FEF3C7', activeColor: '#D97706', activeText: '#fff' },
+  { id: 'damperHi',  label: 'Damper > 90%',   color: '#FEF3C7', activeColor: '#D97706', activeText: '#fff' },
+  { id: 'reheatHi',  label: 'Reheat > 90%',   color: '#FEF3C7', activeColor: '#D97706', activeText: '#fff' },
+  { id: 'datMismatch', label: 'DAT Mismatch', color: '#FEE2E2', activeColor: '#DC2626', activeText: '#fff' },
+];
+
+function _tuRowMatchesCondition(row, condId, cf) {
+  var v, reheat;
+  switch (condId) {
+    case 'zoneHigh':
+      v = cf.zoneTemp ? +row[cf.zoneTemp] : NaN;
+      return !isNaN(v) && v > 75;
+    case 'zoneLow':
+      v = cf.zoneTemp ? +row[cf.zoneTemp] : NaN;
+      return !isNaN(v) && v < 67;
+    case 'spDiff':
+      v = cf.spDiff ? +row[cf.spDiff] : NaN;
+      return !isNaN(v) && Math.abs(v) >= 3;
+    case 'damperHi':
+      v = cf.damper ? +row[cf.damper] : NaN;
+      return !isNaN(v) && v > 90;
+    case 'reheatHi':
+      v = cf.reheat ? +row[cf.reheat] : NaN;
+      return !isNaN(v) && v > 90;
+    case 'datMismatch':
+      v = cf.dat ? +row[cf.dat] : NaN;
+      reheat = cf.reheat ? +row[cf.reheat] : NaN;
+      if (isNaN(v) || isNaN(reheat)) return false;
+      return (v >= 85 && reheat < 5) || (v <= 65 && reheat >= 90);
+    default: return false;
+  }
+}
+
 function _tuFindCol(cols, patterns) {
   for (var i = 0; i < patterns.length; i++) {
     for (var j = 0; j < cols.length; j++) {
@@ -172,10 +208,25 @@ window.mbcxDashboard.components.TerminalUnits = {
     var reheatCol    = _tuFindCol(cols, ['reheat']);
     var datCol       = _tuFindCol(cols, ['dathis', 'datavg', 'dat']);
 
+    var cfCols = { zoneTemp: zoneTempCol, spDiff: spDiffCol, damper: damperCol, reheat: reheatCol, dat: datCol };
     this._state = {
       rows: rows, cols: cols, sortCol: null, sortDir: 1, filter: '',
-      cfCols: { zoneTemp: zoneTempCol, spDiff: spDiffCol, damper: damperCol, reheat: reheatCol, dat: datCol }
+      cfCols: cfCols, activeConditions: {}
     };
+
+    // Pre-count how many rows match each condition
+    var condCounts = {};
+    TU_CONDITIONS.forEach(function (c) {
+      condCounts[c.id] = rows.filter(function (r) { return _tuRowMatchesCondition(r, c.id, cfCols); }).length;
+    });
+
+    var chipHtml = TU_CONDITIONS.map(function (c) {
+      if (!condCounts[c.id]) return '';
+      return '<button class="tu-cond-chip" data-cond="' + c.id + '"'
+        + ' data-color="' + c.color + '" data-active-color="' + c.activeColor + '" data-active-text="' + c.activeText + '"'
+        + ' style="background:' + c.color + ';">'
+        + c.label + '<span class="tu-cond-count">' + condCounts[c.id] + '</span></button>';
+    }).filter(Boolean).join('');
 
     var tableView = container.querySelector('#tuTableView');
     if (!tableView) return;
@@ -185,6 +236,7 @@ window.mbcxDashboard.components.TerminalUnits = {
       '  <input class="tu-filter-input" id="tuFilterInput" type="text" placeholder="Filter VAVs…" autocomplete="off" />',
       '  <span class="tu-filter-count" id="tuFilterCount"></span>',
       '</div>',
+      chipHtml ? '<div class="tu-cond-bar" id="tuCondBar">' + chipHtml + '</div>' : '',
       '<div class="tu-table-scroll">',
       '  <table class="tu-table">',
       '    <thead id="tuThead"></thead>',
@@ -219,6 +271,28 @@ window.mbcxDashboard.components.TerminalUnits = {
     if (filterInput) {
       filterInput.addEventListener('input', function () {
         self._state.filter = filterInput.value;
+        self._rebuildTbody(container);
+      });
+    }
+
+    var condBar = container.querySelector('#tuCondBar');
+    if (condBar) {
+      condBar.addEventListener('click', function (e) {
+        var chip = e.target.closest('[data-cond]');
+        if (!chip) return;
+        var id = chip.getAttribute('data-cond');
+        var active = self._state.activeConditions;
+        if (active[id]) {
+          delete active[id];
+          chip.classList.remove('tu-cond-chip--on');
+          chip.style.background = chip.getAttribute('data-color');
+          chip.style.color = '';
+        } else {
+          active[id] = true;
+          chip.classList.add('tu-cond-chip--on');
+          chip.style.background = chip.getAttribute('data-active-color');
+          chip.style.color = chip.getAttribute('data-active-text');
+        }
         self._rebuildTbody(container);
       });
     }
@@ -279,6 +353,14 @@ window.mbcxDashboard.components.TerminalUnits = {
   _getDisplayRows: function () {
     var s = this._state;
     var rows = s.rows;
+
+    var activeIds = Object.keys(s.activeConditions);
+    if (activeIds.length) {
+      var cf = s.cfCols;
+      rows = rows.filter(function (row) {
+        return activeIds.some(function (id) { return _tuRowMatchesCondition(row, id, cf); });
+      });
+    }
 
     if (s.filter) {
       var q = s.filter.toLowerCase();
