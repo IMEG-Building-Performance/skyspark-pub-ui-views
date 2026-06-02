@@ -186,14 +186,19 @@ window.mbcxDashboard.components.TerminalUnits = {
     this._buildTable(container, rows, cols);
   },
 
+  _distMeta: [],
+
   _renderDistBars: function (container, rows, cols) {
+    var self = this;
     var el = container.querySelector('#tuDistBars');
     if (!el) return;
 
+    self._distMeta = [];
     var bars = [];
     TU_DIST_METRICS.forEach(function (m) {
       var col = _tuFindCol(cols, m.patterns);
       if (!col) return;
+      self._distMeta.push({ col: col, metric: m });
 
       var counts = { good: 0, watch: 0, problem: 0, noData: 0 };
       rows.forEach(function (r) {
@@ -212,17 +217,53 @@ window.mbcxDashboard.components.TerminalUnits = {
         var pctInt = Math.round(+pct);
         var label = pctInt >= 8 ? '<span class="tu-dist-pct">' + pctInt + '%</span>' : '';
         return '<div class="tu-dist-seg tu-dist-' + cls + '" style="width:' + pct + '%"'
-          + ' title="' + rangeTip + ' — ' + count + ' units (' + pct + '%)">'
+          + ' data-dist-col="' + col + '" data-dist-cls="' + cls + '"'
+          + ' title="' + rangeTip + ' — ' + count + ' units (' + pct + '%) — click to filter table">'
           + label + '</div>';
       };
+
+      // Tick positions: map threshold values to % position across the bar's data range
+      var vals = rows.map(function (r) { return r[col]; }).filter(function (v) {
+        return v !== null && v !== undefined && !isNaN(+v);
+      }).map(Number).sort(function (a, b) { return a - b; });
+      var lo = vals[0], hi = vals[vals.length - 1];
+      var span = hi - lo;
+
+      var tickHtml = '';
+      if (span > 0) {
+        var ticks = [
+          { val: m.goodLo, label: m.goodLo + m.unit },
+          { val: m.goodHi, label: m.goodHi + m.unit },
+        ];
+        if (m.watchLo !== m.goodLo) ticks.push({ val: m.watchLo, label: m.watchLo + m.unit });
+        if (m.watchHi !== m.goodHi) ticks.push({ val: m.watchHi, label: m.watchHi + m.unit });
+
+        // Deduplicate
+        var seen = {};
+        ticks = ticks.filter(function (t) {
+          if (seen[t.val]) return false;
+          seen[t.val] = true;
+          return true;
+        });
+
+        ticks.forEach(function (t) {
+          var pos = ((t.val - lo) / span * 100);
+          if (pos < 2 || pos > 98) return;
+          tickHtml += '<div class="tu-dist-tick" style="left:' + pos.toFixed(1) + '%">'
+            + '<span class="tu-dist-tick-label">' + t.label + '</span></div>';
+        });
+      }
 
       bars.push([
         '<div class="tu-dist-row">',
         '  <div class="tu-dist-label">' + m.label + '</div>',
-        '  <div class="tu-dist-bar">',
+        '  <div class="tu-dist-bar-outer">',
+        '    <div class="tu-dist-bar">',
              segHtml('good',    pGood,  counts.good,    'Good: ' + m.goodLo + '–' + m.goodHi + m.unit),
              segHtml('watch',   pWatch, counts.watch,   'Watch: ' + m.watchLo + '–' + m.watchHi + m.unit),
              segHtml('problem', pProb,  counts.problem, 'Problem: outside ' + m.watchLo + '–' + m.watchHi + m.unit),
+        '    </div>',
+             tickHtml,
         '  </div>',
         '</div>'
       ].join('\n'));
@@ -243,11 +284,61 @@ window.mbcxDashboard.components.TerminalUnits = {
       bars.join('\n'),
       '</div>'
     ].join('\n');
+
+    // Click-to-filter wiring
+    el.addEventListener('click', function (e) {
+      var seg = e.target.closest('[data-dist-col]');
+      if (!seg) return;
+      var col = seg.getAttribute('data-dist-col');
+      var cls = seg.getAttribute('data-dist-cls');
+
+      var st = self._state;
+      if (!st) return;
+
+      // Toggle: clicking same segment again clears the filter
+      if (st.distCol === col && st.distCls === cls) {
+        st.distCol = null;
+        st.distCls = null;
+      } else {
+        st.distCol = col;
+        st.distCls = cls;
+      }
+      self._updateDistHighlight(container);
+      self._rebuildTbody(container);
+    });
+  },
+
+  _updateDistHighlight: function (container) {
+    var st = this._state;
+    var segs = container.querySelectorAll('#tuDistBars [data-dist-col]');
+    segs.forEach(function (seg) {
+      var active = st.distCol && st.distCls;
+      var isMatch = seg.getAttribute('data-dist-col') === st.distCol
+                 && seg.getAttribute('data-dist-cls') === st.distCls;
+      seg.classList.toggle('tu-dist-seg--active', isMatch);
+      seg.classList.toggle('tu-dist-seg--dim', active && !isMatch);
+    });
+
+    // Show/hide filter chip
+    var chip = container.querySelector('#tuDistChip');
+    if (!chip) return;
+    if (st.distCol && st.distCls) {
+      var dm = this._distMeta.filter(function (d) { return d.col === st.distCol; })[0];
+      var label = dm ? dm.metric.label : st.distCol;
+      var clsLabel = st.distCls.charAt(0).toUpperCase() + st.distCls.slice(1);
+      chip.innerHTML = '<span class="tu-dist-chip-dot tu-dist-dot--' + st.distCls + '"></span>'
+        + label + ': ' + clsLabel
+        + '<span class="tu-dist-chip-x" title="Clear filter">&times;</span>';
+      chip.style.display = '';
+    } else {
+      chip.style.display = 'none';
+      chip.innerHTML = '';
+    }
   },
 
   _buildTable: function (container, rows, cols) {
     var self = this;
-    this._state = { rows: rows, cols: cols, sortCol: null, sortDir: 1, filter: '' };
+    this._state = { rows: rows, cols: cols, sortCol: null, sortDir: 1, filter: '', distCol: null, distCls: null };
 
     var tableView = container.querySelector('#tuTableView');
     if (!tableView) return;
@@ -255,6 +346,7 @@ window.mbcxDashboard.components.TerminalUnits = {
     tableView.innerHTML = [
       '<div class="tu-filter-bar">',
       '  <input class="tu-filter-input" id="tuFilterInput" type="text" placeholder="Filter…" autocomplete="off" />',
+      '  <span class="tu-dist-chip" id="tuDistChip" style="display:none;"></span>',
       '  <span class="tu-filter-count" id="tuFilterCount">' + rows.length + ' / ' + rows.length + ' VAVs</span>',
       '</div>',
       '<div style="overflow-x:auto;">',
@@ -295,6 +387,16 @@ window.mbcxDashboard.components.TerminalUnits = {
       });
     }
 
+    var chip = container.querySelector('#tuDistChip');
+    if (chip) {
+      chip.addEventListener('click', function () {
+        self._state.distCol = null;
+        self._state.distCls = null;
+        self._updateDistHighlight(container);
+        self._rebuildTbody(container);
+      });
+    }
+
     this._rebuildTbody(container);
   },
 
@@ -324,8 +426,19 @@ window.mbcxDashboard.components.TerminalUnits = {
   },
 
   _getDisplayRows: function () {
+    var self = this;
     var s = this._state;
     var rows = s.rows;
+
+    // Distribution bar filter
+    if (s.distCol && s.distCls) {
+      var dm = self._distMeta.filter(function (d) { return d.col === s.distCol; })[0];
+      if (dm) {
+        rows = rows.filter(function (row) {
+          return _tuClassify(row[s.distCol], dm.metric) === s.distCls;
+        });
+      }
+    }
 
     if (s.filter) {
       var q = s.filter.toLowerCase();
