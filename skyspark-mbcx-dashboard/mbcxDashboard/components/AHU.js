@@ -211,11 +211,6 @@ window.mbcxDashboard.components.AHU = {
     var years = Object.keys(byYear).sort();
     var prevPalette = { bg: 'rgba(156,163,175,0.45)', border: 'rgba(156,163,175,0.7)' };
 
-    // Drop years where every month value is 0 (no real data for that year)
-    years = years.filter(function (yr) {
-      return Object.keys(byYear[yr]).some(function (mon) { return byYear[yr][mon] !== 0; });
-    });
-
     var datasets = years.map(function (yr, i) {
       var isLatest = (i === years.length - 1);
       var c = isLatest ? { bg: metric.cur, border: metric.curB } : prevPalette;
@@ -239,16 +234,11 @@ window.mbcxDashboard.components.AHU = {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        layout: { padding: { top: years.length > 1 ? 0 : 4 } },
         plugins: {
           legend: {
             display: years.length > 1,
             position: 'top',
-            align: 'end',
-            labels: {
-              font: { size: 10 }, color: '#6B7280', boxWidth: 10, boxHeight: 10,
-              padding: 10, usePointStyle: false
-            }
+            labels: { font: { size: 10 }, color: '#6B7280', boxWidth: 12 }
           },
           tooltip: {
             backgroundColor: '#1F2937',
@@ -262,17 +252,17 @@ window.mbcxDashboard.components.AHU = {
         },
         scales: {
           x: {
-            ticks: { font: { size: 10 }, color: '#9CA3AF', maxRotation: 0 },
+            ticks: { font: { size: 10 }, color: '#9CA3AF' },
             grid: { display: false }, border: { display: false }
           },
           y: {
             min: 0,
             max: 1,
             ticks: {
-              font: { size: 9 }, color: '#9CA3AF', maxTicksLimit: 6,
+              font: { size: 10 }, color: '#9CA3AF', maxTicksLimit: 6,
               callback: function (v) { return (v * 100).toFixed(0) + '%'; }
             },
-            grid: { color: '#EEF0F3' }, border: { display: false }
+            grid: { color: '#F3F4F6' }, border: { display: false }
           }
         }
       }
@@ -283,25 +273,7 @@ window.mbcxDashboard.components.AHU = {
     var HP = window.mbcxDashboard.haystackParser;
     if (!tParsed.rows.length) return '<p class="ahu-no-rows">No data returned.</p>';
 
-    var allCols = tParsed.cols;
-
-    // Drop columns (after the first) whose every numeric value is 0 — this removes
-    // prior-year comparison columns when that data doesn't exist in SkySpark yet.
-    // Also drop the diff column whenever the prior-year column is dropped.
-    var emptyCols = {};
-    allCols.forEach(function (c, ci) {
-      if (ci === 0) return; // always keep the name column
-      var hasReal = tParsed.rows.some(function (row) {
-        var v = row[c];
-        return typeof v === 'number' && v !== 0;
-      });
-      if (!hasReal) emptyCols[c] = true;
-    });
-    // If any non-diff column is empty, also drop diff (comparison is meaningless)
-    var nonDiffEmpty = Object.keys(emptyCols).some(function (c) { return c !== 'diff'; });
-    if (nonDiffEmpty) emptyCols['diff'] = true;
-
-    var cols    = allCols.filter(function (c) { return !emptyCols[c]; });
+    var cols    = tParsed.cols;
     var headers = cols.map(function (c) { return HP.colDis(rawGrid, c); });
 
     var rowsHtml = tParsed.rows.map(function (row) {

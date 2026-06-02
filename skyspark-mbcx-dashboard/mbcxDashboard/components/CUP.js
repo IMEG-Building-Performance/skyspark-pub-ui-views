@@ -134,13 +134,22 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     var allVals = prior.concat(current.filter(function (v) { return v != null; }));
     var maxVal  = Math.max.apply(null, allVals.concat([1])) * 1.15;
 
-    var W = 700, H = 130;
-    var padL = 44, padR = 12, padT = 6, padB = 22;
+    // Wide viewBox so SVG scales close to 1:1 at typical card widths,
+    // keeping font sizes readable and bars proportionally wide.
+    var W = 1200, H = 150;
+    var padL = 54, padR = 16, padT = 8, padB = 26;
     var chartW = W - padL - padR;
     var chartH = H - padT - padB;
     var groupW = chartW / 12;
-    var barW   = groupW * 0.28;
-    var gap    = 3;
+    var barW   = groupW * 0.33;
+    var gap    = 5;
+
+    // Format large numbers compactly: 120000 → "120K"
+    function _fmt(v) {
+      if (v >= 1000000) return (v / 1000000).toFixed(v % 1000000 === 0 ? 0 : 1) + 'M';
+      if (v >= 1000)    return (v / 1000).toFixed(v % 1000 === 0 ? 0 : 1) + 'K';
+      return String(v);
+    }
 
     var rawStep = maxVal / 4;
     var mag  = Math.pow(10, Math.floor(Math.log10(rawStep)));
@@ -154,9 +163,9 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     ticks.forEach(function (tick) {
       var y = padT + chartH - (tick / maxVal) * chartH;
       svg += '<line x1="' + padL + '" y1="' + y + '" x2="' + (W - padR) + '" y2="' + y +
-        '" stroke="#eef0f3" stroke-width="1"/>';
-      svg += '<text x="' + (padL - 6) + '" y="' + (y + 4) + '" text-anchor="end"' +
-        ' fill="#9aa8b8" font-size="9">' + tick.toLocaleString() + '</text>';
+        '" stroke="#eef0f3" stroke-width="1.5"/>';
+      svg += '<text x="' + (padL - 8) + '" y="' + (y + 4) + '" text-anchor="end"' +
+        ' fill="#9aa8b8" font-size="11">' + _fmt(tick) + '</text>';
     });
 
     months.forEach(function (m, i) {
@@ -178,8 +187,8 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
           '" height="' + cuH + '" fill="' + d.accentColor + '" rx="2"/>';
       }
 
-      svg += '<text x="' + x + '" y="' + (H - 5) +
-        '" text-anchor="middle" fill="#9aa8b8" font-size="10">' + m + '</text>';
+      svg += '<text x="' + x + '" y="' + (H - 6) +
+        '" text-anchor="middle" fill="#9aa8b8" font-size="11">' + m + '</text>';
     });
 
     svg += '</svg>';
