@@ -1141,13 +1141,18 @@
 #mbcxDashboard .fl-badge-ack      { background: #f1f5f9; color: #475569; }
 
 #mbcxDashboard .fl-table { width: 100%; }
-#mbcxDashboard .fl-th    { text-align: left; }
-#mbcxDashboard .fl-td-fault { max-width: 380px; white-space: normal; text-align: left; }
-#mbcxDashboard .fl-td-mono  { font-family: ui-monospace,'SFMono-Regular',Consolas,monospace; font-size: 11px; }
-#mbcxDashboard .fl-row-critical td { border-left: 3px solid #ef4444; }
-#mbcxDashboard .fl-row-warning  td { border-left: 3px solid #f59e0b; }
-#mbcxDashboard .fl-row-critical td:not(:first-child),
-#mbcxDashboard .fl-row-warning  td:not(:first-child) { border-left: none; }
+#mbcxDashboard .fl-table .tu-th,
+#mbcxDashboard .fl-table .tu-td { text-align: left; }
+#mbcxDashboard .fl-td-fault {
+  max-width: 380px; white-space: normal;
+  font-family: inherit;
+}
+#mbcxDashboard .fl-td-mono {
+  font-family: ui-monospace,'SFMono-Regular',Consolas,monospace;
+  font-size: 11px;
+}
+#mbcxDashboard .fl-row-critical td:first-child { border-left: 3px solid #ef4444; }
+#mbcxDashboard .fl-row-warning  td:first-child { border-left: 3px solid #f59e0b; }
 
 /* ── Reheat Scatter error screen ── */
 #mbcxDashboard .rs-error-screen {

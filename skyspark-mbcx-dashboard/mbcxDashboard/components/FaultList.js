@@ -89,7 +89,7 @@ window.mbcxDashboard.components.FaultList = {
       '    </div>',
 
       /* Fault table */
-      '    <div style="overflow-x:auto;">',
+      '    <div class="tu-table-scroll">',
       '      <table class="tu-table fl-table">',
       '        <thead id="flThead"></thead>',
       '        <tbody id="flTbody"></tbody>',
@@ -123,7 +123,7 @@ window.mbcxDashboard.components.FaultList = {
       '    <span class="tu-filter-count" id="flFilterCount"></span>',
       '  </div>',
 
-      '  <div style="overflow-x:auto;">',
+      '  <div class="tu-table-scroll">',
       '    <table class="tu-table fl-table">',
       '      <thead id="flThead"></thead>',
       '      <tbody id="flTbody"></tbody>',
