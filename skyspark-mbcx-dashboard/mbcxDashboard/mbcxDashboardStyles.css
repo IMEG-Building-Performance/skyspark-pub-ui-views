@@ -189,7 +189,7 @@
 /* Collapsible body — hidden by default, shown when open */
 #mbcxDashboard .equip-body {
   display: none;
-  padding: 20px;
+  padding: 16px 20px 20px;
 }
 #mbcxDashboard .equip-section--open .equip-body {
   display: block;
@@ -506,18 +506,18 @@
 /* ── AHU metric block — grid layout (overrides earlier flex rules) ── */
 #mbcxDashboard .ahu-metric-block {
   display: grid !important;
-  grid-template-columns: 1fr 400px;
-  gap: 20px;
+  grid-template-columns: 3fr 2fr;
+  gap: 24px;
   align-items: start;
   border-top: 1px solid var(--gray-100);
   padding: 4px 0 8px;
 }
 #mbcxDashboard .ahu-metric-block:first-of-type { border-top: none; }
 #mbcxDashboard .ahu-metric-block .ahu-chart-wrap {
-  position: relative; height: 260px; margin-bottom: 0;
+  position: relative; height: 220px; margin-bottom: 0;
 }
 #mbcxDashboard .ahu-metric-block .ahu-table-wrap {
-  width: 100%; overflow-x: auto; max-height: 280px; overflow-y: auto;
+  width: 100%; overflow-x: auto; max-height: 260px; overflow-y: auto;
 }
 
 /* ── AHU toggle hidden fix (must beat display:grid !important) ── */

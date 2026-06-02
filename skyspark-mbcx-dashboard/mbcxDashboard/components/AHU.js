@@ -234,11 +234,16 @@ window.mbcxDashboard.components.AHU = {
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        layout: { padding: { top: years.length > 1 ? 0 : 4 } },
         plugins: {
           legend: {
             display: years.length > 1,
             position: 'top',
-            labels: { font: { size: 10 }, color: '#6B7280', boxWidth: 12 }
+            align: 'end',
+            labels: {
+              font: { size: 10 }, color: '#6B7280', boxWidth: 10, boxHeight: 10,
+              padding: 10, usePointStyle: false
+            }
           },
           tooltip: {
             backgroundColor: '#1F2937',
@@ -252,17 +257,17 @@ window.mbcxDashboard.components.AHU = {
         },
         scales: {
           x: {
-            ticks: { font: { size: 10 }, color: '#9CA3AF' },
+            ticks: { font: { size: 10 }, color: '#9CA3AF', maxRotation: 0 },
             grid: { display: false }, border: { display: false }
           },
           y: {
             min: 0,
             max: 1,
             ticks: {
-              font: { size: 10 }, color: '#9CA3AF', maxTicksLimit: 6,
+              font: { size: 9 }, color: '#9CA3AF', maxTicksLimit: 6,
               callback: function (v) { return (v * 100).toFixed(0) + '%'; }
             },
-            grid: { color: '#F3F4F6' }, border: { display: false }
+            grid: { color: '#EEF0F3' }, border: { display: false }
           }
         }
       }
