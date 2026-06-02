@@ -15,12 +15,17 @@ var TU_COL_LABELS = {
   occPct:           'Occ %',
 };
 
-/* ── Distribution bar metric definitions ── */
-var TU_DIST_METRICS = [
-  { patterns: ['zonetemp', 'zone_temp'], label: 'Zone Temp',    unit: '°F', goodLo: 70, goodHi: 75, watchLo: 68, watchHi: 77 },
-  { patterns: ['reheat'],                label: 'Reheat Valve', unit: '%',        goodLo: 0,  goodHi: 20, watchLo: 0,  watchHi: 50 },
-  { patterns: ['damper'],                label: 'Damper',        unit: '%',        goodLo: 20, goodHi: 80, watchLo: 10, watchHi: 95 },
+/* ── Histogram metrics ── */
+var TU_HIST_METRICS = [
+  { patterns: ['zonetemp', 'zone_temp'], label: 'Zone Temp',    unit: '°F' },
+  { patterns: ['reheat'],                label: 'Reheat Valve', unit: '%'   },
+  { patterns: ['damper'],                label: 'Damper Cmd',   unit: '%'   },
 ];
+
+var TU_NUM_BINS = 5;
+
+// Accent palette: 5 shades from light to dark orange
+var TU_BIN_COLORS = ['#FDE8D0', '#F9C78E', '#E8943A', '#C2410C', '#8B2E08'];
 
 function _tuAvg(rows, key) {
   var vals = rows.map(function(r) { return r[key]; }).filter(function(v) {
@@ -38,56 +43,38 @@ function _tuFindCol(cols, patterns) {
   return null;
 }
 
-function _tuClassify(val, m) {
-  if (val === null || val === undefined || isNaN(+val)) return null;
-  var v = +val;
-  if (v >= m.goodLo && v <= m.goodHi) return 'good';
-  if (v >= m.watchLo && v <= m.watchHi) return 'watch';
-  return 'problem';
-}
-
-// Classify a row across ALL dist metrics; returns worst category found
-function _tuRowWorst(row, distMeta) {
-  var worst = 'good'; // good < watch < problem
-  for (var i = 0; i < distMeta.length; i++) {
-    var cls = _tuClassify(row[distMeta[i].col], distMeta[i].metric);
-    if (cls === 'problem') return 'problem';
-    if (cls === 'watch') worst = 'watch';
-  }
-  return worst;
-}
-
-// Compute fleet health score: % of (metric, row) pairs that are "good"
-function _tuFleetScore(rows, distMeta) {
-  if (!distMeta.length || !rows.length) return null;
-  var good = 0, total = 0;
-  distMeta.forEach(function (dm) {
-    rows.forEach(function (row) {
-      var cls = _tuClassify(row[dm.col], dm.metric);
-      if (cls) { total++; if (cls === 'good') good++; }
-    });
+function _tuBuildBins(rows, col, numBins) {
+  var vals = [];
+  rows.forEach(function (r) {
+    var v = r[col];
+    if (v !== null && v !== undefined && !isNaN(+v)) vals.push(+v);
   });
-  return total ? Math.round(good / total * 100) : null;
-}
+  if (!vals.length) return null;
 
-function _tuScoreColor(score) {
-  if (score >= 80) return '#5C8A3C';
-  if (score >= 60) return '#D97706';
-  return '#9B2335';
-}
+  vals.sort(function (a, b) { return a - b; });
+  var lo = vals[0], hi = vals[vals.length - 1];
+  if (hi === lo) hi = lo + 1;
+  var step = (hi - lo) / numBins;
 
-function _tuScoreGrade(score) {
-  if (score >= 90) return 'A';
-  if (score >= 80) return 'B';
-  if (score >= 70) return 'C';
-  if (score >= 60) return 'D';
-  return 'F';
+  var bins = [];
+  for (var i = 0; i < numBins; i++) {
+    var bLo = lo + step * i;
+    var bHi = (i === numBins - 1) ? hi : lo + step * (i + 1);
+    bins.push({ lo: bLo, hi: bHi, count: 0, idx: i });
+  }
+
+  vals.forEach(function (v) {
+    var idx = Math.min(Math.floor((v - lo) / step), numBins - 1);
+    bins[idx].count++;
+  });
+
+  return { bins: bins, lo: lo, hi: hi, total: vals.length };
 }
 
 window.mbcxDashboard.components.TerminalUnits = {
 
   _state: null,
-  _distMeta: [],
+  _histMeta: [],
 
   render: function () {
     return [
@@ -120,7 +107,6 @@ window.mbcxDashboard.components.TerminalUnits = {
       '      <div class="tu-kpi"><div class="tu-kpi-label">Avg Reheat Valve</div><div class="tu-kpi-val" id="tuKpiReheat">&mdash;</div><div class="tu-kpi-unit">%</div></div>',
       '    </div>',
 
-      '    <div id="tuScoreBar"></div>',
       '    <div id="tuDistBars"></div>',
 
       '    <div id="tuTableView">',
@@ -222,184 +208,137 @@ window.mbcxDashboard.components.TerminalUnits = {
     set('tuKpiReheat', reheatCol ? fmt(_tuAvg(rows, reheatCol)) : '—');
     set('tuMeta', rows.length + ' VAVs');
 
-    this._renderDistBars(container, rows, cols);
-    this._renderScore(container, rows);
+    this._renderHistograms(container, rows, cols);
     this._buildTable(container, rows, cols);
   },
 
-  _renderScore: function (container, rows) {
-    var el = container.querySelector('#tuScoreBar');
-    if (!el || !this._distMeta.length) return;
-
-    var score = _tuFleetScore(rows, this._distMeta);
-    if (score === null) { el.innerHTML = ''; return; }
-
-    var color = _tuScoreColor(score);
-    var grade = _tuScoreGrade(score);
-
-    // Count units needing attention
-    var self = this;
-    var attentionCount = 0;
-    rows.forEach(function (row) {
-      var w = _tuRowWorst(row, self._distMeta);
-      if (w !== 'good') attentionCount++;
-    });
-
-    el.innerHTML = [
-      '<div class="tu-score-bar">',
-      '  <div class="tu-score-grade" style="color:' + color + ';">' + grade + '</div>',
-      '  <div class="tu-score-detail">',
-      '    <div class="tu-score-pct" style="color:' + color + ';">' + score + '% Fleet Health</div>',
-      '    <div class="tu-score-sub">' + attentionCount + ' of ' + rows.length + ' units need attention</div>',
-      '  </div>',
-      '</div>',
-    ].join('\n');
-  },
-
-  _renderDistBars: function (container, rows, cols) {
+  _renderHistograms: function (container, rows, cols) {
     var self = this;
     var el = container.querySelector('#tuDistBars');
     if (!el) return;
 
-    self._distMeta = [];
-    var bars = [];
-    TU_DIST_METRICS.forEach(function (m) {
+    self._histMeta = [];
+    var barRows = [];
+
+    TU_HIST_METRICS.forEach(function (m) {
       var col = _tuFindCol(cols, m.patterns);
       if (!col) return;
-      self._distMeta.push({ col: col, metric: m });
 
-      var counts = { good: 0, watch: 0, problem: 0, noData: 0 };
-      rows.forEach(function (r) {
-        var cls = _tuClassify(r[col], m);
-        if (cls) counts[cls]++; else counts.noData++;
-      });
-      var total = counts.good + counts.watch + counts.problem;
-      if (!total) return;
+      var result = _tuBuildBins(rows, col, TU_NUM_BINS);
+      if (!result) return;
 
-      var pGood  = (counts.good    / total * 100).toFixed(1);
-      var pWatch = (counts.watch   / total * 100).toFixed(1);
-      var pProb  = (counts.problem / total * 100).toFixed(1);
+      self._histMeta.push({ col: col, metric: m, bins: result.bins });
 
-      var segHtml = function (cls, pct, count, rangeTip) {
-        if (!count) return '';
+      var segs = result.bins.map(function (bin) {
+        var pct = (bin.count / result.total * 100).toFixed(1);
         var pctInt = Math.round(+pct);
-        var label = pctInt >= 8 ? '<span class="tu-dist-pct">' + pctInt + '%</span>' : '';
-        return '<div class="tu-dist-seg tu-dist-' + cls + '" style="width:' + pct + '%"'
-          + ' data-dist-col="' + col + '" data-dist-cls="' + cls + '"'
-          + ' title="' + rangeTip + ' — ' + count + ' units (' + pct + '%) — click to filter table">'
-          + label + '</div>';
-      };
+        var color = TU_BIN_COLORS[bin.idx];
+        var textColor = bin.idx >= 3 ? '#fff' : '#4B5563';
+        var label = pctInt >= 8
+          ? '<span class="tu-dist-pct" style="color:' + textColor + ';">' + bin.count + '</span>'
+          : '';
+        var loLabel = bin.lo.toFixed(0);
+        var hiLabel = bin.hi.toFixed(0);
+        return bin.count
+          ? '<div class="tu-dist-seg" style="width:' + pct + '%;background:' + color + ';"'
+            + ' data-hist-col="' + col + '" data-hist-bin="' + bin.idx + '"'
+            + ' title="' + loLabel + '–' + hiLabel + m.unit + ': ' + bin.count + ' units (' + pct + '%) — click to filter">'
+            + label + '</div>'
+          : '';
+      }).join('');
 
-      // Tick positions: map threshold values to % position across the bar's data range
-      var vals = rows.map(function (r) { return r[col]; }).filter(function (v) {
-        return v !== null && v !== undefined && !isNaN(+v);
-      }).map(Number).sort(function (a, b) { return a - b; });
-      var lo = vals[0], hi = vals[vals.length - 1];
-      var span = hi - lo;
+      // Range labels: min and max
+      var minLabel = result.lo.toFixed(0) + m.unit;
+      var maxLabel = result.hi.toFixed(0) + m.unit;
+      var avgVal = _tuAvg(rows, col);
+      var avgLabel = avgVal !== null ? ('avg ' + avgVal.toFixed(1) + m.unit) : '';
 
-      var tickHtml = '';
-      if (span > 0) {
-        var ticks = [
-          { val: m.goodLo, label: m.goodLo + m.unit },
-          { val: m.goodHi, label: m.goodHi + m.unit },
-        ];
-        if (m.watchLo !== m.goodLo) ticks.push({ val: m.watchLo, label: m.watchLo + m.unit });
-        if (m.watchHi !== m.goodHi) ticks.push({ val: m.watchHi, label: m.watchHi + m.unit });
-
-        var seen = {};
-        ticks = ticks.filter(function (t) {
-          if (seen[t.val]) return false;
-          seen[t.val] = true;
-          return true;
-        });
-
-        ticks.forEach(function (t) {
-          var pos = ((t.val - lo) / span * 100);
-          if (pos < 2 || pos > 98) return;
-          tickHtml += '<div class="tu-dist-tick" style="left:' + pos.toFixed(1) + '%">'
-            + '<span class="tu-dist-tick-label">' + t.label + '</span></div>';
-        });
+      // Median position tick
+      var medianTick = '';
+      if (avgVal !== null && result.hi > result.lo) {
+        var pos = ((avgVal - result.lo) / (result.hi - result.lo) * 100);
+        if (pos > 2 && pos < 98) {
+          medianTick = '<div class="tu-hist-avg-tick" style="left:' + pos.toFixed(1) + '%;" title="Fleet average: ' + avgVal.toFixed(1) + m.unit + '"></div>';
+        }
       }
 
-      bars.push([
+      barRows.push([
         '<div class="tu-dist-row">',
         '  <div class="tu-dist-label">' + m.label + '</div>',
         '  <div class="tu-dist-bar-outer">',
-        '    <div class="tu-dist-bar">',
-             segHtml('good',    pGood,  counts.good,    'Good: ' + m.goodLo + '–' + m.goodHi + m.unit),
-             segHtml('watch',   pWatch, counts.watch,   'Watch: ' + m.watchLo + '–' + m.watchHi + m.unit),
-             segHtml('problem', pProb,  counts.problem, 'Problem: outside ' + m.watchLo + '–' + m.watchHi + m.unit),
+        '    <div class="tu-dist-bar">' + segs + '</div>',
+        medianTick,
+        '    <div class="tu-hist-range">',
+        '      <span>' + minLabel + '</span>',
+        '      <span class="tu-hist-avg">' + avgLabel + '</span>',
+        '      <span>' + maxLabel + '</span>',
         '    </div>',
-             tickHtml,
         '  </div>',
         '</div>'
       ].join('\n'));
     });
 
-    if (!bars.length) { el.innerHTML = ''; return; }
+    if (!barRows.length) { el.innerHTML = ''; return; }
 
     el.innerHTML = [
       '<div class="tu-dist-section">',
       '  <div class="tu-dist-header">',
-      '    <span class="tu-dist-title">Fleet Health</span>',
-      '    <span class="tu-dist-legend">',
-      '      <span class="tu-dist-dot tu-dist-dot--good"></span>Good',
-      '      <span class="tu-dist-dot tu-dist-dot--watch"></span>Watch',
-      '      <span class="tu-dist-dot tu-dist-dot--problem"></span>Problem',
-      '    </span>',
+      '    <span class="tu-dist-title">Fleet Distribution</span>',
+      '    <span class="tu-hist-hint">Click a segment to filter the table</span>',
       '  </div>',
-      bars.join('\n'),
+      barRows.join('\n'),
       '</div>'
     ].join('\n');
 
-    // Click-to-filter wiring
+    // Click-to-filter
     el.addEventListener('click', function (e) {
-      var seg = e.target.closest('[data-dist-col]');
+      var seg = e.target.closest('[data-hist-col]');
       if (!seg) return;
-      var col = seg.getAttribute('data-dist-col');
-      var cls = seg.getAttribute('data-dist-cls');
+      var col = seg.getAttribute('data-hist-col');
+      var binIdx = parseInt(seg.getAttribute('data-hist-bin'), 10);
 
       var st = self._state;
       if (!st) return;
 
-      if (st.distCol === col && st.distCls === cls) {
-        st.distCol = null;
-        st.distCls = null;
+      if (st.histCol === col && st.histBin === binIdx) {
+        st.histCol = null;
+        st.histBin = null;
       } else {
-        st.distCol = col;
-        st.distCls = cls;
+        st.histCol = col;
+        st.histBin = binIdx;
       }
 
-      // Open the table if it's collapsed
       var details = container.querySelector('#tuTableDetails');
       if (details && !details.open) details.open = true;
 
-      self._updateDistHighlight(container);
+      self._updateHistHighlight(container);
       self._rebuildTbody(container);
     });
   },
 
-  _updateDistHighlight: function (container) {
+  _updateHistHighlight: function (container) {
     var st = this._state;
-    var segs = container.querySelectorAll('#tuDistBars [data-dist-col]');
+    var segs = container.querySelectorAll('#tuDistBars [data-hist-col]');
+    var hasFilter = st.histCol !== null && st.histBin !== null;
     segs.forEach(function (seg) {
-      var active = st.distCol && st.distCls;
-      var isMatch = seg.getAttribute('data-dist-col') === st.distCol
-                 && seg.getAttribute('data-dist-cls') === st.distCls;
+      var isMatch = seg.getAttribute('data-hist-col') === st.histCol
+                 && parseInt(seg.getAttribute('data-hist-bin'), 10) === st.histBin;
       seg.classList.toggle('tu-dist-seg--active', isMatch);
-      seg.classList.toggle('tu-dist-seg--dim', active && !isMatch);
+      seg.classList.toggle('tu-dist-seg--dim', hasFilter && !isMatch);
     });
 
+    // Filter chip
     var chip = container.querySelector('#tuDistChip');
     if (!chip) return;
-    if (st.distCol && st.distCls) {
-      var dm = this._distMeta.filter(function (d) { return d.col === st.distCol; })[0];
-      var label = dm ? dm.metric.label : st.distCol;
-      var clsLabel = st.distCls.charAt(0).toUpperCase() + st.distCls.slice(1);
-      chip.innerHTML = '<span class="tu-dist-chip-dot tu-dist-dot--' + st.distCls + '"></span>'
-        + label + ': ' + clsLabel
-        + '<span class="tu-dist-chip-x" title="Clear filter">&times;</span>';
-      chip.style.display = '';
+    if (hasFilter) {
+      var hm = this._histMeta.filter(function (d) { return d.col === st.histCol; })[0];
+      if (hm) {
+        var bin = hm.bins[st.histBin];
+        var rangeLabel = bin.lo.toFixed(0) + '–' + bin.hi.toFixed(0) + hm.metric.unit;
+        chip.innerHTML = hm.metric.label + ': ' + rangeLabel + ' (' + bin.count + ')'
+          + '<span class="tu-dist-chip-x" title="Clear filter">&times;</span>';
+        chip.style.display = '';
+      }
     } else {
       chip.style.display = 'none';
       chip.innerHTML = '';
@@ -408,36 +347,21 @@ window.mbcxDashboard.components.TerminalUnits = {
 
   _buildTable: function (container, rows, cols) {
     var self = this;
-    // Default to showing only "needs attention" rows
-    this._state = { rows: rows, cols: cols, sortCol: null, sortDir: 1, filter: '', distCol: null, distCls: null, showAll: false };
+    this._state = { rows: rows, cols: cols, sortCol: null, sortDir: 1, filter: '', histCol: null, histBin: null };
 
     var tableView = container.querySelector('#tuTableView');
     if (!tableView) return;
-
-    // Count attention rows for the summary text
-    var attentionCount = 0;
-    rows.forEach(function (row) {
-      if (_tuRowWorst(row, self._distMeta) !== 'good') attentionCount++;
-    });
-
-    var summaryText = attentionCount
-      ? attentionCount + ' units need attention'
-      : 'All units operating normally';
 
     tableView.innerHTML = [
       '<details class="tu-table-details" id="tuTableDetails">',
       '  <summary class="tu-table-toggle">',
       '    <svg class="tu-table-toggle-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>',
       '    <span>View Details</span>',
-      '    <span class="tu-table-toggle-sub">' + summaryText + '</span>',
+      '    <span class="tu-table-toggle-sub">' + rows.length + ' VAVs</span>',
       '  </summary>',
       '  <div class="tu-table-content">',
       '    <div class="tu-filter-bar">',
       '      <input class="tu-filter-input" id="tuFilterInput" type="text" placeholder="Filter…" autocomplete="off" />',
-      '      <div class="tu-filter-pills">',
-      '        <button class="tu-scope-btn tu-scope-btn--active" id="tuScopeAttention">Needs Attention (' + attentionCount + ')</button>',
-      '        <button class="tu-scope-btn" id="tuScopeAll">All VAVs (' + rows.length + ')</button>',
-      '      </div>',
       '      <span class="tu-dist-chip" id="tuDistChip" style="display:none;"></span>',
       '      <span class="tu-filter-count" id="tuFilterCount"></span>',
       '    </div>',
@@ -484,27 +408,9 @@ window.mbcxDashboard.components.TerminalUnits = {
     var chip = container.querySelector('#tuDistChip');
     if (chip) {
       chip.addEventListener('click', function () {
-        self._state.distCol = null;
-        self._state.distCls = null;
-        self._updateDistHighlight(container);
-        self._rebuildTbody(container);
-      });
-    }
-
-    // Scope toggle: Needs Attention / All VAVs
-    var btnAttention = container.querySelector('#tuScopeAttention');
-    var btnAll = container.querySelector('#tuScopeAll');
-    if (btnAttention && btnAll) {
-      btnAttention.addEventListener('click', function () {
-        self._state.showAll = false;
-        btnAttention.classList.add('tu-scope-btn--active');
-        btnAll.classList.remove('tu-scope-btn--active');
-        self._rebuildTbody(container);
-      });
-      btnAll.addEventListener('click', function () {
-        self._state.showAll = true;
-        btnAll.classList.add('tu-scope-btn--active');
-        btnAttention.classList.remove('tu-scope-btn--active');
+        self._state.histCol = null;
+        self._state.histBin = null;
+        self._updateHistHighlight(container);
         self._rebuildTbody(container);
       });
     }
@@ -542,19 +448,16 @@ window.mbcxDashboard.components.TerminalUnits = {
     var s = this._state;
     var rows = s.rows;
 
-    // Scope filter: needs attention only (default) vs all
-    if (!s.showAll && self._distMeta.length) {
-      rows = rows.filter(function (row) {
-        return _tuRowWorst(row, self._distMeta) !== 'good';
-      });
-    }
-
-    // Distribution bar click filter
-    if (s.distCol && s.distCls) {
-      var dm = self._distMeta.filter(function (d) { return d.col === s.distCol; })[0];
-      if (dm) {
+    // Histogram bin filter
+    if (s.histCol !== null && s.histBin !== null) {
+      var hm = self._histMeta.filter(function (d) { return d.col === s.histCol; })[0];
+      if (hm) {
+        var bin = hm.bins[s.histBin];
         rows = rows.filter(function (row) {
-          return _tuClassify(row[s.distCol], dm.metric) === s.distCls;
+          var v = row[s.histCol];
+          if (v === null || v === undefined || isNaN(+v)) return false;
+          var n = +v;
+          return n >= bin.lo && n <= bin.hi;
         });
       }
     }

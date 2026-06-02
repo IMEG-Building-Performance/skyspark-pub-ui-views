@@ -542,23 +542,6 @@
 }
 #mbcxDashboard .tu-kpi-unit { font-size: 11px; color: var(--gray-400); margin-top: 4px; }
 
-/* ── Fleet health score bar ── */
-#mbcxDashboard .tu-score-bar {
-  display: flex; align-items: center; gap: 14px;
-  padding-bottom: 18px; margin-bottom: 18px;
-  border-bottom: 1px solid var(--gray-100);
-}
-#mbcxDashboard .tu-score-grade {
-  font-size: 42px; font-weight: 700; line-height: 1;
-  letter-spacing: -0.02em;
-}
-#mbcxDashboard .tu-score-pct {
-  font-size: 15px; font-weight: 600; line-height: 1.3;
-}
-#mbcxDashboard .tu-score-sub {
-  font-size: 12px; color: var(--gray-400); margin-top: 2px;
-}
-
 /* ── Terminal Units table ── */
 #mbcxDashboard .tu-table { width: auto; border-collapse: collapse; font-size: 12px; }
 #mbcxDashboard .tu-th {
@@ -622,29 +605,13 @@
 }
 #mbcxDashboard .tu-table-content { padding-top: 8px; }
 
-/* Scope pills */
-#mbcxDashboard .tu-filter-pills { display: flex; gap: 4px; }
-#mbcxDashboard .tu-scope-btn {
-  font-size: 11px; font-weight: 500; color: var(--gray-500);
-  background: var(--gray-50); border: 1px solid var(--gray-200);
-  border-radius: 12px; padding: 3px 10px; cursor: pointer;
-  transition: all 0.15s; font-family: inherit;
-}
-#mbcxDashboard .tu-scope-btn:hover { background: var(--gray-100); color: var(--gray-700); }
-#mbcxDashboard .tu-scope-btn--active {
-  background: var(--orange); color: #fff; border-color: var(--orange);
-}
-#mbcxDashboard .tu-scope-btn--active:hover {
-  background: #A33A0A; border-color: #A33A0A;
-}
-
 #mbcxDashboard .tu-loading {
   padding: 2rem; text-align: center; color: var(--gray-400); font-size: 13px;
 }
 
-/* ── Distribution bars ── */
+/* ── Distribution histograms ── */
 #mbcxDashboard .tu-dist-section {
-  padding-bottom: 20px; margin-bottom: 20px;
+  padding-bottom: 16px; margin-bottom: 16px;
   border-bottom: 1px solid var(--gray-100);
 }
 #mbcxDashboard .tu-dist-header {
@@ -655,21 +622,13 @@
   font-size: 11px; font-weight: 600; text-transform: uppercase;
   letter-spacing: 0.08em; color: var(--gray-500);
 }
-#mbcxDashboard .tu-dist-legend {
-  display: flex; align-items: center; gap: 12px;
-  font-size: 11px; color: var(--gray-500);
+#mbcxDashboard .tu-hist-hint {
+  font-size: 11px; color: var(--gray-400); font-style: italic;
 }
-#mbcxDashboard .tu-dist-dot {
-  display: inline-block; width: 8px; height: 8px; border-radius: 50%;
-  margin-right: 4px;
-}
-#mbcxDashboard .tu-dist-dot--good    { background: #5C8A3C; }
-#mbcxDashboard .tu-dist-dot--watch   { background: #D97706; }
-#mbcxDashboard .tu-dist-dot--problem { background: #9B2335; }
 
 #mbcxDashboard .tu-dist-row {
   display: grid; grid-template-columns: 100px 1fr;
-  align-items: center; gap: 12px; margin-bottom: 18px;
+  align-items: center; gap: 12px; margin-bottom: 16px;
 }
 #mbcxDashboard .tu-dist-label {
   font-size: 12px; font-weight: 500; color: var(--gray-700);
@@ -677,36 +636,37 @@
 }
 #mbcxDashboard .tu-dist-bar-outer { position: relative; }
 #mbcxDashboard .tu-dist-bar {
-  display: flex; height: 24px; border-radius: 4px; overflow: hidden;
-  background: var(--gray-100);
+  display: flex; height: 26px; border-radius: 4px; overflow: hidden;
+  background: var(--gray-100); gap: 1px;
 }
 #mbcxDashboard .tu-dist-seg {
   display: flex; align-items: center; justify-content: center;
-  transition: width 0.3s ease, opacity 0.2s ease;
-  cursor: pointer;
+  transition: opacity 0.2s ease; cursor: pointer;
+  border-radius: 2px;
 }
 #mbcxDashboard .tu-dist-seg:hover { filter: brightness(1.1); }
-#mbcxDashboard .tu-dist-seg--dim { opacity: 0.3; }
+#mbcxDashboard .tu-dist-seg--dim { opacity: 0.25; }
 #mbcxDashboard .tu-dist-seg--active { outline: 2px solid var(--gray-900); outline-offset: -2px; }
 #mbcxDashboard .tu-dist-pct {
-  font-size: 11px; font-weight: 600; color: #fff;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.25);
+  font-size: 10px; font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.15);
   pointer-events: none;
 }
-#mbcxDashboard .tu-dist-good    { background: #5C8A3C; }
-#mbcxDashboard .tu-dist-watch   { background: #D97706; }
-#mbcxDashboard .tu-dist-problem { background: #9B2335; }
 
-/* Threshold tick marks */
-#mbcxDashboard .tu-dist-tick {
-  position: absolute; top: 0; bottom: 0; width: 1px;
-  background: rgba(255,255,255,0.7);
+/* Average tick on histogram */
+#mbcxDashboard .tu-hist-avg-tick {
+  position: absolute; top: -3px; bottom: -3px; width: 2px;
+  background: var(--gray-700); border-radius: 1px;
   pointer-events: none;
 }
-#mbcxDashboard .tu-dist-tick-label {
-  position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
-  font-size: 9px; color: var(--gray-400); white-space: nowrap;
-  margin-top: 2px;
+
+/* Range labels below histogram */
+#mbcxDashboard .tu-hist-range {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 10px; color: var(--gray-400); margin-top: 3px;
+}
+#mbcxDashboard .tu-hist-avg {
+  font-weight: 500; color: var(--gray-500);
 }
 
 /* Filter chip */
@@ -718,9 +678,6 @@
   transition: background 0.15s;
 }
 #mbcxDashboard .tu-dist-chip:hover { background: var(--gray-200); }
-#mbcxDashboard .tu-dist-chip-dot {
-  display: inline-block; width: 8px; height: 8px; border-radius: 50%;
-}
 #mbcxDashboard .tu-dist-chip-x {
   font-size: 14px; line-height: 1; color: var(--gray-400);
   margin-left: 2px;
