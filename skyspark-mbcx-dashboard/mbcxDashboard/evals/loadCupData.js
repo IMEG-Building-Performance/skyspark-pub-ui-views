@@ -72,9 +72,17 @@ window.mbcxDashboard.evals = window.mbcxDashboard.evals || {};
       });
     });
 
+    console.log('[mbcxDashboard] loadCupSummary — firing', calls.length, 'API calls for siteRef:', siteRef);
+
     return Promise.all(calls.map(function (c) {
       return API.evalAxon(attestKey, projectName, c.expr)
-        .then(function (grid) { return { sys: c.sys, slot: c.slot, grid: grid }; })
+        .then(function (grid) {
+          if (c.sys === 'cooling' && c.slot === 'current') {
+            console.log('[mbcxDashboard] CUPSummary cooling/current raw grid rows:', (grid.rows || []).length,
+              '| first row:', grid.rows && grid.rows[0] ? JSON.stringify(grid.rows[0]).slice(0, 200) : 'none');
+          }
+          return { sys: c.sys, slot: c.slot, grid: grid };
+        })
         .catch(function (err) {
           console.warn('[mbcxDashboard] CUPSummary failed (' + c.sys + '/' + c.slot + '):', err);
           return { sys: c.sys, slot: c.slot, grid: { rows: [] } };

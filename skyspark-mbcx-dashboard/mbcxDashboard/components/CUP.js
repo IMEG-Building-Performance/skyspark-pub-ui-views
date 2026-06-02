@@ -288,12 +288,20 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       _renderInner(mountEl, _plantData);
 
       // Load real chart data when credentials are available
-      if (ctx && ctx.attestKey && ctx.projectName && ctx.siteRef &&
-          NS.evals && NS.evals.loadCupSummary) {
+      var _hasCredentials = !!(ctx && ctx.attestKey && ctx.projectName && ctx.siteRef);
+      var _hasLoader      = !!(NS.evals && NS.evals.loadCupSummary);
+      console.log('[mbcxDashboard] CUP.initCard — siteRef:', ctx && ctx.siteRef,
+        '| hasCredentials:', _hasCredentials, '| hasLoader:', _hasLoader);
+
+      if (_hasCredentials && _hasLoader) {
         NS.evals.loadCupSummary(ctx.attestKey, ctx.projectName, ctx.siteRef)
           .then(function (chartData) {
-            // Re-query the DOM — stale mountEl ref if page was re-initialised
             var el = document.querySelector('#cupCard');
+            console.log('[mbcxDashboard] CUP chart resolved — el found:', !!el,
+              '| cooling.current non-null months:', chartData.cooling
+                ? chartData.cooling.current.filter(function(v){return v!==null;}).length
+                : 'n/a');
+
             if (!el) return;
 
             function hasData(arr) {
@@ -308,9 +316,8 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
               var hasCurrent = hasData(cd.current);
               var hasPrior   = hasData(cd.prior);
 
-              if (!hasCurrent && !hasPrior) return; // no real data — keep demo as-is
+              if (!hasCurrent && !hasPrior) return;
 
-              // Use real arrays where data exists; null-out the other to keep units consistent
               _plantData[sys].monthlyRuntime = {
                 current: hasCurrent ? cd.current : [null,null,null,null,null,null,null,null,null,null,null,null],
                 prior:   hasPrior   ? cd.prior   : [null,null,null,null,null,null,null,null,null,null,null,null]
@@ -319,10 +326,6 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
                 _plantData[sys].runtimeLabel = 'Monthly Energy Consumption (' + cd.unit + ')';
               }
             });
-
-            console.log('[mbcxDashboard] CUP chart data applied for systems:', systems.filter(function(s) {
-              return hasData(chartData[s] && chartData[s].current) || hasData(chartData[s] && chartData[s].prior);
-            }).join(', ') || 'none');
 
             _renderInner(el, _plantData);
           })
