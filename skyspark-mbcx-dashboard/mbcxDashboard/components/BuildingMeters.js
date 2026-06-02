@@ -6,15 +6,13 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
 
   var CHART_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-  // ── Demo data ───────────────────────────────────────────────────────────
+  // ── Demo data (organized by view → meterType) ──────────────────────────
   var _DEMO = {
     siteArea: 150000,
     eui: { current: 84.7, prior: 91.2, unit: 'kBtu/ft²' },
-    electric: {
-      label: 'Electric',
-      unit: 'kWh',
-      accentColor: '#4A6FA5',
-      utility: {
+    utility: {
+      electric: {
+        label: 'Electric', unit: 'kWh', accentColor: '#4A6FA5',
         monthly: {
           prior:   [285000, 262000, 271000, 248000, 310000, 385000, 420000, 435000, 378000, 295000, 268000, 290000],
           current: [278000, 255000, 264000, 241000, 302000, null, null, null, null, null, null, null]
@@ -23,7 +21,30 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
           { name: 'Main Electric Meter', value: 302000 }
         ]
       },
-      submeters: {
+      gas: {
+        label: 'Natural Gas', unit: 'therms', accentColor: '#C2410C',
+        monthly: {
+          prior:   [18500, 16200, 12800, 8400, 4200, 1800, 1200, 1100, 2400, 6800, 12400, 17800],
+          current: [17900, 15600, 12200, 7800, 3900, null, null, null, null, null, null, null]
+        },
+        meters: [
+          { name: 'Main Gas Meter', value: 3900 }
+        ]
+      },
+      water: {
+        label: 'Water', unit: 'gal', accentColor: '#0E7490',
+        monthly: {
+          prior:   [142000, 128000, 135000, 148000, 165000, 195000, 218000, 225000, 198000, 162000, 138000, 130000],
+          current: [138000, 124000, 131000, 144000, 160000, null, null, null, null, null, null, null]
+        },
+        meters: [
+          { name: 'Main Water Meter', value: 160000 }
+        ]
+      }
+    },
+    submeters: {
+      electric: {
+        label: 'Electric', unit: 'kWh', accentColor: '#4A6FA5',
         monthly: {
           prior:   [268000, 247000, 256000, 234000, 293000, 364000, 397000, 411000, 357000, 279000, 253000, 274000],
           current: [262000, 241000, 249000, 228000, 286000, null, null, null, null, null, null, null]
@@ -34,22 +55,9 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
           { name: 'Plug Loads PL-1',       value: 62800  },
           { name: 'Data Center DC-1',      value: 66000  }
         ]
-      }
-    },
-    gas: {
-      label: 'Natural Gas',
-      unit: 'therms',
-      accentColor: '#C2410C',
-      utility: {
-        monthly: {
-          prior:   [18500, 16200, 12800, 8400, 4200, 1800, 1200, 1100, 2400, 6800, 12400, 17800],
-          current: [17900, 15600, 12200, 7800, 3900, null, null, null, null, null, null, null]
-        },
-        meters: [
-          { name: 'Main Gas Meter', value: 3900 }
-        ]
       },
-      submeters: {
+      gas: {
+        label: 'Natural Gas', unit: 'therms', accentColor: '#C2410C',
         monthly: {
           prior:   [17200, 15100, 11900, 7800, 3900, 1600, 1100, 1000, 2200, 6300, 11500, 16500],
           current: [16600, 14500, 11300, 7200, 3600, null, null, null, null, null, null, null]
@@ -59,22 +67,9 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
           { name: 'DHW System',   value: 680  },
           { name: 'Kitchen',      value: 420  }
         ]
-      }
-    },
-    water: {
-      label: 'Water',
-      unit: 'gal',
-      accentColor: '#0E7490',
-      utility: {
-        monthly: {
-          prior:   [142000, 128000, 135000, 148000, 165000, 195000, 218000, 225000, 198000, 162000, 138000, 130000],
-          current: [138000, 124000, 131000, 144000, 160000, null, null, null, null, null, null, null]
-        },
-        meters: [
-          { name: 'Main Water Meter', value: 160000 }
-        ]
       },
-      submeters: {
+      water: {
+        label: 'Water', unit: 'gal', accentColor: '#0E7490',
         monthly: {
           prior:   [130000, 117000, 124000, 136000, 152000, 180000, 201000, 208000, 183000, 149000, 127000, 119000],
           current: [127000, 114000, 120000, 132000, 148000, null, null, null, null, null, null, null]
@@ -89,7 +84,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
   };
 
   var _activeView    = 'utility';   // 'utility' | 'submeters'
-  var _activeSystem  = 'electric';
+  var _activeType    = 'all';       // 'all' | 'electric' | 'gas' | 'water'
   var _meterData     = null;
   var _chartInstance = null;
 
@@ -116,12 +111,18 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     return arr.reduce(function (sum, v) { return sum + (v != null ? v : 0); }, 0);
   }
 
+  function _viewTypes(viewData) {
+    return Object.keys(viewData).filter(function (k) {
+      return viewData[k] && viewData[k].meters && viewData[k].meters.length;
+    });
+  }
+
   // ── Chart.js initializer ────────────────────────────────────────────────
-  function _initChart(canvas, sys, stream) {
+  function _initChart(canvas, typeData) {
     var C = window.Chart;
     if (!C) return null;
 
-    var monthly = stream.monthly;
+    var monthly = typeData.monthly;
     var prior   = monthly.prior   || [];
     var current = monthly.current || [];
     var prevPalette = { bg: 'rgba(156,163,175,0.45)', border: 'rgba(156,163,175,0.7)' };
@@ -143,13 +144,13 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       datasets.push({
         label: String(currentYear),
         data: current,
-        backgroundColor: _hexToRgba(sys.accentColor, 0.7),
-        borderColor: sys.accentColor,
+        backgroundColor: _hexToRgba(typeData.accentColor, 0.7),
+        borderColor: typeData.accentColor,
         borderWidth: 1, barPercentage: 0.8, categoryPercentage: 0.85
       });
     }
 
-    var unit = sys.unit || '';
+    var unit = typeData.unit || '';
 
     return new C(canvas, {
       type: 'bar',
@@ -194,9 +195,40 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     });
   }
 
-  // ── Meter table ─────────────────────────────────────────────────────────
-  function _renderMeterTable(sys, stream) {
-    var meters = stream.meters || [];
+  // ── "All Types" table — shows every meter with a Type column ────────────
+  function _renderAllTypesTable(viewData) {
+    var typeKeys = _viewTypes(viewData);
+    var allRows  = [];
+    typeKeys.forEach(function (tk) {
+      var td = viewData[tk];
+      td.meters.forEach(function (m) {
+        allRows.push({ name: m.name, type: td.label, value: m.value, unit: td.unit });
+      });
+    });
+
+    if (!allRows.length) return '<p class="ahu-no-rows">No meters found.</p>';
+
+    var rows = allRows.map(function (m) {
+      return '<tr>' +
+        '<td class="ahu-td" style="font-weight:500;">' + m.name + '</td>' +
+        '<td class="ahu-td" style="color:var(--gray-400);font-size:10px;text-transform:uppercase;letter-spacing:0.04em;">' + m.type + '</td>' +
+        '<td class="ahu-td ahu-td-num">' + _fmtVal(m.value) + ' <span style="font-size:10px;color:var(--gray-400);">' + m.unit + '</span></td>' +
+        '</tr>';
+    }).join('');
+
+    return '<table class="ahu-table">' +
+      '<thead><tr>' +
+        '<th class="ahu-th">Meter</th>' +
+        '<th class="ahu-th">Type</th>' +
+        '<th class="ahu-th">Current Month</th>' +
+      '</tr></thead>' +
+      '<tbody>' + rows + '</tbody>' +
+      '</table>';
+  }
+
+  // ── Single-type table ───────────────────────────────────────────────────
+  function _renderTypeTable(typeData) {
+    var meters = typeData.meters || [];
     if (!meters.length) return '<p class="ahu-no-rows">No meters found.</p>';
 
     var rows = meters.map(function (m) {
@@ -209,7 +241,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     return '<table class="ahu-table">' +
       '<thead><tr>' +
         '<th class="ahu-th">Meter</th>' +
-        '<th class="ahu-th">Current Mo (' + sys.unit + ')</th>' +
+        '<th class="ahu-th">Current Mo (' + typeData.unit + ')</th>' +
       '</tr></thead>' +
       '<tbody>' + rows + '</tbody>' +
       '</table>';
@@ -217,10 +249,9 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
 
   // ── Inner render ────────────────────────────────────────────────────────
   function _renderInner(mountEl) {
-    var data   = _meterData;
-    var eui    = data.eui;
-    var sys    = data[_activeSystem];
-    var stream = sys[_activeView];
+    var data     = _meterData;
+    var eui      = data.eui;
+    var viewData = data[_activeView];
 
     // EUI change
     var euiDelta = eui.prior ? ((eui.current - eui.prior) / eui.prior * 100) : 0;
@@ -229,9 +260,9 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     var euiLabel = euiDelta > 0 ? 'above prior year' : 'below prior year';
 
     // YTD totals — always from utility meters (building-level)
-    var elecYtd  = _ytd(data.electric.utility.monthly.current);
-    var gasYtd   = _ytd(data.gas.utility.monthly.current);
-    var waterYtd = _ytd(data.water.utility.monthly.current);
+    var elecYtd  = _ytd(data.utility.electric.monthly.current);
+    var gasYtd   = _ytd(data.utility.gas.monthly.current);
+    var waterYtd = _ytd(data.utility.water.monthly.current);
 
     // KPI strip
     var kpiHtml = [
@@ -259,7 +290,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       '</div>'
     ].join('\n');
 
-    // EUI context line
+    // EUI context
     var euiContextHtml =
       '<div class="eui-context">' +
         '<span class="' + euiCls + '">' + euiSign + Math.abs(euiDelta).toFixed(1) + '%</span> ' +
@@ -279,36 +310,48 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       }).join('') +
     '</div>';
 
-    // System toggle pills (Electric / Gas / Water)
-    var systemKeys   = ['electric', 'gas', 'water'];
-    var systemLabels = { electric: 'Electric', gas: 'Natural Gas', water: 'Water' };
-    var systemPillsHtml = '<div class="ahu-toggle" style="margin-bottom:16px;">' +
-      systemKeys.map(function (s) {
-        var isActive  = s === _activeSystem;
-        var sd        = data[s];
-        var styleAttr = isActive
-          ? ' style="background:' + sd.accentColor + ';color:#fff;border-color:' + sd.accentColor + ';"'
-          : '';
-        return '<button class="ahu-toggle-btn' + (isActive ? ' ahu-toggle-btn--active' : '') + '"' +
-          styleAttr + ' data-bm-system="' + s + '">' + systemLabels[s] + '</button>';
-      }).join('') +
-    '</div>';
+    // Meter type dropdown
+    var typeKeys = _viewTypes(viewData);
+    var dropdownHtml =
+      '<div style="margin-bottom:16px;">' +
+        '<select id="bmTypeSelect" style="' +
+          'font-size:12px;font-family:inherit;color:var(--gray-700);' +
+          'background:var(--gray-50);border:1px solid var(--gray-200);' +
+          'border-radius:6px;padding:6px 28px 6px 10px;cursor:pointer;' +
+          'outline:none;appearance:none;' +
+          'background-image:url(\"data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'8\' height=\'5\'%3E%3Cpath d=\'M0 0l4 5 4-5z\' fill=\'%239CA3AF\'/%3E%3C/svg%3E\");' +
+          'background-repeat:no-repeat;background-position:right 9px center;' +
+          'transition:border-color 0.15s;">' +
+        '<option value="all">All Types</option>' +
+        typeKeys.map(function (tk) {
+          var sel = tk === _activeType ? ' selected' : '';
+          return '<option value="' + tk + '"' + sel + '>' + viewData[tk].label + '</option>';
+        }).join('') +
+      '</select>' +
+      '</div>';
 
-    // Meter table
-    var tableHtml = _renderMeterTable(sys, stream);
+    // Content area — depends on whether "All Types" or a specific type
+    var isAll    = _activeType === 'all';
+    var typeData = !isAll ? viewData[_activeType] : null;
 
-    // Chart data check
-    var hasChartData = stream.monthly && (
-      (stream.monthly.prior   && stream.monthly.prior.some(function (v) { return v != null; })) ||
-      (stream.monthly.current && stream.monthly.current.some(function (v) { return v != null; }))
-    );
-
-    var chartBodyHtml = hasChartData
-      ? '<div class="ahu-metric-block">' +
-          '<div class="ahu-chart-wrap"><canvas id="bmChart"></canvas></div>' +
-          '<div class="ahu-table-wrap">' + tableHtml + '</div>' +
-        '</div>'
-      : '<div class="ahu-no-data">No meter data available.</div>';
+    var contentHtml;
+    if (isAll) {
+      var allTable = _renderAllTypesTable(viewData);
+      contentHtml =
+        '<div style="overflow-x:auto;">' + allTable + '</div>';
+    } else {
+      var tableHtml   = _renderTypeTable(typeData);
+      var hasChartData = typeData.monthly && (
+        (typeData.monthly.prior   && typeData.monthly.prior.some(function (v) { return v != null; })) ||
+        (typeData.monthly.current && typeData.monthly.current.some(function (v) { return v != null; }))
+      );
+      contentHtml = hasChartData
+        ? '<div class="ahu-metric-block">' +
+            '<div class="ahu-chart-wrap"><canvas id="bmChart"></canvas></div>' +
+            '<div class="ahu-table-wrap">' + tableHtml + '</div>' +
+          '</div>'
+        : '<div class="ahu-no-data">No meter data available.</div>';
+    }
 
     // Destroy existing chart
     if (_chartInstance) {
@@ -320,38 +363,45 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       kpiHtml +
       euiContextHtml +
       viewToggleHtml +
-      systemPillsHtml +
-      chartBodyHtml;
+      dropdownHtml +
+      contentHtml;
+
+    // Ensure dropdown reflects current selection
+    var select = mountEl.querySelector('#bmTypeSelect');
+    if (select) select.value = _activeType;
 
     // View toggle listeners
     mountEl.querySelectorAll('[data-bm-view]').forEach(function (btn) {
       btn.addEventListener('click', function () {
         _activeView = btn.getAttribute('data-bm-view');
+        _activeType = 'all';
         _renderInner(mountEl);
       });
     });
 
-    // System pill listeners
-    mountEl.querySelectorAll('[data-bm-system]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        _activeSystem = btn.getAttribute('data-bm-system');
+    // Dropdown listener
+    if (select) {
+      select.addEventListener('change', function () {
+        _activeType = select.value;
         _renderInner(mountEl);
       });
-    });
+    }
 
-    // Init chart
-    var canvas = mountEl.querySelector('#bmChart');
-    if (canvas && hasChartData) {
-      _chartInstance = _initChart(canvas, sys, stream);
+    // Init chart (only when a specific type is selected)
+    if (!isAll && typeData) {
+      var canvas = mountEl.querySelector('#bmChart');
+      if (canvas) {
+        _chartInstance = _initChart(canvas, typeData);
+      }
     }
   }
 
   // ── Public API ──────────────────────────────────────────────────────────
   NS.components.BuildingMeters = {
     render: function (data) {
-      _meterData     = (data && data.meters) ? data.meters : _DEMO;
-      _activeView    = 'utility';
-      _activeSystem  = 'electric';
+      _meterData    = (data && data.meters) ? data.meters : _DEMO;
+      _activeView   = 'utility';
+      _activeType   = 'all';
       return [
         '<div class="equip-section equip-section--collapsible equip-section--open" style="border-left-color:#4A6FA5;">',
         '  <div class="equip-header equip-header--clickable" onclick="this.closest(\'.equip-section\').classList.toggle(\'equip-section--open\');">',
