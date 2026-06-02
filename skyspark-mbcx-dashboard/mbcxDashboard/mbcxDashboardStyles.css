@@ -968,7 +968,18 @@
 }
 #mbcxDashboard .cup-legend-item  { display: flex; align-items: center; gap: 5px; }
 #mbcxDashboard .cup-legend-swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
-#mbcxDashboard .cup-bar-chart-container { min-height: 220px; }
+/* Chart + equipment table side by side */
+#mbcxDashboard .cup-content-grid {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 20px;
+  align-items: start;
+}
+#mbcxDashboard .cup-equip-label {
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--gray-500); margin-bottom: 10px;
+}
+#mbcxDashboard .cup-equip-count { font-weight: 400; color: var(--gray-400); }
 #mbcxDashboard .cup-bar-chart-container svg { width: 100%; height: auto; display: block; }
 
 /* Equipment table — match .ahu-th / .ahu-td sizing */

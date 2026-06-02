@@ -102,8 +102,8 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     }
   };
 
-  // Clone the demo data but suppress chart bars (monthlyRuntime=null) until
-  // real API data arrives, so no demo bars ever flash to the user.
+  // Clone the demo data but suppress chart bars and equipment data values
+  // until real API data arrives, so no demo bars or fake temps flash to the user.
   function _makePlantData(source) {
     var out = {};
     var systems = Object.keys(source);
@@ -112,6 +112,10 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       var keys = Object.keys(source[s]);
       keys.forEach(function (k) { out[s][k] = source[s][k]; });
       out[s].monthlyRuntime = null;
+      // Keep equipment names only — no status or temperatures until live data loads
+      out[s].equipment = (source[s].equipment || []).map(function (e) {
+        return { name: e.name };
+      });
     });
     return out;
   }
@@ -134,8 +138,10 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     var allVals = prior.concat(current.filter(function (v) { return v != null; }));
     var maxVal  = Math.max.apply(null, allVals.concat([1])) * 1.15;
 
-    var W = 1200, H = 240;
-    var padL = 54, padR = 16, padT = 8, padB = 28;
+    // H=340 targets ~260px rendered height when chart column is ~920px wide
+    // (total card ~1300px minus 280px equipment table minus 20px gap).
+    var W = 1200, H = 340;
+    var padL = 54, padR = 16, padT = 10, padB = 32;
     var chartW = W - padL - padR;
     var chartH = H - padT - padB;
     var groupW = chartW / 12;
@@ -204,6 +210,32 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     return svg;
   }
 
+  // ── Equipment table (names + placeholder dashes) ─────────────────────────
+  function _renderEquipTable(d) {
+    var equip  = d.equipment || [];
+    if (!equip.length) return '';
+    var label  = d.plantLeavingLabel  || '';
+    var enter  = d.plantEnteringLabel || '';
+    var unit   = d.tempUnit           || '';
+
+    var thName  = '<th class="ahu-th">' + (d.equipLabel || 'Unit') + '</th>';
+    var thLeave = label ? '<th class="ahu-th">' + label + (unit ? ' (' + unit + ')' : '') + '</th>' : '';
+    var thEnter = enter ? '<th class="ahu-th">' + enter + (unit ? ' (' + unit + ')' : '') + '</th>' : '';
+
+    var rows = equip.map(function (e) {
+      return '<tr>' +
+        '<td class="ahu-td">' + e.name + '</td>' +
+        (label ? '<td class="ahu-td ahu-td-num">&mdash;</td>' : '') +
+        (enter ? '<td class="ahu-td ahu-td-num">&mdash;</td>' : '') +
+        '</tr>';
+    }).join('');
+
+    return '<table class="ahu-table">' +
+      '<thead><tr>' + thName + thLeave + thEnter + '</tr></thead>' +
+      '<tbody>' + rows + '</tbody>' +
+      '</table>';
+  }
+
   // ── Inner card render + event wiring ────────────────────────────────────
   function _renderInner(mountEl, plantData) {
     var d = plantData[_activeSystem];
@@ -224,17 +256,31 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         styleAttr + ' data-system="' + s + '">' + systemLabels[s] + '</button>';
     }).join('');
 
+    var equipHtml  = _renderEquipTable(d);
+    var equipCount = (d.equipment || []).length;
+    var equipLabel = equipCount
+      ? '<div class="cup-equip-label">' +
+          (d.equipLabelPlural || 'Equipment').toUpperCase() +
+          '<span class="cup-equip-count">&nbsp;&middot;&nbsp;' + equipCount + '</span>' +
+        '</div>'
+      : '';
+
     var chartBodyHtml = chartSvg
-      ? '<div class="cup-section-label">' + d.runtimeLabel + '</div>' +
-        '<div class="cup-chart-legend">' +
-          '<div class="cup-legend-item">' +
-            '<div class="cup-legend-swatch" style="background:#c8cdd3;"></div> ' + priorYear +
+      ? '<div class="cup-content-grid">' +
+          '<div>' +
+            '<div class="cup-section-label">' + d.runtimeLabel + '</div>' +
+            '<div class="cup-chart-legend">' +
+              '<div class="cup-legend-item">' +
+                '<div class="cup-legend-swatch" style="background:#c8cdd3;"></div> ' + priorYear +
+              '</div>' +
+              '<div class="cup-legend-item">' +
+                '<div class="cup-legend-swatch" style="background:' + d.accentColor + ';"></div> ' + currentYear +
+              '</div>' +
+            '</div>' +
+            '<div class="cup-bar-chart-container">' + chartSvg + '</div>' +
           '</div>' +
-          '<div class="cup-legend-item">' +
-            '<div class="cup-legend-swatch" style="background:' + d.accentColor + ';"></div> ' + currentYear +
-          '</div>' +
-        '</div>' +
-        '<div class="cup-bar-chart-container">' + chartSvg + '</div>'
+          '<div>' + equipLabel + equipHtml + '</div>' +
+        '</div>'
       : '<div class="cup-no-data">No data available for this system.</div>';
 
     mountEl.innerHTML =
