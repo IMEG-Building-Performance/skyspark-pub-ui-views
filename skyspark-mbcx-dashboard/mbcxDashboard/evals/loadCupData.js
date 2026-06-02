@@ -85,11 +85,6 @@ window.mbcxDashboard.evals = window.mbcxDashboard.evals || {};
     return Promise.all(calls.map(function (c) {
       return API.evalAxon(attestKey, projectName, c.expr)
         .then(function (grid) {
-          if (c.sys === 'cooling' && c.slot === 'current') {
-            console.log('[mbcxDashboard] CUPSummary cooling/current cols:', JSON.stringify(grid.cols || []),
-              '| rows:', (grid.rows || []).length,
-              '| first row:', grid.rows && grid.rows[0] ? JSON.stringify(grid.rows[0]).slice(0, 200) : 'none');
-          }
           return { sys: c.sys, slot: c.slot, grid: grid };
         })
         .catch(function (err) {
@@ -104,6 +99,18 @@ window.mbcxDashboard.evals = window.mbcxDashboard.evals || {};
         out[r.sys][r.slot] = parsed.vals;
         if (parsed.unit && !out[r.sys].unit) out[r.sys].unit = parsed.unit;
       });
+
+      // Summary diagnostic — shows which system/year combos have real data
+      var summary = {};
+      Object.keys(out).forEach(function (sys) {
+        summary[sys] = {
+          current: out[sys].current ? out[sys].current.filter(function(v){return v!==null;}).length + ' months' : 'null',
+          prior:   out[sys].prior   ? out[sys].prior.filter(function(v){return v!==null;}).length   + ' months' : 'null',
+          unit:    out[sys].unit
+        };
+      });
+      console.log('[mbcxDashboard] CUPSummary parsed results:', JSON.stringify(summary));
+
       return out;
     });
   };
