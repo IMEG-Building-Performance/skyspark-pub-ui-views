@@ -12,28 +12,36 @@ window.mbcxDashboard.evals = window.mbcxDashboard.evals || {};
     dhw:       'DHW'
   };
 
-  // Parse a CUPSummary grid into { vals: [12 nulls/numbers], unit: string|null }
-  // Grid rows have: ts (Haystack dateTime) and v0 (Haystack number with unit)
+  // Parse a CUPSummary grid into { vals: [12 nulls/numbers], unit: string|null }.
+  // Uses the first non-ts column dynamically so the column name doesn't matter.
   function _parseMonthlyGrid(grid) {
     var vals = [null, null, null, null, null, null, null, null, null, null, null, null];
     var unit = null;
+
+    // Find the first non-ts column
+    var cols = (grid && grid.cols) || [];
+    var valCol = null;
+    for (var ci = 0; ci < cols.length; ci++) {
+      if (cols[ci].name !== 'ts') { valCol = cols[ci].name; break; }
+    }
+    if (!valCol) return { vals: vals, unit: unit };
+
     var rows = (grid && grid.rows) || [];
     rows.forEach(function (row) {
-      // Extract month index from ts — supports both raw {_kind:"dateTime",val:"..."} and plain string
       var tsObj = row.ts;
       var tsStr = (tsObj && typeof tsObj === 'object') ? (tsObj.val || '') : String(tsObj || '');
       var m = tsStr.match(/^(\d{4})-(\d{2})/);
       if (!m) return;
-      var monthIdx = parseInt(m[2], 10) - 1; // 0-based Jan=0
+      var monthIdx = parseInt(m[2], 10) - 1;
       if (monthIdx < 0 || monthIdx > 11) return;
 
-      var v0 = row.v0;
-      if (v0 === null || v0 === undefined) return;
-      if (typeof v0 === 'object' && v0.val !== undefined) {
-        vals[monthIdx] = v0.val;
-        if (!unit && v0.unit) unit = v0.unit;
-      } else if (typeof v0 === 'number') {
-        vals[monthIdx] = v0;
+      var v = row[valCol];
+      if (v === null || v === undefined) return;
+      if (typeof v === 'object' && v.val !== undefined) {
+        vals[monthIdx] = v.val;
+        if (!unit && v.unit) unit = v.unit;
+      } else if (typeof v === 'number') {
+        vals[monthIdx] = v;
       }
     });
     return { vals: vals, unit: unit };
@@ -78,7 +86,8 @@ window.mbcxDashboard.evals = window.mbcxDashboard.evals || {};
       return API.evalAxon(attestKey, projectName, c.expr)
         .then(function (grid) {
           if (c.sys === 'cooling' && c.slot === 'current') {
-            console.log('[mbcxDashboard] CUPSummary cooling/current raw grid rows:', (grid.rows || []).length,
+            console.log('[mbcxDashboard] CUPSummary cooling/current cols:', JSON.stringify(grid.cols || []),
+              '| rows:', (grid.rows || []).length,
               '| first row:', grid.rows && grid.rows[0] ? JSON.stringify(grid.rows[0]).slice(0, 200) : 'none');
           }
           return { sys: c.sys, slot: c.slot, grid: grid };
