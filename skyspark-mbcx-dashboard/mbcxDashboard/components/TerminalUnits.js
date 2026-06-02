@@ -207,24 +207,22 @@ window.mbcxDashboard.components.TerminalUnits = {
       var pWatch = (counts.watch   / total * 100).toFixed(1);
       var pProb  = (counts.problem / total * 100).toFixed(1);
 
+      var segHtml = function (cls, pct, count, rangeTip) {
+        if (!count) return '';
+        var pctInt = Math.round(+pct);
+        var label = pctInt >= 8 ? '<span class="tu-dist-pct">' + pctInt + '%</span>' : '';
+        return '<div class="tu-dist-seg tu-dist-' + cls + '" style="width:' + pct + '%"'
+          + ' title="' + rangeTip + ' — ' + count + ' units (' + pct + '%)">'
+          + label + '</div>';
+      };
+
       bars.push([
         '<div class="tu-dist-row">',
         '  <div class="tu-dist-label">' + m.label + '</div>',
-        '  <div class="tu-dist-bar-wrap">',
-        '    <div class="tu-dist-bar">',
-             counts.good    ? '<div class="tu-dist-seg tu-dist-good" style="width:' + pGood + '%" title="Good: ' + counts.good + ' (' + pGood + '%)"></div>' : '',
-             counts.watch   ? '<div class="tu-dist-seg tu-dist-watch" style="width:' + pWatch + '%" title="Watch: ' + counts.watch + ' (' + pWatch + '%)"></div>' : '',
-             counts.problem ? '<div class="tu-dist-seg tu-dist-problem" style="width:' + pProb + '%" title="Problem: ' + counts.problem + ' (' + pProb + '%)"></div>' : '',
-        '    </div>',
-        '    <div class="tu-dist-ranges">',
-        '      <span>Good: ' + m.goodLo + '–' + m.goodHi + m.unit + '</span>',
-        '      <span>Watch: ' + m.watchLo + '–' + m.watchHi + m.unit + '</span>',
-        '    </div>',
-        '  </div>',
-        '  <div class="tu-dist-counts">',
-        '    <span class="tu-dist-count tu-dist-count--good">' + counts.good + '</span>',
-        '    <span class="tu-dist-count tu-dist-count--watch">' + counts.watch + '</span>',
-        '    <span class="tu-dist-count tu-dist-count--problem">' + counts.problem + '</span>',
+        '  <div class="tu-dist-bar">',
+             segHtml('good',    pGood,  counts.good,    'Good: ' + m.goodLo + '–' + m.goodHi + m.unit),
+             segHtml('watch',   pWatch, counts.watch,   'Watch: ' + m.watchLo + '–' + m.watchHi + m.unit),
+             segHtml('problem', pProb,  counts.problem, 'Problem: outside ' + m.watchLo + '–' + m.watchHi + m.unit),
         '  </div>',
         '</div>'
       ].join('\n'));
