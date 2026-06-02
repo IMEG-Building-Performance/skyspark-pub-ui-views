@@ -7,26 +7,59 @@ var TU_COL_LABELS = {
   vav:              'VAV',
   areaserved:       'Area Served',
   zoneTempAvg:      'Zone Temp Avg',
+  zoneTempSPDiff:   'Zone Temp SP Diff',
   satAvg:           'SAT Avg',
   reheatValveAvg:   'Reheat Valve Avg',
   airflowAvg:       'Airflow Avg',
   airflowSpAvg:     'Airflow SP Avg',
   damperAvg:        'Damper Avg',
   occPct:           'Occ %',
+  datHisAvg:        'DAT Avg',
 };
 
-/* ── Distribution bar metric definitions ── */
-var TU_DIST_METRICS = [
-  { patterns: ['zonetemp', 'zone_temp'], label: 'Zone Temp',    unit: '°F', goodLo: 70, goodHi: 75, watchLo: 68, watchHi: 77 },
-  { patterns: ['reheat'],                label: 'Reheat Valve', unit: '%',        goodLo: 0,  goodHi: 20, watchLo: 0,  watchHi: 50 },
-  { patterns: ['damper'],                label: 'Damper',        unit: '%',        goodLo: 20, goodHi: 80, watchLo: 10, watchHi: 95 },
-];
-
-function _tuAvg(rows, key) {
+function _tuMedian(rows, key) {
   var vals = rows.map(function(r) { return r[key]; }).filter(function(v) {
     return v !== null && v !== undefined && !isNaN(+v);
-  });
-  return vals.length ? vals.reduce(function(s, v) { return s + (+v); }, 0) / vals.length : null;
+  }).map(Number).sort(function (a, b) { return a - b; });
+  if (!vals.length) return null;
+  var mid = Math.floor(vals.length / 2);
+  return vals.length % 2 ? vals[mid] : (vals[mid - 1] + vals[mid]) / 2;
+}
+
+var TU_CONDITIONS = [
+  { id: 'zoneHigh',  label: 'Zone > 75°F',    color: '#FEE2E2', activeColor: '#DC2626', activeText: '#fff' },
+  { id: 'zoneLow',   label: 'Zone < 67°F',    color: '#DBEAFE', activeColor: '#2563EB', activeText: '#fff' },
+  { id: 'spDiff',    label: 'SP Diff ≥ 3',     color: '#FEF3C7', activeColor: '#D97706', activeText: '#fff' },
+  { id: 'damperHi',  label: 'Damper > 90%',   color: '#FEF3C7', activeColor: '#D97706', activeText: '#fff' },
+  { id: 'reheatHi',  label: 'Reheat > 90%',   color: '#FEF3C7', activeColor: '#D97706', activeText: '#fff' },
+  { id: 'datMismatch', label: 'DAT Mismatch', color: '#FEE2E2', activeColor: '#DC2626', activeText: '#fff' },
+];
+
+function _tuRowMatchesCondition(row, condId, cf) {
+  var v, reheat;
+  switch (condId) {
+    case 'zoneHigh':
+      v = cf.zoneTemp ? +row[cf.zoneTemp] : NaN;
+      return !isNaN(v) && v > 75;
+    case 'zoneLow':
+      v = cf.zoneTemp ? +row[cf.zoneTemp] : NaN;
+      return !isNaN(v) && v < 67;
+    case 'spDiff':
+      v = cf.spDiff ? +row[cf.spDiff] : NaN;
+      return !isNaN(v) && Math.abs(v) >= 3;
+    case 'damperHi':
+      v = cf.damper ? +row[cf.damper] : NaN;
+      return !isNaN(v) && v > 90;
+    case 'reheatHi':
+      v = cf.reheat ? +row[cf.reheat] : NaN;
+      return !isNaN(v) && v > 90;
+    case 'datMismatch':
+      v = cf.dat ? +row[cf.dat] : NaN;
+      reheat = cf.reheat ? +row[cf.reheat] : NaN;
+      if (isNaN(v) || isNaN(reheat)) return false;
+      return (v >= 85 && reheat < 5) || (v <= 65 && reheat >= 90);
+    default: return false;
+  }
 }
 
 function _tuFindCol(cols, patterns) {
@@ -38,50 +71,35 @@ function _tuFindCol(cols, patterns) {
   return null;
 }
 
-function _tuClassify(val, m) {
-  if (val === null || val === undefined || isNaN(+val)) return null;
-  var v = +val;
-  if (v >= m.goodLo && v <= m.goodHi) return 'good';
-  if (v >= m.watchLo && v <= m.watchHi) return 'watch';
-  return 'problem';
-}
-
 window.mbcxDashboard.components.TerminalUnits = {
 
   _state: null,
 
   render: function () {
     return [
-      '<div class="equip-section equip-section--collapsible equip-section--open" id="mbcxTerminalUnitsSection" style="border-left-color:#C2410C;">',
-      '  <div class="equip-header equip-header--clickable" onclick="this.closest(\'.equip-section\').classList.toggle(\'equip-section--open\');">',
+      '<div class="equip-section" id="mbcxTerminalUnitsSection">',
+      '  <div class="equip-header">',
       '    <div class="equip-header-left">',
       '      <div class="equip-icon" style="background:var(--orange-lt);">',
       '        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C2410C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M2 12h4M18 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>',
       '      </div>',
       '      <div><div class="equip-title">Terminal Units</div><div class="equip-meta" id="tuMeta">&mdash; VAVs</div></div>',
       '    </div>',
-      '    <div style="display:flex;align-items:center;gap:8px;">',
-      '      <button class="ahu-fs-btn" id="tuFsBtn" title="Toggle fullscreen" onclick="event.stopPropagation();">',
-      '        <svg id="tuFsIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">',
-      '          <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>',
-      '          <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>',
-      '        </svg>',
-      '      </button>',
-      '      <div class="equip-collapse-btn" title="Expand / Collapse">',
-      '        <svg class="equip-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>',
-      '      </div>',
-      '    </div>',
+      '    <button class="ahu-fs-btn" id="tuFsBtn" title="Toggle fullscreen">',
+      '      <svg id="tuFsIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">',
+      '        <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>',
+      '        <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>',
+      '      </svg>',
+      '    </button>',
       '  </div>',
       '  <div class="equip-body">',
 
       '    <div class="tu-kpi-strip">',
       '      <div class="tu-kpi"><div class="tu-kpi-label">Total VAVs</div><div class="tu-kpi-val" id="tuKpiTotal">&mdash;</div><div class="tu-kpi-unit">units</div></div>',
-      '      <div class="tu-kpi"><div class="tu-kpi-label">Avg Zone Temp</div><div class="tu-kpi-val" id="tuKpiZone">&mdash;</div><div class="tu-kpi-unit">&deg;F</div></div>',
-      '      <div class="tu-kpi"><div class="tu-kpi-label">Avg Supply Air Temp</div><div class="tu-kpi-val" id="tuKpiDat">&mdash;</div><div class="tu-kpi-unit">&deg;F</div></div>',
-      '      <div class="tu-kpi"><div class="tu-kpi-label">Avg Reheat Valve</div><div class="tu-kpi-val" id="tuKpiReheat">&mdash;</div><div class="tu-kpi-unit">%</div></div>',
+      '      <div class="tu-kpi"><div class="tu-kpi-label">Zone Temp</div><div class="tu-kpi-val" id="tuKpiZone">&mdash;</div><div class="tu-kpi-unit">&deg;F median</div></div>',
+      '      <div class="tu-kpi"><div class="tu-kpi-label">Supply Air Temp</div><div class="tu-kpi-val" id="tuKpiDat">&mdash;</div><div class="tu-kpi-unit">&deg;F median</div></div>',
+      '      <div class="tu-kpi"><div class="tu-kpi-label">Reheat Valve</div><div class="tu-kpi-val" id="tuKpiReheat">&mdash;</div><div class="tu-kpi-unit">% median</div></div>',
       '    </div>',
-
-      '    <div id="tuDistBars"></div>',
 
       '    <div id="tuTableView">',
       '      <div class="tu-loading">Loading VAV data…</div>',
@@ -107,9 +125,6 @@ window.mbcxDashboard.components.TerminalUnits = {
     }
 
     load();
-
-    var header = container.querySelector('#mbcxTerminalUnitsSection .equip-header--clickable');
-    if (header) header.addEventListener('click', function () { setTimeout(load, 50); });
 
     // Fullscreen button
     var fsBtn    = container.querySelector('#tuFsBtn');
@@ -177,179 +192,52 @@ window.mbcxDashboard.components.TerminalUnits = {
 
     var fmt = function (v) { return v !== null ? v.toFixed(1) : '—'; };
     set('tuKpiTotal',  rows.length);
-    set('tuKpiZone',   zoneCol   ? fmt(_tuAvg(rows, zoneCol))   : '—');
-    set('tuKpiDat',    satCol    ? fmt(_tuAvg(rows, satCol))    : '—');
-    set('tuKpiReheat', reheatCol ? fmt(_tuAvg(rows, reheatCol)) : '—');
+    set('tuKpiZone',   zoneCol   ? fmt(_tuMedian(rows, zoneCol))   : '—');
+    set('tuKpiDat',    satCol    ? fmt(_tuMedian(rows, satCol))    : '—');
+    set('tuKpiReheat', reheatCol ? fmt(_tuMedian(rows, reheatCol)) : '—');
     set('tuMeta', rows.length + ' VAVs');
 
-    this._renderDistBars(container, rows, cols);
     this._buildTable(container, rows, cols);
-  },
-
-  _distMeta: [],
-
-  _renderDistBars: function (container, rows, cols) {
-    var self = this;
-    var el = container.querySelector('#tuDistBars');
-    if (!el) return;
-
-    self._distMeta = [];
-    var bars = [];
-    TU_DIST_METRICS.forEach(function (m) {
-      var col = _tuFindCol(cols, m.patterns);
-      if (!col) return;
-      self._distMeta.push({ col: col, metric: m });
-
-      var counts = { good: 0, watch: 0, problem: 0, noData: 0 };
-      rows.forEach(function (r) {
-        var cls = _tuClassify(r[col], m);
-        if (cls) counts[cls]++; else counts.noData++;
-      });
-      var total = counts.good + counts.watch + counts.problem;
-      if (!total) return;
-
-      var pGood  = (counts.good    / total * 100).toFixed(1);
-      var pWatch = (counts.watch   / total * 100).toFixed(1);
-      var pProb  = (counts.problem / total * 100).toFixed(1);
-
-      var segHtml = function (cls, pct, count, rangeTip) {
-        if (!count) return '';
-        var pctInt = Math.round(+pct);
-        var label = pctInt >= 8 ? '<span class="tu-dist-pct">' + pctInt + '%</span>' : '';
-        return '<div class="tu-dist-seg tu-dist-' + cls + '" style="width:' + pct + '%"'
-          + ' data-dist-col="' + col + '" data-dist-cls="' + cls + '"'
-          + ' title="' + rangeTip + ' — ' + count + ' units (' + pct + '%) — click to filter table">'
-          + label + '</div>';
-      };
-
-      // Tick positions: map threshold values to % position across the bar's data range
-      var vals = rows.map(function (r) { return r[col]; }).filter(function (v) {
-        return v !== null && v !== undefined && !isNaN(+v);
-      }).map(Number).sort(function (a, b) { return a - b; });
-      var lo = vals[0], hi = vals[vals.length - 1];
-      var span = hi - lo;
-
-      var tickHtml = '';
-      if (span > 0) {
-        var ticks = [
-          { val: m.goodLo, label: m.goodLo + m.unit },
-          { val: m.goodHi, label: m.goodHi + m.unit },
-        ];
-        if (m.watchLo !== m.goodLo) ticks.push({ val: m.watchLo, label: m.watchLo + m.unit });
-        if (m.watchHi !== m.goodHi) ticks.push({ val: m.watchHi, label: m.watchHi + m.unit });
-
-        // Deduplicate
-        var seen = {};
-        ticks = ticks.filter(function (t) {
-          if (seen[t.val]) return false;
-          seen[t.val] = true;
-          return true;
-        });
-
-        ticks.forEach(function (t) {
-          var pos = ((t.val - lo) / span * 100);
-          if (pos < 2 || pos > 98) return;
-          tickHtml += '<div class="tu-dist-tick" style="left:' + pos.toFixed(1) + '%">'
-            + '<span class="tu-dist-tick-label">' + t.label + '</span></div>';
-        });
-      }
-
-      bars.push([
-        '<div class="tu-dist-row">',
-        '  <div class="tu-dist-label">' + m.label + '</div>',
-        '  <div class="tu-dist-bar-outer">',
-        '    <div class="tu-dist-bar">',
-             segHtml('good',    pGood,  counts.good,    'Good: ' + m.goodLo + '–' + m.goodHi + m.unit),
-             segHtml('watch',   pWatch, counts.watch,   'Watch: ' + m.watchLo + '–' + m.watchHi + m.unit),
-             segHtml('problem', pProb,  counts.problem, 'Problem: outside ' + m.watchLo + '–' + m.watchHi + m.unit),
-        '    </div>',
-             tickHtml,
-        '  </div>',
-        '</div>'
-      ].join('\n'));
-    });
-
-    if (!bars.length) { el.innerHTML = ''; return; }
-
-    el.innerHTML = [
-      '<div class="tu-dist-section">',
-      '  <div class="tu-dist-header">',
-      '    <span class="tu-dist-title">Fleet Health</span>',
-      '    <span class="tu-dist-legend">',
-      '      <span class="tu-dist-dot tu-dist-dot--good"></span>Good',
-      '      <span class="tu-dist-dot tu-dist-dot--watch"></span>Watch',
-      '      <span class="tu-dist-dot tu-dist-dot--problem"></span>Problem',
-      '    </span>',
-      '  </div>',
-      bars.join('\n'),
-      '</div>'
-    ].join('\n');
-
-    // Click-to-filter wiring
-    el.addEventListener('click', function (e) {
-      var seg = e.target.closest('[data-dist-col]');
-      if (!seg) return;
-      var col = seg.getAttribute('data-dist-col');
-      var cls = seg.getAttribute('data-dist-cls');
-
-      var st = self._state;
-      if (!st) return;
-
-      // Toggle: clicking same segment again clears the filter
-      if (st.distCol === col && st.distCls === cls) {
-        st.distCol = null;
-        st.distCls = null;
-      } else {
-        st.distCol = col;
-        st.distCls = cls;
-      }
-      self._updateDistHighlight(container);
-      self._rebuildTbody(container);
-    });
-  },
-
-  _updateDistHighlight: function (container) {
-    var st = this._state;
-    var segs = container.querySelectorAll('#tuDistBars [data-dist-col]');
-    segs.forEach(function (seg) {
-      var active = st.distCol && st.distCls;
-      var isMatch = seg.getAttribute('data-dist-col') === st.distCol
-                 && seg.getAttribute('data-dist-cls') === st.distCls;
-      seg.classList.toggle('tu-dist-seg--active', isMatch);
-      seg.classList.toggle('tu-dist-seg--dim', active && !isMatch);
-    });
-
-    // Show/hide filter chip
-    var chip = container.querySelector('#tuDistChip');
-    if (!chip) return;
-    if (st.distCol && st.distCls) {
-      var dm = this._distMeta.filter(function (d) { return d.col === st.distCol; })[0];
-      var label = dm ? dm.metric.label : st.distCol;
-      var clsLabel = st.distCls.charAt(0).toUpperCase() + st.distCls.slice(1);
-      chip.innerHTML = '<span class="tu-dist-chip-dot tu-dist-dot--' + st.distCls + '"></span>'
-        + label + ': ' + clsLabel
-        + '<span class="tu-dist-chip-x" title="Clear filter">&times;</span>';
-      chip.style.display = '';
-    } else {
-      chip.style.display = 'none';
-      chip.innerHTML = '';
-    }
   },
 
   _buildTable: function (container, rows, cols) {
     var self = this;
-    this._state = { rows: rows, cols: cols, sortCol: null, sortDir: 1, filter: '', distCol: null, distCls: null };
+    var zoneTempCol  = _tuFindCol(cols, ['zonetempavg', 'zonetemp', 'zone_temp']);
+    var spDiffCol    = _tuFindCol(cols, ['zonetempsp', 'tempspdiff', 'spdiff']);
+    var damperCol    = _tuFindCol(cols, ['damper']);
+    var reheatCol    = _tuFindCol(cols, ['reheat']);
+    var datCol       = _tuFindCol(cols, ['dathis', 'datavg', 'dat']);
+
+    var cfCols = { zoneTemp: zoneTempCol, spDiff: spDiffCol, damper: damperCol, reheat: reheatCol, dat: datCol };
+    this._state = {
+      rows: rows, cols: cols, sortCol: null, sortDir: 1, filter: '',
+      cfCols: cfCols, activeConditions: {}
+    };
+
+    // Pre-count how many rows match each condition
+    var condCounts = {};
+    TU_CONDITIONS.forEach(function (c) {
+      condCounts[c.id] = rows.filter(function (r) { return _tuRowMatchesCondition(r, c.id, cfCols); }).length;
+    });
+
+    var chipHtml = TU_CONDITIONS.map(function (c) {
+      if (!condCounts[c.id]) return '';
+      return '<button class="tu-cond-chip" data-cond="' + c.id + '"'
+        + ' data-color="' + c.color + '" data-active-color="' + c.activeColor + '" data-active-text="' + c.activeText + '"'
+        + ' style="background:' + c.color + ';">'
+        + c.label + '<span class="tu-cond-count">' + condCounts[c.id] + '</span></button>';
+    }).filter(Boolean).join('');
 
     var tableView = container.querySelector('#tuTableView');
     if (!tableView) return;
 
     tableView.innerHTML = [
       '<div class="tu-filter-bar">',
-      '  <input class="tu-filter-input" id="tuFilterInput" type="text" placeholder="Filter…" autocomplete="off" />',
-      '  <span class="tu-dist-chip" id="tuDistChip" style="display:none;"></span>',
-      '  <span class="tu-filter-count" id="tuFilterCount">' + rows.length + ' / ' + rows.length + ' VAVs</span>',
+      '  <input class="tu-filter-input" id="tuFilterInput" type="text" placeholder="Filter VAVs…" autocomplete="off" />',
+      '  <span class="tu-filter-count" id="tuFilterCount"></span>',
       '</div>',
-      '<div style="overflow-x:auto;">',
+      chipHtml ? '<div class="tu-cond-bar" id="tuCondBar">' + chipHtml + '</div>' : '',
+      '<div class="tu-table-scroll">',
       '  <table class="tu-table">',
       '    <thead id="tuThead"></thead>',
       '    <tbody id="tuTbody"></tbody>',
@@ -387,12 +275,24 @@ window.mbcxDashboard.components.TerminalUnits = {
       });
     }
 
-    var chip = container.querySelector('#tuDistChip');
-    if (chip) {
-      chip.addEventListener('click', function () {
-        self._state.distCol = null;
-        self._state.distCls = null;
-        self._updateDistHighlight(container);
+    var condBar = container.querySelector('#tuCondBar');
+    if (condBar) {
+      condBar.addEventListener('click', function (e) {
+        var chip = e.target.closest('[data-cond]');
+        if (!chip) return;
+        var id = chip.getAttribute('data-cond');
+        var active = self._state.activeConditions;
+        if (active[id]) {
+          delete active[id];
+          chip.classList.remove('tu-cond-chip--on');
+          chip.style.background = chip.getAttribute('data-color');
+          chip.style.color = '';
+        } else {
+          active[id] = true;
+          chip.classList.add('tu-cond-chip--on');
+          chip.style.background = chip.getAttribute('data-active-color');
+          chip.style.color = chip.getAttribute('data-active-text');
+        }
         self._rebuildTbody(container);
       });
     }
@@ -406,38 +306,60 @@ window.mbcxDashboard.components.TerminalUnits = {
     var tbody = container.querySelector('#tuTbody');
     if (!tbody) return;
 
+    var cf = s.cfCols;
     tbody.innerHTML = rows.map(function (row) {
+      var reheatVal = cf.reheat ? +row[cf.reheat] : NaN;
+      var datVal    = cf.dat    ? +row[cf.dat]     : NaN;
+
       return '<tr>' + s.cols.map(function (k, i) {
         var val = row[k];
         if (val && typeof val === 'object' && val.dis) val = val.dis;
         var cls = i === 0 ? 'tu-td tu-td-name' : 'tu-td';
-        return '<td class="' + cls + '">' + (val !== null && val !== undefined ? val : '—') + '</td>';
+        var style = '';
+        var num = (val !== null && val !== undefined) ? +val : NaN;
+
+        if (!isNaN(num)) {
+          if (k === cf.zoneTemp) {
+            if (num > 75) style = ' tu-cf-hot';
+            else if (num < 67) style = ' tu-cf-cold';
+          } else if (k === cf.spDiff) {
+            var abs = Math.abs(num);
+            if (abs >= 5) style = ' tu-cf-hot';
+            else if (abs >= 3) style = ' tu-cf-warm';
+          } else if (k === cf.damper && num > 90) {
+            style = ' tu-cf-warn';
+          } else if (k === cf.reheat && num > 90) {
+            style = ' tu-cf-warn';
+          } else if (k === cf.dat) {
+            if (num >= 85 && !isNaN(reheatVal) && reheatVal < 5) style = ' tu-cf-hot';
+            else if (num <= 65 && !isNaN(reheatVal) && reheatVal >= 90) style = ' tu-cf-warn';
+          }
+        }
+
+        return '<td class="' + cls + style + '">' + (val !== null && val !== undefined ? val : '—') + '</td>';
       }).join('') + '</tr>';
     }).join('');
 
     var inds = container.querySelectorAll('#tuThead .tu-sort-ind');
     inds.forEach(function (ind) {
       var col = ind.getAttribute('data-col');
-      ind.textContent = s.sortCol === col ? (s.sortDir === 1 ? ' ▲' : ' ▼') : '';
+      ind.textContent = s.sortCol === col ? (s.sortDir === 1 ? ' ▲' : ' ▼') : '';
     });
 
     var countEl = container.querySelector('#tuFilterCount');
-    if (countEl) countEl.textContent = rows.length + ' / ' + s.rows.length + ' VAVs';
+    if (countEl) countEl.textContent = rows.length + ' / ' + s.rows.length + ' VAVs';
   },
 
   _getDisplayRows: function () {
-    var self = this;
     var s = this._state;
     var rows = s.rows;
 
-    // Distribution bar filter
-    if (s.distCol && s.distCls) {
-      var dm = self._distMeta.filter(function (d) { return d.col === s.distCol; })[0];
-      if (dm) {
-        rows = rows.filter(function (row) {
-          return _tuClassify(row[s.distCol], dm.metric) === s.distCls;
-        });
-      }
+    var activeIds = Object.keys(s.activeConditions);
+    if (activeIds.length) {
+      var cf = s.cfCols;
+      rows = rows.filter(function (row) {
+        return activeIds.some(function (id) { return _tuRowMatchesCondition(row, id, cf); });
+      });
     }
 
     if (s.filter) {

@@ -131,70 +131,27 @@
 }
 #mbcxDashboard .dash-back-btn:hover { opacity: 1; background: rgba(0,0,0,0.72); }
 
-/* ── Equipment Section — card style ── */
+/* ── Equipment Section ── */
 #mbcxDashboard .equip-section {
-  background: #fff;
-  border: 1px solid var(--gray-200);
-  border-radius: 10px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 0 0 0 transparent;
-  margin-bottom: 18px;
-  overflow: hidden;
+  border-bottom: 1px solid var(--gray-200);
+  padding-bottom: 8px;
+  margin-bottom: 8px;
 }
-
-/* Collapsible sections get a coloured left accent */
-#mbcxDashboard .equip-section--collapsible {
-  border-left: 4px solid var(--gray-300); /* overridden per-section via inline style */
+#mbcxDashboard .equip-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
 }
 
 #mbcxDashboard .equip-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 20px;
-  background: var(--gray-50);
-  border-bottom: 1px solid var(--gray-200);
+  padding: 12px 4px 8px;
   gap: 12px;
-  margin-bottom: 0;
 }
 
-/* Non-collapsible sections (AHU, HealthBanner area) keep the border visible */
-#mbcxDashboard .equip-section--collapsible .equip-header {
-  border-bottom-color: transparent;
-}
-#mbcxDashboard .equip-section--open .equip-header {
-  border-bottom-color: var(--gray-200);
-}
-
-/* Clickable header */
-#mbcxDashboard .equip-header--clickable {
-  cursor: pointer;
-  user-select: none;
-  transition: background 0.12s;
-}
-#mbcxDashboard .equip-header--clickable:hover {
-  background: var(--gray-100);
-}
-
-/* Chevron toggle button */
-#mbcxDashboard .equip-collapse-btn {
-  display: flex; align-items: center; justify-content: center;
-  width: 28px; height: 28px; border-radius: 6px;
-  color: var(--gray-400); flex-shrink: 0;
-}
-#mbcxDashboard .equip-chevron {
-  transition: transform 0.2s ease;
-}
-#mbcxDashboard .equip-section--open .equip-chevron {
-  transform: rotate(180deg);
-}
-
-/* Collapsible body — hidden by default, shown when open */
 #mbcxDashboard .equip-body {
-  display: none;
-  padding: 20px;
+  padding: 4px 4px 12px;
 }
-#mbcxDashboard .equip-section--open .equip-body {
-  display: block;
-}
-
 
 #mbcxDashboard .equip-header-left { display: flex; align-items: center; gap: 12px; }
 #mbcxDashboard .equip-icon {
@@ -526,7 +483,7 @@
 /* ── Terminal Units KPI strip ── */
 #mbcxDashboard .tu-kpi-strip {
   display: grid; grid-template-columns: repeat(4, 1fr);
-  padding-bottom: 20px; margin-bottom: 20px;
+  padding-bottom: 16px; margin-bottom: 16px;
   border-bottom: 1px solid var(--gray-100);
 }
 #mbcxDashboard .tu-kpi { padding: 0 24px; border-right: 1px solid var(--gray-100); }
@@ -543,13 +500,14 @@
 #mbcxDashboard .tu-kpi-unit { font-size: 11px; color: var(--gray-400); margin-top: 4px; }
 
 /* ── Terminal Units table ── */
-#mbcxDashboard .tu-table { width: auto; border-collapse: collapse; font-size: 12px; }
+#mbcxDashboard .tu-table-scroll { overflow-x: auto; }
+#mbcxDashboard .tu-table { width: 100%; border-collapse: collapse; font-size: 12px; }
 #mbcxDashboard .tu-th {
   padding: 6px 14px;
   font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
   color: var(--gray-400); background: var(--gray-50);
   border-bottom: 1px solid var(--gray-200); white-space: nowrap;
-  text-align: center;
+  text-align: center; position: sticky; top: 0; z-index: 1;
 }
 #mbcxDashboard .tu-td {
   padding: 7px 14px; border-bottom: 1px solid var(--gray-100);
@@ -568,9 +526,31 @@
 #mbcxDashboard .tu-th-sort:hover { background: var(--gray-100); color: var(--gray-600); }
 #mbcxDashboard .tu-sort-ind { color: var(--imeg-blue); font-size: 8px; }
 
+/* Conditional formatting */
+#mbcxDashboard .tu-cf-hot  { background: #FEE2E2; color: #991B1B; }
+#mbcxDashboard .tu-cf-warm { background: #FEF3C7; color: #92400E; }
+#mbcxDashboard .tu-cf-cold { background: #DBEAFE; color: #1E40AF; }
+#mbcxDashboard .tu-cf-warn { background: #FEF3C7; color: #92400E; }
+
+/* Condition filter chips */
+#mbcxDashboard .tu-cond-bar {
+  display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px;
+}
+#mbcxDashboard .tu-cond-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; font-weight: 500; color: var(--gray-700);
+  border: none; border-radius: 14px; padding: 4px 10px;
+  cursor: pointer; transition: all 0.15s; line-height: 1;
+}
+#mbcxDashboard .tu-cond-chip:hover { filter: brightness(0.95); }
+#mbcxDashboard .tu-cond-count {
+  font-size: 10px; font-weight: 600; opacity: 0.7;
+}
+#mbcxDashboard .tu-cond-chip--on .tu-cond-count { opacity: 0.9; }
+
 /* Filter bar */
 #mbcxDashboard .tu-filter-bar {
-  display: flex; align-items: center; gap: 12px; margin-bottom: 10px;
+  display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
 }
 #mbcxDashboard .tu-filter-input {
   font-size: 12px; font-family: inherit; color: var(--gray-700);
@@ -579,94 +559,10 @@
   transition: border-color 0.15s;
 }
 #mbcxDashboard .tu-filter-input:focus { border-color: var(--imeg-blue); background: #fff; }
-#mbcxDashboard .tu-filter-count { font-size: 11px; color: var(--gray-400); }
+#mbcxDashboard .tu-filter-count { font-size: 11px; color: var(--gray-400); margin-left: auto; }
 
 #mbcxDashboard .tu-loading {
   padding: 2rem; text-align: center; color: var(--gray-400); font-size: 13px;
-}
-
-/* ── Distribution bars ── */
-#mbcxDashboard .tu-dist-section {
-  padding-bottom: 20px; margin-bottom: 20px;
-  border-bottom: 1px solid var(--gray-100);
-}
-#mbcxDashboard .tu-dist-header {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 14px;
-}
-#mbcxDashboard .tu-dist-title {
-  font-size: 11px; font-weight: 600; text-transform: uppercase;
-  letter-spacing: 0.08em; color: var(--gray-500);
-}
-#mbcxDashboard .tu-dist-legend {
-  display: flex; align-items: center; gap: 12px;
-  font-size: 11px; color: var(--gray-500);
-}
-#mbcxDashboard .tu-dist-dot {
-  display: inline-block; width: 8px; height: 8px; border-radius: 50%;
-  margin-right: 4px;
-}
-#mbcxDashboard .tu-dist-dot--good    { background: #5C8A3C; }
-#mbcxDashboard .tu-dist-dot--watch   { background: #D97706; }
-#mbcxDashboard .tu-dist-dot--problem { background: #9B2335; }
-
-#mbcxDashboard .tu-dist-row {
-  display: grid; grid-template-columns: 100px 1fr;
-  align-items: center; gap: 12px; margin-bottom: 18px;
-}
-#mbcxDashboard .tu-dist-label {
-  font-size: 12px; font-weight: 500; color: var(--gray-700);
-  white-space: nowrap;
-}
-#mbcxDashboard .tu-dist-bar-outer { position: relative; }
-#mbcxDashboard .tu-dist-bar {
-  display: flex; height: 24px; border-radius: 4px; overflow: hidden;
-  background: var(--gray-100);
-}
-#mbcxDashboard .tu-dist-seg {
-  display: flex; align-items: center; justify-content: center;
-  transition: width 0.3s ease, opacity 0.2s ease;
-  cursor: pointer;
-}
-#mbcxDashboard .tu-dist-seg:hover { filter: brightness(1.1); }
-#mbcxDashboard .tu-dist-seg--dim { opacity: 0.3; }
-#mbcxDashboard .tu-dist-seg--active { outline: 2px solid var(--gray-900); outline-offset: -2px; }
-#mbcxDashboard .tu-dist-pct {
-  font-size: 11px; font-weight: 600; color: #fff;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.25);
-  pointer-events: none;
-}
-#mbcxDashboard .tu-dist-good    { background: #5C8A3C; }
-#mbcxDashboard .tu-dist-watch   { background: #D97706; }
-#mbcxDashboard .tu-dist-problem { background: #9B2335; }
-
-/* Threshold tick marks */
-#mbcxDashboard .tu-dist-tick {
-  position: absolute; top: 0; bottom: 0; width: 1px;
-  background: rgba(255,255,255,0.7);
-  pointer-events: none;
-}
-#mbcxDashboard .tu-dist-tick-label {
-  position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
-  font-size: 9px; color: var(--gray-400); white-space: nowrap;
-  margin-top: 2px;
-}
-
-/* Filter chip */
-#mbcxDashboard .tu-dist-chip {
-  display: inline-flex; align-items: center; gap: 5px;
-  font-size: 11px; font-weight: 500; color: var(--gray-700);
-  background: var(--gray-100); border: 1px solid var(--gray-200);
-  border-radius: 12px; padding: 3px 10px; cursor: pointer;
-  transition: background 0.15s;
-}
-#mbcxDashboard .tu-dist-chip:hover { background: var(--gray-200); }
-#mbcxDashboard .tu-dist-chip-dot {
-  display: inline-block; width: 8px; height: 8px; border-radius: 50%;
-}
-#mbcxDashboard .tu-dist-chip-x {
-  font-size: 14px; line-height: 1; color: var(--gray-400);
-  margin-left: 2px;
 }
 
 /* Fullscreen */
