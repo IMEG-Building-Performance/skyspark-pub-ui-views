@@ -526,6 +526,12 @@
 #mbcxDashboard .tu-th-sort:hover { background: var(--gray-100); color: var(--gray-600); }
 #mbcxDashboard .tu-sort-ind { color: var(--imeg-blue); font-size: 8px; }
 
+/* Conditional formatting */
+#mbcxDashboard .tu-cf-hot  { background: #FEE2E2; color: #991B1B; }
+#mbcxDashboard .tu-cf-warm { background: #FEF3C7; color: #92400E; }
+#mbcxDashboard .tu-cf-cold { background: #DBEAFE; color: #1E40AF; }
+#mbcxDashboard .tu-cf-warn { background: #FEF3C7; color: #92400E; }
+
 /* Filter bar */
 #mbcxDashboard .tu-filter-bar {
   display: flex; align-items: center; gap: 10px; margin-bottom: 10px;

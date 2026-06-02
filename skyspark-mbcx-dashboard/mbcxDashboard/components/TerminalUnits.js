@@ -7,12 +7,14 @@ var TU_COL_LABELS = {
   vav:              'VAV',
   areaserved:       'Area Served',
   zoneTempAvg:      'Zone Temp Avg',
+  zoneTempSPDiff:   'Zone Temp SP Diff',
   satAvg:           'SAT Avg',
   reheatValveAvg:   'Reheat Valve Avg',
   airflowAvg:       'Airflow Avg',
   airflowSpAvg:     'Airflow SP Avg',
   damperAvg:        'Damper Avg',
   occPct:           'Occ %',
+  datHisAvg:        'DAT Avg',
 };
 
 function _tuMedian(rows, key) {
@@ -164,7 +166,16 @@ window.mbcxDashboard.components.TerminalUnits = {
 
   _buildTable: function (container, rows, cols) {
     var self = this;
-    this._state = { rows: rows, cols: cols, sortCol: null, sortDir: 1, filter: '' };
+    var zoneTempCol  = _tuFindCol(cols, ['zonetempavg', 'zonetemp', 'zone_temp']);
+    var spDiffCol    = _tuFindCol(cols, ['zonetempsp', 'tempspdiff', 'spdiff']);
+    var damperCol    = _tuFindCol(cols, ['damper']);
+    var reheatCol    = _tuFindCol(cols, ['reheat']);
+    var datCol       = _tuFindCol(cols, ['dathis', 'datavg', 'dat']);
+
+    this._state = {
+      rows: rows, cols: cols, sortCol: null, sortDir: 1, filter: '',
+      cfCols: { zoneTemp: zoneTempCol, spDiff: spDiffCol, damper: damperCol, reheat: reheatCol, dat: datCol }
+    };
 
     var tableView = container.querySelector('#tuTableView');
     if (!tableView) return;
@@ -221,12 +232,37 @@ window.mbcxDashboard.components.TerminalUnits = {
     var tbody = container.querySelector('#tuTbody');
     if (!tbody) return;
 
+    var cf = s.cfCols;
     tbody.innerHTML = rows.map(function (row) {
+      var reheatVal = cf.reheat ? +row[cf.reheat] : NaN;
+      var datVal    = cf.dat    ? +row[cf.dat]     : NaN;
+
       return '<tr>' + s.cols.map(function (k, i) {
         var val = row[k];
         if (val && typeof val === 'object' && val.dis) val = val.dis;
         var cls = i === 0 ? 'tu-td tu-td-name' : 'tu-td';
-        return '<td class="' + cls + '">' + (val !== null && val !== undefined ? val : '—') + '</td>';
+        var style = '';
+        var num = (val !== null && val !== undefined) ? +val : NaN;
+
+        if (!isNaN(num)) {
+          if (k === cf.zoneTemp) {
+            if (num > 75) style = ' tu-cf-hot';
+            else if (num < 67) style = ' tu-cf-cold';
+          } else if (k === cf.spDiff) {
+            var abs = Math.abs(num);
+            if (abs >= 5) style = ' tu-cf-hot';
+            else if (abs >= 3) style = ' tu-cf-warm';
+          } else if (k === cf.damper && num > 90) {
+            style = ' tu-cf-warn';
+          } else if (k === cf.reheat && num > 90) {
+            style = ' tu-cf-warn';
+          } else if (k === cf.dat) {
+            if (num >= 85 && !isNaN(reheatVal) && reheatVal < 5) style = ' tu-cf-hot';
+            else if (num <= 65 && !isNaN(reheatVal) && reheatVal >= 90) style = ' tu-cf-warn';
+          }
+        }
+
+        return '<td class="' + cls + style + '">' + (val !== null && val !== undefined ? val : '—') + '</td>';
       }).join('') + '</tr>';
     }).join('');
 
