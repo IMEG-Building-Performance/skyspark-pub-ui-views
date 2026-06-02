@@ -374,20 +374,39 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
           NS.evals && NS.evals.loadCupSummary) {
         NS.evals.loadCupSummary(ctx.attestKey, ctx.projectName, ctx.siteRef)
           .then(function (chartData) {
-            if (!mountEl.isConnected) return;
+            // Re-query the DOM — stale mountEl ref if page was re-initialised
+            var el = document.querySelector('#cupCard');
+            if (!el) return;
+
+            function hasData(arr) {
+              return arr && arr.some(function (v) { return v !== null; });
+            }
+
             var systems = ['cooling', 'heating', 'condenser', 'dhw'];
             systems.forEach(function (sys) {
               var cd = chartData[sys];
               if (!cd || !_plantData[sys]) return;
+
+              var hasCurrent = hasData(cd.current);
+              var hasPrior   = hasData(cd.prior);
+
+              if (!hasCurrent && !hasPrior) return; // no real data — keep demo as-is
+
+              // Use real arrays where data exists; null-out the other to keep units consistent
               _plantData[sys].monthlyRuntime = {
-                prior:   cd.prior   || _plantData[sys].monthlyRuntime.prior,
-                current: cd.current || _plantData[sys].monthlyRuntime.current
+                current: hasCurrent ? cd.current : [null,null,null,null,null,null,null,null,null,null,null,null],
+                prior:   hasPrior   ? cd.prior   : [null,null,null,null,null,null,null,null,null,null,null,null]
               };
               if (cd.unit) {
                 _plantData[sys].runtimeLabel = 'Monthly Energy Consumption (' + cd.unit + ')';
               }
             });
-            _renderInner(mountEl, _plantData);
+
+            console.log('[mbcxDashboard] CUP chart data applied for systems:', systems.filter(function(s) {
+              return hasData(chartData[s] && chartData[s].current) || hasData(chartData[s] && chartData[s].prior);
+            }).join(', ') || 'none');
+
+            _renderInner(el, _plantData);
           })
           .catch(function (err) {
             console.warn('[mbcxDashboard] CUP chart load failed:', err);
