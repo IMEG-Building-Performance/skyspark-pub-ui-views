@@ -8,9 +8,13 @@
 
 dis: "ECAP Channel Manager"
 appName: "ecapChannelManager"
-view: "ecapChannelManagerView"
-src:
-  view:      { inherit:"js" }
-  jsHandler: { var defVal:"ecapChannelManagerHandler" }
-  site:       { var kind:"Ref" }
-  dates:      { var kind:"DateSpan" }
+view: {inherit:"tile"}
+site: {dis:"Site Selector" var kind:"Ref<site>[]" input navSelAny}
+dates: {dis:"Dates" var kind:"Span" input defVal:Span("pastWeek")}
+uiViewBar: {var kind:"Dict" defVal:{} showVarLabels:T}
+layout: {var kind:"Str" defVal:"grid 6x6; 0 0 6 6"}
+subView: Trio:
+  view: {inherit:"js"}
+  jsHandler: {var kind:"Str" defVal:"ecapChannelManagerHandler"}
+  site: {var input binding:"../site"}
+  dates: {var input binding:"../dates"}
