@@ -66,9 +66,9 @@ window.mbcxDashboard.components.TerminalUnits = {
       '      <div class="tu-kpi"><div class="tu-kpi-label">Avg Reheat Valve</div><div class="tu-kpi-val" id="tuKpiReheat">&mdash;</div><div class="tu-kpi-unit">%</div></div>',
       '    </div>',
 
-      '    <div class="toggle-bar" style="margin-bottom:16px;">',
-      '      <button class="toggle-btn active" id="tuBtnTable">VAV Table</button>',
-      '      <button class="toggle-btn" id="tuBtnScatter">VAV Reheat Scatter</button>',
+      '    <div class="ahu-toggle" style="margin-bottom:16px;">',
+      '      <button class="ahu-toggle-btn ahu-toggle-btn--active" id="tuBtnTable">VAV Table</button>',
+      '      <button class="ahu-toggle-btn" id="tuBtnScatter">VAV Reheat Scatter</button>',
       '    </div>',
 
       '    <div id="tuTableView">',
@@ -142,13 +142,13 @@ window.mbcxDashboard.components.TerminalUnits = {
 
     if (btnTable) {
       btnTable.addEventListener('click', function () {
-        btnTable.classList.add('active'); btnScatter.classList.remove('active');
+        btnTable.classList.add('ahu-toggle-btn--active'); btnScatter.classList.remove('ahu-toggle-btn--active');
         tableView.style.display = ''; scatterView.style.display = 'none';
       });
     }
     if (btnScatter) {
       btnScatter.addEventListener('click', function () {
-        btnScatter.classList.add('active'); btnTable.classList.remove('active');
+        btnScatter.classList.add('ahu-toggle-btn--active'); btnTable.classList.remove('ahu-toggle-btn--active');
         tableView.style.display = 'none'; scatterView.style.display = '';
         if (!scatterInited) {
           scatterInited = true;

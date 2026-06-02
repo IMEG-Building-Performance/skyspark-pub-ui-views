@@ -284,33 +284,8 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       : '<div class="cup-no-data">No data available for this system.</div>';
 
     mountEl.innerHTML =
-      '<div class="cup-card-header">' +
-        '<div class="cup-card-header-left">' +
-          '<div class="cup-card-icon" style="background:' + d.iconBg + ';color:' + d.accentColor + ';">' +
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"' +
-              ' stroke-linecap="round" stroke-linejoin="round">' +
-              '<rect x="2" y="7" width="20" height="14" rx="2"/>' +
-              '<path d="M12 7V3"/><path d="M8 7V5"/><path d="M16 7V5"/>' +
-              '<path d="M6 12h2"/><path d="M6 16h2"/><path d="M16 12h2"/><path d="M16 16h2"/>' +
-              '<path d="M10 12h4v5h-4z"/>' +
-            '</svg>' +
-          '</div>' +
-          '<div>' +
-            '<div class="cup-card-title">Central Utility Plant</div>' +
-            '<div class="cup-card-subtitle">Chillers · Heating · Condenser · Domestic Hot Water</div>' +
-          '</div>' +
-        '</div>' +
-        '<div class="cup-card-actions">' +
-          '<button class="cup-toggle-body-btn" title="Collapse / Expand">' +
-            '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"' +
-              ' stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>' +
-          '</button>' +
-        '</div>' +
-      '</div>' +
-      '<div class="cup-card-body" id="cupCardBody">' +
-        '<div class="cup-system-toggle">' + pillsHtml + '</div>' +
-        chartBodyHtml +
-      '</div>';
+      '<div class="cup-system-toggle">' + pillsHtml + '</div>' +
+      chartBodyHtml;
 
     // ── System pill listeners ──────────────────────────────────────────────
     mountEl.querySelectorAll('.cup-system-pill').forEach(function (btn) {
@@ -319,19 +294,6 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         _renderInner(mountEl, plantData);
       });
     });
-
-    // ── Collapse / expand toggle ──────────────────────────────────────────
-    var headerEl  = mountEl.querySelector('.cup-card-header');
-    var toggleBtn = mountEl.querySelector('.cup-toggle-body-btn');
-    var bodyEl    = mountEl.querySelector('#cupCardBody');
-    if (headerEl && bodyEl) {
-      headerEl.addEventListener('click', function () {
-        var hidden = bodyEl.style.display === 'none';
-        bodyEl.style.display = hidden ? '' : 'none';
-        var poly = toggleBtn && toggleBtn.querySelector('svg polyline');
-        if (poly) poly.setAttribute('points', hidden ? '18 15 12 9 6 15' : '6 9 12 15 18 9');
-      });
-    }
 
     // ── Chart hover tooltips ──────────────────────────────────────────────
     var unitMatch = d.runtimeLabel && d.runtimeLabel.match(/\(([^)]+)\)/);
@@ -406,7 +368,28 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     render: function (data) {
       _plantData    = _makePlantData((data && data.plant) ? data.plant : _DEMO);
       _activeSystem = 'cooling';
-      return '<div class="cup-card" id="cupCard"></div>';
+      return [
+        '<div class="equip-section equip-section--collapsible equip-section--open" style="border-left-color:#7C3AED;">',
+        '  <div class="equip-header equip-header--clickable" onclick="this.closest(\'.equip-section\').classList.toggle(\'equip-section--open\');">',
+        '    <div class="equip-header-left">',
+        '      <div class="equip-icon" style="background:#EDE9FE;">',
+        '        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2"',
+        '          stroke-linecap="round" stroke-linejoin="round">',
+        '          <rect x="2" y="7" width="20" height="14" rx="2"/>',
+        '          <path d="M12 7V3"/><path d="M8 7V5"/><path d="M16 7V5"/>',
+        '          <path d="M6 12h2"/><path d="M6 16h2"/><path d="M16 12h2"/><path d="M16 16h2"/>',
+        '          <path d="M10 12h4v5h-4z"/>',
+        '        </svg>',
+        '      </div>',
+        '      <div><div class="equip-title">Central Utility Plant</div><div class="equip-meta">Chillers &middot; Heating &middot; Condenser &middot; Domestic Hot Water</div></div>',
+        '    </div>',
+        '    <div class="equip-collapse-btn" title="Expand / Collapse">',
+        '      <svg class="equip-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>',
+        '    </div>',
+        '  </div>',
+        '  <div class="equip-body" id="cupCard"></div>',
+        '</div>'
+      ].join('\n');
     },
 
     initCard: function (contentEl, container, co, data, ctx) {
