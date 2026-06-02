@@ -183,7 +183,11 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         var newSiteRef = siteSelect.value;
         var newStart   = picker ? picker.getStartDate() : startVal;
         var newEnd     = picker ? picker.getEndDate()   : endVal;
-        if (!newSiteRef && ctx && ctx.attestKey) return;
+
+        if (!newSiteRef) {
+          _showNoSitePrompt(content);
+          return;
+        }
 
         if (spinner) spinner.style.display = 'inline-block';
 
@@ -205,9 +209,13 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         if (newCtx.attestKey && newCtx.projectName) {
           NS.evals.loadData(newCtx.attestKey, newCtx.projectName)
             .then(finish)
-            .catch(function () { finish(NS.demoData); });
+            .catch(function (err) {
+              if (spinner) spinner.style.display = 'none';
+              console.warn('[mbcxDashboard] Data load failed:', err);
+              finish(null);
+            });
         } else {
-          finish(NS.demoData);
+          finish(null);
         }
       }
 
@@ -222,14 +230,40 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       // ── Site: immediate load on change ────────────────────────────────
       siteSelect.addEventListener('change', doLoad);
 
+      // ── "Select a site" prompt ────────────────────────────────────────
+      function _showNoSitePrompt(contentEl) {
+        contentEl.innerHTML =
+          '<div class="dash-no-site">' +
+            '<div class="dash-no-site-icon">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"' +
+                ' stroke-linecap="round" stroke-linejoin="round">' +
+                '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>' +
+                '<polyline points="9 22 9 12 15 12 15 22"/>' +
+              '</svg>' +
+            '</div>' +
+            '<div class="dash-no-site-title">Select a Site</div>' +
+            '<div class="dash-no-site-sub">' +
+              'Choose a site from the dropdown in the top bar to load the MBCx Dashboard.' +
+            '</div>' +
+          '</div>';
+      }
+
       // ── Nav ───────────────────────────────────────────────────────────
       container.querySelectorAll('.dash-sb-nav-item').forEach(function (btn) {
         btn.addEventListener('click', function () {
+          if (!ctx.siteRef) {
+            _showNoSitePrompt(content);
+            return;
+          }
           NS.App._showTab(container, btn.getAttribute('data-tab'), co, data, ctx);
         });
       });
 
-      NS.App._showTab(container, 'summary', co, data, ctx);
+      if (ctx.siteRef) {
+        NS.App._showTab(container, 'summary', co, data, ctx);
+      } else {
+        _showNoSitePrompt(content);
+      }
 
       // ── Resolve site display name if needed ───────────────────────────
       if (ctx && ctx.attestKey && ctx.siteRef && !ctx.siteName) {

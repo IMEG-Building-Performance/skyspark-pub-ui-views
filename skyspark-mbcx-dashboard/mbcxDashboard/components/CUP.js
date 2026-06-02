@@ -102,6 +102,20 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     }
   };
 
+  // Clone the demo data but suppress chart bars (monthlyRuntime=null) until
+  // real API data arrives, so no demo bars ever flash to the user.
+  function _makePlantData(source) {
+    var out = {};
+    var systems = Object.keys(source);
+    systems.forEach(function (s) {
+      out[s] = {};
+      var keys = Object.keys(source[s]);
+      keys.forEach(function (k) { out[s][k] = source[s][k]; });
+      out[s].monthlyRuntime = null;
+    });
+    return out;
+  }
+
   var _activeSystem = 'cooling';
   var _plantData    = null;
   var _container    = null;
@@ -355,7 +369,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
   // ── Public API ───────────────────────────────────────────────────────────
   NS.components.CUP = {
     render: function (data) {
-      _plantData    = (data && data.plant) ? data.plant : _DEMO;
+      _plantData    = _makePlantData((data && data.plant) ? data.plant : _DEMO);
       _activeSystem = 'cooling';
       return '<div class="cup-card" id="cupCard"></div>';
     },
