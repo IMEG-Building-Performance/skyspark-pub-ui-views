@@ -1,0 +1,404 @@
+/* ecapChannelManagerStyles.css — ECAP Channel Manager */
+
+/* ── Reset / Base ─────────────────────────────────────────────────────────── */
+#ecapChannelManagerRoot *,
+#ecapChannelManagerRoot *::before,
+#ecapChannelManagerRoot *::after {
+  box-sizing: border-box;
+}
+
+#ecapChannelManagerRoot {
+  font-family: 'DM Sans', 'Segoe UI', system-ui, sans-serif;
+  font-size: 13px;
+  color: #2a2a28;
+  background: #f0f0ec;
+  min-height: 100%;
+  line-height: 1.4;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+.ecm-header {
+  background: #2f5233;
+  color: #fff;
+  padding: 16px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ecm-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.ecm-header-title {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.ecm-header-badge {
+  font-size: 10px;
+  background: rgba(255,255,255,0.15);
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.ecm-header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.ecm-site-selector {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ecm-site-label {
+  color: #b5c2b7;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.ecm-site-select {
+  background: rgba(255,255,255,0.12);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 5px;
+  padding: 5px 10px;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.ecm-site-select option {
+  color: #2a2a28;
+}
+
+.ecm-next-id {
+  background: rgba(255,255,255,0.12);
+  border-radius: 5px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-family: 'JetBrains Mono', 'SF Mono', monospace;
+}
+
+/* ── Container ───────────────────────────────────────────────────────────── */
+.ecm-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 20px 24px;
+}
+
+/* ── KPI cards ───────────────────────────────────────────────────────────── */
+.ecm-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.ecm-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 20px 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.ecm-kpi-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #78796f;
+}
+
+.ecm-kpi-value {
+  font-size: 32px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+/* ── Tabs ────────────────────────────────────────────────────────────────── */
+.ecm-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid #e5e5e0;
+  margin-bottom: 16px;
+}
+
+.ecm-tab {
+  padding: 8px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: #78796f;
+  transition: all 0.15s;
+}
+
+.ecm-tab.is-active {
+  font-weight: 700;
+  border-bottom-color: #2f5233;
+  color: #2f5233;
+}
+
+/* ── Tables ──────────────────────────────────────────────────────────────── */
+.ecm-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.ecm-th {
+  padding: 8px 12px;
+  text-align: left;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #78796f;
+  border-bottom: 1px solid #e5e5e0;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.ecm-th.no-sort {
+  cursor: default;
+}
+
+.ecm-td {
+  padding: 8px 12px;
+  font-size: 13px;
+  border-bottom: 1px solid #f0f0ec;
+  color: #2a2a28;
+}
+
+.ecm-td.bold {
+  font-weight: 600;
+}
+
+.ecm-td.mono {
+  font-family: 'JetBrains Mono', 'SF Mono', monospace;
+  font-size: 12px;
+}
+
+.ecm-td.muted {
+  font-size: 12px;
+  color: #78796f;
+}
+
+.ecm-row-error {
+  background: #fef9f8;
+}
+
+/* ── Status dot ──────────────────────────────────────────────────────────── */
+.ecm-status {
+  display: flex;
+  align-items: center;
+}
+
+.ecm-status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  flex-shrink: 0;
+}
+
+.ecm-status-dot.ok { background-color: #16a34a; }
+.ecm-status-dot.error { background-color: #dc2626; }
+.ecm-status-dot.unknown { background-color: #9ca3af; }
+
+.ecm-status-text {
+  font-size: 12px;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+.ecm-btn {
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 600;
+  transition: all 0.15s;
+}
+
+.ecm-btn.primary {
+  background: #2f5233;
+  color: #fff;
+  font-size: 13px;
+  padding: 8px 16px;
+}
+
+.ecm-btn.secondary {
+  background: #e8e8e4;
+  color: #2a2a28;
+  font-size: 13px;
+  padding: 8px 16px;
+}
+
+.ecm-btn.danger {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  font-size: 13px;
+  padding: 8px 16px;
+}
+
+.ecm-btn.small {
+  font-size: 11px;
+  padding: 5px 10px;
+}
+
+.ecm-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* ── Test result badges ──────────────────────────────────────────────────── */
+.ecm-test-pass {
+  margin-left: 6px;
+  color: #16a34a;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.ecm-test-fail {
+  margin-left: 6px;
+  color: #dc2626;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* ── New Channels tab ────────────────────────────────────────────────────── */
+.ecm-new-header {
+  margin-bottom: 16px;
+}
+
+.ecm-new-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.ecm-new-subtitle {
+  font-size: 12px;
+  color: #78796f;
+}
+
+.ecm-input {
+  padding: 5px 8px;
+  border: 1px solid #e0e0dc;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: 'JetBrains Mono', 'SF Mono', monospace;
+  width: 100%;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.ecm-input.has-value {
+  border-color: #2f5233;
+  background: #f4f7f4;
+}
+
+.ecm-channel-id-cell {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ecm-row-check {
+  color: #16a34a;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.ecm-apply-bar {
+  margin-top: 16px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.ecm-apply-hint {
+  font-size: 12px;
+  color: #78796f;
+}
+
+/* ── Schedule & Errors tab ───────────────────────────────────────────────── */
+.ecm-schedule-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 20px;
+}
+
+.ecm-schedule-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #78796f;
+}
+
+.ecm-schedule-value {
+  font-size: 14px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.ecm-schedule-sub {
+  font-size: 11px;
+  color: #78796f;
+  margin-top: 2px;
+}
+
+.ecm-schedule-status {
+  display: flex;
+  align-items: center;
+  margin-top: 2px;
+}
+
+.ecm-schedule-status-text {
+  font-size: 11px;
+  color: #dc2626;
+}
+
+.ecm-error-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.ecm-error-title {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.ecm-section-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+
+.ecm-error-msg {
+  color: #dc2626;
+  font-size: 12px;
+}
+
+.ecm-errors-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}

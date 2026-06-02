@@ -1,0 +1,16 @@
+// Copy this file into your SkySpark project to register the view.
+//
+// Deployment checklist:
+//   1. Copy ecapChannelManagerEntry.js  →  {var}/pub/ui/
+//   2. Copy ecapChannelManager/         →  {var}/pub/ui/ecapChannelManager/  (preserve sub-structure)
+//   3. Import this trio into the SkySpark project database
+//   4. Restart SkySpark (or force a reload via Folio → Sync)
+
+dis: "ECAP Channel Manager"
+appName: "ecapChannelManager"
+view: "ecapChannelManagerView"
+src:
+  view:      { inherit:"js" }
+  jsHandler: { var defVal:"ecapChannelManagerHandler" }
+  site:       { var kind:"Ref" }
+  dates:      { var kind:"DateSpan" }
