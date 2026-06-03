@@ -1195,7 +1195,7 @@
   background:var(--gray-50); border:1px solid var(--gray-200);
   padding:12px;
   display:flex; flex-direction:column;
-  min-height:200px; height:700px; max-height:80vh;
+  overflow:hidden;
 }
 #mbcxDashboard .fd-chart-loading {
   position:absolute; inset:0; display:flex; align-items:center; justify-content:center;

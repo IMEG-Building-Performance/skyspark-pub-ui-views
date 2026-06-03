@@ -246,13 +246,26 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         var visible = panelDiv.style.display !== 'none';
         panelDiv.style.display = visible ? 'none' : '';
         chip.classList.toggle('fd-chart-toggle--on', !visible);
-        setTimeout(function () {
-          chartInstances.forEach(function (ci) {
-            if (ci.panel.style.display !== 'none') ci.chart.resize();
-          });
-        }, 0);
+        _resizeChartWrap(container, chartInstances);
       });
     });
+
+    _resizeChartWrap(container, chartInstances);
+  }
+
+  function _resizeChartWrap(container, chartInstances) {
+    var PANEL_H = 180;
+    var TOGGLES_H = 40;
+    var visibleCount = chartInstances.filter(function (ci) {
+      return ci.panel.style.display !== 'none';
+    }).length;
+    var h = TOGGLES_H + (visibleCount * PANEL_H);
+    container.style.height = h + 'px';
+    setTimeout(function () {
+      chartInstances.forEach(function (ci) {
+        if (ci.panel.style.display !== 'none') ci.chart.resize();
+      });
+    }, 0);
   }
 
   function renderDiag(fault) {
