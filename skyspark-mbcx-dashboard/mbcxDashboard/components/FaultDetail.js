@@ -103,6 +103,17 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       return l;
     });
 
+    var UNIT_ORDER = ['°F', '%', 'cfm', '%RH', 'inH₂O', 'psi', 'bool'];
+    function _unitRank(u) {
+      var normalized = u.toLowerCase().replace(/\s/g, '');
+      for (var i = 0; i < UNIT_ORDER.length; i++) {
+        if (normalized === UNIT_ORDER[i].toLowerCase().replace(/\s/g, '')) return i;
+      }
+      if (normalized.indexOf('inh2o') !== -1 || normalized.indexOf('inh₂o') !== -1 || normalized.indexOf('inwc') !== -1) return 4;
+      if (normalized === 'boolean' || normalized === 'bool') return 6;
+      return UNIT_ORDER.length;
+    }
+
     var groups = {};
     var groupOrder = [];
     parsed.dataCols.forEach(function (c, i) {
@@ -110,6 +121,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       if (!groups[unit]) { groups[unit] = []; groupOrder.push(unit); }
       groups[unit].push({ col: c, idx: i });
     });
+    groupOrder.sort(function (a, b) { return _unitRank(a) - _unitRank(b); });
 
     var colorIdx = 0;
     groupOrder.forEach(function (unit) {
