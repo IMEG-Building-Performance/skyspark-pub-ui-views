@@ -33,8 +33,30 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
   }
 
 
+  function _colDisplayName(col) {
+    if (col.meta) {
+      if (col.meta.dis) return col.meta.dis;
+      if (col.meta.navName) return col.meta.navName;
+      if (col.meta.id && typeof col.meta.id === 'object' && col.meta.id.dis) return col.meta.id.dis;
+    }
+    if (col.dis) return col.dis;
+    return col.name;
+  }
+
+  function _colUnit(col) {
+    if (col.meta) {
+      if (col.meta.unit) return col.meta.unit;
+      if (col.meta.kind && typeof col.meta.kind === 'string') {
+        var m = col.meta.kind.match(/^Number\s+"(.+)"$/);
+        if (m) return m[1];
+      }
+    }
+    return null;
+  }
+
   function _parseHisGrid(grid) {
     if (!grid || !grid.cols || !grid.rows || !grid.rows.length) return null;
+    console.log('[FaultDetail] Grid cols:', JSON.stringify(grid.cols.map(function(c) { return { name: c.name, meta: c.meta, dis: c.dis }; })));
     var tsCol = null;
     var dataCols = [];
     grid.cols.forEach(function (c) {
@@ -74,7 +96,9 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     if (!ctx) return;
 
     var chartDatasets = parsed.dataCols.map(function (c, i) {
-      var colLabel = c.meta && c.meta.dis ? c.meta.dis : c.name;
+      var name = _colDisplayName(c);
+      var unit = _colUnit(c);
+      var colLabel = unit ? name + ' (' + unit + ')' : name;
       return {
         label: colLabel,
         data: parsed.datasets[c.name],
