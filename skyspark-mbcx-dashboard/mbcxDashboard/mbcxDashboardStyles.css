@@ -1215,11 +1215,42 @@
 /* Related issues */
 #mbcxDashboard .fd-related { display:flex; flex-direction:column; gap:8px; }
 #mbcxDashboard .fd-related-item {
+  display:flex; align-items:center; gap:10px;
   padding:10px 12px; border:1px solid #F3F4F6; border-radius:6px; background:var(--gray-50);
 }
-#mbcxDashboard .fd-related-fault { font-size:12px; color:var(--gray-700); display:block; margin:4px 0 2px; line-height:1.4; }
-#mbcxDashboard .fd-related-dur   { font-size:11px; color:var(--gray-400); }
+#mbcxDashboard .fd-related-sev {
+  font-size:10px; font-weight:600; white-space:nowrap;
+  background:#FEF3C7; color:#92400E; border-radius:4px; padding:2px 6px;
+  flex-shrink:0;
+}
+#mbcxDashboard .fd-related-fault { font-size:12px; color:var(--gray-700); line-height:1.4; flex:1; }
+#mbcxDashboard .fd-related-pct { font-size:11px; color:var(--gray-500); font-weight:500; white-space:nowrap; flex-shrink:0; }
 #mbcxDashboard .fd-empty { font-size:12px; color:var(--gray-400); padding:12px 0; }
+
+/* Under construction placeholder */
+#mbcxDashboard .fd-construction {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:10px; padding:32px 16px; color:#D97706;
+}
+#mbcxDashboard .fd-construction-text {
+  font-size:13px; font-weight:600; color:var(--gray-400);
+  letter-spacing:0.03em;
+}
+
+/* Header badges */
+#mbcxDashboard .fd-sev-badge {
+  display:inline-block; font-size:11px; font-weight:600;
+  border-radius:4px; padding:2px 8px; white-space:nowrap;
+  background:#FEF3C7; color:#92400E;
+}
+#mbcxDashboard .fd-pct {
+  font-size:12px; font-weight:500; color:var(--gray-500);
+}
+#mbcxDashboard .fd-sparks-link {
+  font-size:11px; font-weight:500; color:var(--imeg-blue);
+  text-decoration:none; white-space:nowrap;
+}
+#mbcxDashboard .fd-sparks-link:hover { text-decoration:underline; }
 
 /* Comments */
 #mbcxDashboard .fd-comments { display:flex; flex-direction:column; gap:12px; margin-bottom:12px; }
