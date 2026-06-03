@@ -1173,8 +1173,8 @@
   display:grid; grid-template-columns:1fr 400px; gap:20px;
   align-items:start;
 }
-#mbcxDashboard .fd-col-left { min-width:0; }
-#mbcxDashboard .fd-col-right { display:flex; flex-direction:column; gap:16px; }
+#mbcxDashboard .fd-col-left { min-width:0; height:fit-content; }
+#mbcxDashboard .fd-col-right { display:flex; flex-direction:column; gap:16px; height:fit-content; }
 @media (max-width:1080px) {
   #mbcxDashboard .fd-body-split { grid-template-columns:1fr; }
 }

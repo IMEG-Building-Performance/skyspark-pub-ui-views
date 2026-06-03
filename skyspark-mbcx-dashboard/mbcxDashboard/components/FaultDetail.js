@@ -157,6 +157,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     container.appendChild(toggleBar);
 
     var panels = {};
+    var chartInstances = [];
     var colorIdx = 0;
     groupOrder.forEach(function (unit) {
       var members = groups[unit];
@@ -239,10 +240,13 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         }
       });
 
+      chartInstances.push(chartInst);
+
       chip.addEventListener('click', function () {
         var visible = panelDiv.style.display !== 'none';
         panelDiv.style.display = visible ? 'none' : '';
         chip.classList.toggle('fd-chart-toggle--on', !visible);
+        chartInstances.forEach(function (ci) { ci.resize(); });
       });
     });
   }
