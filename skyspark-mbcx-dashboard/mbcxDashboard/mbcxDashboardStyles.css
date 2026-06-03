@@ -1194,17 +1194,19 @@
   border-radius:6px;
   background:var(--gray-50); border:1px solid var(--gray-200);
   padding:12px;
+  display:flex; flex-direction:column;
+  min-height:200px; height:700px; max-height:80vh;
 }
 #mbcxDashboard .fd-chart-loading {
   position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
   color:#9CA3AF; font-size:12px;
 }
 #mbcxDashboard .fd-chart-panel {
-  margin-bottom:8px;
+  flex:1 1 0; min-height:100px;
+  display:flex; flex-direction:column;
 }
-#mbcxDashboard .fd-chart-panel:last-child { margin-bottom:0; }
 #mbcxDashboard .fd-chart-canvas-wrap {
-  position:relative; height:150px;
+  position:relative; flex:1 1 0; min-height:0;
 }
 #mbcxDashboard .fd-chart-canvas-wrap canvas { width:100% !important; height:100% !important; }
 #mbcxDashboard .fd-chart-fallback {

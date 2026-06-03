@@ -246,13 +246,9 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         var visible = panelDiv.style.display !== 'none';
         panelDiv.style.display = visible ? 'none' : '';
         chip.classList.toggle('fd-chart-toggle--on', !visible);
-        // Force all visible charts to recalculate size
         setTimeout(function () {
           chartInstances.forEach(function (ci) {
-            if (ci.panel.style.display !== 'none') {
-              ci.canvas.parentNode.style.height = '150px';
-              ci.chart.resize();
-            }
+            if (ci.panel.style.display !== 'none') ci.chart.resize();
           });
         }, 0);
       });
