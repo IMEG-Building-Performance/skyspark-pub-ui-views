@@ -18,24 +18,20 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     '#0891B2', '#BE185D', '#4F46E5', '#CA8A04', '#15803D'
   ];
 
-  function _extractEquipRef(fault) {
-    var raw = fault._raw;
-    if (!raw) return null;
-    var candidates = [raw.id, raw.equipRef, raw.siteRef, raw.equipment];
-    for (var i = 0; i < candidates.length; i++) {
-      var v = candidates[i];
-      if (!v) continue;
-      if (typeof v === 'object' && (v._kind === 'ref' || v._kind === 'Ref')) return '@' + v.val;
-      if (typeof v === 'object' && v.val) return '@' + v.val;
-      if (typeof v === 'string' && v.charAt(0) === '@') return v;
-    }
+  function _extractRef(obj) {
+    if (!obj) return null;
+    if (typeof obj === 'object' && (obj._kind === 'ref' || obj._kind === 'Ref')) return '@' + obj.val;
+    if (typeof obj === 'string' && obj.charAt(0) === '@') return obj;
     return null;
   }
 
-  function _buildDateRange(ctx) {
-    if (ctx.datesStart && ctx.datesEnd) return ctx.datesStart + '..' + ctx.datesEnd;
-    return 'pastMonth';
+  function _extractDate(obj) {
+    if (!obj) return null;
+    if (typeof obj === 'object' && obj._kind === 'date') return obj.val;
+    if (typeof obj === 'string') return obj;
+    return null;
   }
+
 
   function _parseHisGrid(grid) {
     if (!grid || !grid.cols || !grid.rows || !grid.rows.length) return null;
@@ -306,27 +302,25 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       var API = NS.api;
       var loadingEl = contentEl.querySelector('#fdChartLoading');
       var wrapEl = contentEl.querySelector('#fdChartWrap');
-
-      console.log('[FaultDetail] _raw keys:', fault._raw ? Object.keys(fault._raw) : 'no _raw');
-      console.log('[FaultDetail] _raw equipment:', fault._raw && fault._raw.equipment);
-      console.log('[FaultDetail] _raw equipRef:', fault._raw && fault._raw.equipRef);
-      console.log('[FaultDetail] _raw id:', fault._raw && fault._raw.id);
+      var raw = fault._raw || {};
 
       if (!ctx || !ctx.attestKey || !ctx.projectName) {
-        console.warn('[FaultDetail] No ctx/credentials for chart');
         this._showChartFallback(wrapEl, loadingEl, fault);
         return;
       }
 
-      var equipRef = _extractEquipRef(fault);
-      console.log('[FaultDetail] Extracted equipRef:', equipRef);
-      if (!equipRef) {
+      var equipName = raw.equipment || fault.equipment;
+      var siteRef = _extractRef(raw.siteRef) || ctx.siteRef;
+      if (!equipName || !siteRef) {
         this._showChartFallback(wrapEl, loadingEl, fault);
         return;
       }
 
-      var dateRange = _buildDateRange(ctx);
-      var axon = 'readLink(' + equipRef + ').toPoints.hisRead(' + dateRange + ')';
+      var startDate = _extractDate(raw.reportStartDate) || ctx.datesStart;
+      var endDate = _extractDate(raw.reportEndDate) || ctx.datesEnd;
+      var dateRange = (startDate && endDate) ? startDate + '..' + endDate : 'pastMonth';
+
+      var axon = 'read(equip and dis=="' + equipName + '" and siteRef==' + siteRef + ').toPoints.hisRead(' + dateRange + ')';
       console.log('[FaultDetail] Chart axon:', axon);
 
       API.evalAxon(ctx.attestKey, ctx.projectName, axon)
