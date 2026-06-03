@@ -172,11 +172,6 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       panelDiv.className = 'fd-chart-panel';
       panels[unit] = panelDiv;
 
-      var labelDiv = document.createElement('div');
-      labelDiv.className = 'fd-chart-unit-label';
-      labelDiv.textContent = unit === 'other' ? '' : unit;
-      panelDiv.appendChild(labelDiv);
-
       var canvasWrap = document.createElement('div');
       canvasWrap.className = 'fd-chart-canvas-wrap';
       var canvas = document.createElement('canvas');
@@ -317,7 +312,15 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       var inAgenda = !!(NS.meeting && NS.meeting.has(fault.id));
 
       var sevVal = typeof fault.sevNorm === 'number' ? fault.sevNorm : '—';
-      var durVal = typeof fault.sumDur === 'number' ? fault.sumDur + 'h' : (fault.sumDur || '—');
+      var durVal = '—';
+      if (typeof fault.sumDur === 'number') {
+        var totalH = fault.sumDur;
+        if (totalH >= 48) {
+          durVal = Math.round(totalH / 24) + 'd ' + Math.round(totalH % 24) + 'h';
+        } else {
+          durVal = Math.round(totalH) + 'h';
+        }
+      } else if (fault.sumDur) { durVal = fault.sumDur; }
       var pctVal = typeof fault.faultActive === 'number' ? fault.faultActive.toFixed(1) + '%' : '';
 
       var sparksHtml = '';
