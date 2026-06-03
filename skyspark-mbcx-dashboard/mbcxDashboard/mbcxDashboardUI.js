@@ -29,20 +29,20 @@ window.mbcxDashboard = window.mbcxDashboard || {};
   }
 
   function _showLoadingOverlay(container) {
-    container.innerHTML = [
-      '<div class="mbcx-loading-overlay">',
-      '  <div class="mbcx-loading-inner">',
-      '    <svg class="mbcx-loading-logo" viewBox="0 0 24 24" width="40" height="40" aria-hidden="true">',
-      '      <rect x="3"  y="3"  width="8" height="8"  rx="1.5" fill="currentColor" opacity=".9"/>',
-      '      <rect x="13" y="3"  width="8" height="8"  rx="1.5" fill="currentColor" opacity=".9"/>',
-      '      <rect x="3"  y="13" width="8" height="8"  rx="1.5" fill="currentColor" opacity=".9"/>',
-      '      <rect x="13" y="13" width="8" height="8"  rx="1.5" fill="currentColor" opacity=".4"/>',
-      '    </svg>',
-      '    <div class="mbcx-loading-text">MBCx Dashboard</div>',
-      '    <div class="mbcx-loading-spinner"></div>',
-      '  </div>',
-      '</div>'
-    ].join('\n');
+    container.innerHTML =
+      '<div style="position:fixed;inset:0;z-index:99999;background:#1e2337;display:flex;align-items:center;justify-content:center;font-family:Inter,sans-serif;">' +
+      '  <div style="display:flex;flex-direction:column;align-items:center;gap:16px;color:#fff;">' +
+      '    <svg viewBox="0 0 24 24" width="40" height="40" style="color:rgba(255,255,255,0.8);">' +
+      '      <rect x="3"  y="3"  width="8" height="8"  rx="1.5" fill="currentColor" opacity=".9"/>' +
+      '      <rect x="13" y="3"  width="8" height="8"  rx="1.5" fill="currentColor" opacity=".9"/>' +
+      '      <rect x="3"  y="13" width="8" height="8"  rx="1.5" fill="currentColor" opacity=".9"/>' +
+      '      <rect x="13" y="13" width="8" height="8"  rx="1.5" fill="currentColor" opacity=".4"/>' +
+      '    </svg>' +
+      '    <div style="font-size:16px;font-weight:600;letter-spacing:0.02em;opacity:0.9;">MBCx Dashboard</div>' +
+      '    <div style="width:24px;height:24px;border:2.5px solid rgba(255,255,255,0.2);border-top-color:#fff;border-radius:50%;animation:mbcx-spin 0.8s linear infinite;"></div>' +
+      '  </div>' +
+      '</div>' +
+      '<style>@keyframes mbcx-spin{to{transform:rotate(360deg)}}</style>';
   }
 
   // Nav refs (@nav:type.sub.BASE64) encode "id:@p:project:r:UUID" in base64.

@@ -106,13 +106,13 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         // ── Main ─────────────────────────────────────────────────────────
         '<div class="dash-main">',
 
-        '  <div class="dash-topbar">',
-        '    <div class="dash-topbar-title" id="mbcxDashTitleSite">',
+        '  <div class="dash-topbar" style="background:#1e2337 !important;">',
+        '    <div class="dash-topbar-title" id="mbcxDashTitleSite" style="color:#fff !important;">',
         '      ' + titleTxt,
         '      <span class="dash-topbar-spinner" id="mbcxSpinner" style="display:none" aria-label="Loading"></span>',
         '    </div>',
         '    <div class="dash-topbar-controls">',
-        '      <select class="dash-topbar-site" id="sbSiteSelect">',
+        '      <select class="dash-topbar-site" id="sbSiteSelect" style="color:#fff !important;">',
         '        <option value="">Loading sites…</option>',
         '      </select>',
         '      <div class="dash-topbar-daterange" id="sbDateRangePicker"></div>',
