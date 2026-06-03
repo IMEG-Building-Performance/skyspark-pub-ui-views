@@ -21,11 +21,14 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
   function _extractEquipRef(fault) {
     var raw = fault._raw;
     if (!raw) return null;
-    var eq = raw.equipment || raw.equipRef;
-    if (!eq) return null;
-    if (typeof eq === 'object' && eq._kind === 'ref') return '@' + eq.val;
-    if (typeof eq === 'object' && eq.val) return '@' + eq.val;
-    if (typeof eq === 'string' && eq.charAt(0) === '@') return eq;
+    var candidates = [raw.id, raw.equipRef, raw.siteRef, raw.equipment];
+    for (var i = 0; i < candidates.length; i++) {
+      var v = candidates[i];
+      if (!v) continue;
+      if (typeof v === 'object' && (v._kind === 'ref' || v._kind === 'Ref')) return '@' + v.val;
+      if (typeof v === 'object' && v.val) return '@' + v.val;
+      if (typeof v === 'string' && v.charAt(0) === '@') return v;
+    }
     return null;
   }
 
@@ -323,7 +326,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       }
 
       var dateRange = _buildDateRange(ctx);
-      var axon = 'readById(' + equipRef + ').toPoints.hisRead(' + dateRange + ')';
+      var axon = 'readLink(' + equipRef + ').toPoints.hisRead(' + dateRange + ')';
       console.log('[FaultDetail] Chart axon:', axon);
 
       API.evalAxon(ctx.attestKey, ctx.projectName, axon)
