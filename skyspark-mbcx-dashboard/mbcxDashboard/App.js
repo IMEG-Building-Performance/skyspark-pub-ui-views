@@ -30,6 +30,17 @@ window.mbcxDashboard = window.mbcxDashboard || {};
     _lastCtx:   null,
     _activeTab: null,
 
+    _persistState: function () {
+      var c = NS.App._lastCtx;
+      if (!c) return;
+      try {
+        sessionStorage.setItem('mbcxDashboard_state', JSON.stringify({
+          siteRef: c.siteRef, datesStart: c.datesStart, datesEnd: c.datesEnd,
+          siteName: c.siteName, tab: NS.App._activeTab
+        }));
+      } catch (e) {}
+    },
+
     init: function (container, data, ctx) {
       NS.App._lastData  = data;
       NS.App._lastCtx   = ctx;
@@ -205,6 +216,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         function finish(d) {
           if (spinner) spinner.style.display = 'none';
           NS.App.init(container, d, newCtx);
+          NS.App._persistState();
         }
 
         if (newCtx.attestKey && newCtx.projectName) {
@@ -346,6 +358,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         co.MeetingView.destroy(co);
       }
       NS.App._activeTab = tab;
+      NS.App._persistState();
 
       container.querySelectorAll('.dash-sb-nav-item').forEach(function (btn) {
         btn.classList.toggle('active', btn.getAttribute('data-tab') === tab);

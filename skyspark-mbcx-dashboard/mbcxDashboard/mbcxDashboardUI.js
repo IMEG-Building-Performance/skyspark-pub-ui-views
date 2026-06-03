@@ -6,6 +6,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
   var CSS_ID   = 'mbcxDashboardCSS';
   var CSS_PATH = '/pub/ui/mbcxDashboard/mbcxDashboardStyles.css';
   var _fetchGen = 0;
+  var STATE_KEY = 'mbcxDashboard_state';
 
   function loadStyles() {
     if (document.getElementById(CSS_ID)) return;
@@ -14,6 +15,34 @@ window.mbcxDashboard = window.mbcxDashboard || {};
     link.rel  = 'stylesheet';
     link.href = CSS_PATH + '?_v=' + Date.now();
     document.head.appendChild(link);
+  }
+
+  function _saveState(obj) {
+    try { sessionStorage.setItem(STATE_KEY, JSON.stringify(obj)); } catch (e) {}
+  }
+
+  function _loadState() {
+    try {
+      var s = sessionStorage.getItem(STATE_KEY);
+      return s ? JSON.parse(s) : null;
+    } catch (e) { return null; }
+  }
+
+  function _showLoadingOverlay(container) {
+    container.innerHTML = [
+      '<div class="mbcx-loading-overlay">',
+      '  <div class="mbcx-loading-inner">',
+      '    <svg class="mbcx-loading-logo" viewBox="0 0 24 24" width="40" height="40" aria-hidden="true">',
+      '      <rect x="3"  y="3"  width="8" height="8"  rx="1.5" fill="currentColor" opacity=".9"/>',
+      '      <rect x="13" y="3"  width="8" height="8"  rx="1.5" fill="currentColor" opacity=".9"/>',
+      '      <rect x="3"  y="13" width="8" height="8"  rx="1.5" fill="currentColor" opacity=".9"/>',
+      '      <rect x="13" y="13" width="8" height="8"  rx="1.5" fill="currentColor" opacity=".4"/>',
+      '    </svg>',
+      '    <div class="mbcx-loading-text">MBCx Dashboard</div>',
+      '    <div class="mbcx-loading-spinner"></div>',
+      '  </div>',
+      '</div>'
+    ].join('\n');
   }
 
   // Nav refs (@nav:type.sub.BASE64) encode "id:@p:project:r:UUID" in base64.
@@ -51,6 +80,10 @@ window.mbcxDashboard = window.mbcxDashboard || {};
     var container = document.createElement('div');
     container.id = 'mbcxDashboard';
     elem.appendChild(container);
+
+    _showLoadingOverlay(container);
+
+    var saved = _loadState();
 
     // Attempt SkySpark session
     var attestKey = null, projectName = null, siteRef = null;
@@ -105,17 +138,30 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       if (deVal != null) datesEnd = typeof deVal.toStr === 'function' ? deVal.toStr() : String(deVal);
     } catch (e) { /* not set */ }
 
+    if (saved) {
+      if (!siteRef && saved.siteRef) siteRef = saved.siteRef;
+      if (!datesStart && saved.datesStart) datesStart = saved.datesStart;
+      if (!datesEnd && saved.datesEnd) datesEnd = saved.datesEnd;
+    }
+
     var ctx = { attestKey: attestKey, projectName: projectName, siteRef: siteRef,
-                datesStart: datesStart, datesEnd: datesEnd, siteName: null };
+                datesStart: datesStart, datesEnd: datesEnd, siteName: saved ? saved.siteName : null };
     console.log('[mbcxDashboard] ctx:', {
       hasAttestKey: !!attestKey, projectName: projectName,
-      siteRef: siteRef, datesStart: datesStart, datesEnd: datesEnd
+      siteRef: siteRef, datesStart: datesStart, datesEnd: datesEnd,
+      restoredTab: saved ? saved.tab : null
     });
 
     function launch(data) {
       container.innerHTML = '';
       try { NS.App.init(container, data, ctx); }
       catch (e) { console.error('[mbcxDashboard] App.init failed:', e); throw e; }
+
+      // Restore tab from saved state
+      if (saved && saved.tab && saved.tab !== 'summary' && ctx.siteRef) {
+        NS.App._showTab(container, saved.tab, NS.Components, data, ctx);
+      }
+
       // Fetch site name in parallel; update title bar when ready
       if (attestKey && ctx.siteRef) {
         NS.api.evalAxonVal(attestKey, projectName, 'readById(' + ctx.siteRef + ').dis')
@@ -125,6 +171,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
               ctx.siteName = dis;
               var el = container.querySelector('#mbcxDashTitleSite');
               if (el) el.textContent = 'MBCx Dashboard — ' + dis;
+              _saveState({ siteRef: ctx.siteRef, datesStart: ctx.datesStart, datesEnd: ctx.datesEnd, siteName: dis, tab: NS.App._activeTab });
             }
           })
           .catch(function () {});
@@ -133,7 +180,6 @@ window.mbcxDashboard = window.mbcxDashboard || {};
 
     if (attestKey && projectName) {
       var gen = ++_fetchGen;
-      container.innerHTML = '<div style="padding:2rem;color:#888">Loading\u2026</div>';
       NS.evals.loadData(attestKey, projectName)
         .then(function (data) { if (gen !== _fetchGen) return; launch(data); })
         .catch(function (err) {

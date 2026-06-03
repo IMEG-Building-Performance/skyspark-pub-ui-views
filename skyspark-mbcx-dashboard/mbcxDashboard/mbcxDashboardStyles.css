@@ -49,6 +49,25 @@
   overflow: hidden;
 }
 
+/* ── Loading overlay ── */
+#mbcxDashboard .mbcx-loading-overlay {
+  position:absolute; inset:0; z-index:10000;
+  background:#1e2337; display:flex; align-items:center; justify-content:center;
+}
+#mbcxDashboard .mbcx-loading-inner {
+  display:flex; flex-direction:column; align-items:center; gap:16px; color:#fff;
+}
+#mbcxDashboard .mbcx-loading-logo { color:rgba(255,255,255,0.8); }
+#mbcxDashboard .mbcx-loading-text {
+  font-size:16px; font-weight:600; letter-spacing:0.02em; opacity:0.9;
+}
+#mbcxDashboard .mbcx-loading-spinner {
+  width:24px; height:24px; border:2.5px solid rgba(255,255,255,0.2);
+  border-top-color:#fff; border-radius:50%;
+  animation: mbcx-spin 0.8s linear infinite;
+}
+@keyframes mbcx-spin { to { transform:rotate(360deg); } }
+
 #mbcxDashboard *, #mbcxDashboard *::before, #mbcxDashboard *::after {
   box-sizing: border-box;
   margin: 0;
@@ -651,7 +670,7 @@
 
 /* ── Top bar (always dark) ── */
 #mbcxDashboard .dash-topbar {
-  background: #1e2337; height: 52px; flex-shrink: 0;
+  background: #1e2337 !important; height: 52px; flex-shrink: 0;
   display: flex; align-items: center;
   justify-content: space-between;
   padding: 0 20px; gap: 16px;
@@ -659,7 +678,7 @@
   position: relative; z-index: 10;
 }
 #mbcxDashboard .dash-topbar-title {
-  font-size: 14px; font-weight: 600; color: #fff;
+  font-size: 14px; font-weight: 600; color: #fff !important;
   flex: 1; min-width: 0;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
@@ -667,9 +686,9 @@
   display: flex; align-items: center; gap: 10px; flex-shrink: 0;
 }
 #mbcxDashboard .dash-topbar-site {
-  background: rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.12) !important;
   border: 1px solid rgba(255,255,255,0.2);
-  border-radius: 6px; color: #fff;
+  border-radius: 6px; color: #fff !important;
   font-size: 12px; font-family: inherit;
   padding: 5px 10px; max-width: 200px;
   cursor: pointer; outline: none; color-scheme: dark;
@@ -689,7 +708,7 @@
   border-radius: 6px; overflow: hidden;
 }
 #mbcxDashboard .dp-nav-btn {
-  background: none; border: none; color: rgba(255,255,255,0.55);
+  background: none; border: none; color: rgba(255,255,255,0.55) !important;
   font-size: 20px; line-height: 1; cursor: pointer; padding: 0 7px;
   font-family: inherit; transition: color 0.12s; height: 100%;
   display: flex; align-items: center;
@@ -698,7 +717,7 @@
 #mbcxDashboard .dp-label-btn {
   background: none; border: none; border-left: 1px solid rgba(255,255,255,0.15);
   border-right: 1px solid rgba(255,255,255,0.15);
-  color: #fff; font-size: 12px; font-weight: 500; font-family: inherit;
+  color: #fff !important; font-size: 12px; font-weight: 500; font-family: inherit;
   cursor: pointer; padding: 0 12px; height: 100%;
   min-width: 150px; text-align: center; white-space: nowrap;
   transition: background 0.12s;
