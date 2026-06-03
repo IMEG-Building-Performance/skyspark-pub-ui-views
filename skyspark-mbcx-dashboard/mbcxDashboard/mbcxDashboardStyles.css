@@ -1181,19 +1181,32 @@
 
 /* Chart / SkySpark iframe */
 #mbcxDashboard .fd-chart-wrap {
-  position:relative; width:100%; height:320px;
+  position:relative; width:100%;
   border-radius:6px; overflow:hidden;
   background:var(--gray-50); border:1px solid var(--gray-200);
   padding:12px;
+  min-height:120px;
 }
-#mbcxDashboard .fd-chart-wrap canvas { width:100% !important; height:100% !important; }
 #mbcxDashboard .fd-chart-loading {
   position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
   color:#9CA3AF; font-size:12px;
 }
+#mbcxDashboard .fd-chart-panel {
+  margin-bottom:8px;
+}
+#mbcxDashboard .fd-chart-panel:last-child { margin-bottom:0; }
+#mbcxDashboard .fd-chart-unit-label {
+  font-size:11px; font-weight:600; color:#6B7280;
+  text-transform:uppercase; letter-spacing:0.03em;
+  padding:4px 0 2px;
+}
+#mbcxDashboard .fd-chart-canvas-wrap {
+  position:relative; height:180px;
+}
+#mbcxDashboard .fd-chart-canvas-wrap canvas { width:100% !important; height:100% !important; }
 #mbcxDashboard .fd-chart-fallback {
   display:flex; flex-direction:column; align-items:center; justify-content:center;
-  gap:8px; height:100%; color:#6B7280; font-size:13px;
+  gap:8px; height:180px; color:#6B7280; font-size:13px;
 }
 #mbcxDashboard .fd-sparks-link-sm {
   font-size:11px; margin-left:8px; font-weight:400;

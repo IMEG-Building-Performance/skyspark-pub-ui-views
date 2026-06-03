@@ -90,26 +90,10 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     return { labels: labels, dataCols: dataCols, datasets: datasets };
   }
 
-  function _renderChart(canvasId, parsed) {
+  function _renderCharts(containerId, parsed) {
     if (typeof Chart === 'undefined') return;
-    var ctx = document.getElementById(canvasId);
-    if (!ctx) return;
-
-    var chartDatasets = parsed.dataCols.map(function (c, i) {
-      var name = _colDisplayName(c);
-      var unit = _colUnit(c);
-      var colLabel = unit ? name + ' (' + unit + ')' : name;
-      return {
-        label: colLabel,
-        data: parsed.datasets[c.name],
-        borderColor: CHART_COLORS[i % CHART_COLORS.length],
-        backgroundColor: CHART_COLORS[i % CHART_COLORS.length] + '18',
-        borderWidth: 1.5,
-        pointRadius: 0,
-        tension: 0.3,
-        fill: false
-      };
-    });
+    var container = document.getElementById(containerId);
+    if (!container) return;
 
     var fmtLabels = parsed.labels.map(function (l) {
       try {
@@ -119,22 +103,69 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       return l;
     });
 
-    new Chart(ctx, {
-      type: 'line',
-      data: { labels: fmtLabels, datasets: chartDatasets },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: { mode: 'index', intersect: false },
-        plugins: {
-          legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
-          tooltip: { bodyFont: { size: 11 } }
-        },
-        scales: {
-          x: { ticks: { maxTicksLimit: 10, font: { size: 10 } }, grid: { display: false } },
-          y: { ticks: { font: { size: 10 } }, grid: { color: '#F3F4F6' } }
+    var groups = {};
+    var groupOrder = [];
+    parsed.dataCols.forEach(function (c, i) {
+      var unit = _colUnit(c) || 'other';
+      if (!groups[unit]) { groups[unit] = []; groupOrder.push(unit); }
+      groups[unit].push({ col: c, idx: i });
+    });
+
+    var colorIdx = 0;
+    groupOrder.forEach(function (unit) {
+      var members = groups[unit];
+      var panelDiv = document.createElement('div');
+      panelDiv.className = 'fd-chart-panel';
+
+      var labelDiv = document.createElement('div');
+      labelDiv.className = 'fd-chart-unit-label';
+      labelDiv.textContent = unit === 'other' ? '' : unit;
+      panelDiv.appendChild(labelDiv);
+
+      var canvasWrap = document.createElement('div');
+      canvasWrap.className = 'fd-chart-canvas-wrap';
+      var canvas = document.createElement('canvas');
+      canvasWrap.appendChild(canvas);
+      panelDiv.appendChild(canvasWrap);
+      container.appendChild(panelDiv);
+
+      var datasets = members.map(function (m) {
+        var c = m.col;
+        var ci = colorIdx++;
+        return {
+          label: _colDisplayName(c),
+          data: parsed.datasets[c.name],
+          borderColor: CHART_COLORS[ci % CHART_COLORS.length],
+          backgroundColor: CHART_COLORS[ci % CHART_COLORS.length] + '18',
+          borderWidth: 1.5,
+          pointRadius: 0,
+          tension: 0.3,
+          fill: false
+        };
+      });
+
+      new Chart(canvas, {
+        type: 'line',
+        data: { labels: fmtLabels, datasets: datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          events: ['click'],
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+            tooltip: { bodyFont: { size: 11 } }
+          },
+          scales: {
+            x: { ticks: { maxTicksLimit: 10, font: { size: 10 } }, grid: { display: false } },
+            y: {
+              title: { display: unit !== 'other', text: unit, font: { size: 11 } },
+              ticks: { font: { size: 10 } },
+              grid: { color: '#F3F4F6' }
+            }
+          }
         }
-      }
+      });
     });
   }
 
@@ -251,7 +282,6 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         '</div>',
         '  <div class="fd-chart-wrap" id="fdChartWrap">',
         '    <div class="fd-chart-loading" id="fdChartLoading">Loading trend data…</div>',
-        '    <canvas id="fdTrendCanvas"></canvas>',
         '  </div>',
         '</div>',
 
@@ -356,7 +386,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
             return;
           }
           if (loadingEl) loadingEl.style.display = 'none';
-          _renderChart('fdTrendCanvas', parsed);
+          _renderCharts('fdChartWrap', parsed);
         }.bind(this))
         .catch(function (err) {
           console.warn('[FaultDetail] Trend chart fetch failed:', err);
@@ -376,8 +406,6 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         html = '<div class="fd-chart-fallback"><span>No trend data available for this fault.</span></div>';
       }
       if (loadingEl) loadingEl.style.display = 'none';
-      var canvas = wrapEl.querySelector('canvas');
-      if (canvas) canvas.style.display = 'none';
       var fb = document.createElement('div');
       fb.innerHTML = html;
       wrapEl.appendChild(fb.firstChild);
