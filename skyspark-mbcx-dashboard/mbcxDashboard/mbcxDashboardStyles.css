@@ -1169,6 +1169,15 @@
 #mbcxDashboard .fd-dur { font-size:12px; color:var(--gray-500); }
 
 #mbcxDashboard .fd-body { padding:20px 28px 40px; display:flex; flex-direction:column; gap:16px; }
+#mbcxDashboard .fd-body-split {
+  display:grid; grid-template-columns:1fr 340px; gap:20px;
+  align-items:start;
+}
+#mbcxDashboard .fd-col-left { min-width:0; }
+#mbcxDashboard .fd-col-right { display:flex; flex-direction:column; gap:16px; }
+@media (max-width:1080px) {
+  #mbcxDashboard .fd-body-split { grid-template-columns:1fr; }
+}
 
 #mbcxDashboard .fd-card {
   background:#fff; border:1px solid #E5E7EB; border-radius:10px; padding:18px 20px;
@@ -1225,8 +1234,6 @@
 }
 
 /* 3-column grid */
-#mbcxDashboard .fd-cols { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
-@media (max-width:960px) { #mbcxDashboard .fd-cols { grid-template-columns:1fr; } }
 
 /* Diagnostics */
 #mbcxDashboard .fd-diag-list { display:flex; flex-direction:column; gap:8px; }

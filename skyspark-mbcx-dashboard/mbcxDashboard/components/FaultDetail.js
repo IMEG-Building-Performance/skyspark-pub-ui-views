@@ -357,19 +357,20 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         '    </div>',
         '  </div>',
 
-        '  <div class="fd-body">',
+        '  <div class="fd-body fd-body-split">',
 
-        '<div class="fd-card fd-card-chart">',
-        '  <div class="fd-card-title">Fault Trend' +
+        '    <div class="fd-col-left">',
+        '      <div class="fd-card fd-card-chart">',
+        '        <div class="fd-card-title">Fault Trend' +
           (fault.sparksLink ? ' <a class="fd-sparks-link fd-sparks-link-sm" href="' + fault.sparksLink + '" target="_blank">SkySpark &#8599;</a>' : '') +
         '</div>',
-        '  <div class="fd-chart-wrap" id="fdChartWrap">',
-        '    <div class="fd-chart-loading" id="fdChartLoading">Loading trend data…</div>',
-        '  </div>',
-        '</div>',
+        '        <div class="fd-chart-wrap" id="fdChartWrap">',
+        '          <div class="fd-chart-loading" id="fdChartLoading">Loading trend data…</div>',
+        '        </div>',
+        '      </div>',
+        '    </div>',
 
-        '    <div class="fd-cols">',
-
+        '    <div class="fd-col-right">',
         '      <div class="fd-card">',
         '        <div class="fd-card-title">Diagnostics</div>',
         '        <div class="fd-diag-list">' + renderDiag(fault) + '</div>',
@@ -381,8 +382,8 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         '      </div>',
 
         renderConstruction('Activity &amp; Notes'),
-
         '    </div>',
+
         '  </div>',
         '</div>'
       ].join('\n');
