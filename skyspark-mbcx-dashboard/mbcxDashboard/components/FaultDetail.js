@@ -13,6 +13,108 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     '<path d="M10 10V8"/><path d="M14 10V8"/>' +
     '</svg>';
 
+  var CHART_COLORS = [
+    '#2563EB', '#DC2626', '#059669', '#D97706', '#7C3AED',
+    '#0891B2', '#BE185D', '#4F46E5', '#CA8A04', '#15803D'
+  ];
+
+  function _extractEquipRef(fault) {
+    var raw = fault._raw;
+    if (!raw) return null;
+    var eq = raw.equipment || raw.equipRef;
+    if (!eq) return null;
+    if (typeof eq === 'object' && eq._kind === 'ref') return '@' + eq.val;
+    if (typeof eq === 'object' && eq.val) return '@' + eq.val;
+    if (typeof eq === 'string' && eq.charAt(0) === '@') return eq;
+    return null;
+  }
+
+  function _buildDateRange(ctx) {
+    if (ctx.datesStart && ctx.datesEnd) return ctx.datesStart + '..' + ctx.datesEnd;
+    return 'pastMonth';
+  }
+
+  function _parseHisGrid(grid) {
+    if (!grid || !grid.cols || !grid.rows || !grid.rows.length) return null;
+    var tsCol = null;
+    var dataCols = [];
+    grid.cols.forEach(function (c) {
+      if (c.name === 'ts') tsCol = c.name;
+      else if (c.name !== 'id') dataCols.push(c);
+    });
+    if (!tsCol || !dataCols.length) return null;
+
+    var labels = [];
+    var datasets = {};
+    dataCols.forEach(function (c) { datasets[c.name] = []; });
+
+    grid.rows.forEach(function (row) {
+      var ts = row[tsCol];
+      var label = '';
+      if (typeof ts === 'string') label = ts;
+      else if (ts && ts._kind === 'dateTime') label = ts.val;
+      else if (ts && ts.val) label = ts.val;
+      labels.push(label);
+
+      dataCols.forEach(function (c) {
+        var v = row[c.name];
+        var num = null;
+        if (typeof v === 'number') num = v;
+        else if (v && v._kind === 'number') num = v.val;
+        else if (v !== null && v !== undefined) { var n = parseFloat(v); if (!isNaN(n)) num = n; }
+        datasets[c.name].push(num);
+      });
+    });
+
+    return { labels: labels, dataCols: dataCols, datasets: datasets };
+  }
+
+  function _renderChart(canvasId, parsed) {
+    if (typeof Chart === 'undefined') return;
+    var ctx = document.getElementById(canvasId);
+    if (!ctx) return;
+
+    var chartDatasets = parsed.dataCols.map(function (c, i) {
+      var colLabel = c.meta && c.meta.dis ? c.meta.dis : c.name;
+      return {
+        label: colLabel,
+        data: parsed.datasets[c.name],
+        borderColor: CHART_COLORS[i % CHART_COLORS.length],
+        backgroundColor: CHART_COLORS[i % CHART_COLORS.length] + '18',
+        borderWidth: 1.5,
+        pointRadius: 0,
+        tension: 0.3,
+        fill: false
+      };
+    });
+
+    var fmtLabels = parsed.labels.map(function (l) {
+      try {
+        var d = new Date(l);
+        if (!isNaN(d)) return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+      } catch (e) {}
+      return l;
+    });
+
+    new Chart(ctx, {
+      type: 'line',
+      data: { labels: fmtLabels, datasets: chartDatasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+          tooltip: { bodyFont: { size: 11 } }
+        },
+        scales: {
+          x: { ticks: { maxTicksLimit: 10, font: { size: 10 } }, grid: { display: false } },
+          y: { ticks: { font: { size: 10 } }, grid: { color: '#F3F4F6' } }
+        }
+      }
+    });
+  }
+
   function renderDiag(fault) {
     var items = [];
 
@@ -120,12 +222,15 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
 
         '  <div class="fd-body">',
 
-        fault.sparksLink
-          ? '<div class="fd-card fd-card-chart">' +
-            '<div class="fd-card-title">Fault Trend</div>' +
-            '<div class="fd-spark-wrap"><iframe class="fd-spark-iframe" src="' + fault.sparksLink + '" frameborder="0" allowfullscreen></iframe></div>' +
-            '</div>'
-          : renderConstruction('Fault Trend'),
+        '<div class="fd-card fd-card-chart">',
+        '  <div class="fd-card-title">Fault Trend' +
+          (fault.sparksLink ? ' <a class="fd-sparks-link fd-sparks-link-sm" href="' + fault.sparksLink + '" target="_blank">SkySpark &#8599;</a>' : '') +
+        '</div>',
+        '  <div class="fd-chart-wrap" id="fdChartWrap">',
+        '    <div class="fd-chart-loading" id="fdChartLoading">Loading trend data…</div>',
+        '    <canvas id="fdTrendCanvas"></canvas>',
+        '  </div>',
+        '</div>',
 
         '    <div class="fd-cols">',
 
@@ -189,6 +294,63 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
           });
         }
       }
+
+      // Fetch point history for chart
+      this._loadTrendChart(contentEl, fault, ctx);
+    },
+
+    _loadTrendChart: function (contentEl, fault, ctx) {
+      var API = NS.api;
+      var loadingEl = contentEl.querySelector('#fdChartLoading');
+      var wrapEl = contentEl.querySelector('#fdChartWrap');
+
+      if (!ctx || !ctx.attestKey || !ctx.projectName) {
+        this._showChartFallback(wrapEl, loadingEl, fault);
+        return;
+      }
+
+      var equipRef = _extractEquipRef(fault);
+      if (!equipRef) {
+        this._showChartFallback(wrapEl, loadingEl, fault);
+        return;
+      }
+
+      var dateRange = _buildDateRange(ctx);
+      var axon = 'readById(' + equipRef + ').toPoints.hisRead(' + dateRange + ')';
+
+      API.evalAxon(ctx.attestKey, ctx.projectName, axon)
+        .then(function (grid) {
+          var parsed = _parseHisGrid(grid);
+          if (!parsed) {
+            this._showChartFallback(wrapEl, loadingEl, fault);
+            return;
+          }
+          if (loadingEl) loadingEl.style.display = 'none';
+          _renderChart('fdTrendCanvas', parsed);
+        }.bind(this))
+        .catch(function (err) {
+          console.warn('[FaultDetail] Trend chart fetch failed:', err);
+          this._showChartFallback(wrapEl, loadingEl, fault);
+        }.bind(this));
+    },
+
+    _showChartFallback: function (wrapEl, loadingEl, fault) {
+      if (!wrapEl) return;
+      var html = '';
+      if (fault.sparksLink) {
+        html = '<div class="fd-chart-fallback">' +
+          '<span>Trend data unavailable.</span>' +
+          '<a class="fd-sparks-link" href="' + fault.sparksLink + '" target="_blank">View in SkySpark &#8599;</a>' +
+          '</div>';
+      } else {
+        html = '<div class="fd-chart-fallback"><span>No trend data available for this fault.</span></div>';
+      }
+      if (loadingEl) loadingEl.style.display = 'none';
+      var canvas = wrapEl.querySelector('canvas');
+      if (canvas) canvas.style.display = 'none';
+      var fb = document.createElement('div');
+      fb.innerHTML = html;
+      wrapEl.appendChild(fb.firstChild);
     },
 
     destroy: function () {}

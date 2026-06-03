@@ -1180,12 +1180,23 @@
 #mbcxDashboard .fd-card-sub { font-size:11px; font-weight:400; color:var(--gray-400); }
 
 /* Chart / SkySpark iframe */
-#mbcxDashboard .fd-spark-wrap {
-  width:100%; height:450px; border-radius:6px; overflow:hidden;
+#mbcxDashboard .fd-chart-wrap {
+  position:relative; width:100%; height:320px;
+  border-radius:6px; overflow:hidden;
   background:var(--gray-50); border:1px solid var(--gray-200);
+  padding:12px;
 }
-#mbcxDashboard .fd-spark-iframe {
-  width:100%; height:100%; border:none; display:block;
+#mbcxDashboard .fd-chart-wrap canvas { width:100% !important; height:100% !important; }
+#mbcxDashboard .fd-chart-loading {
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  color:#9CA3AF; font-size:12px;
+}
+#mbcxDashboard .fd-chart-fallback {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:8px; height:100%; color:#6B7280; font-size:13px;
+}
+#mbcxDashboard .fd-sparks-link-sm {
+  font-size:11px; margin-left:8px; font-weight:400;
 }
 
 /* 3-column grid */
