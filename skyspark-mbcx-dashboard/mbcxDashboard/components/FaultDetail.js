@@ -304,12 +304,19 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       var loadingEl = contentEl.querySelector('#fdChartLoading');
       var wrapEl = contentEl.querySelector('#fdChartWrap');
 
+      console.log('[FaultDetail] _raw keys:', fault._raw ? Object.keys(fault._raw) : 'no _raw');
+      console.log('[FaultDetail] _raw equipment:', fault._raw && fault._raw.equipment);
+      console.log('[FaultDetail] _raw equipRef:', fault._raw && fault._raw.equipRef);
+      console.log('[FaultDetail] _raw id:', fault._raw && fault._raw.id);
+
       if (!ctx || !ctx.attestKey || !ctx.projectName) {
+        console.warn('[FaultDetail] No ctx/credentials for chart');
         this._showChartFallback(wrapEl, loadingEl, fault);
         return;
       }
 
       var equipRef = _extractEquipRef(fault);
+      console.log('[FaultDetail] Extracted equipRef:', equipRef);
       if (!equipRef) {
         this._showChartFallback(wrapEl, loadingEl, fault);
         return;
@@ -317,9 +324,11 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
 
       var dateRange = _buildDateRange(ctx);
       var axon = 'readById(' + equipRef + ').toPoints.hisRead(' + dateRange + ')';
+      console.log('[FaultDetail] Chart axon:', axon);
 
       API.evalAxon(ctx.attestKey, ctx.projectName, axon)
         .then(function (grid) {
+          console.log('[FaultDetail] Chart grid:', grid && grid.cols && grid.cols.length, 'cols,', grid && grid.rows && grid.rows.length, 'rows');
           var parsed = _parseHisGrid(grid);
           if (!parsed) {
             this._showChartFallback(wrapEl, loadingEl, fault);
