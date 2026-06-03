@@ -181,15 +181,20 @@ window.mbcxDashboard.components.FaultList = {
     var infoAxon = 'view_MBCxRandomInfo_CustomerView_Output(' +
       ctx.siteRef + ', ' + dateArg +
       ', 10%, @nav:rule.all, "Fault List", "", "Show All")';
+    console.log('[FaultList] Summary Axon:', infoAxon);
     API.evalAxon(ctx.attestKey, ctx.projectName, infoAxon)
       .then(function (grid) {
+        console.log('[FaultList] Summary raw grid:', JSON.stringify(grid).slice(0, 600));
         var parsed = HP.parseGrid(grid);
+        console.log('[FaultList] Summary parsed:', parsed.cols, parsed.rows.length + ' rows');
         if (parsed.rows.length) {
-          self._parseSummary(container, parsed.rows[0].val || '');
+          var row = parsed.rows[0];
+          console.log('[FaultList] Summary row keys:', Object.keys(row), 'val type:', typeof row.val, 'val:', String(row.val).slice(0, 200));
+          self._parseSummary(container, row.val || '');
         }
       })
       .catch(function (err) {
-        console.warn('[FaultList] Summary info fetch failed:', err);
+        console.error('[FaultList] Summary info fetch failed:', err);
       });
 
     // Fetch fault list
