@@ -320,7 +320,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       var endDate = _extractDate(raw.reportEndDate) || ctx.datesEnd;
       var dateRange = (startDate && endDate) ? startDate + '..' + endDate : 'pastMonth';
 
-      var axon = 'read(equip and dis=="' + equipName + '" and siteRef==' + siteRef + ').toPoints.hisRead(' + dateRange + ')';
+      var axon = 'readAll(point and his and equipRef->dis=="' + equipName + '" and siteRef==' + siteRef + ').hisRead(' + dateRange + ')';
       console.log('[FaultDetail] Chart axon:', axon);
 
       API.evalAxon(ctx.attestKey, ctx.projectName, axon)
