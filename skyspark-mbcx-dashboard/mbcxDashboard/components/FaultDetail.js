@@ -120,7 +120,12 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
 
         '  <div class="fd-body">',
 
-        renderConstruction('Fault Trend'),
+        fault.sparksLink
+          ? '<div class="fd-card fd-card-chart">' +
+            '<div class="fd-card-title">Fault Trend</div>' +
+            '<div class="fd-spark-wrap"><iframe class="fd-spark-iframe" src="' + fault.sparksLink + '" frameborder="0" allowfullscreen></iframe></div>' +
+            '</div>'
+          : renderConstruction('Fault Trend'),
 
         '    <div class="fd-cols">',
 
