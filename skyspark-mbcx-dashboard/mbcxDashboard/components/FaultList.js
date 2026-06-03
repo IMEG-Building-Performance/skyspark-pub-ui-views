@@ -72,8 +72,12 @@ window.mbcxDashboard.components.FaultList = {
       '  <div class="equip-body">',
 
       /* KPI strip */
-      '    <div class="tu-kpi-strip">',
+      '    <div class="tu-kpi-strip fl-kpi-strip">',
+      '      <div class="tu-kpi"><div class="tu-kpi-label">Equipment Monitored</div><div class="tu-kpi-val" id="flKpiEquip">&mdash;</div><div class="tu-kpi-unit">sparking</div></div>',
       '      <div class="tu-kpi"><div class="tu-kpi-label">Total Faults</div><div class="tu-kpi-val" id="flKpiTotal">&mdash;</div><div class="tu-kpi-unit">faults</div></div>',
+      '      <div class="tu-kpi"><div class="tu-kpi-label">Month Hours</div><div class="tu-kpi-val" id="flKpiHours">&mdash;</div><div class="tu-kpi-unit">hours</div></div>',
+      '      <div class="tu-kpi"><div class="tu-kpi-label">Avg Severity</div><div class="tu-kpi-val" id="flKpiAvgSev">&mdash;</div><div class="tu-kpi-unit">of 10</div></div>',
+      '      <div class="tu-kpi"><div class="tu-kpi-label">Max Severity</div><div class="tu-kpi-val" id="flKpiMaxSev">&mdash;</div><div class="tu-kpi-unit">of 10</div></div>',
       '    </div>',
 
       /* Filter bar */
@@ -103,8 +107,12 @@ window.mbcxDashboard.components.FaultList = {
       '    <div class="fl-page-meta" id="flMeta">Active faults</div>',
       '  </div>',
 
-      '  <div class="tu-kpi-strip">',
+      '  <div class="tu-kpi-strip fl-kpi-strip">',
+      '    <div class="tu-kpi"><div class="tu-kpi-label">Equipment Monitored</div><div class="tu-kpi-val" id="flKpiEquip">&mdash;</div><div class="tu-kpi-unit">sparking</div></div>',
       '    <div class="tu-kpi"><div class="tu-kpi-label">Total Faults</div><div class="tu-kpi-val" id="flKpiTotal">&mdash;</div><div class="tu-kpi-unit">faults</div></div>',
+      '    <div class="tu-kpi"><div class="tu-kpi-label">Month Hours</div><div class="tu-kpi-val" id="flKpiHours">&mdash;</div><div class="tu-kpi-unit">hours</div></div>',
+      '    <div class="tu-kpi"><div class="tu-kpi-label">Avg Severity</div><div class="tu-kpi-val" id="flKpiAvgSev">&mdash;</div><div class="tu-kpi-unit">of 10</div></div>',
+      '    <div class="tu-kpi"><div class="tu-kpi-label">Max Severity</div><div class="tu-kpi-val" id="flKpiMaxSev">&mdash;</div><div class="tu-kpi-unit">of 10</div></div>',
       '  </div>',
 
       '  <div class="tu-filter-bar">',
@@ -168,16 +176,30 @@ window.mbcxDashboard.components.FaultList = {
     var dateArg = (ctx.datesStart && ctx.datesEnd)
       ? ctx.datesStart + '..' + ctx.datesEnd
       : 'today()';
+
+    // Fetch summary info (KPIs)
+    var infoAxon = 'view_MBCxRandomInfo_CustomerView_Output(' +
+      ctx.siteRef + ', ' + dateArg +
+      ', 10%, @nav:rule.all, "Fault List", "", "Show All")';
+    API.evalAxon(ctx.attestKey, ctx.projectName, infoAxon)
+      .then(function (grid) {
+        var parsed = HP.parseGrid(grid);
+        if (parsed.rows.length) {
+          self._parseSummary(container, parsed.rows[0].val || '');
+        }
+      })
+      .catch(function (err) {
+        console.warn('[FaultList] Summary info fetch failed:', err);
+      });
+
+    // Fetch fault list
     var axon = 'view_MBCxReport_CustomerView_Output(' +
       ctx.siteRef + ', ' + dateArg +
       ', 10%, @nav:rule.all, "Fault List", "", "Show All")';
-    console.log('[FaultList] Axon:', axon);
 
     API.evalAxon(ctx.attestKey, ctx.projectName, axon)
       .then(function (grid) {
-        console.log('[FaultList] Raw grid:', JSON.stringify(grid).slice(0, 400));
         var parsed = HP.parseGrid(grid);
-        console.log('[FaultList] Live cols:', parsed.cols.map(function(c){return typeof c==='string'?c:c.name;}), '(' + parsed.rows.length + ' rows)');
         if (!parsed.rows.length) {
           var tbody = container.querySelector('#flTbody');
           if (tbody) tbody.innerHTML = '<tr><td style="padding:24px;color:#9CA3AF;font-size:12px;text-align:center;">No faults returned for this site and date range.</td></tr>';
@@ -190,6 +212,32 @@ window.mbcxDashboard.components.FaultList = {
         var tbody = container.querySelector('#flTbody');
         if (tbody) tbody.innerHTML = '<tr><td style="padding:24px;color:#9B2335;font-size:12px;text-align:center;">Failed to load faults — ' + (err && err.message ? err.message : 'see console') + '</td></tr>';
       });
+  },
+
+  _parseSummary: function (container, text) {
+    var set = function (id, v) { var el = container.querySelector('#' + id); if (el) el.textContent = v; };
+    function extract(label) {
+      var re = new RegExp(label + '\\s*:\\s*(\\S+)', 'i');
+      var m = text.match(re);
+      return m ? m[1] : null;
+    }
+
+    var equip   = extract('Equipment Sparking');
+    var total   = extract('Total Faults');
+    var hours   = extract('Month Hours');
+    var avgSev  = extract('Average Severity');
+    var maxSev  = extract('Maximum Severity');
+
+    if (equip)  set('flKpiEquip',  equip);
+    if (total)  set('flKpiTotal',  total);
+    if (hours)  set('flKpiHours',  hours);
+    if (avgSev) set('flKpiAvgSev', avgSev);
+    if (maxSev) set('flKpiMaxSev', maxSev);
+
+    var meta = [];
+    if (total) meta.push(total + ' faults');
+    if (equip) meta.push(equip + ' equipment');
+    set('flMeta', meta.join(' · ') || 'Active faults');
   },
 
   _mapLiveRows: function (rows, cols) {

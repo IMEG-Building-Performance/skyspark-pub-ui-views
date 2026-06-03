@@ -1125,6 +1125,7 @@
 .rs-flag-sensor  { color: #94a3b8; }
 
 /* ── Fault List (fl-*) ── */
+#mbcxDashboard .fl-kpi-strip { grid-template-columns: repeat(5, 1fr) !important; }
 #mbcxDashboard .fl-table { width: 100%; }
 #mbcxDashboard .fl-table .tu-th,
 #mbcxDashboard .fl-table .tu-td { text-align: left; }
