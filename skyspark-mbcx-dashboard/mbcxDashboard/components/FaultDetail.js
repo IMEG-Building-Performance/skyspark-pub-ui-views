@@ -90,6 +90,34 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     return { labels: labels, dataCols: dataCols, datasets: datasets };
   }
 
+  var crosshairPlugin = {
+    id: 'crosshair',
+    afterEvent: function (chart, args) {
+      var evt = args.event;
+      if (evt.type === 'mousemove' && evt.x >= chart.chartArea.left && evt.x <= chart.chartArea.right &&
+          evt.y >= chart.chartArea.top && evt.y <= chart.chartArea.bottom) {
+        chart._crosshairX = evt.x;
+      } else {
+        chart._crosshairX = null;
+      }
+      chart.draw();
+    },
+    afterDraw: function (chart) {
+      if (chart._crosshairX == null) return;
+      var ctx = chart.ctx;
+      var area = chart.chartArea;
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(chart._crosshairX, area.top);
+      ctx.lineTo(chart._crosshairX, area.bottom);
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+      ctx.setLineDash([4, 3]);
+      ctx.stroke();
+      ctx.restore();
+    }
+  };
+
   function _renderCharts(containerId, parsed) {
     if (typeof Chart === 'undefined') return;
     var container = document.getElementById(containerId);
@@ -123,11 +151,26 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     });
     groupOrder.sort(function (a, b) { return _unitRank(a) - _unitRank(b); });
 
+    // Toggle bar
+    var toggleBar = document.createElement('div');
+    toggleBar.className = 'fd-chart-toggles';
+    container.appendChild(toggleBar);
+
+    var panels = {};
     var colorIdx = 0;
     groupOrder.forEach(function (unit) {
       var members = groups[unit];
+
+      // Toggle chip
+      var chip = document.createElement('button');
+      chip.className = 'fd-chart-toggle fd-chart-toggle--on';
+      chip.textContent = unit === 'other' ? 'Other' : unit;
+      chip.setAttribute('data-unit', unit);
+      toggleBar.appendChild(chip);
+
       var panelDiv = document.createElement('div');
       panelDiv.className = 'fd-chart-panel';
+      panels[unit] = panelDiv;
 
       var labelDiv = document.createElement('div');
       labelDiv.className = 'fd-chart-unit-label';
@@ -156,17 +199,39 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         };
       });
 
-      new Chart(canvas, {
+      var chartInst = new Chart(canvas, {
         type: 'line',
         data: { labels: fmtLabels, datasets: datasets },
+        plugins: [crosshairPlugin],
         options: {
           responsive: true,
           maintainAspectRatio: false,
           interaction: { mode: 'index', intersect: false },
-          events: ['click'],
+          events: ['click', 'mousemove', 'mouseout'],
           plugins: {
             legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
-            tooltip: { bodyFont: { size: 11 } }
+            tooltip: {
+              enabled: false,
+              bodyFont: { size: 11 },
+              position: 'nearest'
+            },
+            _clickTooltip: true
+          },
+          onClick: function (evt, elements, chart) {
+            if (chart._tooltipPinned) {
+              chart._tooltipPinned = false;
+              chart.options.plugins.tooltip.enabled = false;
+              chart.update('none');
+            } else if (elements.length) {
+              chart._tooltipPinned = true;
+              chart.options.plugins.tooltip.enabled = true;
+              chart.update('none');
+              chart.tooltip.setActiveElements(
+                elements.map(function (e) { return { datasetIndex: e.datasetIndex, index: e.index }; }),
+                { x: evt.x, y: evt.y }
+              );
+              chart.update('none');
+            }
           },
           scales: {
             x: { ticks: { maxTicksLimit: 10, font: { size: 10 } }, grid: { display: false } },
@@ -177,6 +242,12 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
             }
           }
         }
+      });
+
+      chip.addEventListener('click', function () {
+        var visible = panelDiv.style.display !== 'none';
+        panelDiv.style.display = visible ? 'none' : '';
+        chip.classList.toggle('fd-chart-toggle--on', !visible);
       });
     });
   }

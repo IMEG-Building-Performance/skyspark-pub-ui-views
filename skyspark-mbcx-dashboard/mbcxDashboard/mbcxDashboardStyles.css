@@ -1208,6 +1208,18 @@
   display:flex; flex-direction:column; align-items:center; justify-content:center;
   gap:8px; height:180px; color:#6B7280; font-size:13px;
 }
+#mbcxDashboard .fd-chart-toggles {
+  display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;
+}
+#mbcxDashboard .fd-chart-toggle {
+  padding:3px 10px; border-radius:12px; font-size:11px; font-weight:500;
+  border:1px solid var(--gray-300); background:#fff; color:#6B7280;
+  cursor:pointer; transition:all .15s;
+}
+#mbcxDashboard .fd-chart-toggle--on {
+  background:#2563EB; color:#fff; border-color:#2563EB;
+}
+#mbcxDashboard .fd-chart-toggle:hover { opacity:.85; }
 #mbcxDashboard .fd-sparks-link-sm {
   font-size:11px; margin-left:8px; font-weight:400;
 }
