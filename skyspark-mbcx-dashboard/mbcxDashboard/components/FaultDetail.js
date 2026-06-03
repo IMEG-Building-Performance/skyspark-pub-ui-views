@@ -26,13 +26,9 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       text: fault.recommendedActions || '—'
     });
 
-    // TODO: wire severity basis to live data
-    var sevVal = typeof fault.sevNorm === 'number' ? fault.sevNorm : null;
     items.push({
       label: 'Severity Basis',
-      text: sevVal !== null
-        ? 'Severity ' + sevVal + ' of 10. Importance factor: ' + (fault.importanceFactor || '—') + '.'
-        : 'TODO'
+      text: '—'
     });
 
     return items.map(function (d) {
@@ -52,7 +48,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     return related.map(function (f) {
       var sev = typeof f.sevNorm === 'number' ? f.sevNorm : '—';
       var pct = typeof f.faultActive === 'number' ? f.faultActive.toFixed(1) + '%' : '—';
-      return '<div class="fd-related-item">' +
+      return '<div class="fd-related-item fd-related-link" data-related-fid="' + f.id + '">' +
         '<span class="fd-related-sev">Sev ' + sev + '</span>' +
         '<span class="fd-related-fault">' + (f.faultName || '') + '</span>' +
         '<span class="fd-related-pct">' + pct + '</span>' +
@@ -147,6 +143,16 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
 
       // Back button
       contentEl.querySelector('#fdBackBtn').addEventListener('click', function () { onBack(); });
+
+      // Related fault links
+      var self = this;
+      contentEl.querySelectorAll('.fd-related-link').forEach(function (el) {
+        el.addEventListener('click', function () {
+          var fid = parseInt(el.getAttribute('data-related-fid'), 10);
+          var target = (allFaults || []).filter(function (f) { return f.id === fid; })[0];
+          if (target) self.show(contentEl, target, allFaults, ctx, onBack, options);
+        });
+      });
 
       // Meeting nav buttons
       if (nav) {

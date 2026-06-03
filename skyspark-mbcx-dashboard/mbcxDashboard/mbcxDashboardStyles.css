@@ -1225,6 +1225,8 @@
 }
 #mbcxDashboard .fd-related-fault { font-size:12px; color:var(--gray-700); line-height:1.4; flex:1; }
 #mbcxDashboard .fd-related-pct { font-size:11px; color:var(--gray-500); font-weight:500; white-space:nowrap; flex-shrink:0; }
+#mbcxDashboard .fd-related-link { cursor:pointer; transition:border-color 0.15s, background 0.15s; }
+#mbcxDashboard .fd-related-link:hover { border-color:var(--imeg-blue); background:#F8FAFC; }
 #mbcxDashboard .fd-empty { font-size:12px; color:var(--gray-400); padding:12px 0; }
 
 /* Under construction placeholder */
