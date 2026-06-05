@@ -112,9 +112,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         '      <span class="dash-topbar-spinner" id="mbcxSpinner" style="display:none" aria-label="Loading"></span>',
         '    </div>',
         '    <div class="dash-topbar-controls">',
-        '      <select class="dash-topbar-site" id="sbSiteSelect" style="color:#fff !important;">',
-        '        <option value="">Loading sites…</option>',
-        '      </select>',
+        '      <div class="dash-topbar-site-mount" id="sbSiteMount"></div>',
         '      <div class="dash-topbar-daterange" id="sbDateRangePicker"></div>',
         '    </div>',
         '  </div>',
@@ -126,13 +124,20 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       ].join('\n');
 
       // ── Refs ──────────────────────────────────────────────────────────
-      var siteSelect  = container.querySelector('#sbSiteSelect');
+      var siteMountEl = container.querySelector('#sbSiteMount');
       var pickerEl    = container.querySelector('#sbDateRangePicker');
       var spinner     = container.querySelector('#mbcxSpinner');
       var collapseBtn = container.querySelector('#sbCollapseBtn');
       var sidebar     = container.querySelector('#mbcxSidebar');
       var titleEl     = container.querySelector('#mbcxDashTitleSite');
       var content     = container.querySelector('#mbcxContent');
+
+      var siteSelector = NS.siteSelector.create({
+        container:    siteMountEl,
+        selectedRef:  ctx.siteRef || '',
+        selectedLabel: ctx.siteName || '— Select site —',
+        onChange: function () { doLoad(); }
+      });
 
       // ── Sidebar collapse ──────────────────────────────────────────────
       if (collapseBtn) {
@@ -146,22 +151,14 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         console.log('[mbcxDashboard] Loading sites — project:', ctx.projectName, 'siteRef:', ctx.siteRef);
         NS.api.evalAxon(ctx.attestKey, ctx.projectName, 'readAll(site)')
           .then(function (grid) {
-            console.log('[mbcxDashboard] Sites grid rows:', (grid.rows || []).length,
-              '| first row:', grid.rows && grid.rows[0] ? JSON.stringify(grid.rows[0]).slice(0, 200) : 'none');
             var rows = (grid.rows || []).slice();
-            // Sort client-side by dis
             rows.sort(function (a, b) {
               var da = String(a.dis || a.navName || '');
               var db = String(b.dis || b.navName || '');
               return da.localeCompare(db);
             });
-            siteSelect.innerHTML = '<option value="">— Select site —</option>';
-            var ctxRef = ctx.siteRef ? ctx.siteRef.replace(/^@/, '') : null;
-            rows.forEach(function (row) {
+            var siteList = rows.map(function (row) {
               var refObj = row.id;
-              // refObj may be Haystack Ref: {_kind:"Ref", val:"p:proj:r:uuid", dis:"..."}
-              // or already unwrapped by haystackParser (object with id/dis keys)
-              // or a plain string
               var refVal = '';
               if (refObj && typeof refObj === 'object') {
                 refVal = refObj.val || refObj.id || String(refObj);
@@ -170,29 +167,25 @@ window.mbcxDashboard = window.mbcxDashboard || {};
               }
               var refStr = refVal.replace(/^@/, '');
               var dis = row.dis || (refObj && (refObj.dis || refObj.val)) || refStr || '?';
-              console.log('[mbcxDashboard] site row — refStr:', refStr, 'dis:', dis);
-              var opt = document.createElement('option');
-              opt.value       = '@' + refStr;
-              opt.textContent = String(dis);
-              if (ctxRef && refStr === ctxRef) opt.selected = true;
-              siteSelect.appendChild(opt);
+              return { ref: '@' + refStr, dis: String(dis) };
             });
+            siteSelector.setSites(siteList, ctx.siteRef);
           })
           .catch(function (err) {
             console.warn('[mbcxDashboard] Could not load site list:', err);
-            siteSelect.innerHTML = '<option value="' + (ctx.siteRef || '') + '">' +
-              (ctx.siteName || ctx.siteRef || 'Current site') + '</option>';
+            if (ctx.siteRef) {
+              siteSelector.setSites([{ ref: ctx.siteRef, dis: ctx.siteName || ctx.siteRef }], ctx.siteRef);
+            }
           });
       } else {
-        console.warn('[mbcxDashboard] No credentials — demo mode. attestKey:', !!ctx.attestKey, 'project:', ctx.projectName);
-        siteSelect.innerHTML = '<option value="">Demo mode</option>';
+        console.warn('[mbcxDashboard] No credentials — demo mode.');
       }
 
       // ── Load handler ──────────────────────────────────────────────────
       var picker; // assigned after doLoad is defined
 
       function doLoad() {
-        var newSiteRef = siteSelect.value;
+        var newSiteRef = siteSelector.getSelectedRef();
         var newStart   = picker ? picker.getStartDate() : startVal;
         var newEnd     = picker ? picker.getEndDate()   : endVal;
 
@@ -203,14 +196,13 @@ window.mbcxDashboard = window.mbcxDashboard || {};
 
         if (spinner) spinner.style.display = 'inline-block';
 
-        var selOpt = siteSelect.options[siteSelect.selectedIndex];
         var newCtx = {
           attestKey:   ctx && ctx.attestKey,
           projectName: ctx && ctx.projectName,
           siteRef:     newSiteRef || (ctx && ctx.siteRef),
           datesStart:  newStart   || (ctx && ctx.datesStart),
           datesEnd:    newEnd     || (ctx && ctx.datesEnd),
-          siteName:    selOpt && selOpt.value ? selOpt.textContent : (ctx && ctx.siteName)
+          siteName:    siteSelector.getSelectedDis() || (ctx && ctx.siteName)
         };
 
         function finish(d) {
@@ -239,9 +231,6 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         endDate:    endVal,
         onChange:   doLoad
       });
-
-      // ── Site: immediate load on change ────────────────────────────────
-      siteSelect.addEventListener('change', doLoad);
 
       // ── "Select a site" prompt ────────────────────────────────────────
       function _showNoSitePrompt(contentEl) {
