@@ -189,7 +189,6 @@ window.mbcxDashboard.components.Compliance = (function () {
   }
 
   function _loadEquipTable() {
-    console.log('[Compliance] _loadEquipTable called. _ctx:', _ctx, 'attestKey:', _ctx && _ctx.attestKey);
     if (!_ctx || !_ctx.attestKey) return;
     var API = NS.api;
     var siteRef = _ctx.siteRef;
@@ -197,12 +196,8 @@ window.mbcxDashboard.components.Compliance = (function () {
 
     var navRef = _siteNavRef(siteRef);
     var axon = 'view_complianceSummary_Equiptable(' + navRef + ', ' + dates + ')';
-    console.log('[Compliance] Equip table axon:', axon);
-
     API.evalAxon(_ctx.attestKey, _ctx.projectName, axon)
       .then(function (grid) {
-        console.log('[Compliance] Equip table response:', JSON.stringify(grid).slice(0, 1000));
-        if (grid.rows && grid.rows[0]) console.log('[Compliance] First row:', JSON.stringify(grid.rows[0]));
         if (!grid || !grid.rows || !grid.rows.length) {
           _showEquipEmpty();
           return;
@@ -272,8 +267,6 @@ window.mbcxDashboard.components.Compliance = (function () {
     var navRef = _siteNavRef(siteRef);
     var equipArg = sp.equipRef || ('"' + equipName + '"');
     var axon = 'view_complianceDashboard_equipPlot(' + navRef + ', ' + dates + ', ' + equipArg + ', "Compliance by Space", ' + rollup + ')';
-    console.log('[Compliance] Plot axon:', axon);
-
     _destroyLineCharts();
     API.evalAxon(_ctx.attestKey, _ctx.projectName, axon)
       .then(function (grid) {
@@ -491,9 +484,6 @@ window.mbcxDashboard.components.Compliance = (function () {
     _selectedIdx = 0;
     _searchQuery = '';
     _equipList = [];
-    console.log('[Compliance] initLive called. ctx:', ctx);
-    console.log('[Compliance] container:', container, 'has #compSpaceList:', !!container.querySelector('#compSpaceList'));
-
     var searchInput = container.querySelector('#compSearch');
     if (searchInput) {
       searchInput.addEventListener('input', function () {
