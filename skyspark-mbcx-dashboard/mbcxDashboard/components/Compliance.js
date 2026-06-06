@@ -234,10 +234,8 @@ window.mbcxDashboard.components.Compliance = (function () {
 
     var axon = 'view_complianceDashboard_equipPlot(' + navRef + ', ' + dates + ', ' + equipArg + ', "Time By Fault", 1)';
 
-    console.log('[Compliance] Pie axon:', axon);
     API.evalAxon(_ctx.attestKey, _ctx.projectName, axon)
       .then(function (grid) {
-        console.log('[Compliance] Pie response:', JSON.stringify(grid).slice(0, 800));
         if (!grid || !grid.cols || !grid.rows || !grid.rows.length) {
           _showPieEmpty();
           return;
@@ -327,7 +325,25 @@ window.mbcxDashboard.components.Compliance = (function () {
   function _showPieEmpty() {
     if (!_container) return;
     var loadingEl = _container.querySelector('#compPieLoading');
-    if (loadingEl) loadingEl.textContent = 'No fault data available.';
+    if (!loadingEl) return;
+
+    var ringEl = _container.querySelector('#compRingCurrent');
+    var isFull = false;
+    if (ringEl) {
+      var txt = ringEl.textContent || '';
+      isFull = txt.indexOf('100%') !== -1;
+    }
+
+    if (isFull) {
+      loadingEl.innerHTML = '<div class="comp-compliant-msg">' +
+        '<svg width="32" height="32" viewBox="0 0 20 20" fill="#22c55e"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>' +
+        '<div style="font-weight:600;color:#22c55e;">Fully Compliant</div>' +
+        '<div style="font-size:.7rem;color:var(--gray-500);">No faults detected this period</div>' +
+      '</div>';
+    } else {
+      loadingEl.textContent = 'No fault data available.';
+    }
+    loadingEl.style.display = '';
   }
 
   // ── Equipment list ─────────────────────────────────────────────────

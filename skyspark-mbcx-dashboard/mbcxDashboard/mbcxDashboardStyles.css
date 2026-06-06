@@ -2135,6 +2135,10 @@
 #mbcxDashboard .comp-loading {
   padding: 24px 16px; text-align: center; font-size: .8rem; color: var(--gray-500);
 }
+#mbcxDashboard .comp-compliant-msg {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 16px; text-align: center;
+}
 #mbcxDashboard .comp-rollup-wrap {
   display: flex; align-items: center; gap: 6px;
 }
