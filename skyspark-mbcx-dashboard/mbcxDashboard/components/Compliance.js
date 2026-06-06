@@ -197,20 +197,20 @@ window.mbcxDashboard.components.Compliance = (function () {
 
   function _renderAuditSection() {
     var headerCols = ['Date', 'Issue Start Time', 'Site', 'Room', 'Area Served', 'Issue', 'Issue Duration', 'Min', 'Max', 'Avg'];
-    var th = headerCols.map(function (c) { return '<th class="comp-audit-th">' + c + '</th>'; }).join('');
+    var th = headerCols.map(function (c) { return '<th class="tu-th">' + c + '</th>'; }).join('');
 
     var rows = DEMO_AUDIT.map(function (r) {
-      return '<tr class="comp-audit-row">' +
-        '<td class="comp-audit-td">' + r.date + '</td>' +
-        '<td class="comp-audit-td">' + r.time + '</td>' +
-        '<td class="comp-audit-td">' + r.site + '</td>' +
-        '<td class="comp-audit-td comp-audit-td--bold">' + r.room + '</td>' +
-        '<td class="comp-audit-td">' + r.area + '</td>' +
-        '<td class="comp-audit-td">' + r.issue + '</td>' +
-        '<td class="comp-audit-td">' + r.duration + '</td>' +
-        '<td class="comp-audit-td">' + r.min + '</td>' +
-        '<td class="comp-audit-td">' + r.max + '</td>' +
-        '<td class="comp-audit-td">' + r.avg + '</td>' +
+      return '<tr>' +
+        '<td class="tu-td tu-td-name">' + r.date + '</td>' +
+        '<td class="tu-td">' + r.time + '</td>' +
+        '<td class="tu-td tu-td-name">' + r.site + '</td>' +
+        '<td class="tu-td tu-td-name" style="font-weight:600">' + r.room + '</td>' +
+        '<td class="tu-td tu-td-name">' + r.area + '</td>' +
+        '<td class="tu-td tu-td-name">' + r.issue + '</td>' +
+        '<td class="tu-td">' + r.duration + '</td>' +
+        '<td class="tu-td">' + r.min + '</td>' +
+        '<td class="tu-td">' + r.max + '</td>' +
+        '<td class="tu-td">' + r.avg + '</td>' +
       '</tr>';
     }).join('');
 
@@ -219,8 +219,8 @@ window.mbcxDashboard.components.Compliance = (function () {
         '<h3 class="comp-section-heading">Compliance Audit Report</h3>' +
         '<span class="comp-audit-count">' + DEMO_AUDIT.length + ' issues</span>' +
       '</div>' +
-      '<div class="comp-audit-table-wrap">' +
-        '<table class="comp-audit-table">' +
+      '<div class="tu-table-scroll">' +
+        '<table class="tu-table">' +
           '<thead><tr>' + th + '</tr></thead>' +
           '<tbody>' + rows + '</tbody>' +
         '</table>' +
