@@ -144,8 +144,9 @@ window.mbcxDashboard.components.Compliance = (function () {
     return '<div class="comp-audit-section">' +
       '<div class="comp-audit-header">' +
         '<h3 class="comp-section-heading">Compliance Audit Report</h3>' +
+        '<span class="comp-audit-count" id="compAuditCount"></span>' +
       '</div>' +
-      _constructionPlaceholder('Audit Report — Under Construction') +
+      '<div id="compAuditBody"><div class="comp-loading">Loading audit report…</div></div>' +
     '</div>';
   }
 
@@ -348,6 +349,92 @@ window.mbcxDashboard.components.Compliance = (function () {
       loadingEl.textContent = 'No fault data available.';
     }
     loadingEl.style.display = '';
+  }
+
+  // ── Audit report ───────────────────────────────────────────────────
+
+  function _loadAuditReport() {
+    if (!_ctx || !_ctx.attestKey) return;
+    var API = NS.api;
+    var navRef = _siteNavRef(_ctx.siteRef);
+    var dates = _ctx.datesStart + '..' + _ctx.datesEnd;
+
+    var axon = 'view_ReportOR_Xq(' + navRef + ', ' + dates + ', 1hr)';
+
+    API.evalAxon(_ctx.attestKey, _ctx.projectName, axon)
+      .then(function (grid) {
+        if (!grid || !grid.cols || !grid.rows || !grid.rows.length) {
+          _showAuditEmpty();
+          return;
+        }
+        _renderAuditTable(grid);
+      })
+      .catch(function (err) {
+        console.warn('[Compliance] Audit report fetch failed:', err);
+        _showAuditError(err);
+      });
+  }
+
+  function _renderAuditTable(grid) {
+    if (!_container) return;
+    var bodyEl = _container.querySelector('#compAuditBody');
+    var countEl = _container.querySelector('#compAuditCount');
+    if (!bodyEl) return;
+
+    if (countEl) countEl.textContent = grid.rows.length + ' issues';
+
+    var th = grid.cols.map(function (c) {
+      return '<th class="tu-th">' + (_colDisplayName(c)) + '</th>';
+    }).join('');
+
+    var rows = grid.rows.map(function (row) {
+      var tds = grid.cols.map(function (c) {
+        var v = row[c.name];
+        var text = '';
+        if (v === null || v === undefined) {
+          text = '';
+        } else if (typeof v === 'object') {
+          if (v._kind === 'number') {
+            text = v.val + (v.unit ? v.unit : '');
+          } else if (v._kind === 'ref' || v._kind === 'Ref') {
+            text = v.dis || v.val || '';
+          } else if (v._kind === 'dateTime') {
+            try {
+              var d = new Date(v.val);
+              if (!isNaN(d)) text = d.toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+              else text = v.val;
+            } catch (e) { text = v.val; }
+          } else if (v._kind === 'date') {
+            text = v.val || '';
+          } else {
+            text = v.dis || v.val || JSON.stringify(v);
+          }
+        } else {
+          text = String(v);
+        }
+        return '<td class="tu-td">' + text + '</td>';
+      }).join('');
+      return '<tr>' + tds + '</tr>';
+    }).join('');
+
+    bodyEl.innerHTML = '<div class="tu-table-scroll">' +
+      '<table class="tu-table">' +
+        '<thead><tr>' + th + '</tr></thead>' +
+        '<tbody>' + rows + '</tbody>' +
+      '</table>' +
+    '</div>';
+  }
+
+  function _showAuditEmpty() {
+    if (!_container) return;
+    var bodyEl = _container.querySelector('#compAuditBody');
+    if (bodyEl) bodyEl.innerHTML = '<div class="comp-loading">No audit data for this period.</div>';
+  }
+
+  function _showAuditError(err) {
+    if (!_container) return;
+    var bodyEl = _container.querySelector('#compAuditBody');
+    if (bodyEl) bodyEl.innerHTML = '<div class="comp-loading" style="color:#ef4444;">Error loading audit report: ' + (err.message || err) + '</div>';
   }
 
   // ── Equipment list ─────────────────────────────────────────────────
@@ -696,6 +783,7 @@ window.mbcxDashboard.components.Compliance = (function () {
     _loadEquipTable();
     _loadComplianceCards();
     _loadPieChart(null);
+    _loadAuditReport();
   }
 
   function destroy() {
