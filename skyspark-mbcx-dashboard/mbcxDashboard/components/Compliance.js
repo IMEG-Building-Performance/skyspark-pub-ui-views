@@ -280,6 +280,7 @@ window.mbcxDashboard.components.Compliance = (function () {
 
     var canvas = _container.querySelector('#compPieChart');
     if (!canvas) return;
+    canvas.style.display = '';
 
     _pieChart = new window.Chart(canvas, {
       type: 'doughnut',
@@ -333,6 +334,9 @@ window.mbcxDashboard.components.Compliance = (function () {
       var txt = ringEl.textContent || '';
       isFull = txt.indexOf('100%') !== -1;
     }
+
+    var canvas = _container.querySelector('#compPieChart');
+    if (canvas) canvas.style.display = 'none';
 
     if (isFull) {
       loadingEl.innerHTML = '<div class="comp-compliant-msg">' +
