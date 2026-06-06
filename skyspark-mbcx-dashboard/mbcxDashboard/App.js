@@ -92,7 +92,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       var ctx = NS.App._lastCtx;
       if (!ctx || !ctx.attestKey) return;
       var json = JSON.stringify(cfg).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-      var axon = 'commit(diff(readById(context()->id), {mbcxPrefs: "' + json + '"}))';
+      var axon = 'commit(diff(readById(context()->userRef), {mbcxPrefs: "' + json + '"}))';
       NS.api.evalAxon(ctx.attestKey, ctx.projectName, axon).then(function () {
         console.log('[mbcxDashboard] Config saved to user record.');
       }).catch(function (e) {
@@ -103,7 +103,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
 
   function _loadConfigRemote(ctx) {
     if (!ctx || !ctx.attestKey) return Promise.resolve(null);
-    return NS.api.evalAxonVal(ctx.attestKey, ctx.projectName, 'readById(context()->id)->mbcxPrefs')
+    return NS.api.evalAxonVal(ctx.attestKey, ctx.projectName, 'readById(context()->userRef)->mbcxPrefs')
       .then(function (val) {
         if (!val) return null;
         var str = typeof val === 'string' ? val : (val.val || null);
