@@ -105,7 +105,20 @@ window.mbcxDashboard.components.Compliance = (function () {
 
   function _renderOverviewKPIs() {
     return '<div class="comp-overview">' +
-      _constructionPlaceholder('Overview KPIs — Under Construction') +
+      '<div class="comp-ov-kpi" id="compKpiCurrent">' +
+        '<div class="comp-ov-kpi-ring" id="compRingCurrent">' + _ring(0, 64) + '</div>' +
+        '<div class="comp-ov-kpi-text">' +
+          '<div class="comp-ov-kpi-label">Current Period</div>' +
+          '<div class="comp-ov-kpi-dates" id="compDatesCurrent">—</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="comp-ov-kpi" id="compKpiPrevious">' +
+        '<div class="comp-ov-kpi-ring" id="compRingPrevious">' + _ring(0, 64) + '</div>' +
+        '<div class="comp-ov-kpi-text">' +
+          '<div class="comp-ov-kpi-label">Previous Period</div>' +
+          '<div class="comp-ov-kpi-dates" id="compDatesPrevious">—</div>' +
+        '</div>' +
+      '</div>' +
     '</div>';
   }
 
@@ -167,6 +180,45 @@ window.mbcxDashboard.components.Compliance = (function () {
   }
 
   // ── Equipment list from Axon ───────────────────────────────────────
+
+  function _loadComplianceCards() {
+    if (!_ctx || !_ctx.attestKey) return;
+    var API = NS.api;
+    var navRef = _siteNavRef(_ctx.siteRef);
+    var dates = _ctx.datesStart + '..' + _ctx.datesEnd;
+
+    API.evalAxon(_ctx.attestKey, _ctx.projectName,
+      'view_complianceSummary_complianceCard(' + navRef + ', ' + dates + ', 1)')
+      .then(function (grid) {
+        _updateKpiCard('Current', grid);
+      })
+      .catch(function (err) {
+        console.warn('[Compliance] Current card failed:', err);
+      });
+
+    API.evalAxon(_ctx.attestKey, _ctx.projectName,
+      'view_complianceSummary_complianceCard(' + navRef + ', ' + dates + ', 2)')
+      .then(function (grid) {
+        _updateKpiCard('Previous', grid);
+      })
+      .catch(function (err) {
+        console.warn('[Compliance] Previous card failed:', err);
+      });
+  }
+
+  function _updateKpiCard(which, grid) {
+    if (!_container || !grid || !grid.rows || !grid.rows.length) return;
+    var row = grid.rows[0];
+    var primaryStr = _extractStr(row.primary);
+    var pct = parseFloat(primaryStr);
+    if (isNaN(pct)) pct = 0;
+    var subtitle = _extractStr(row.subtitle);
+
+    var ringEl = _container.querySelector('#compRing' + which);
+    var datesEl = _container.querySelector('#compDates' + which);
+    if (ringEl) ringEl.innerHTML = _ring(pct, 64);
+    if (datesEl) datesEl.textContent = subtitle || '—';
+  }
 
   function _buildEquipListHTML() {
     var rows = _equipList.map(function (sp, i) {
@@ -501,6 +553,7 @@ window.mbcxDashboard.components.Compliance = (function () {
     }
 
     _loadEquipTable();
+    _loadComplianceCards();
   }
 
   function destroy() {
