@@ -1984,9 +1984,9 @@
 #mbcxDashboard .cfg-select:focus { outline: none; border-color: var(--imeg-blue); }
 
 /* ── Compliance ─────────────────────────────────────────────────────── */
-#mbcxDashboard .comp-page { padding: 0; height: 100%; overflow: auto; }
+#mbcxDashboard .comp-page { padding: 0; height: 100%; overflow: hidden; }
 #mbcxDashboard .comp-layout {
-  display: grid; grid-template-columns: 420px 1fr;
+  display: grid; grid-template-columns: minmax(340px, 400px) 1fr;
   height: 100%; min-height: 0;
 }
 #mbcxDashboard .comp-left {
@@ -1995,54 +1995,68 @@
   overflow-y: auto; background: var(--card-bg, #fff);
 }
 #mbcxDashboard .comp-right {
-  overflow-y: auto; padding: 0 16px 24px;
+  overflow-y: auto; padding: 0 20px 24px;
   background: var(--card-bg, #fff);
 }
 
 /* Table */
-#mbcxDashboard .comp-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+#mbcxDashboard .comp-table-wrap { overflow-x: auto; }
+#mbcxDashboard .comp-table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
 #mbcxDashboard .comp-th {
-  text-align: left; padding: 8px 10px; font-weight: 600;
+  text-align: left; padding: 6px 8px; font-weight: 600;
   color: var(--gray-600); border-bottom: 2px solid var(--gray-200);
-  white-space: nowrap; font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em;
+  white-space: nowrap; font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em;
+  position: sticky; top: 0; background: var(--card-bg, #fff); z-index: 1;
 }
-#mbcxDashboard .comp-cell { padding: 7px 10px; border-bottom: 1px solid var(--gray-100); }
-#mbcxDashboard .comp-cell-icon { width: 24px; text-align: center; color: var(--gray-400); }
-#mbcxDashboard .comp-info-icon { font-size: 14px; cursor: pointer; }
-#mbcxDashboard .comp-cell-equip { font-weight: 600; white-space: nowrap; }
-#mbcxDashboard .comp-cell-pct { width: 120px; }
+#mbcxDashboard .comp-cell { padding: 6px 8px; border-bottom: 1px solid var(--gray-100); font-size: 11.5px; }
+#mbcxDashboard .comp-cell-icon { width: 22px; text-align: center; color: var(--gray-400); }
+#mbcxDashboard .comp-info-icon { font-size: 13px; cursor: pointer; }
+#mbcxDashboard .comp-cell-site { width: 70px; white-space: nowrap; }
+#mbcxDashboard .comp-cell-equip { font-weight: 600; white-space: nowrap; width: 110px; }
+#mbcxDashboard .comp-cell-area { font-size: 11px; color: var(--gray-600); }
+#mbcxDashboard .comp-cell-pct { width: 140px; }
 #mbcxDashboard .comp-row { cursor: pointer; transition: background 0.1s; }
 #mbcxDashboard .comp-row:hover { background: var(--gray-50); }
 #mbcxDashboard .comp-row--active { background: var(--imeg-blue) !important; color: #fff; }
 #mbcxDashboard .comp-row--active .comp-cell { border-bottom-color: rgba(255,255,255,0.15); }
+#mbcxDashboard .comp-row--active .comp-cell-area { color: rgba(255,255,255,0.8); }
 
-/* Bar */
+/* Bar + pct label */
 #mbcxDashboard .comp-bar-wrap {
-  height: 14px; background: var(--gray-100); border-radius: 3px; overflow: hidden;
+  height: 16px; background: var(--gray-100); border-radius: 3px; overflow: hidden;
+  display: inline-block; width: 90px; vertical-align: middle;
 }
 #mbcxDashboard .comp-bar {
   height: 100%; background: var(--imeg-blue); border-radius: 3px; transition: width 0.3s;
 }
+#mbcxDashboard .comp-pct-label {
+  font-size: 10px; color: var(--gray-500); margin-left: 6px; vertical-align: middle;
+}
 #mbcxDashboard .comp-row--active .comp-bar-wrap { background: rgba(255,255,255,0.25); }
 #mbcxDashboard .comp-row--active .comp-bar { background: #fff; }
+#mbcxDashboard .comp-row--active .comp-pct-label { color: rgba(255,255,255,0.8); }
 
 /* KPIs */
-#mbcxDashboard .comp-kpis { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+#mbcxDashboard .comp-kpis {
+  padding: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+}
 #mbcxDashboard .comp-kpi-card {
   border: 1px solid var(--gray-200); border-radius: 8px;
-  padding: 16px 20px; background: var(--card-bg, #fff);
+  padding: 14px 16px; background: var(--card-bg, #fff);
+  display: flex; flex-direction: column;
 }
-#mbcxDashboard .comp-kpi-title { font-size: .85rem; font-weight: 600; color: var(--card-fg, #111); }
-#mbcxDashboard .comp-kpi-dates { font-size: .75rem; color: var(--gray-500); margin-top: 2px; }
+#mbcxDashboard .comp-kpi-header { flex: 0; }
+#mbcxDashboard .comp-kpi-title { font-size: .78rem; font-weight: 600; color: var(--card-fg, #111); line-height: 1.3; }
+#mbcxDashboard .comp-kpi-dates { font-size: .7rem; color: var(--gray-500); margin-top: 2px; }
 #mbcxDashboard .comp-kpi-value {
-  font-size: 3.5rem; font-weight: 800; color: #0f3460;
-  line-height: 1.1; margin-top: 12px;
+  font-size: 2.6rem; font-weight: 800; color: #0f3460;
+  line-height: 1; margin-top: 10px;
 }
 
 /* Chart area */
 #mbcxDashboard .comp-chart-toolbar {
   display: flex; align-items: center; gap: 16px;
-  padding: 12px 0; border-bottom: 1px solid var(--gray-200);
+  padding: 10px 0; border-bottom: 1px solid var(--gray-200);
 }
 #mbcxDashboard .comp-chart-dropdown-label {
   font-size: .8rem; color: var(--gray-600); display: flex; align-items: center; gap: 8px;
@@ -2052,23 +2066,22 @@
   font-size: .8rem; background: var(--card-bg, #fff); color: var(--card-fg, #111);
 }
 #mbcxDashboard .comp-download-btn {
-  padding: 6px 14px; border: 1px solid var(--gray-300); border-radius: 4px;
+  padding: 5px 12px; border: 1px solid var(--gray-300); border-radius: 4px;
   background: var(--card-bg, #fff); color: var(--card-fg, #111);
   font-size: .8rem; cursor: pointer; transition: background 0.1s;
 }
 #mbcxDashboard .comp-download-btn:hover { background: var(--gray-50); }
-#mbcxDashboard .comp-chart-title {
+#mbcxDashboard .comp-chart-heading {
   font-size: 1rem; font-weight: 700; color: var(--card-fg, #111);
-  text-align: center; margin: 16px 0 8px;
+  text-align: center; margin: 14px 0 6px;
 }
-#mbcxDashboard .comp-charts { display: flex; flex-direction: column; gap: 4px; }
-#mbcxDashboard .comp-chart-panel {
-  position: relative; height: 160px;
-}
+#mbcxDashboard .comp-charts { display: flex; flex-direction: column; gap: 2px; }
+#mbcxDashboard .comp-chart-panel { position: relative; height: 170px; }
 
 @media (max-width: 900px) {
   #mbcxDashboard .comp-layout { grid-template-columns: 1fr; }
   #mbcxDashboard .comp-left { border-right: none; border-bottom: 1px solid var(--gray-200); max-height: 50vh; }
+  #mbcxDashboard .comp-kpis { grid-template-columns: 1fr; }
 }
 
 /* ── Dark theme ─────────────────────────────────────────────────────── */
