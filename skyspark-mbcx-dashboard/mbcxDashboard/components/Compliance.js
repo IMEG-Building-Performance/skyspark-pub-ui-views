@@ -829,16 +829,156 @@ window.mbcxDashboard.components.Compliance = (function () {
     }
   }
 
+  var ALL_CHART_TYPES = [
+    { label: 'Temperatures', type: 'Temps' },
+    { label: 'Humidities',   type: 'Humidities' },
+    { label: 'Air Changes',  type: 'Air Change' },
+    { label: 'Pressures',    type: 'Pressures' }
+  ];
+
   function _onSelectAll() {
     var heading = _container.querySelector('#compChartHeading');
     if (heading) heading.textContent = 'All Equipment';
-    var chartsEl = _container.querySelector('#compCharts');
     _destroyLineCharts();
-    if (chartsEl) chartsEl.innerHTML = '<div class="comp-loading">Select an equipment item to view compliance charts.</div>';
+    var chartsEl = _container.querySelector('#compCharts');
+    if (chartsEl) chartsEl.innerHTML = '<div class="comp-loading">Loading site-wide charts…</div>';
 
     var firstRef = _equipList.length && _equipList[0].equipRef ? _equipList[0].equipRef : null;
     _loadPieChart(firstRef);
     _filterAuditTable();
+
+    if (!firstRef || !_ctx || !_ctx.attestKey) return;
+    var API = NS.api;
+    var navRef = _siteNavRef(_ctx.siteRef);
+    var dates = _ctx.datesStart + '..' + _ctx.datesEnd;
+
+    var loaded = 0;
+    var results = [];
+    ALL_CHART_TYPES.forEach(function (ct, i) {
+      var axon = 'view_complianceDashboard_equipPlot(' + navRef + ', ' + dates + ', ' + firstRef + ', "' + ct.type + '", 1)';
+      results[i] = null;
+      API.evalAxon(_ctx.attestKey, _ctx.projectName, axon)
+        .then(function (grid) { results[i] = grid; })
+        .catch(function (err) { console.warn('[Compliance] All chart "' + ct.type + '" failed:', err); })
+        .then(function () {
+          loaded++;
+          if (loaded === ALL_CHART_TYPES.length) _renderAllCharts(results);
+        });
+    });
+  }
+
+  function _renderAllCharts(results) {
+    if (!_container || _selectedIdx !== -1) return;
+    var chartsEl = _container.querySelector('#compCharts');
+    if (!chartsEl) return;
+    _destroyLineCharts();
+    chartsEl.innerHTML = '';
+
+    var Chart = window.Chart;
+    if (!Chart) { chartsEl.innerHTML = '<div class="comp-loading">Chart.js not loaded.</div>'; return; }
+
+    ALL_CHART_TYPES.forEach(function (ct, i) {
+      var grid = results[i];
+      if (!grid || !grid.cols || !grid.rows || !grid.rows.length) return;
+
+      var tsCol = null;
+      var dataCols = [];
+      grid.cols.forEach(function (c) {
+        if (c.name === 'ts') { tsCol = c.name; return; }
+        if (c.name === 'id') return;
+        var dis = (_colDisplayName(c) || c.name).toLowerCase();
+        if (dis.indexOf('zone -') !== -1 || dis.indexOf('compliance') !== -1 ||
+            dis.indexOf('fault') !== -1 || dis.indexOf('out of') !== -1) return;
+        dataCols.push(c);
+      });
+      if (!tsCol || !dataCols.length) return;
+
+      var labels = grid.rows.map(function (row) {
+        var ts = row[tsCol];
+        if (typeof ts === 'string') return ts;
+        if (ts && ts._kind === 'dateTime') return ts.val;
+        if (ts && ts.val) return ts.val;
+        return '';
+      });
+      var fmtLabels = labels.map(function (l) {
+        try {
+          var d = new Date(l);
+          if (!isNaN(d)) return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) +
+            ' ' + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+        } catch (e) {}
+        return l;
+      });
+
+      var wrap = document.createElement('div');
+      wrap.className = 'comp-chart-panel';
+      var titleEl = document.createElement('div');
+      titleEl.className = 'comp-panel-title';
+      titleEl.textContent = ct.label;
+      wrap.appendChild(titleEl);
+      var canvasWrap = document.createElement('div');
+      canvasWrap.className = 'comp-canvas-wrap';
+      var canvas = document.createElement('canvas');
+      canvasWrap.appendChild(canvas);
+      wrap.appendChild(canvasWrap);
+      chartsEl.appendChild(wrap);
+
+      var colorIdx = 0;
+      var datasets = dataCols.map(function (c) {
+        var data = grid.rows.map(function (row) { return _extractNum(row[c.name]); });
+        var ci = colorIdx++;
+        var isDashed = c.name.toLowerCase().indexOf('max') !== -1 || c.name.toLowerCase().indexOf('min') !== -1 ||
+                       c.name.toLowerCase().indexOf('limit') !== -1 || c.name.toLowerCase().indexOf('sp') !== -1;
+        return {
+          label: _colDisplayName(c),
+          data: data,
+          borderColor: CHART_COLORS[ci % CHART_COLORS.length],
+          backgroundColor: CHART_COLORS[ci % CHART_COLORS.length],
+          borderWidth: 1.5,
+          borderDash: isDashed ? [5, 3] : [],
+          pointRadius: 0,
+          pointHitRadius: 4,
+          fill: false,
+          tension: 0.2
+        };
+      });
+
+      var unit = _colUnit(dataCols[0]) || '';
+      var chart = new Chart(canvas, {
+        type: 'line',
+        data: { labels: fmtLabels, datasets: datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          interaction: { mode: 'index', intersect: false },
+          scales: {
+            x: {
+              ticks: { font: { size: 10 }, color: '#9ca3af', maxRotation: 45, autoSkip: true, maxTicksLimit: 10 },
+              grid: { display: false }
+            },
+            y: {
+              ticks: {
+                font: { size: 10 }, color: '#9ca3af',
+                callback: function (v) { return v + unit; }
+              },
+              grid: { color: '#F3F4F6' }
+            }
+          },
+          plugins: {
+            legend: {
+              position: 'top', align: 'end',
+              labels: { usePointStyle: true, pointStyle: 'circle', font: { size: 10 }, padding: 12, boxWidth: 7 }
+            },
+            tooltip: { enabled: true, mode: 'index', intersect: false }
+          }
+        }
+      });
+      _charts.push(chart);
+    });
+
+    if (!chartsEl.children.length) {
+      chartsEl.innerHTML = '<div class="comp-loading">No site-wide chart data available.</div>';
+    }
   }
 
   function _bindEquipClicks() {
