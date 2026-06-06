@@ -341,9 +341,17 @@ window.mbcxDashboard.components.Compliance = (function () {
 
     var tsCol = null;
     var dataCols = [];
+    var faultCols = [];
     grid.cols.forEach(function (c) {
-      if (c.name === 'ts') tsCol = c.name;
-      else if (c.name !== 'id') dataCols.push(c);
+      if (c.name === 'ts') { tsCol = c.name; return; }
+      if (c.name === 'id') return;
+      var dis = (_colDisplayName(c) || c.name).toLowerCase();
+      if (dis.indexOf('zone -') !== -1 || dis.indexOf('compliance') !== -1 ||
+          dis.indexOf('fault') !== -1 || dis.indexOf('out of') !== -1) {
+        faultCols.push(c);
+      } else {
+        dataCols.push(c);
+      }
     });
 
     if (!tsCol || !dataCols.length) {
