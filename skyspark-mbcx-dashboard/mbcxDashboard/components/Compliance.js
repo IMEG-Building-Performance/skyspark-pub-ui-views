@@ -185,7 +185,7 @@ window.mbcxDashboard.components.Compliance = (function () {
     var siteRef = _ctx.siteRef;
     var dates = _ctx.datesStart + '..' + _ctx.datesEnd;
 
-    var axon = 'view_complianceSummary_Equiptable(readAll(equip and siteRef==' + siteRef + '), ' + dates + ')';
+    var axon = 'view_complianceSummary_Equiptable(' + siteRef + ', ' + dates + ')';
     console.log('[Compliance] Equip table axon:', axon);
 
     API.evalAxon(_ctx.attestKey, _ctx.projectName, axon)
@@ -253,7 +253,7 @@ window.mbcxDashboard.components.Compliance = (function () {
     var equipName = sp.equip.replace(/"/g, '\\"');
     var rollup = _plotRollup + 'h';
 
-    var axon = 'view_complianceDashboard_equipPlot(readAll(equip and siteRef==' + siteRef + '), ' + dates + ', "' + equipName + '", "Compliance by Space", ' + rollup + ')';
+    var axon = 'view_complianceDashboard_equipPlot(' + siteRef + ', ' + dates + ', "' + equipName + '", "Compliance by Space", ' + rollup + ')';
     console.log('[Compliance] Plot axon:', axon);
 
     _destroyLineCharts();
