@@ -185,9 +185,11 @@ window.mbcxDashboard.components.Compliance = (function () {
     var dates = _ctx.datesStart + '..' + _ctx.datesEnd;
 
     var axon = 'view_complianceSummary_Equiptable(' + siteRef + '.toEquips, ' + dates + ')';
+    console.log('[Compliance] Equip table axon:', axon);
 
     API.evalAxon(_ctx.attestKey, _ctx.projectName, axon)
       .then(function (grid) {
+        console.log('[Compliance] Equip table response:', JSON.stringify(grid).slice(0, 500));
         if (!grid || !grid.rows || !grid.rows.length) {
           _showEquipEmpty();
           return;
@@ -251,6 +253,7 @@ window.mbcxDashboard.components.Compliance = (function () {
     var rollup = _plotRollup + 'h';
 
     var axon = 'view_complianceDashboard_equipPlot(' + siteRef + '.toEquips, ' + dates + ', "' + equipName + '", "Compliance by Space", ' + rollup + ')';
+    console.log('[Compliance] Plot axon:', axon);
 
     _destroyLineCharts();
     API.evalAxon(_ctx.attestKey, _ctx.projectName, axon)
