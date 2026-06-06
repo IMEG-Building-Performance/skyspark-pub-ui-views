@@ -7,12 +7,13 @@ window.mbcxDashboard.components.Compliance = (function () {
   var NS = window.mbcxDashboard;
   var _charts = [];
   var _pieChart = null;
-  var _selectedIdx = 0;
+  var _selectedIdx = -1;
   var _searchQuery = '';
   var _equipList = [];
   var _ctx = null;
   var _container = null;
   var _plotRollup = 1;
+  var _auditGrid = null;
 
   var ROLLUP_OPTIONS = [0.25, 1, 2, 4, 8, 12, 24];
   var ROLLUP_LABELS = { 0.25: '15min', 1: '1h', 2: '2h', 4: '4h', 8: '8h', 12: '12h', 24: '24h' };
@@ -364,10 +365,12 @@ window.mbcxDashboard.components.Compliance = (function () {
     API.evalAxon(_ctx.attestKey, _ctx.projectName, axon)
       .then(function (grid) {
         if (!grid || !grid.cols || !grid.rows || !grid.rows.length) {
+          _auditGrid = null;
           _showAuditEmpty();
           return;
         }
-        _renderAuditTable(grid);
+        _auditGrid = grid;
+        _filterAuditTable();
       })
       .catch(function (err) {
         console.warn('[Compliance] Audit report fetch failed:', err);
@@ -425,6 +428,50 @@ window.mbcxDashboard.components.Compliance = (function () {
     '</div>';
   }
 
+  function _filterAuditTable() {
+    if (!_auditGrid) return;
+    if (_selectedIdx === -1) {
+      _renderAuditTable(_auditGrid);
+      return;
+    }
+    var sp = _equipList[_selectedIdx];
+    if (!sp) { _renderAuditTable(_auditGrid); return; }
+
+    var equipName = sp.equip.toLowerCase();
+    var equipCol = null;
+    _auditGrid.cols.forEach(function (c) {
+      var n = c.name.toLowerCase();
+      if (n === 'equip' || n === 'room' || n === 'equipment' || n === 'navname') equipCol = c.name;
+    });
+    if (!equipCol) {
+      _auditGrid.cols.forEach(function (c) {
+        var dis = (_colDisplayName(c) || '').toLowerCase();
+        if (dis === 'equip' || dis === 'room' || dis === 'equipment') equipCol = c.name;
+      });
+    }
+
+    if (!equipCol) {
+      _renderAuditTable(_auditGrid);
+      return;
+    }
+
+    var filtered = {
+      cols: _auditGrid.cols,
+      rows: _auditGrid.rows.filter(function (row) {
+        var val = _extractStr(row[equipCol]).toLowerCase();
+        return val.indexOf(equipName) !== -1;
+      })
+    };
+
+    if (!filtered.rows.length) {
+      _showAuditEmpty();
+      var countEl = _container.querySelector('#compAuditCount');
+      if (countEl) countEl.textContent = '0 issues';
+      return;
+    }
+    _renderAuditTable(filtered);
+  }
+
   function _showAuditEmpty() {
     if (!_container) return;
     var bodyEl = _container.querySelector('#compAuditBody');
@@ -440,6 +487,15 @@ window.mbcxDashboard.components.Compliance = (function () {
   // ── Equipment list ─────────────────────────────────────────────────
 
   function _buildEquipListHTML() {
+    var allActive = _selectedIdx === -1 ? ' comp-space--active' : '';
+    var allBtn = '<button class="comp-space comp-space-all' + allActive + '" data-idx="-1">' +
+      '<div class="comp-space-left">' +
+        '<div class="comp-space-info">' +
+          '<div class="comp-space-equip">All Equipment</div>' +
+        '</div>' +
+      '</div>' +
+    '</button>';
+
     var rows = _equipList.map(function (sp, i) {
       var active = i === _selectedIdx ? ' comp-space--active' : '';
       var pct = sp.pct;
@@ -456,7 +512,7 @@ window.mbcxDashboard.components.Compliance = (function () {
         '<div class="comp-space-pct" style="color:' + pctColor + '">' + pctText + '</div>' +
       '</button>';
     }).join('');
-    return rows;
+    return allBtn + rows;
   }
 
   function _loadEquipTable() {
@@ -475,6 +531,8 @@ window.mbcxDashboard.components.Compliance = (function () {
         }
         _parseEquipGrid(grid);
         _renderEquipButtons();
+        var firstRef = _equipList.length && _equipList[0].equipRef ? _equipList[0].equipRef : null;
+        _loadPieChart(firstRef);
       })
       .catch(function (err) {
         console.warn('[Compliance] Equipment table fetch failed:', err);
@@ -547,6 +605,7 @@ window.mbcxDashboard.components.Compliance = (function () {
         }
         _buildChartsFromGrid(grid);
         _loadPieChart(sp.equipRef);
+        _filterAuditTable();
       })
       .catch(function (err) {
         console.warn('[Compliance] Plot fetch failed:', err);
@@ -744,7 +803,23 @@ window.mbcxDashboard.components.Compliance = (function () {
     _container.querySelectorAll('.comp-space').forEach(function (el) {
       el.classList.toggle('comp-space--active', parseInt(el.getAttribute('data-idx'), 10) === idx);
     });
-    _loadEquipPlot();
+    if (idx === -1) {
+      _onSelectAll();
+    } else {
+      _loadEquipPlot();
+    }
+  }
+
+  function _onSelectAll() {
+    var heading = _container.querySelector('#compChartHeading');
+    if (heading) heading.textContent = 'All Equipment';
+    var chartsEl = _container.querySelector('#compCharts');
+    _destroyLineCharts();
+    if (chartsEl) chartsEl.innerHTML = '<div class="comp-loading">Select an equipment item to view compliance charts.</div>';
+
+    var firstRef = _equipList.length && _equipList[0].equipRef ? _equipList[0].equipRef : null;
+    _loadPieChart(firstRef);
+    _filterAuditTable();
   }
 
   function _bindEquipClicks() {
@@ -761,9 +836,10 @@ window.mbcxDashboard.components.Compliance = (function () {
   function initLive(container, ctx) {
     _container = container;
     _ctx = ctx;
-    _selectedIdx = 0;
+    _selectedIdx = -1;
     _searchQuery = '';
     _equipList = [];
+    _auditGrid = null;
     var searchInput = container.querySelector('#compSearch');
     if (searchInput) {
       searchInput.addEventListener('input', function () {
@@ -782,16 +858,16 @@ window.mbcxDashboard.components.Compliance = (function () {
 
     _loadEquipTable();
     _loadComplianceCards();
-    _loadPieChart(null);
     _loadAuditReport();
   }
 
   function destroy() {
     _destroyLineCharts();
     if (_pieChart) { try { _pieChart.destroy(); } catch (e) {} _pieChart = null; }
-    _selectedIdx = 0;
+    _selectedIdx = -1;
     _searchQuery = '';
     _equipList = [];
+    _auditGrid = null;
     _container = null;
     _ctx = null;
   }

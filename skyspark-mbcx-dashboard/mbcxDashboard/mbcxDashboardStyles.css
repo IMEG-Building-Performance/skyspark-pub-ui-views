@@ -2061,6 +2061,9 @@
   border-color: var(--imeg-blue);
   box-shadow: 0 0 0 1px rgba(74,111,165,0.15);
 }
+#mbcxDashboard .comp-space-all .comp-space-equip {
+  font-weight: 600; color: var(--imeg-blue);
+}
 #mbcxDashboard .comp-space-left { display: flex; align-items: center; gap: 8px; min-width: 0; }
 #mbcxDashboard .comp-space-ring { flex-shrink: 0; }
 #mbcxDashboard .comp-space-info { min-width: 0; }
