@@ -1,11 +1,13 @@
-// components/Compliance.js — MBCx Compliance view (redesigned)
+// components/Compliance.js — MBCx Compliance view
 window.mbcxDashboard = window.mbcxDashboard || {};
 window.mbcxDashboard.components = window.mbcxDashboard.components || {};
 
 window.mbcxDashboard.components.Compliance = (function () {
 
   var _charts = [];
+  var _pieChart = null;
   var _selectedIdx = 0;
+  var _searchQuery = '';
 
   var DEMO_SPACES = [
     { site: 'Huntington', equip: 'VAV 2-05', ahu: 'AHU-5', area: 'G153 Anesth-Work, G154 Central Sterile (1/2)', pct: 98.2 },
@@ -16,12 +18,16 @@ window.mbcxDashboard.components.Compliance = (function () {
     { site: 'Huntington', equip: 'VAV 2-02', ahu: 'AHU-5', area: 'G155 Central Decon, G154 Central Sterile (1/2)', pct: 97.8 }
   ];
 
+  var DEMO_FAULTS = [
+    { name: 'High Temperature',  hours: 42, color: '#ef4444' },
+    { name: 'Low Humidity',      hours: 28, color: '#f97316' },
+    { name: 'Low Pressure',      hours: 15, color: '#eab308' },
+    { name: 'Low Air Changes',   hours: 8,  color: '#3b82f6' },
+    { name: 'Sensor Fault',      hours: 3,  color: '#8b5cf6' }
+  ];
+
   var DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   var MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
-  function _fmtShortDate(d) {
-    return MONTH_NAMES[d.getMonth()] + ' ' + d.getDate();
-  }
 
   function _fmtDate(d) {
     return String(d.getMonth() + 1).padStart(2, '0') + '/' +
@@ -54,7 +60,7 @@ window.mbcxDashboard.components.Compliance = (function () {
 
   function _getDemoChartData(idx) {
     var sp = DEMO_SPACES[idx];
-    var prefix = sp.equip + (sp.ahu ? ' (' + sp.ahu + ')' : '') + ' — ' + sp.area.split(',')[0];
+    var prefix = sp.equip + (sp.ahu ? ' (' + sp.ahu + ')' : '');
     var labels = _generateLabels(7);
     var fmtLabels = labels.map(_fmtAxisLabel);
     var step = Math.max(1, Math.floor(labels.length / 7));
@@ -144,51 +150,127 @@ window.mbcxDashboard.components.Compliance = (function () {
         '<span class="comp-ov-stat-val">' + DEMO_SPACES.length + '</span>' +
         '<span class="comp-ov-stat-label">Spaces Monitored</span>' +
       '</div>' +
-      '<div class="comp-ov-stat">' +
-        '<span class="comp-ov-stat-val">' + DEMO_SPACES.filter(function (s) { return s.pct >= 99; }).length + '</span>' +
-        '<span class="comp-ov-stat-label">Fully Compliant</span>' +
+    '</div>';
+  }
+
+  function _renderSpaceList() {
+    var rows = DEMO_SPACES.map(function (sp, i) {
+      var active = i === _selectedIdx ? ' comp-space--active' : '';
+      var pctColor = sp.pct >= 99 ? '#22c55e' : sp.pct >= 95 ? '#eab308' : '#ef4444';
+      return '<button class="comp-space' + active + '" data-idx="' + i + '">' +
+        '<div class="comp-space-left">' +
+          '<div class="comp-space-ring">' + _ring(sp.pct, 36) + '</div>' +
+          '<div class="comp-space-info">' +
+            '<div class="comp-space-equip">' + sp.equip + (sp.ahu ? ' <span class="comp-space-ahu">(' + sp.ahu + ')</span>' : '') + '</div>' +
+            '<div class="comp-space-area">' + sp.area + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="comp-space-pct" style="color:' + pctColor + '">' + sp.pct.toFixed(1) + '%</div>' +
+      '</button>';
+    }).join('');
+
+    return '<div class="comp-sidebar">' +
+      '<div class="comp-pie-section">' +
+        '<h4 class="comp-section-label">Time by Fault</h4>' +
+        '<div class="comp-pie-wrap"><canvas id="compPieChart"></canvas></div>' +
+      '</div>' +
+      '<div class="comp-space-section">' +
+        '<h4 class="comp-section-label">Equipment</h4>' +
+        '<div class="comp-search-wrap">' +
+          '<input type="text" class="comp-search" id="compSearch" placeholder="Search equipment..." autocomplete="off">' +
+        '</div>' +
+        '<div class="comp-space-list" id="compSpaceList">' + rows + '</div>' +
       '</div>' +
     '</div>';
   }
 
-  function _renderSpaceCards() {
-    var cards = DEMO_SPACES.map(function (sp, i) {
-      var active = i === _selectedIdx ? ' comp-card--active' : '';
-      return '<button class="comp-card' + active + '" data-idx="' + i + '">' +
-        '<div class="comp-card-ring">' + _ring(sp.pct, 44) + '</div>' +
-        '<div class="comp-card-info">' +
-          '<div class="comp-card-equip">' + sp.equip + (sp.ahu ? ' <span class="comp-card-ahu">(' + sp.ahu + ')</span>' : '') + '</div>' +
-          '<div class="comp-card-area">' + sp.area + '</div>' +
-        '</div>' +
-      '</button>';
-    }).join('');
-
-    return '<div class="comp-cards-section">' +
-      '<div class="comp-cards-header">' +
-        '<h3 class="comp-cards-title">Compliance by Space</h3>' +
+  function _renderAuditSection() {
+    return '<div class="comp-audit-section">' +
+      '<div class="comp-audit-header">' +
+        '<h3 class="comp-section-heading">Compliance Audit Report</h3>' +
       '</div>' +
-      '<div class="comp-cards-scroll">' + cards + '</div>' +
+      '<div class="comp-audit-body">' +
+        '<svg viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="#9ca3af" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">' +
+          '<rect x="2" y="6" width="20" height="12" rx="2"/>' +
+          '<path d="M12 6V4m-4 2V5m8 1V5"/>' +
+          '<circle cx="12" cy="12" r="2.5"/>' +
+          '<path d="M14.5 12H18m-12 0h3.5"/>' +
+        '</svg>' +
+        '<div class="comp-audit-uc-title">Under Construction</div>' +
+        '<div class="comp-audit-uc-sub">Audit report features coming soon.</div>' +
+      '</div>' +
     '</div>';
   }
 
   function render() {
     return '<div class="comp-page">' +
       _renderOverviewKPIs() +
-      _renderSpaceCards() +
-      '<div class="comp-chart-section">' +
-        '<div class="comp-chart-header">' +
-          '<h3 class="comp-chart-heading" id="compChartHeading">—</h3>' +
-          '<button class="comp-download-btn">Export</button>' +
+      '<div class="comp-body">' +
+        _renderSpaceList() +
+        '<div class="comp-main">' +
+          '<div class="comp-chart-section">' +
+            '<div class="comp-chart-header">' +
+              '<h3 class="comp-chart-heading" id="compChartHeading">—</h3>' +
+              '<button class="comp-download-btn">Export</button>' +
+            '</div>' +
+            '<div class="comp-charts" id="compCharts"></div>' +
+          '</div>' +
+          _renderAuditSection() +
         '</div>' +
-        '<div class="comp-charts" id="compCharts"></div>' +
       '</div>' +
     '</div>';
   }
 
-  // ── Chart.js rendering ─────────────────────────────────────────────
+  // ── Pie chart ──────────────────────────────────────────────────────
+
+  function _buildPieChart(container) {
+    if (_pieChart) { try { _pieChart.destroy(); } catch (e) {} _pieChart = null; }
+    var canvas = container.querySelector('#compPieChart');
+    if (!canvas || !window.Chart) return;
+
+    _pieChart = new window.Chart(canvas, {
+      type: 'doughnut',
+      data: {
+        labels: DEMO_FAULTS.map(function (f) { return f.name; }),
+        datasets: [{
+          data: DEMO_FAULTS.map(function (f) { return f.hours; }),
+          backgroundColor: DEMO_FAULTS.map(function (f) { return f.color; }),
+          borderWidth: 2,
+          borderColor: '#fff'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '55%',
+        animation: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              font: { size: 10 },
+              padding: 8,
+              boxWidth: 10,
+              usePointStyle: true,
+              pointStyle: 'circle'
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: function (ctx) {
+                return ' ' + ctx.label + ': ' + ctx.parsed + 'h';
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // ── Line charts ────────────────────────────────────────────────────
 
   function _buildCharts(container) {
-    _destroyCharts();
+    _destroyLineCharts();
     var chartsEl = container.querySelector('#compCharts');
     if (!chartsEl) return;
     chartsEl.innerHTML = '';
@@ -227,7 +309,7 @@ window.mbcxDashboard.components.Compliance = (function () {
           data: ds.data,
           borderColor: ds.color,
           backgroundColor: ds.color + '18',
-          borderWidth: ds.dash ? 1.5 : 1.5,
+          borderWidth: 1.5,
           borderDash: ds.dash || [],
           pointRadius: 0,
           pointHitRadius: 4,
@@ -273,15 +355,27 @@ window.mbcxDashboard.components.Compliance = (function () {
     });
   }
 
-  function _destroyCharts() {
+  function _destroyLineCharts() {
     _charts.forEach(function (c) { try { c.destroy(); } catch (e) {} });
     _charts = [];
   }
 
-  function _selectCard(container, idx) {
+  // ── Filtering ──────────────────────────────────────────────────────
+
+  function _filterSpaces(container) {
+    var q = _searchQuery.toLowerCase();
+    container.querySelectorAll('.comp-space').forEach(function (el) {
+      var idx = parseInt(el.getAttribute('data-idx'), 10);
+      var sp = DEMO_SPACES[idx];
+      var text = (sp.equip + ' ' + sp.ahu + ' ' + sp.area).toLowerCase();
+      el.style.display = (!q || text.indexOf(q) !== -1) ? '' : 'none';
+    });
+  }
+
+  function _selectSpace(container, idx) {
     _selectedIdx = idx;
-    container.querySelectorAll('.comp-card').forEach(function (c) {
-      c.classList.toggle('comp-card--active', parseInt(c.getAttribute('data-idx'), 10) === idx);
+    container.querySelectorAll('.comp-space').forEach(function (el) {
+      el.classList.toggle('comp-space--active', parseInt(el.getAttribute('data-idx'), 10) === idx);
     });
     _buildCharts(container);
   }
@@ -289,17 +383,29 @@ window.mbcxDashboard.components.Compliance = (function () {
   // ── Init ───────────────────────────────────────────────────────────
 
   function initLive(container) {
-    container.querySelectorAll('.comp-card').forEach(function (card) {
-      card.addEventListener('click', function () {
-        _selectCard(container, parseInt(card.getAttribute('data-idx'), 10));
+    container.querySelectorAll('.comp-space').forEach(function (el) {
+      el.addEventListener('click', function () {
+        _selectSpace(container, parseInt(el.getAttribute('data-idx'), 10));
       });
     });
+
+    var searchInput = container.querySelector('#compSearch');
+    if (searchInput) {
+      searchInput.addEventListener('input', function () {
+        _searchQuery = searchInput.value;
+        _filterSpaces(container);
+      });
+    }
+
+    _buildPieChart(container);
     _buildCharts(container);
   }
 
   function destroy() {
-    _destroyCharts();
+    _destroyLineCharts();
+    if (_pieChart) { try { _pieChart.destroy(); } catch (e) {} _pieChart = null; }
     _selectedIdx = 0;
+    _searchQuery = '';
   }
 
   return { render: render, initLive: initLive, destroy: destroy };

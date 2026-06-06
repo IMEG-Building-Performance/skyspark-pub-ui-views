@@ -1995,9 +1995,7 @@
   background: var(--card-bg, #fff); border: 1px solid var(--gray-200);
   border-radius: 10px;
 }
-#mbcxDashboard .comp-ov-kpi {
-  display: flex; align-items: center; gap: 12px;
-}
+#mbcxDashboard .comp-ov-kpi { display: flex; align-items: center; gap: 12px; }
 #mbcxDashboard .comp-ring text { font-family: inherit; }
 #mbcxDashboard .comp-ov-kpi-label { font-size: .8rem; font-weight: 600; color: var(--card-fg, #111); }
 #mbcxDashboard .comp-ov-kpi-dates { font-size: .7rem; color: var(--gray-500); margin-top: 1px; }
@@ -2008,45 +2006,74 @@
 #mbcxDashboard .comp-ov-stat-val { font-size: 1.5rem; font-weight: 800; color: var(--card-fg, #111); line-height: 1; }
 #mbcxDashboard .comp-ov-stat-label { font-size: .68rem; color: var(--gray-500); margin-top: 3px; white-space: nowrap; }
 
-/* Space cards */
-#mbcxDashboard .comp-cards-section { margin-bottom: 20px; }
-#mbcxDashboard .comp-cards-header {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 10px;
+/* Body: sidebar + main */
+#mbcxDashboard .comp-body {
+  display: grid; grid-template-columns: 280px 1fr; gap: 16px;
+  min-height: 0;
 }
-#mbcxDashboard .comp-cards-title {
-  font-size: .85rem; font-weight: 700; color: var(--card-fg, #111);
-  text-transform: uppercase; letter-spacing: 0.04em; margin: 0;
-}
-#mbcxDashboard .comp-cards-scroll {
-  display: flex; gap: 10px; overflow-x: auto;
-  padding-bottom: 4px; scroll-snap-type: x mandatory;
-}
-#mbcxDashboard .comp-cards-scroll::-webkit-scrollbar { height: 4px; }
-#mbcxDashboard .comp-cards-scroll::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 2px; }
 
-#mbcxDashboard .comp-card {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 14px; min-width: 220px;
-  border: 1px solid var(--gray-200); border-radius: 8px;
-  background: var(--card-bg, #fff); cursor: pointer;
-  transition: border-color 0.15s, box-shadow 0.15s;
-  scroll-snap-align: start; flex-shrink: 0;
-  text-align: left; font-family: inherit; font-size: inherit; color: inherit;
+/* Sidebar */
+#mbcxDashboard .comp-sidebar {
+  display: flex; flex-direction: column; gap: 16px;
 }
-#mbcxDashboard .comp-card:hover { border-color: var(--imeg-blue); box-shadow: 0 1px 4px rgba(74,111,165,0.12); }
-#mbcxDashboard .comp-card--active {
-  border-color: var(--imeg-blue); background: var(--imeg-blue-lt, #EBF0F8);
-  box-shadow: 0 0 0 2px rgba(74,111,165,0.18);
+#mbcxDashboard .comp-section-label {
+  font-size: .72rem; font-weight: 700; color: var(--gray-500);
+  text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 8px;
 }
-#mbcxDashboard .comp-card-ring { flex-shrink: 0; }
-#mbcxDashboard .comp-card-equip { font-size: .82rem; font-weight: 700; color: var(--card-fg, #111); }
-#mbcxDashboard .comp-card-ahu { font-weight: 400; color: var(--gray-500); }
-#mbcxDashboard .comp-card-area {
-  font-size: .72rem; color: var(--gray-500); line-height: 1.3;
-  margin-top: 2px; max-width: 180px;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+
+/* Pie chart */
+#mbcxDashboard .comp-pie-section {
+  background: var(--card-bg, #fff); border: 1px solid var(--gray-200);
+  border-radius: 10px; padding: 14px 16px;
 }
+#mbcxDashboard .comp-pie-wrap { position: relative; height: 200px; }
+
+/* Equipment list */
+#mbcxDashboard .comp-space-section {
+  background: var(--card-bg, #fff); border: 1px solid var(--gray-200);
+  border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column;
+  min-height: 0; flex: 1;
+}
+#mbcxDashboard .comp-search-wrap { margin-bottom: 8px; }
+#mbcxDashboard .comp-search {
+  width: 100%; padding: 7px 10px; border: 1px solid var(--gray-200);
+  border-radius: 6px; font-size: .78rem; font-family: inherit;
+  background: var(--card-bg, #fff); color: var(--card-fg, #111);
+  transition: border-color 0.15s;
+}
+#mbcxDashboard .comp-search:focus { outline: none; border-color: var(--imeg-blue); }
+#mbcxDashboard .comp-search::placeholder { color: var(--gray-400); }
+#mbcxDashboard .comp-space-list {
+  display: flex; flex-direction: column; gap: 4px;
+  overflow-y: auto; flex: 1;
+}
+
+#mbcxDashboard .comp-space {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px; padding: 8px 10px; border: 1px solid transparent;
+  border-radius: 8px; background: none; cursor: pointer;
+  transition: all 0.12s; text-align: left; font-family: inherit; color: inherit;
+  width: 100%;
+}
+#mbcxDashboard .comp-space:hover { background: var(--gray-50); border-color: var(--gray-200); }
+#mbcxDashboard .comp-space--active {
+  background: var(--imeg-blue-lt, #EBF0F8);
+  border-color: var(--imeg-blue);
+  box-shadow: 0 0 0 1px rgba(74,111,165,0.15);
+}
+#mbcxDashboard .comp-space-left { display: flex; align-items: center; gap: 8px; min-width: 0; }
+#mbcxDashboard .comp-space-ring { flex-shrink: 0; }
+#mbcxDashboard .comp-space-info { min-width: 0; }
+#mbcxDashboard .comp-space-equip { font-size: .78rem; font-weight: 700; color: var(--card-fg, #111); white-space: nowrap; }
+#mbcxDashboard .comp-space-ahu { font-weight: 400; color: var(--gray-500); }
+#mbcxDashboard .comp-space-area {
+  font-size: .68rem; color: var(--gray-500); line-height: 1.3;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;
+}
+#mbcxDashboard .comp-space-pct { font-size: .78rem; font-weight: 700; flex-shrink: 0; }
+
+/* Main content */
+#mbcxDashboard .comp-main { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 
 /* Chart section */
 #mbcxDashboard .comp-chart-section {
@@ -2067,7 +2094,6 @@
   font-family: inherit;
 }
 #mbcxDashboard .comp-download-btn:hover { background: var(--gray-50); border-color: var(--gray-400); }
-
 #mbcxDashboard .comp-charts {
   display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
 }
@@ -2081,10 +2107,30 @@
 }
 #mbcxDashboard .comp-canvas-wrap { position: relative; height: 150px; }
 
+/* Audit section */
+#mbcxDashboard .comp-audit-section {
+  background: var(--card-bg, #fff); border: 1px solid var(--gray-200);
+  border-radius: 10px; padding: 20px;
+}
+#mbcxDashboard .comp-section-heading {
+  font-size: .9rem; font-weight: 700; color: var(--card-fg, #111); margin: 0;
+}
+#mbcxDashboard .comp-audit-header {
+  padding-bottom: 12px; border-bottom: 1px solid var(--gray-100); margin-bottom: 24px;
+}
+#mbcxDashboard .comp-audit-body {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 32px 0; text-align: center;
+}
+#mbcxDashboard .comp-audit-body svg { margin-bottom: 12px; }
+#mbcxDashboard .comp-audit-uc-title { font-size: 1rem; font-weight: 600; color: #8b95a5; margin-bottom: 4px; }
+#mbcxDashboard .comp-audit-uc-sub { font-size: .8rem; color: #5a6070; }
+
 @media (max-width: 1100px) {
   #mbcxDashboard .comp-charts { grid-template-columns: 1fr; }
 }
-@media (max-width: 700px) {
+@media (max-width: 900px) {
+  #mbcxDashboard .comp-body { grid-template-columns: 1fr; }
   #mbcxDashboard .comp-overview { flex-wrap: wrap; }
   #mbcxDashboard .comp-page { padding: 12px; }
 }
