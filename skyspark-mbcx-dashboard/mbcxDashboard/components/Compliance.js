@@ -126,7 +126,7 @@ window.mbcxDashboard.components.Compliance = (function () {
     return '<div class="comp-sidebar">' +
       '<div class="comp-pie-section">' +
         '<h4 class="comp-section-label">Time by Fault</h4>' +
-        '<div class="comp-pie-wrap">' + _constructionPlaceholder('') + '</div>' +
+        '<div class="comp-pie-wrap"><canvas id="compPieChart"></canvas><div class="comp-loading" id="compPieLoading">Loading…</div></div>' +
       '</div>' +
       '<div class="comp-space-section">' +
         '<h4 class="comp-section-label">Equipment</h4>' +
@@ -219,6 +219,125 @@ window.mbcxDashboard.components.Compliance = (function () {
     if (ringEl) ringEl.innerHTML = _ring(pct, 64);
     if (datesEl) datesEl.textContent = subtitle || '—';
   }
+
+  // ── Pie chart — Time by Fault ───────────────────────────────────────
+
+  var PIE_COLORS = ['#ef4444', '#f97316', '#eab308', '#3b82f6', '#8b5cf6',
+                    '#06b6d4', '#ec4899', '#14b8a6', '#f43f5e', '#a855f7'];
+
+  function _loadPieChart(equipRef) {
+    if (!_ctx || !_ctx.attestKey) return;
+    var API = NS.api;
+    var navRef = _siteNavRef(_ctx.siteRef);
+    var dates = _ctx.datesStart + '..' + _ctx.datesEnd;
+    var equipArg = equipRef || 'null';
+    var rollup = _plotRollup;
+
+    var axon = 'view_complianceDashboard_equipPlot(' + navRef + ', ' + dates + ', ' + equipArg + ', "Compliance by Space", ' + rollup + ')';
+
+    API.evalAxon(_ctx.attestKey, _ctx.projectName, axon)
+      .then(function (grid) {
+        if (!grid || !grid.cols || !grid.rows || !grid.rows.length) {
+          _showPieEmpty();
+          return;
+        }
+        _buildPieFromGrid(grid);
+      })
+      .catch(function (err) {
+        console.warn('[Compliance] Pie chart fetch failed:', err);
+        _showPieEmpty();
+      });
+  }
+
+  function _buildPieFromGrid(grid) {
+    var faultCols = [];
+    grid.cols.forEach(function (c) {
+      if (c.name === 'ts' || c.name === 'id') return;
+      var dis = (_colDisplayName(c) || c.name).toLowerCase();
+      if (dis.indexOf('zone -') !== -1 || dis.indexOf('compliance') !== -1 ||
+          dis.indexOf('fault') !== -1 || dis.indexOf('out of') !== -1) {
+        faultCols.push(c);
+      }
+    });
+
+    if (!faultCols.length) {
+      _showPieEmpty();
+      return;
+    }
+
+    var faultTotals = faultCols.map(function (c) {
+      var count = 0;
+      grid.rows.forEach(function (row) {
+        var v = _extractNum(row[c.name]);
+        if (v !== null && v > 0) count++;
+      });
+      return { name: _colDisplayName(c), count: count };
+    }).filter(function (f) { return f.count > 0; });
+
+    if (!faultTotals.length) {
+      _showPieEmpty();
+      return;
+    }
+
+    _renderPieChart(faultTotals);
+  }
+
+  function _renderPieChart(faultTotals) {
+    if (!_container || !window.Chart) return;
+    if (_pieChart) { try { _pieChart.destroy(); } catch (e) {} _pieChart = null; }
+
+    var loadingEl = _container.querySelector('#compPieLoading');
+    if (loadingEl) loadingEl.style.display = 'none';
+
+    var canvas = _container.querySelector('#compPieChart');
+    if (!canvas) return;
+
+    _pieChart = new window.Chart(canvas, {
+      type: 'doughnut',
+      data: {
+        labels: faultTotals.map(function (f) { return f.name; }),
+        datasets: [{
+          data: faultTotals.map(function (f) { return f.count; }),
+          backgroundColor: faultTotals.map(function (f, i) { return PIE_COLORS[i % PIE_COLORS.length]; }),
+          borderWidth: 2,
+          borderColor: '#fff'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '55%',
+        animation: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              font: { size: 10 },
+              padding: 8,
+              boxWidth: 10,
+              usePointStyle: true,
+              pointStyle: 'circle'
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: function (ctx) {
+                return ' ' + ctx.label + ': ' + ctx.parsed + ' intervals';
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function _showPieEmpty() {
+    if (!_container) return;
+    var loadingEl = _container.querySelector('#compPieLoading');
+    if (loadingEl) loadingEl.textContent = 'No fault data available.';
+  }
+
+  // ── Equipment list ─────────────────────────────────────────────────
 
   function _buildEquipListHTML() {
     var rows = _equipList.map(function (sp, i) {
@@ -327,6 +446,7 @@ window.mbcxDashboard.components.Compliance = (function () {
           return;
         }
         _buildChartsFromGrid(grid);
+        _buildPieFromGrid(grid);
       })
       .catch(function (err) {
         console.warn('[Compliance] Plot fetch failed:', err);
@@ -562,6 +682,7 @@ window.mbcxDashboard.components.Compliance = (function () {
 
     _loadEquipTable();
     _loadComplianceCards();
+    _loadPieChart(null);
   }
 
   function destroy() {
