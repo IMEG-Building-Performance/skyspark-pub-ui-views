@@ -1910,3 +1910,34 @@
   #mbcxDashboard .ced-header,
   #mbcxDashboard .ced-breadcrumb { padding-left: 16px; padding-right: 16px; }
 }
+
+/* ── Configuration page ─────────────────────────────────────────────── */
+#mbcxDashboard .cfg-page { padding: 32px; max-width: 560px; }
+#mbcxDashboard .cfg-title { font-size: 1.4rem; font-weight: 700; color: var(--card-fg); margin: 0 0 24px; }
+#mbcxDashboard .cfg-section { margin-bottom: 32px; }
+#mbcxDashboard .cfg-section-title { font-size: .95rem; font-weight: 600; color: var(--card-fg); margin: 0 0 4px; }
+#mbcxDashboard .cfg-section-desc { font-size: .8rem; color: #6b7280; margin: 0 0 16px; }
+#mbcxDashboard .cfg-toggles { display: flex; flex-direction: column; gap: 2px; }
+
+#mbcxDashboard .cfg-toggle-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; border-radius: 6px; cursor: pointer;
+  transition: background 0.1s;
+}
+#mbcxDashboard .cfg-toggle-row:hover { background: rgba(99,102,241,0.06); }
+#mbcxDashboard .cfg-toggle-label { font-size: .875rem; font-weight: 500; color: var(--card-fg); }
+
+#mbcxDashboard .cfg-toggle-input { position: absolute; opacity: 0; width: 0; height: 0; }
+#mbcxDashboard .cfg-toggle-slider {
+  position: relative; width: 36px; height: 20px; flex-shrink: 0;
+  background: #d1d5db; border-radius: 10px; transition: background 0.2s;
+}
+#mbcxDashboard .cfg-toggle-slider::after {
+  content: ''; position: absolute; top: 2px; left: 2px;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: #fff; transition: transform 0.2s;
+}
+#mbcxDashboard .cfg-toggle-input:checked + .cfg-toggle-slider { background: var(--imeg-blue); }
+#mbcxDashboard .cfg-toggle-input:checked + .cfg-toggle-slider::after { transform: translateX(16px); }
+
+#mbcxDashboard .dash-sb-config-btn { border-top: 1px solid rgba(255,255,255,0.08); margin-top: 4px; }

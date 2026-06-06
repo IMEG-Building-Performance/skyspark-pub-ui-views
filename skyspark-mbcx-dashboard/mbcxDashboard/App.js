@@ -10,7 +10,8 @@ window.mbcxDashboard = window.mbcxDashboard || {};
     equipment:  '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>',
     trends:     '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L8 10.414l1.293 1.293a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>',
     meetings:   '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/></svg>',
-    chevron:    '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>'
+    chevron:    '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>',
+    config:     '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path d="M5 4a1 1 0 00-2 0v7.268a2 2 0 000 3.464V16a1 1 0 102 0v-1.268a2 2 0 000-3.464V4zm6 0a1 1 0 10-2 0v1.268a2 2 0 000 3.464V16a1 1 0 102 0V8.732a2 2 0 000-3.464V4zm5 2a1 1 0 112 0v7.268a2 2 0 010 3.464V16a1 1 0 11-2 0v-.268a2 2 0 010-3.464V6z"/></svg>'
   };
 
   function _fmtDate(s) {
@@ -27,10 +28,34 @@ window.mbcxDashboard = window.mbcxDashboard || {};
 
   NS.Components = {};
 
+  var _configTabs = [
+    { key: 'summary',    label: 'Summary' },
+    { key: 'faults',     label: 'Faults' },
+    { key: 'compliance', label: 'Compliance' },
+    { key: 'equipment',  label: 'Equipment' },
+    { key: 'trends',     label: 'Trends' },
+    { key: 'meetings',   label: 'Meetings' }
+  ];
+
+  function _loadTabVisibility() {
+    try {
+      var raw = sessionStorage.getItem('mbcxDashboard_tabVis');
+      if (raw) return JSON.parse(raw);
+    } catch (e) {}
+    var def = {};
+    _configTabs.forEach(function (t) { def[t.key] = true; });
+    return def;
+  }
+
+  function _saveTabVisibility(vis) {
+    try { sessionStorage.setItem('mbcxDashboard_tabVis', JSON.stringify(vis)); } catch (e) {}
+  }
+
   NS.App = {
     _lastData:  null,
     _lastCtx:   null,
     _activeTab: null,
+    _tabVisibility: _loadTabVisibility(),
 
     _persistState: function () {
       var c = NS.App._lastCtx;
@@ -107,6 +132,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         '  </nav>',
 
         '  <div class="dash-sb-footer">',
+        '    <button class="dash-sb-nav-item dash-sb-config-btn" data-tab="config">' + _icons.config + '<span>Configuration</span></button>',
         '    <button class="dash-sb-collapse-btn" id="sbCollapseBtn" title="Collapse sidebar">',
         _icons.chevron,
         '    </button>',
@@ -276,11 +302,11 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       // ── Nav ───────────────────────────────────────────────────────────
       container.querySelectorAll('.dash-sb-nav-item').forEach(function (btn) {
         btn.addEventListener('click', function () {
-          if (!ctx.siteRef) {
+          var tab = btn.getAttribute('data-tab');
+          if (tab !== 'config' && !ctx.siteRef) {
             _showNoSitePrompt(content);
             return;
           }
-          var tab = btn.getAttribute('data-tab');
           var sub = btn.nextElementSibling;
           if (sub && sub.classList.contains('dash-sb-sub')) {
             sub.classList.toggle('dash-sb-sub--open');
@@ -294,6 +320,8 @@ window.mbcxDashboard = window.mbcxDashboard || {};
           NS.App._showTab(container, btn.getAttribute('data-tab'), co, data, ctx);
         });
       });
+
+      NS.App._applyTabVisibility(container);
 
       if (ctx.siteRef) {
         NS.App._showTab(container, 'summary', co, data, ctx);
@@ -456,6 +484,58 @@ window.mbcxDashboard = window.mbcxDashboard || {};
           '</div>'
         ].join('\n');
       }
+      else if (tab === 'config') {
+        content.innerHTML = NS.App._renderConfigPage();
+        NS.App._initConfigToggles(container, content, co, data, ctx);
+      }
+    },
+
+    _applyTabVisibility: function (container) {
+      var vis = NS.App._tabVisibility;
+      container.querySelectorAll('.dash-sb-nav .dash-sb-nav-item').forEach(function (btn) {
+        var key = btn.getAttribute('data-tab');
+        if (key && vis.hasOwnProperty(key)) {
+          btn.style.display = vis[key] ? '' : 'none';
+          var sub = btn.nextElementSibling;
+          if (sub && sub.classList.contains('dash-sb-sub')) {
+            sub.style.display = vis[key] ? '' : 'none';
+          }
+        }
+      });
+    },
+
+    _renderConfigPage: function () {
+      var vis = NS.App._tabVisibility;
+      var rows = _configTabs.map(function (t) {
+        var checked = vis[t.key] ? ' checked' : '';
+        return '<label class="cfg-toggle-row">' +
+          '<span class="cfg-toggle-label">' + t.label + '</span>' +
+          '<input type="checkbox" class="cfg-toggle-input" data-key="' + t.key + '"' + checked + '>' +
+          '<span class="cfg-toggle-slider"></span>' +
+        '</label>';
+      }).join('');
+
+      return [
+        '<div class="page cfg-page">',
+        '  <h2 class="cfg-title">Configuration</h2>',
+        '  <div class="cfg-section">',
+        '    <h3 class="cfg-section-title">Visible Tabs</h3>',
+        '    <p class="cfg-section-desc">Toggle which tabs appear in the sidebar navigation.</p>',
+        '    <div class="cfg-toggles">' + rows + '</div>',
+        '  </div>',
+        '</div>'
+      ].join('\n');
+    },
+
+    _initConfigToggles: function (container, content, co, data, ctx) {
+      content.querySelectorAll('.cfg-toggle-input').forEach(function (input) {
+        input.addEventListener('change', function () {
+          var key = input.getAttribute('data-key');
+          NS.App._tabVisibility[key] = input.checked;
+          _saveTabVisibility(NS.App._tabVisibility);
+          NS.App._applyTabVisibility(container);
+        });
+      });
     }
   };
 
