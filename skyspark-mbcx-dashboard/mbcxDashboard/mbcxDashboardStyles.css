@@ -2006,10 +2006,10 @@
 #mbcxDashboard .comp-ov-stat-val { font-size: 1.5rem; font-weight: 800; color: var(--card-fg, #111); line-height: 1; }
 #mbcxDashboard .comp-ov-stat-label { font-size: .68rem; color: var(--gray-500); margin-top: 3px; white-space: nowrap; }
 
-/* Body: sidebar + main */
+/* Body: sidebar + charts side by side */
 #mbcxDashboard .comp-body {
   display: grid; grid-template-columns: 280px 1fr; gap: 16px;
-  min-height: 0;
+  min-height: 0; margin-bottom: 16px;
 }
 
 /* Sidebar */
@@ -2072,9 +2072,6 @@
 }
 #mbcxDashboard .comp-space-pct { font-size: .78rem; font-weight: 700; flex-shrink: 0; }
 
-/* Main content */
-#mbcxDashboard .comp-main { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
-
 /* Chart section */
 #mbcxDashboard .comp-chart-section {
   background: var(--card-bg, #fff); border: 1px solid var(--gray-200);
@@ -2107,24 +2104,37 @@
 }
 #mbcxDashboard .comp-canvas-wrap { position: relative; height: 150px; }
 
-/* Audit section */
+/* Audit section — full width below body */
 #mbcxDashboard .comp-audit-section {
   background: var(--card-bg, #fff); border: 1px solid var(--gray-200);
-  border-radius: 10px; padding: 20px;
+  border-radius: 10px; padding: 16px 20px 12px;
 }
 #mbcxDashboard .comp-section-heading {
   font-size: .9rem; font-weight: 700; color: var(--card-fg, #111); margin: 0;
 }
 #mbcxDashboard .comp-audit-header {
-  padding-bottom: 12px; border-bottom: 1px solid var(--gray-100); margin-bottom: 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding-bottom: 12px; border-bottom: 1px solid var(--gray-100); margin-bottom: 0;
 }
-#mbcxDashboard .comp-audit-body {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  padding: 32px 0; text-align: center;
+#mbcxDashboard .comp-audit-count {
+  font-size: .72rem; font-weight: 500; color: var(--gray-500);
+  background: var(--gray-100); padding: 2px 10px; border-radius: 10px;
 }
-#mbcxDashboard .comp-audit-body svg { margin-bottom: 12px; }
-#mbcxDashboard .comp-audit-uc-title { font-size: 1rem; font-weight: 600; color: #8b95a5; margin-bottom: 4px; }
-#mbcxDashboard .comp-audit-uc-sub { font-size: .8rem; color: #5a6070; }
+#mbcxDashboard .comp-audit-table-wrap { overflow-x: auto; margin-top: 4px; }
+#mbcxDashboard .comp-audit-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+#mbcxDashboard .comp-audit-th {
+  text-align: left; padding: 8px 10px; font-weight: 600;
+  color: var(--gray-600); border-bottom: 2px solid var(--gray-200);
+  white-space: nowrap; font-size: 11px;
+  position: sticky; top: 0; background: var(--card-bg, #fff);
+}
+#mbcxDashboard .comp-audit-td {
+  padding: 7px 10px; border-bottom: 1px solid var(--gray-100);
+  white-space: nowrap; color: var(--card-fg, #111);
+}
+#mbcxDashboard .comp-audit-td--bold { font-weight: 600; }
+#mbcxDashboard .comp-audit-row { transition: background 0.1s; }
+#mbcxDashboard .comp-audit-row:hover { background: var(--gray-50); }
 
 @media (max-width: 1100px) {
   #mbcxDashboard .comp-charts { grid-template-columns: 1fr; }

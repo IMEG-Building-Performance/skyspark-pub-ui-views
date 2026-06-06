@@ -184,20 +184,46 @@ window.mbcxDashboard.components.Compliance = (function () {
     '</div>';
   }
 
+  var DEMO_AUDIT = [
+    { date: '24-May-2026', time: '12:00AM', site: 'Huntington', room: 'VAV 2-05', area: 'G153 Anesth-Work (Central Sterile)', issue: 'ZONE - Temp Out of Compliance Range', duration: '1day', min: '63.1°F',  max: '63.52°F', avg: '63.29°F' },
+    { date: '25-May-2026', time: '12:00AM', site: 'Huntington', room: 'VAV 2-05', area: 'G153 Anesth-Work (Central Sterile)', issue: 'ZONE - Temp Out of Compliance Range', duration: '1day', min: '61.54°F', max: '63.01°F', avg: '62.13°F' },
+    { date: '26-May-2026', time: '12:00AM', site: 'Huntington', room: 'VAV 2-05', area: 'G153 Anesth-Work (Central Sterile)', issue: 'ZONE - Temp Out of Compliance Range', duration: '1day', min: '61.7°F',  max: '62.78°F', avg: '62.24°F' },
+    { date: '27-May-2026', time: '12:00AM', site: 'Huntington', room: 'VAV 4-06', area: 'F135 Pharmacy',                      issue: 'ZONE - Temp Out of Compliance Range', duration: '1day', min: '62.4°F',  max: '63.68°F', avg: '62.9°F' },
+    { date: '28-May-2026', time: '12:00AM', site: 'Huntington', room: 'VAV 4-06', area: 'F135 Pharmacy',                      issue: 'ZONE - Temp Out of Compliance Range', duration: '1day', min: '63.84°F', max: '65.84°F', avg: '64.96°F' },
+    { date: '30-May-2026', time: '12:00AM', site: 'Huntington', room: 'VAV 2-02', area: 'G155 Central Decon',                  issue: 'ZONE - Temp Out of Compliance Range', duration: '1day', min: '62.17°F', max: '62.85°F', avg: '62.51°F' },
+    { date: '31-May-2026', time: '12:00AM', site: 'Huntington', room: 'VAV 2-11', area: 'G134 Work, G135 Toilet',              issue: 'ZONE - Humidity Out of Range',        duration: '4hr',  min: '38.2%',   max: '39.8%',   avg: '39.1%' },
+    { date: '01-Jun-2026', time: '12:00AM', site: 'Huntington', room: 'VAV 2-06', area: 'OR-2 (G148,149)',                     issue: 'ZONE - Low Air Change Rate',           duration: '2hr',  min: '14.1ACH', max: '14.8ACH', avg: '14.5ACH' }
+  ];
+
   function _renderAuditSection() {
+    var headerCols = ['Date', 'Issue Start Time', 'Site', 'Room', 'Area Served', 'Issue', 'Issue Duration', 'Min', 'Max', 'Avg'];
+    var th = headerCols.map(function (c) { return '<th class="comp-audit-th">' + c + '</th>'; }).join('');
+
+    var rows = DEMO_AUDIT.map(function (r) {
+      return '<tr class="comp-audit-row">' +
+        '<td class="comp-audit-td">' + r.date + '</td>' +
+        '<td class="comp-audit-td">' + r.time + '</td>' +
+        '<td class="comp-audit-td">' + r.site + '</td>' +
+        '<td class="comp-audit-td comp-audit-td--bold">' + r.room + '</td>' +
+        '<td class="comp-audit-td">' + r.area + '</td>' +
+        '<td class="comp-audit-td">' + r.issue + '</td>' +
+        '<td class="comp-audit-td">' + r.duration + '</td>' +
+        '<td class="comp-audit-td">' + r.min + '</td>' +
+        '<td class="comp-audit-td">' + r.max + '</td>' +
+        '<td class="comp-audit-td">' + r.avg + '</td>' +
+      '</tr>';
+    }).join('');
+
     return '<div class="comp-audit-section">' +
       '<div class="comp-audit-header">' +
         '<h3 class="comp-section-heading">Compliance Audit Report</h3>' +
+        '<span class="comp-audit-count">' + DEMO_AUDIT.length + ' issues</span>' +
       '</div>' +
-      '<div class="comp-audit-body">' +
-        '<svg viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="#9ca3af" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">' +
-          '<rect x="2" y="6" width="20" height="12" rx="2"/>' +
-          '<path d="M12 6V4m-4 2V5m8 1V5"/>' +
-          '<circle cx="12" cy="12" r="2.5"/>' +
-          '<path d="M14.5 12H18m-12 0h3.5"/>' +
-        '</svg>' +
-        '<div class="comp-audit-uc-title">Under Construction</div>' +
-        '<div class="comp-audit-uc-sub">Audit report features coming soon.</div>' +
+      '<div class="comp-audit-table-wrap">' +
+        '<table class="comp-audit-table">' +
+          '<thead><tr>' + th + '</tr></thead>' +
+          '<tbody>' + rows + '</tbody>' +
+        '</table>' +
       '</div>' +
     '</div>';
   }
@@ -207,17 +233,15 @@ window.mbcxDashboard.components.Compliance = (function () {
       _renderOverviewKPIs() +
       '<div class="comp-body">' +
         _renderSpaceList() +
-        '<div class="comp-main">' +
-          '<div class="comp-chart-section">' +
-            '<div class="comp-chart-header">' +
-              '<h3 class="comp-chart-heading" id="compChartHeading">—</h3>' +
-              '<button class="comp-download-btn">Export</button>' +
-            '</div>' +
-            '<div class="comp-charts" id="compCharts"></div>' +
+        '<div class="comp-chart-section">' +
+          '<div class="comp-chart-header">' +
+            '<h3 class="comp-chart-heading" id="compChartHeading">—</h3>' +
+            '<button class="comp-download-btn">Export</button>' +
           '</div>' +
-          _renderAuditSection() +
+          '<div class="comp-charts" id="compCharts"></div>' +
         '</div>' +
       '</div>' +
+      _renderAuditSection() +
     '</div>';
   }
 
