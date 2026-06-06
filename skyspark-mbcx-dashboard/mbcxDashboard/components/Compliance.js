@@ -231,9 +231,8 @@ window.mbcxDashboard.components.Compliance = (function () {
     var navRef = _siteNavRef(_ctx.siteRef);
     var dates = _ctx.datesStart + '..' + _ctx.datesEnd;
     var equipArg = equipRef || 'null';
-    var rollup = _plotRollup;
 
-    var axon = 'view_complianceDashboard_equipPlot(' + navRef + ', ' + dates + ', ' + equipArg + ', "Compliance by Space", ' + rollup + ')';
+    var axon = 'view_complianceDashboard_equipPlot(' + navRef + ', ' + dates + ', ' + equipArg + ', "Time By Fault", 1)';
 
     API.evalAxon(_ctx.attestKey, _ctx.projectName, axon)
       .then(function (grid) {
