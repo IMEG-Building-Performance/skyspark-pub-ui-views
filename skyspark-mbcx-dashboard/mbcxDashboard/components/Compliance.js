@@ -179,6 +179,7 @@ window.mbcxDashboard.components.Compliance = (function () {
   }
 
   function _loadEquipTable() {
+    console.log('[Compliance] _loadEquipTable called. _ctx:', _ctx, 'attestKey:', _ctx && _ctx.attestKey);
     if (!_ctx || !_ctx.attestKey) return;
     var API = NS.api;
     var siteRef = _ctx.siteRef;
@@ -443,6 +444,8 @@ window.mbcxDashboard.components.Compliance = (function () {
     _selectedIdx = 0;
     _searchQuery = '';
     _equipList = [];
+    console.log('[Compliance] initLive called. ctx:', ctx);
+    console.log('[Compliance] container:', container, 'has #compSpaceList:', !!container.querySelector('#compSpaceList'));
 
     var searchInput = container.querySelector('#compSearch');
     if (searchInput) {
