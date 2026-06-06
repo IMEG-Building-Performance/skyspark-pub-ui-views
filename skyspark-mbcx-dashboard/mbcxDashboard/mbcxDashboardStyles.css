@@ -1983,6 +1983,94 @@
 }
 #mbcxDashboard .cfg-select:focus { outline: none; border-color: var(--imeg-blue); }
 
+/* ── Compliance ─────────────────────────────────────────────────────── */
+#mbcxDashboard .comp-page { padding: 0; height: 100%; overflow: auto; }
+#mbcxDashboard .comp-layout {
+  display: grid; grid-template-columns: 420px 1fr;
+  height: 100%; min-height: 0;
+}
+#mbcxDashboard .comp-left {
+  display: flex; flex-direction: column;
+  border-right: 1px solid var(--gray-200);
+  overflow-y: auto; background: var(--card-bg, #fff);
+}
+#mbcxDashboard .comp-right {
+  overflow-y: auto; padding: 0 16px 24px;
+  background: var(--card-bg, #fff);
+}
+
+/* Table */
+#mbcxDashboard .comp-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+#mbcxDashboard .comp-th {
+  text-align: left; padding: 8px 10px; font-weight: 600;
+  color: var(--gray-600); border-bottom: 2px solid var(--gray-200);
+  white-space: nowrap; font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em;
+}
+#mbcxDashboard .comp-cell { padding: 7px 10px; border-bottom: 1px solid var(--gray-100); }
+#mbcxDashboard .comp-cell-icon { width: 24px; text-align: center; color: var(--gray-400); }
+#mbcxDashboard .comp-info-icon { font-size: 14px; cursor: pointer; }
+#mbcxDashboard .comp-cell-equip { font-weight: 600; white-space: nowrap; }
+#mbcxDashboard .comp-cell-pct { width: 120px; }
+#mbcxDashboard .comp-row { cursor: pointer; transition: background 0.1s; }
+#mbcxDashboard .comp-row:hover { background: var(--gray-50); }
+#mbcxDashboard .comp-row--active { background: var(--imeg-blue) !important; color: #fff; }
+#mbcxDashboard .comp-row--active .comp-cell { border-bottom-color: rgba(255,255,255,0.15); }
+
+/* Bar */
+#mbcxDashboard .comp-bar-wrap {
+  height: 14px; background: var(--gray-100); border-radius: 3px; overflow: hidden;
+}
+#mbcxDashboard .comp-bar {
+  height: 100%; background: var(--imeg-blue); border-radius: 3px; transition: width 0.3s;
+}
+#mbcxDashboard .comp-row--active .comp-bar-wrap { background: rgba(255,255,255,0.25); }
+#mbcxDashboard .comp-row--active .comp-bar { background: #fff; }
+
+/* KPIs */
+#mbcxDashboard .comp-kpis { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+#mbcxDashboard .comp-kpi-card {
+  border: 1px solid var(--gray-200); border-radius: 8px;
+  padding: 16px 20px; background: var(--card-bg, #fff);
+}
+#mbcxDashboard .comp-kpi-title { font-size: .85rem; font-weight: 600; color: var(--card-fg, #111); }
+#mbcxDashboard .comp-kpi-dates { font-size: .75rem; color: var(--gray-500); margin-top: 2px; }
+#mbcxDashboard .comp-kpi-value {
+  font-size: 3.5rem; font-weight: 800; color: #0f3460;
+  line-height: 1.1; margin-top: 12px;
+}
+
+/* Chart area */
+#mbcxDashboard .comp-chart-toolbar {
+  display: flex; align-items: center; gap: 16px;
+  padding: 12px 0; border-bottom: 1px solid var(--gray-200);
+}
+#mbcxDashboard .comp-chart-dropdown-label {
+  font-size: .8rem; color: var(--gray-600); display: flex; align-items: center; gap: 8px;
+}
+#mbcxDashboard .comp-chart-dropdown {
+  padding: 4px 8px; border: 1px solid var(--gray-300); border-radius: 4px;
+  font-size: .8rem; background: var(--card-bg, #fff); color: var(--card-fg, #111);
+}
+#mbcxDashboard .comp-download-btn {
+  padding: 6px 14px; border: 1px solid var(--gray-300); border-radius: 4px;
+  background: var(--card-bg, #fff); color: var(--card-fg, #111);
+  font-size: .8rem; cursor: pointer; transition: background 0.1s;
+}
+#mbcxDashboard .comp-download-btn:hover { background: var(--gray-50); }
+#mbcxDashboard .comp-chart-title {
+  font-size: 1rem; font-weight: 700; color: var(--card-fg, #111);
+  text-align: center; margin: 16px 0 8px;
+}
+#mbcxDashboard .comp-charts { display: flex; flex-direction: column; gap: 4px; }
+#mbcxDashboard .comp-chart-panel {
+  position: relative; height: 160px;
+}
+
+@media (max-width: 900px) {
+  #mbcxDashboard .comp-layout { grid-template-columns: 1fr; }
+  #mbcxDashboard .comp-left { border-right: none; border-bottom: 1px solid var(--gray-200); max-height: 50vh; }
+}
+
 /* ── Dark theme ─────────────────────────────────────────────────────── */
 #mbcxDashboard .dash-shell.dash-theme-dark {
   --card-fg: #e5e7eb;

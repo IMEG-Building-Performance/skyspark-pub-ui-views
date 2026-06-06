@@ -168,6 +168,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         FaultDetail:    window.mbcxDashboard.components.FaultDetail,
         MeetingView:    window.mbcxDashboard.components.MeetingView,
         TrendingView:   window.mbcxDashboard.components.TrendingView,
+        Compliance:     window.mbcxDashboard.components.Compliance,
         Footer:         window.mbcxDashboard.components.Footer
       };
       NS.Components = co;
@@ -481,6 +482,9 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       if (NS.App._activeTab === 'meetings' && co.MeetingView && co.MeetingView.destroy) {
         co.MeetingView.destroy(co);
       }
+      if (NS.App._activeTab === 'compliance' && co.Compliance && co.Compliance.destroy) {
+        co.Compliance.destroy();
+      }
       NS.App._activeTab = tab;
       NS.App._persistState();
 
@@ -553,8 +557,13 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       else if (tab === 'meetings') {
         if (co.MeetingView) co.MeetingView.showInContent(content, ctx || {}, co);
       }
-      else if (tab === 'compliance' || tab === 'equipment') {
-        var label = tab === 'compliance' ? 'Compliance' : 'Equipment';
+      else if (tab === 'compliance') {
+        if (co.Compliance) {
+          content.innerHTML = co.Compliance.render();
+          co.Compliance.initLive(container, ctx || null);
+        }
+      }
+      else if (tab === 'equipment') {
         content.innerHTML = [
           '<div class="page" style="display:flex;align-items:center;justify-content:center;min-height:70vh;">',
           '  <div style="text-align:center;">',
@@ -565,7 +574,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
           '      <path d="M14.5 12H18m-12 0h3.5"/>',
           '    </svg>',
           '    <div style="font-size:1.15rem;font-weight:600;color:#8b95a5;margin-bottom:6px;">Under Construction</div>',
-          '    <div style="font-size:.85rem;color:#5a6070;">' + label + ' features coming soon.</div>',
+          '    <div style="font-size:.85rem;color:#5a6070;">Equipment features coming soon.</div>',
           '  </div>',
           '</div>'
         ].join('\n');
