@@ -854,6 +854,7 @@ window.mbcxDashboard.components.Compliance = (function () {
     var results = [];
     ALL_CHART_TYPES.forEach(function (ct, i) {
       var axon = 'view_complianceDashboard_equipPlot(' + navRef + ', ' + dates + ', read(equip)->id, "' + ct.type + '", 1hr)';
+      console.log('[Compliance] All chart axon:', axon);
       results[i] = null;
       API.evalAxon(_ctx.attestKey, _ctx.projectName, axon)
         .then(function (grid) {
