@@ -12,7 +12,7 @@ window.mbcxDashboard.components.Compliance = (function () {
   var _equipList = [];
   var _ctx = null;
   var _container = null;
-  var _plotRollup = 8;
+  var _plotRollup = 1;
 
   var ROLLUP_OPTIONS = [0.25, 1, 2, 4, 8, 12, 24];
   var ROLLUP_LABELS = { 0.25: '15min', 1: '1h', 2: '2h', 4: '4h', 8: '8h', 12: '12h', 24: '24h' };
@@ -357,14 +357,13 @@ window.mbcxDashboard.components.Compliance = (function () {
     var fmtLabels = labels.map(function (l) {
       try {
         var d = new Date(l);
-        if (!isNaN(d)) return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: 'numeric' });
+        if (!isNaN(d)) {
+          return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) +
+            ' ' + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+        }
       } catch (e) {}
       return l;
     });
-
-    // Thin labels for x-axis readability
-    var step = Math.max(1, Math.floor(fmtLabels.length / 8));
-    var tickLabels = fmtLabels.map(function (l, i) { return i % step === 0 ? l : ''; });
 
     var Chart = window.Chart;
     if (!Chart) {
@@ -410,10 +409,9 @@ window.mbcxDashboard.components.Compliance = (function () {
         };
       });
 
-      canvas.style.background = 'transparent';
       var chart = new Chart(canvas, {
         type: 'line',
-        data: { labels: tickLabels, datasets: datasets },
+        data: { labels: fmtLabels, datasets: datasets },
         options: {
           responsive: true,
           maintainAspectRatio: false,
@@ -421,15 +419,15 @@ window.mbcxDashboard.components.Compliance = (function () {
           interaction: { mode: 'index', intersect: false },
           scales: {
             x: {
-              ticks: { font: { size: 10 }, color: '#9ca3af', maxRotation: 0, autoSkip: false },
-              grid: { color: 'rgba(0,0,0,0.04)' }
+              ticks: { font: { size: 10 }, color: '#9ca3af', maxRotation: 45, autoSkip: true, maxTicksLimit: 10 },
+              grid: { display: false }
             },
             y: {
               ticks: {
                 font: { size: 10 }, color: '#9ca3af',
                 callback: function (v) { return v + (unit !== 'other' ? unit : ''); }
               },
-              grid: { color: 'rgba(0,0,0,0.04)' }
+              grid: { color: '#F3F4F6' }
             }
           },
           plugins: {
