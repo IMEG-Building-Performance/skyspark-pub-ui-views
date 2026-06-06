@@ -14,7 +14,8 @@ window.mbcxDashboard.components.Compliance = (function () {
   var _container = null;
   var _plotRollup = 8;
 
-  var ROLLUP_OPTIONS = [1, 2, 4, 8, 12, 24];
+  var ROLLUP_OPTIONS = [0.25, 1, 2, 4, 8, 12, 24];
+  var ROLLUP_LABELS = { 0.25: '15min', 1: '1h', 2: '2h', 4: '4h', 8: '8h', 12: '12h', 24: '24h' };
 
   function _siteNavRef(siteRef) {
     try {
@@ -138,7 +139,7 @@ window.mbcxDashboard.components.Compliance = (function () {
   function _renderRollupSelector() {
     var opts = ROLLUP_OPTIONS.map(function (h) {
       var sel = h === _plotRollup ? ' selected' : '';
-      return '<option value="' + h + '"' + sel + '>' + h + 'h</option>';
+      return '<option value="' + h + '"' + sel + '>' + (ROLLUP_LABELS[h] || h) + '</option>';
     }).join('');
     return '<div class="comp-rollup-wrap">' +
       '<label class="comp-rollup-label">Rollup:</label>' +
@@ -266,7 +267,7 @@ window.mbcxDashboard.components.Compliance = (function () {
     var siteRef = _ctx.siteRef;
     var dates = _ctx.datesStart + '..' + _ctx.datesEnd;
     var equipName = sp.equip.replace(/"/g, '\\"');
-    var rollup = _plotRollup + 'h';
+    var rollup = _plotRollup;
 
     var navRef = _siteNavRef(siteRef);
     var equipArg = sp.equipRef || ('"' + equipName + '"');
@@ -305,20 +306,20 @@ window.mbcxDashboard.components.Compliance = (function () {
       return;
     }
 
-    // Infer which group a setpoint/limit column belongs to by name pattern
+    // Infer which group a setpoint/limit column belongs to by name pattern.
+    // Only match short, specific names (Max Temp, Min Humidity, Zero Pressure, Minimum Total ACH).
+    // Skip long descriptive names like "ZONE - Pressure Out of Compliance Range".
     var UNIT_HINTS = [
-      { patterns: ['temp'],      unit: '°F' },
-      { patterns: ['humidity', 'rh'], unit: '%RH' },
-      { patterns: ['ach', 'air change'], unit: '%' },
-      { patterns: ['pressure'],  unit: 'inH₂O' }
+      { re: /\btemp\b/i,                unit: '°F' },
+      { re: /\bhumidity\b/i,            unit: '%RH' },
+      { re: /\bach\b|air change/i,       unit: '%' },
+      { re: /\bzero pressure\b/i,        unit: 'inH₂O' }
     ];
 
     function _inferUnit(colName) {
-      var lower = colName.toLowerCase();
+      if (colName.length > 30) return null;
       for (var i = 0; i < UNIT_HINTS.length; i++) {
-        for (var j = 0; j < UNIT_HINTS[i].patterns.length; j++) {
-          if (lower.indexOf(UNIT_HINTS[i].patterns[j]) !== -1) return UNIT_HINTS[i].unit;
-        }
+        if (UNIT_HINTS[i].re.test(colName)) return UNIT_HINTS[i].unit;
       }
       return null;
     }
@@ -399,7 +400,7 @@ window.mbcxDashboard.components.Compliance = (function () {
           label: _colDisplayName(c),
           data: data,
           borderColor: CHART_COLORS[ci % CHART_COLORS.length],
-          backgroundColor: CHART_COLORS[ci % CHART_COLORS.length] + '18',
+          backgroundColor: CHART_COLORS[ci % CHART_COLORS.length],
           borderWidth: 1.5,
           borderDash: isDashed ? [5, 3] : [],
           pointRadius: 0,
@@ -409,6 +410,7 @@ window.mbcxDashboard.components.Compliance = (function () {
         };
       });
 
+      canvas.style.background = 'transparent';
       var chart = new Chart(canvas, {
         type: 'line',
         data: { labels: tickLabels, datasets: datasets },
@@ -505,7 +507,7 @@ window.mbcxDashboard.components.Compliance = (function () {
     var rollupSelect = container.querySelector('#compRollupSelect');
     if (rollupSelect) {
       rollupSelect.addEventListener('change', function () {
-        _plotRollup = parseInt(rollupSelect.value, 10);
+        _plotRollup = parseFloat(rollupSelect.value);
         if (_equipList.length) _loadEquipPlot();
       });
     }
