@@ -4,107 +4,75 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
 
 window.mbcxDashboard.components.Compliance = (function () {
 
+  var NS = window.mbcxDashboard;
   var _charts = [];
   var _pieChart = null;
   var _selectedIdx = 0;
   var _searchQuery = '';
+  var _equipList = [];
+  var _ctx = null;
+  var _container = null;
+  var _plotRollup = 8;
 
-  var DEMO_SPACES = [
-    { site: 'Huntington', equip: 'VAV 2-05', ahu: 'AHU-5', area: 'G153 Anesth-Work, G154 Central Sterile (1/2)', pct: 98.2 },
-    { site: 'Huntington', equip: 'VAV 2-06', ahu: 'AHU-5', area: 'OR-2 (G148,149)',                              pct: 100 },
-    { site: 'Huntington', equip: 'VAV 4-06', ahu: '',       area: 'F135 Pharmacy',                                pct: 95.7 },
-    { site: 'Huntington', equip: 'VAV 2-11', ahu: 'AHU-5', area: 'G134 Work, G135 Toilet, G136 Procedure',       pct: 99.1 },
-    { site: 'Huntington', equip: 'VAV 2-03', ahu: 'AHU-5', area: 'OR-1 (G144)',                                   pct: 100 },
-    { site: 'Huntington', equip: 'VAV 2-02', ahu: 'AHU-5', area: 'G155 Central Decon, G154 Central Sterile (1/2)', pct: 97.8 }
+  var ROLLUP_OPTIONS = [1, 2, 4, 8, 12, 24];
+
+  var CONSTRUCTION_SVG = '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' +
+    '<path d="M2 20h20"/>' +
+    '<path d="M5 20V8l7-5 7 5v12"/>' +
+    '<path d="M9 20v-4h6v4"/>' +
+    '<path d="M3 20l2-2"/><path d="M19 20l2-2"/>' +
+    '<rect x="9" y="10" width="6" height="4" rx="0.5"/>' +
+    '<path d="M10 10V8"/><path d="M14 10V8"/>' +
+    '</svg>';
+
+  var CHART_COLORS = [
+    '#2563EB', '#DC2626', '#059669', '#D97706', '#7C3AED',
+    '#0891B2', '#BE185D', '#4F46E5', '#CA8A04', '#15803D'
   ];
 
-  var DEMO_FAULTS = [
-    { name: 'High Temperature',  hours: 42, color: '#ef4444' },
-    { name: 'Low Humidity',      hours: 28, color: '#f97316' },
-    { name: 'Low Pressure',      hours: 15, color: '#eab308' },
-    { name: 'Low Air Changes',   hours: 8,  color: '#3b82f6' },
-    { name: 'Sensor Fault',      hours: 3,  color: '#8b5cf6' }
-  ];
+  // ── Helpers ────────────────────────────────────────────────────────
 
-  var DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  var MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
-  function _fmtDate(d) {
-    return String(d.getMonth() + 1).padStart(2, '0') + '/' +
-           String(d.getDate()).padStart(2, '0') + '/' +
-           String(d.getFullYear()).slice(2);
+  function _extractNum(v) {
+    if (typeof v === 'number') return v;
+    if (v && v._kind === 'number') return v.val;
+    if (v !== null && v !== undefined) { var n = parseFloat(v); if (!isNaN(n)) return n; }
+    return null;
   }
 
-  function _generateLabels(days) {
-    var labels = [];
-    var now = new Date();
-    var start = new Date(now);
-    start.setDate(start.getDate() - days);
-    for (var t = start.getTime(); t <= now.getTime(); t += 60 * 60000) {
-      labels.push(new Date(t));
+  function _extractStr(v) {
+    if (!v) return '';
+    if (typeof v === 'string') return v;
+    if (v.dis) return v.dis;
+    if (v.val) return String(v.val);
+    return String(v);
+  }
+
+  function _colDisplayName(col) {
+    if (col.meta) {
+      if (col.meta.dis) return col.meta.dis;
+      if (col.meta.navName) return col.meta.navName;
+      if (col.meta.id && typeof col.meta.id === 'object' && col.meta.id.dis) return col.meta.id.dis;
     }
-    return labels;
+    if (col.dis) return col.dis;
+    return col.name;
   }
 
-  function _fmtAxisLabel(d) {
-    return DAY_NAMES[d.getDay()] + ' ' + MONTH_NAMES[d.getMonth()] + ' ' + d.getDate();
+  function _colUnit(col) {
+    if (col.meta) {
+      if (col.meta.unit) return col.meta.unit;
+      if (col.meta.kind && typeof col.meta.kind === 'string') {
+        var m = col.meta.kind.match(/^Number\s+"(.+)"$/);
+        if (m) return m[1];
+      }
+    }
+    return null;
   }
 
-  function _gen(labels, base, variance) {
-    return labels.map(function () { return base + (Math.random() - 0.5) * variance; });
-  }
-
-  function _flat(labels, val) {
-    return labels.map(function () { return val; });
-  }
-
-  function _getDemoChartData(idx) {
-    var sp = DEMO_SPACES[idx];
-    var prefix = sp.equip + (sp.ahu ? ' (' + sp.ahu + ')' : '');
-    var labels = _generateLabels(7);
-    var fmtLabels = labels.map(_fmtAxisLabel);
-    var step = Math.max(1, Math.floor(labels.length / 7));
-    var tickLabels = fmtLabels.map(function (l, i) { return i % step === 0 ? l : ''; });
-
-    return {
-      labels: tickLabels,
-      panels: [
-        {
-          title: 'Zone Temperature',
-          unit: '°F',
-          datasets: [
-            { label: prefix + ' Zone Temp', data: _gen(labels, 68, 4), color: '#3b82f6' },
-            { label: 'Max Temp', data: _flat(labels, 75), color: '#ef4444', dash: [5, 3] },
-            { label: 'Min Temp', data: _flat(labels, 65), color: '#22c55e', dash: [5, 3] }
-          ]
-        },
-        {
-          title: 'Zone Air Humidity',
-          unit: '%',
-          datasets: [
-            { label: prefix + ' Humidity', data: _gen(labels, 55, 15), color: '#3b82f6' },
-            { label: 'Max Humidity', data: _flat(labels, 60), color: '#ef4444', dash: [5, 3] },
-            { label: 'Min Humidity', data: _flat(labels, 40), color: '#22c55e', dash: [5, 3] }
-          ]
-        },
-        {
-          title: 'Air Change Rate',
-          unit: 'ACH',
-          datasets: [
-            { label: prefix + ' ACH', data: _gen(labels, 20, 2), color: '#3b82f6' },
-            { label: 'Minimum Total ACH', data: _flat(labels, 15), color: '#22c55e', dash: [5, 3] }
-          ]
-        },
-        {
-          title: 'Zone Pressure',
-          unit: 'inH₂O',
-          datasets: [
-            { label: prefix + ' Pressure', data: _gen(labels, 0.02, 0.04), color: '#3b82f6' },
-            { label: 'Zero Pressure', data: _flat(labels, 0), color: '#22c55e', dash: [5, 3] }
-          ]
-        }
-      ]
-    };
+  function _constructionPlaceholder(title) {
+    return '<div class="comp-construction">' +
+      CONSTRUCTION_SVG +
+      '<div class="comp-construction-text">' + (title || 'Under Construction') + '</div>' +
+    '</div>';
   }
 
   // ── Compliance ring SVG ────────────────────────────────────────────
@@ -126,105 +94,46 @@ window.mbcxDashboard.components.Compliance = (function () {
   // ── Rendering ──────────────────────────────────────────────────────
 
   function _renderOverviewKPIs() {
-    var now = new Date();
-    var weekAgo = new Date(now); weekAgo.setDate(weekAgo.getDate() - 7);
-    var twoWeeksAgo = new Date(now); twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
-    var avg = DEMO_SPACES.reduce(function (s, sp) { return s + sp.pct; }, 0) / DEMO_SPACES.length;
-
     return '<div class="comp-overview">' +
-      '<div class="comp-ov-kpi">' +
-        _ring(avg, 64) +
-        '<div class="comp-ov-kpi-text">' +
-          '<div class="comp-ov-kpi-label">Current Period</div>' +
-          '<div class="comp-ov-kpi-dates">' + _fmtDate(weekAgo) + ' — ' + _fmtDate(now) + '</div>' +
-        '</div>' +
-      '</div>' +
-      '<div class="comp-ov-kpi">' +
-        _ring(100, 64) +
-        '<div class="comp-ov-kpi-text">' +
-          '<div class="comp-ov-kpi-label">Previous Period</div>' +
-          '<div class="comp-ov-kpi-dates">' + _fmtDate(twoWeeksAgo) + ' — ' + _fmtDate(weekAgo) + '</div>' +
-        '</div>' +
-      '</div>' +
-      '<div class="comp-ov-stat">' +
-        '<span class="comp-ov-stat-val">' + DEMO_SPACES.length + '</span>' +
-        '<span class="comp-ov-stat-label">Spaces Monitored</span>' +
-      '</div>' +
+      _constructionPlaceholder('Overview KPIs — Under Construction') +
     '</div>';
   }
 
   function _renderSpaceList() {
-    var rows = DEMO_SPACES.map(function (sp, i) {
-      var active = i === _selectedIdx ? ' comp-space--active' : '';
-      var pctColor = sp.pct >= 99 ? '#22c55e' : sp.pct >= 95 ? '#eab308' : '#ef4444';
-      return '<button class="comp-space' + active + '" data-idx="' + i + '">' +
-        '<div class="comp-space-left">' +
-          '<div class="comp-space-ring">' + _ring(sp.pct, 36) + '</div>' +
-          '<div class="comp-space-info">' +
-            '<div class="comp-space-equip">' + sp.equip + (sp.ahu ? ' <span class="comp-space-ahu">(' + sp.ahu + ')</span>' : '') + '</div>' +
-            '<div class="comp-space-area">' + sp.area + '</div>' +
-          '</div>' +
-        '</div>' +
-        '<div class="comp-space-pct" style="color:' + pctColor + '">' + sp.pct.toFixed(1) + '%</div>' +
-      '</button>';
-    }).join('');
-
     return '<div class="comp-sidebar">' +
       '<div class="comp-pie-section">' +
         '<h4 class="comp-section-label">Time by Fault</h4>' +
-        '<div class="comp-pie-wrap"><canvas id="compPieChart"></canvas></div>' +
+        '<div class="comp-pie-wrap">' + _constructionPlaceholder('') + '</div>' +
       '</div>' +
       '<div class="comp-space-section">' +
         '<h4 class="comp-section-label">Equipment</h4>' +
         '<div class="comp-search-wrap">' +
           '<input type="text" class="comp-search" id="compSearch" placeholder="Search equipment..." autocomplete="off">' +
         '</div>' +
-        '<div class="comp-space-list" id="compSpaceList">' + rows + '</div>' +
+        '<div class="comp-space-list" id="compSpaceList">' +
+          '<div class="comp-loading">Loading equipment…</div>' +
+        '</div>' +
       '</div>' +
     '</div>';
   }
 
-  var DEMO_AUDIT = [
-    { date: '24-May-2026', time: '12:00AM', site: 'Huntington', room: 'VAV 2-05', area: 'G153 Anesth-Work (Central Sterile)', issue: 'ZONE - Temp Out of Compliance Range', duration: '1day', min: '63.1°F',  max: '63.52°F', avg: '63.29°F' },
-    { date: '25-May-2026', time: '12:00AM', site: 'Huntington', room: 'VAV 2-05', area: 'G153 Anesth-Work (Central Sterile)', issue: 'ZONE - Temp Out of Compliance Range', duration: '1day', min: '61.54°F', max: '63.01°F', avg: '62.13°F' },
-    { date: '26-May-2026', time: '12:00AM', site: 'Huntington', room: 'VAV 2-05', area: 'G153 Anesth-Work (Central Sterile)', issue: 'ZONE - Temp Out of Compliance Range', duration: '1day', min: '61.7°F',  max: '62.78°F', avg: '62.24°F' },
-    { date: '27-May-2026', time: '12:00AM', site: 'Huntington', room: 'VAV 4-06', area: 'F135 Pharmacy',                      issue: 'ZONE - Temp Out of Compliance Range', duration: '1day', min: '62.4°F',  max: '63.68°F', avg: '62.9°F' },
-    { date: '28-May-2026', time: '12:00AM', site: 'Huntington', room: 'VAV 4-06', area: 'F135 Pharmacy',                      issue: 'ZONE - Temp Out of Compliance Range', duration: '1day', min: '63.84°F', max: '65.84°F', avg: '64.96°F' },
-    { date: '30-May-2026', time: '12:00AM', site: 'Huntington', room: 'VAV 2-02', area: 'G155 Central Decon',                  issue: 'ZONE - Temp Out of Compliance Range', duration: '1day', min: '62.17°F', max: '62.85°F', avg: '62.51°F' },
-    { date: '31-May-2026', time: '12:00AM', site: 'Huntington', room: 'VAV 2-11', area: 'G134 Work, G135 Toilet',              issue: 'ZONE - Humidity Out of Range',        duration: '4hr',  min: '38.2%',   max: '39.8%',   avg: '39.1%' },
-    { date: '01-Jun-2026', time: '12:00AM', site: 'Huntington', room: 'VAV 2-06', area: 'OR-2 (G148,149)',                     issue: 'ZONE - Low Air Change Rate',           duration: '2hr',  min: '14.1ACH', max: '14.8ACH', avg: '14.5ACH' }
-  ];
-
   function _renderAuditSection() {
-    var headerCols = ['Date', 'Issue Start Time', 'Site', 'Room', 'Area Served', 'Issue', 'Issue Duration', 'Min', 'Max', 'Avg'];
-    var th = headerCols.map(function (c) { return '<th class="tu-th">' + c + '</th>'; }).join('');
-
-    var rows = DEMO_AUDIT.map(function (r) {
-      return '<tr>' +
-        '<td class="tu-td tu-td-name">' + r.date + '</td>' +
-        '<td class="tu-td">' + r.time + '</td>' +
-        '<td class="tu-td tu-td-name">' + r.site + '</td>' +
-        '<td class="tu-td tu-td-name" style="font-weight:600">' + r.room + '</td>' +
-        '<td class="tu-td tu-td-name">' + r.area + '</td>' +
-        '<td class="tu-td tu-td-name">' + r.issue + '</td>' +
-        '<td class="tu-td">' + r.duration + '</td>' +
-        '<td class="tu-td">' + r.min + '</td>' +
-        '<td class="tu-td">' + r.max + '</td>' +
-        '<td class="tu-td">' + r.avg + '</td>' +
-      '</tr>';
-    }).join('');
-
     return '<div class="comp-audit-section">' +
       '<div class="comp-audit-header">' +
         '<h3 class="comp-section-heading">Compliance Audit Report</h3>' +
-        '<span class="comp-audit-count">' + DEMO_AUDIT.length + ' issues</span>' +
       '</div>' +
-      '<div class="tu-table-scroll">' +
-        '<table class="tu-table">' +
-          '<thead><tr>' + th + '</tr></thead>' +
-          '<tbody>' + rows + '</tbody>' +
-        '</table>' +
-      '</div>' +
+      _constructionPlaceholder('Audit Report — Under Construction') +
+    '</div>';
+  }
+
+  function _renderRollupSelector() {
+    var opts = ROLLUP_OPTIONS.map(function (h) {
+      var sel = h === _plotRollup ? ' selected' : '';
+      return '<option value="' + h + '"' + sel + '>' + h + 'h</option>';
+    }).join('');
+    return '<div class="comp-rollup-wrap">' +
+      '<label class="comp-rollup-label">Rollup:</label>' +
+      '<select class="comp-rollup-select" id="compRollupSelect">' + opts + '</select>' +
     '</div>';
   }
 
@@ -235,89 +144,192 @@ window.mbcxDashboard.components.Compliance = (function () {
         _renderSpaceList() +
         '<div class="comp-chart-section">' +
           '<div class="comp-chart-header">' +
-            '<h3 class="comp-chart-heading" id="compChartHeading">—</h3>' +
-            '<button class="comp-download-btn">Export</button>' +
+            '<h3 class="comp-chart-heading" id="compChartHeading">Select equipment to view charts</h3>' +
+            _renderRollupSelector() +
           '</div>' +
-          '<div class="comp-charts" id="compCharts"></div>' +
+          '<div class="comp-charts" id="compCharts">' +
+            '<div class="comp-loading">Select an equipment item to view compliance charts.</div>' +
+          '</div>' +
         '</div>' +
       '</div>' +
       _renderAuditSection() +
     '</div>';
   }
 
-  // ── Pie chart ──────────────────────────────────────────────────────
+  // ── Equipment list from Axon ───────────────────────────────────────
 
-  function _buildPieChart(container) {
-    if (_pieChart) { try { _pieChart.destroy(); } catch (e) {} _pieChart = null; }
-    var canvas = container.querySelector('#compPieChart');
-    if (!canvas || !window.Chart) return;
+  function _buildEquipListHTML() {
+    var rows = _equipList.map(function (sp, i) {
+      var active = i === _selectedIdx ? ' comp-space--active' : '';
+      var pct = sp.pct;
+      var pctColor = pct >= 99 ? '#22c55e' : pct >= 95 ? '#eab308' : '#ef4444';
+      var pctText = pct !== null ? pct.toFixed(1) + '%' : '—';
+      return '<button class="comp-space' + active + '" data-idx="' + i + '">' +
+        '<div class="comp-space-left">' +
+          (pct !== null ? '<div class="comp-space-ring">' + _ring(pct, 36) + '</div>' : '') +
+          '<div class="comp-space-info">' +
+            '<div class="comp-space-equip">' + (sp.equip || '') + '</div>' +
+            '<div class="comp-space-area">' + (sp.area || '') + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="comp-space-pct" style="color:' + pctColor + '">' + pctText + '</div>' +
+      '</button>';
+    }).join('');
+    return rows;
+  }
 
-    _pieChart = new window.Chart(canvas, {
-      type: 'doughnut',
-      data: {
-        labels: DEMO_FAULTS.map(function (f) { return f.name; }),
-        datasets: [{
-          data: DEMO_FAULTS.map(function (f) { return f.hours; }),
-          backgroundColor: DEMO_FAULTS.map(function (f) { return f.color; }),
-          borderWidth: 2,
-          borderColor: '#fff'
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        cutout: '55%',
-        animation: false,
-        plugins: {
-          legend: {
-            position: 'bottom',
-            labels: {
-              font: { size: 10 },
-              padding: 8,
-              boxWidth: 10,
-              usePointStyle: true,
-              pointStyle: 'circle'
-            }
-          },
-          tooltip: {
-            callbacks: {
-              label: function (ctx) {
-                return ' ' + ctx.label + ': ' + ctx.parsed + 'h';
-              }
-            }
-          }
+  function _loadEquipTable() {
+    if (!_ctx || !_ctx.attestKey) return;
+    var API = NS.api;
+    var siteRef = _ctx.siteRef;
+    var dates = _ctx.datesStart + '..' + _ctx.datesEnd;
+
+    var axon = 'view_complianceSummary_Equiptable(' + siteRef + '.toEquips, ' + dates + ')';
+
+    API.evalAxon(_ctx.attestKey, _ctx.projectName, axon)
+      .then(function (grid) {
+        if (!grid || !grid.rows || !grid.rows.length) {
+          _showEquipEmpty();
+          return;
         }
-      }
+        _parseEquipGrid(grid);
+        _renderEquipButtons();
+      })
+      .catch(function (err) {
+        console.warn('[Compliance] Equipment table fetch failed:', err);
+        _showEquipError(err);
+      });
+  }
+
+  function _parseEquipGrid(grid) {
+    _equipList = grid.rows.map(function (row) {
+      var equip = _extractStr(row.navName || row.equip || row.dis || row.name || '');
+      var area = _extractStr(row.area || row.areaServed || row.spaceRef || '');
+      var pct = _extractNum(row.pct || row.compliance || row.compliancePct);
+      return { equip: equip, area: area, pct: pct, _raw: row };
     });
   }
 
-  // ── Line charts ────────────────────────────────────────────────────
+  function _renderEquipButtons() {
+    if (!_container) return;
+    var listEl = _container.querySelector('#compSpaceList');
+    if (!listEl) return;
+    listEl.innerHTML = _buildEquipListHTML();
+    _bindEquipClicks();
+    _filterSpaces();
+  }
 
-  function _buildCharts(container) {
+  function _showEquipEmpty() {
+    if (!_container) return;
+    var listEl = _container.querySelector('#compSpaceList');
+    if (listEl) listEl.innerHTML = '<div class="comp-loading">No equipment found for this site/date range.</div>';
+  }
+
+  function _showEquipError(err) {
+    if (!_container) return;
+    var listEl = _container.querySelector('#compSpaceList');
+    if (listEl) listEl.innerHTML = '<div class="comp-loading" style="color:#ef4444;">Error loading equipment: ' + (err.message || err) + '</div>';
+  }
+
+  // ── Chart rendering from Axon ──────────────────────────────────────
+
+  function _loadEquipPlot() {
+    if (!_ctx || !_ctx.attestKey || !_equipList.length) return;
+    var API = NS.api;
+    var sp = _equipList[_selectedIdx];
+    if (!sp) return;
+
+    var heading = _container.querySelector('#compChartHeading');
+    if (heading) heading.textContent = sp.equip + (sp.area ? ' — ' + sp.area : '');
+
+    var chartsEl = _container.querySelector('#compCharts');
+    if (chartsEl) chartsEl.innerHTML = '<div class="comp-loading">Loading charts…</div>';
+
+    var siteRef = _ctx.siteRef;
+    var dates = _ctx.datesStart + '..' + _ctx.datesEnd;
+    var equipName = sp.equip.replace(/"/g, '\\"');
+    var rollup = _plotRollup + 'h';
+
+    var axon = 'view_complianceDashboard_equipPlot(' + siteRef + '.toEquips, ' + dates + ', "' + equipName + '", "Compliance by Space", ' + rollup + ')';
+
     _destroyLineCharts();
-    var chartsEl = container.querySelector('#compCharts');
+    API.evalAxon(_ctx.attestKey, _ctx.projectName, axon)
+      .then(function (grid) {
+        if (!grid || !grid.cols || !grid.rows || !grid.rows.length) {
+          if (chartsEl) chartsEl.innerHTML = '<div class="comp-loading">No chart data returned.</div>';
+          return;
+        }
+        _buildChartsFromGrid(grid);
+      })
+      .catch(function (err) {
+        console.warn('[Compliance] Plot fetch failed:', err);
+        if (chartsEl) chartsEl.innerHTML = '<div class="comp-loading" style="color:#ef4444;">Error loading chart: ' + (err.message || err) + '</div>';
+      });
+  }
+
+  function _buildChartsFromGrid(grid) {
+    var chartsEl = _container.querySelector('#compCharts');
     if (!chartsEl) return;
     chartsEl.innerHTML = '';
 
-    var heading = container.querySelector('#compChartHeading');
-    var sp = DEMO_SPACES[_selectedIdx];
-    if (heading) heading.textContent = sp.equip + (sp.ahu ? ' (' + sp.ahu + ')' : '') + ' — ' + sp.area;
+    var tsCol = null;
+    var dataCols = [];
+    grid.cols.forEach(function (c) {
+      if (c.name === 'ts') tsCol = c.name;
+      else if (c.name !== 'id') dataCols.push(c);
+    });
 
-    var Chart = window.Chart;
-    if (!Chart) {
-      chartsEl.innerHTML = '<div style="padding:24px;color:#6b7280;">Chart.js not loaded.</div>';
+    if (!tsCol || !dataCols.length) {
+      chartsEl.innerHTML = '<div class="comp-loading">No plottable data in response.</div>';
       return;
     }
 
-    var chartData = _getDemoChartData(_selectedIdx);
+    // Group columns by unit for separate chart panels
+    var groups = {};
+    var groupOrder = [];
+    dataCols.forEach(function (c) {
+      var unit = _colUnit(c) || 'other';
+      if (!groups[unit]) { groups[unit] = []; groupOrder.push(unit); }
+      groups[unit].push(c);
+    });
 
-    chartData.panels.forEach(function (panel) {
+    // Parse labels
+    var labels = grid.rows.map(function (row) {
+      var ts = row[tsCol];
+      if (typeof ts === 'string') return ts;
+      if (ts && ts._kind === 'dateTime') return ts.val;
+      if (ts && ts.val) return ts.val;
+      return '';
+    });
+
+    var fmtLabels = labels.map(function (l) {
+      try {
+        var d = new Date(l);
+        if (!isNaN(d)) return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: 'numeric' });
+      } catch (e) {}
+      return l;
+    });
+
+    // Thin labels for x-axis readability
+    var step = Math.max(1, Math.floor(fmtLabels.length / 8));
+    var tickLabels = fmtLabels.map(function (l, i) { return i % step === 0 ? l : ''; });
+
+    var Chart = window.Chart;
+    if (!Chart) {
+      chartsEl.innerHTML = '<div class="comp-loading">Chart.js not loaded.</div>';
+      return;
+    }
+
+    var colorIdx = 0;
+    groupOrder.forEach(function (unit) {
+      var cols = groups[unit];
+
       var wrap = document.createElement('div');
       wrap.className = 'comp-chart-panel';
 
       var titleEl = document.createElement('div');
       titleEl.className = 'comp-panel-title';
-      titleEl.textContent = panel.title;
+      titleEl.textContent = unit === 'other' ? 'Values' : unit;
       wrap.appendChild(titleEl);
 
       var canvasWrap = document.createElement('div');
@@ -327,24 +339,28 @@ window.mbcxDashboard.components.Compliance = (function () {
       wrap.appendChild(canvasWrap);
       chartsEl.appendChild(wrap);
 
-      var datasets = panel.datasets.map(function (ds) {
+      var datasets = cols.map(function (c) {
+        var data = grid.rows.map(function (row) { return _extractNum(row[c.name]); });
+        var ci = colorIdx++;
+        var isDashed = c.name.toLowerCase().indexOf('max') !== -1 || c.name.toLowerCase().indexOf('min') !== -1 ||
+                       c.name.toLowerCase().indexOf('limit') !== -1 || c.name.toLowerCase().indexOf('sp') !== -1;
         return {
-          label: ds.label,
-          data: ds.data,
-          borderColor: ds.color,
-          backgroundColor: ds.color + '18',
+          label: _colDisplayName(c),
+          data: data,
+          borderColor: CHART_COLORS[ci % CHART_COLORS.length],
+          backgroundColor: CHART_COLORS[ci % CHART_COLORS.length] + '18',
           borderWidth: 1.5,
-          borderDash: ds.dash || [],
+          borderDash: isDashed ? [5, 3] : [],
           pointRadius: 0,
           pointHitRadius: 4,
-          fill: !ds.dash,
+          fill: !isDashed,
           tension: 0.2
         };
       });
 
       var chart = new Chart(canvas, {
         type: 'line',
-        data: { labels: chartData.labels, datasets: datasets },
+        data: { labels: tickLabels, datasets: datasets },
         options: {
           responsive: true,
           maintainAspectRatio: false,
@@ -358,7 +374,7 @@ window.mbcxDashboard.components.Compliance = (function () {
             y: {
               ticks: {
                 font: { size: 10 }, color: '#9ca3af',
-                callback: function (v) { return v + panel.unit; }
+                callback: function (v) { return v + (unit !== 'other' ? unit : ''); }
               },
               grid: { color: 'rgba(0,0,0,0.04)' }
             }
@@ -386,43 +402,62 @@ window.mbcxDashboard.components.Compliance = (function () {
 
   // ── Filtering ──────────────────────────────────────────────────────
 
-  function _filterSpaces(container) {
+  function _filterSpaces() {
+    if (!_container) return;
     var q = _searchQuery.toLowerCase();
-    container.querySelectorAll('.comp-space').forEach(function (el) {
+    _container.querySelectorAll('.comp-space').forEach(function (el) {
       var idx = parseInt(el.getAttribute('data-idx'), 10);
-      var sp = DEMO_SPACES[idx];
-      var text = (sp.equip + ' ' + sp.ahu + ' ' + sp.area).toLowerCase();
+      var sp = _equipList[idx];
+      if (!sp) return;
+      var text = (sp.equip + ' ' + sp.area).toLowerCase();
       el.style.display = (!q || text.indexOf(q) !== -1) ? '' : 'none';
     });
   }
 
-  function _selectSpace(container, idx) {
+  function _selectSpace(idx) {
     _selectedIdx = idx;
-    container.querySelectorAll('.comp-space').forEach(function (el) {
+    if (!_container) return;
+    _container.querySelectorAll('.comp-space').forEach(function (el) {
       el.classList.toggle('comp-space--active', parseInt(el.getAttribute('data-idx'), 10) === idx);
     });
-    _buildCharts(container);
+    _loadEquipPlot();
+  }
+
+  function _bindEquipClicks() {
+    if (!_container) return;
+    _container.querySelectorAll('.comp-space').forEach(function (el) {
+      el.addEventListener('click', function () {
+        _selectSpace(parseInt(el.getAttribute('data-idx'), 10));
+      });
+    });
   }
 
   // ── Init ───────────────────────────────────────────────────────────
 
-  function initLive(container) {
-    container.querySelectorAll('.comp-space').forEach(function (el) {
-      el.addEventListener('click', function () {
-        _selectSpace(container, parseInt(el.getAttribute('data-idx'), 10));
-      });
-    });
+  function initLive(container, ctx) {
+    _container = container;
+    _ctx = ctx;
+    _selectedIdx = 0;
+    _searchQuery = '';
+    _equipList = [];
 
     var searchInput = container.querySelector('#compSearch');
     if (searchInput) {
       searchInput.addEventListener('input', function () {
         _searchQuery = searchInput.value;
-        _filterSpaces(container);
+        _filterSpaces();
       });
     }
 
-    _buildPieChart(container);
-    _buildCharts(container);
+    var rollupSelect = container.querySelector('#compRollupSelect');
+    if (rollupSelect) {
+      rollupSelect.addEventListener('change', function () {
+        _plotRollup = parseInt(rollupSelect.value, 10);
+        if (_equipList.length) _loadEquipPlot();
+      });
+    }
+
+    _loadEquipTable();
   }
 
   function destroy() {
@@ -430,6 +465,9 @@ window.mbcxDashboard.components.Compliance = (function () {
     if (_pieChart) { try { _pieChart.destroy(); } catch (e) {} _pieChart = null; }
     _selectedIdx = 0;
     _searchQuery = '';
+    _equipList = [];
+    _container = null;
+    _ctx = null;
   }
 
   return { render: render, initLive: initLive, destroy: destroy };
