@@ -51,7 +51,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
     { value: 'light', label: 'Light' }
   ];
 
-  function _loadConfig() {
+  function _loadConfigLocal() {
     try {
       var raw = localStorage.getItem('mbcxDashboard_config');
       if (raw) return JSON.parse(raw);
@@ -59,12 +59,11 @@ window.mbcxDashboard = window.mbcxDashboard || {};
     return null;
   }
 
-  function _saveConfig(cfg) {
+  function _saveConfigLocal(cfg) {
     try { localStorage.setItem('mbcxDashboard_config', JSON.stringify(cfg)); } catch (e) {}
   }
 
-  function _getConfig() {
-    var cfg = _loadConfig() || {};
+  function _applyDefaults(cfg) {
     if (!cfg.tabVisibility) {
       cfg.tabVisibility = {};
       _defaultTabOrder.forEach(function (t) { cfg.tabVisibility[t.key] = true; });
@@ -76,11 +75,60 @@ window.mbcxDashboard = window.mbcxDashboard || {};
     return cfg;
   }
 
+  function _getConfig() {
+    return _applyDefaults(_loadConfigLocal() || {});
+  }
+
+  function _saveConfig(cfg) {
+    _saveConfigLocal(cfg);
+    _saveConfigRemote(cfg);
+  }
+
+  var _saveTimer = null;
+  function _saveConfigRemote(cfg) {
+    // Debounce writes to SkySpark (500ms)
+    if (_saveTimer) clearTimeout(_saveTimer);
+    _saveTimer = setTimeout(function () {
+      var ctx = NS.App._lastCtx;
+      if (!ctx || !ctx.attestKey) return;
+      var json = JSON.stringify(cfg).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+      var axon = 'commit(diff(readById(context()->id), {mbcxPrefs: "' + json + '"}))';
+      NS.api.evalAxon(ctx.attestKey, ctx.projectName, axon).then(function () {
+        console.log('[mbcxDashboard] Config saved to user record.');
+      }).catch(function (e) {
+        console.warn('[mbcxDashboard] Config save to user failed:', e);
+      });
+    }, 500);
+  }
+
+  function _loadConfigRemote(ctx) {
+    if (!ctx || !ctx.attestKey) return Promise.resolve(null);
+    return NS.api.evalAxonVal(ctx.attestKey, ctx.projectName, 'readById(context()->id)->mbcxPrefs')
+      .then(function (val) {
+        if (!val) return null;
+        var str = typeof val === 'string' ? val : (val.val || null);
+        if (!str) return null;
+        try { return JSON.parse(str); } catch (e) { return null; }
+      }).catch(function () { return null; });
+  }
+
   NS.App = {
     _lastData:  null,
     _lastCtx:   null,
     _activeTab: null,
     _config: _getConfig(),
+
+    _syncConfigFromServer: function (container) {
+      var ctx = NS.App._lastCtx;
+      _loadConfigRemote(ctx).then(function (remote) {
+        if (!remote) return;
+        var merged = _applyDefaults(remote);
+        NS.App._config = merged;
+        _saveConfigLocal(merged);
+        NS.App._applyTabVisibility(container);
+        NS.App._applyTheme(container);
+      });
+    },
 
     _persistState: function () {
       var c = NS.App._lastCtx;
@@ -348,6 +396,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
 
       NS.App._applyTabVisibility(container);
       NS.App._applyTheme(container);
+      NS.App._syncConfigFromServer(container);
 
       if (ctx.siteRef) {
         NS.App._showTab(container, NS.App.getDefaultTab(), co, data, ctx);
