@@ -59,6 +59,7 @@ window.mbcxDashboard.api = window.mbcxDashboard.api || {};
       data.cols[0].name === 'val'
     ) {
       var inner = data.rows[0].val;
+      console.log('[mbcxDashboard] unwrapGrid inner:', typeof inner, inner && inner._kind, 'has rows:', !!(inner && inner.rows), 'keys:', inner ? Object.keys(inner).slice(0, 5) : 'null');
       if (inner && inner.rows && inner.cols) return inner;
       // Axon function returned null or a non-grid scalar — treat as empty grid
       console.warn('[mbcxDashboard] API: function returned null or non-grid value:', inner);
