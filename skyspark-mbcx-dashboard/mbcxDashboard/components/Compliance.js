@@ -305,11 +305,41 @@ window.mbcxDashboard.components.Compliance = (function () {
       return;
     }
 
-    // Group columns by unit for separate chart panels
+    // Infer which group a setpoint/limit column belongs to by name pattern
+    var UNIT_HINTS = [
+      { patterns: ['temp'],      unit: '°F' },
+      { patterns: ['humidity', 'rh'], unit: '%RH' },
+      { patterns: ['ach', 'air change'], unit: '%' },
+      { patterns: ['pressure'],  unit: 'inH₂O' }
+    ];
+
+    function _inferUnit(colName) {
+      var lower = colName.toLowerCase();
+      for (var i = 0; i < UNIT_HINTS.length; i++) {
+        for (var j = 0; j < UNIT_HINTS[i].patterns.length; j++) {
+          if (lower.indexOf(UNIT_HINTS[i].patterns[j]) !== -1) return UNIT_HINTS[i].unit;
+        }
+      }
+      return null;
+    }
+
+    // First pass: find all units that have explicit metadata
+    var knownUnits = {};
+    dataCols.forEach(function (c) {
+      var u = _colUnit(c);
+      if (u) knownUnits[u] = true;
+    });
+
+    // Group columns by unit; infer unit for setpoint/limit columns
     var groups = {};
     var groupOrder = [];
     dataCols.forEach(function (c) {
-      var unit = _colUnit(c) || 'other';
+      var unit = _colUnit(c);
+      if (!unit) {
+        var inferred = _inferUnit(_colDisplayName(c) || c.name);
+        if (inferred && knownUnits[inferred]) unit = inferred;
+      }
+      if (!unit) unit = 'other';
       if (!groups[unit]) { groups[unit] = []; groupOrder.push(unit); }
       groups[unit].push(c);
     });
@@ -374,7 +404,7 @@ window.mbcxDashboard.components.Compliance = (function () {
           borderDash: isDashed ? [5, 3] : [],
           pointRadius: 0,
           pointHitRadius: 4,
-          fill: !isDashed,
+          fill: false,
           tension: 0.2
         };
       });
