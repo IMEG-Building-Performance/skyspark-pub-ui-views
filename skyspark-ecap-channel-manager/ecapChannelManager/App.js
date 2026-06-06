@@ -395,7 +395,7 @@ window.ecapChannelManager = window.ecapChannelManager || {};
 
   // ── Public API ──────────────────────────────────────────────────────────────
   NS.App = {
-    init: function (container) {
+    init: function (container, ctx) {
       _container = container;
 
       var initTags = {};
@@ -410,7 +410,8 @@ window.ecapChannelManager = window.ecapChannelManager || {};
         pointTags: initTags,
         testResults: {},
         sortCol: null,
-        sortDir: 'asc'
+        sortDir: 'asc',
+        ctx: ctx || {}
       };
 
       _renderAll();
