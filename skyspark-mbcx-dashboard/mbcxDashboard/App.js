@@ -4,11 +4,13 @@ window.mbcxDashboard = window.mbcxDashboard || {};
 (function (NS) {
 
   var _icons = {
-    summary:  '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path d="M2 4a2 2 0 012-2h4v7H2V4zm0 7h6v7H4a2 2 0 01-2-2v-5zm8 7v-7h8v5a2 2 0 01-2 2h-6zm0-9V2h4a2 2 0 012 2v5h-6z"/></svg>',
-    faults:   '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>',
-    trends:   '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L8 10.414l1.293 1.293a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>',
-    meetings: '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/></svg>',
-    chevron:  '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>'
+    summary:    '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path d="M2 4a2 2 0 012-2h4v7H2V4zm0 7h6v7H4a2 2 0 01-2-2v-5zm8 7v-7h8v5a2 2 0 01-2 2h-6zm0-9V2h4a2 2 0 012 2v5h-6z"/></svg>',
+    faults:     '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>',
+    compliance: '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>',
+    equipment:  '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>',
+    trends:     '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L8 10.414l1.293 1.293a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>',
+    meetings:   '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/></svg>',
+    chevron:    '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>'
   };
 
   function _fmtDate(s) {
@@ -91,7 +93,9 @@ window.mbcxDashboard = window.mbcxDashboard || {};
 
         '  <nav class="dash-sb-nav">',
         '    <button class="dash-sb-nav-item" data-tab="summary">'  + _icons.summary  + '<span>Summary</span></button>',
-        '    <button class="dash-sb-nav-item" data-tab="faults">'   + _icons.faults   + '<span>Faults</span></button>',
+        '    <button class="dash-sb-nav-item" data-tab="faults">'     + _icons.faults     + '<span>Faults</span></button>',
+        '    <button class="dash-sb-nav-item" data-tab="compliance">' + _icons.compliance + '<span>Compliance</span></button>',
+        '    <button class="dash-sb-nav-item" data-tab="equipment">'  + _icons.equipment  + '<span>Equipment</span></button>',
         '    <button class="dash-sb-nav-item" data-tab="trends">'   + _icons.trends   + '<span>Trends</span></button>',
         '    <button class="dash-sb-nav-item" data-tab="meetings">' + _icons.meetings + '<span>Meetings</span></button>',
         '  </nav>',
@@ -386,6 +390,23 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       }
       else if (tab === 'meetings') {
         if (co.MeetingView) co.MeetingView.showInContent(content, ctx || {}, co);
+      }
+      else if (tab === 'compliance' || tab === 'equipment') {
+        var label = tab === 'compliance' ? 'Compliance' : 'Equipment';
+        content.innerHTML = [
+          '<div class="page" style="display:flex;align-items:center;justify-content:center;min-height:70vh;">',
+          '  <div style="text-align:center;">',
+          '    <svg viewBox="0 0 24 24" width="80" height="80" fill="none" stroke="#5a6070" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:16px;">',
+          '      <rect x="2" y="6" width="20" height="12" rx="2"/>',
+          '      <path d="M12 6V4m-4 2V5m8 1V5"/>',
+          '      <circle cx="12" cy="12" r="2.5"/>',
+          '      <path d="M14.5 12H18m-12 0h3.5"/>',
+          '    </svg>',
+          '    <div style="font-size:1.15rem;font-weight:600;color:#8b95a5;margin-bottom:6px;">Under Construction</div>',
+          '    <div style="font-size:.85rem;color:#5a6070;">' + label + ' features coming soon.</div>',
+          '  </div>',
+          '</div>'
+        ].join('\n');
       }
     }
   };
