@@ -217,11 +217,10 @@ window.mbcxDashboard.components.Compliance = (function () {
 
   function _parseEquipGrid(grid) {
     _equipList = grid.rows.map(function (row) {
-      var equipVal = row.equip;
-      var equipDis = _extractStr(equipVal);
+      var equipDis = _extractStr(row.equip);
       var equipRef = null;
-      if (equipVal && typeof equipVal === 'object' && (equipVal._kind === 'ref' || equipVal._kind === 'Ref')) {
-        equipRef = '@' + equipVal.val;
+      if (row.id && typeof row.id === 'object' && (row.id._kind === 'ref' || row.id._kind === 'Ref')) {
+        equipRef = '@' + row.id.val;
       }
       var area = _extractStr(row.areaserved || row.areaServed || row.area || '');
       var pct = _extractNum(row.percentCompliant || row.pct || row.compliance);
