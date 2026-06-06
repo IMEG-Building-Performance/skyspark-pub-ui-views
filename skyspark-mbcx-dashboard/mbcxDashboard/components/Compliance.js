@@ -16,6 +16,15 @@ window.mbcxDashboard.components.Compliance = (function () {
 
   var ROLLUP_OPTIONS = [1, 2, 4, 8, 12, 24];
 
+  function _siteNavRef(siteRef) {
+    try {
+      var b64 = btoa('id:' + siteRef);
+      return '@nav:equip.site.' + b64;
+    } catch (e) {
+      return siteRef;
+    }
+  }
+
   var CONSTRUCTION_SVG = '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' +
     '<path d="M2 20h20"/>' +
     '<path d="M5 20V8l7-5 7 5v12"/>' +
@@ -185,7 +194,8 @@ window.mbcxDashboard.components.Compliance = (function () {
     var siteRef = _ctx.siteRef;
     var dates = _ctx.datesStart + '..' + _ctx.datesEnd;
 
-    var axon = 'view_complianceSummary_Equiptable(' + siteRef + ', ' + dates + ')';
+    var navRef = _siteNavRef(siteRef);
+    var axon = 'view_complianceSummary_Equiptable(' + navRef + ', ' + dates + ')';
     console.log('[Compliance] Equip table axon:', axon);
 
     API.evalAxon(_ctx.attestKey, _ctx.projectName, axon)
@@ -253,7 +263,8 @@ window.mbcxDashboard.components.Compliance = (function () {
     var equipName = sp.equip.replace(/"/g, '\\"');
     var rollup = _plotRollup + 'h';
 
-    var axon = 'view_complianceDashboard_equipPlot(' + siteRef + ', ' + dates + ', "' + equipName + '", "Compliance by Space", ' + rollup + ')';
+    var navRef = _siteNavRef(siteRef);
+    var axon = 'view_complianceDashboard_equipPlot(' + navRef + ', ' + dates + ', "' + equipName + '", "Compliance by Space", ' + rollup + ')';
     console.log('[Compliance] Plot axon:', axon);
 
     _destroyLineCharts();
