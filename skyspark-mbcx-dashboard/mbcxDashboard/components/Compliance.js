@@ -638,13 +638,23 @@ window.mbcxDashboard.components.Compliance = (function () {
       return;
     }
 
-    // Infer which group a setpoint/limit column belongs to by name pattern.
-    // Only match short, specific names (Max Temp, Min Humidity, Zero Pressure, Minimum Total ACH).
-    // Skip long descriptive names like "ZONE - Pressure Out of Compliance Range".
+    // Normalize units so related columns land in the same chart panel.
+    // ACH data arrives as "ACH", "%", or null — all should group together.
+    var UNIT_ALIASES = {
+      'ach': 'ACH', 'ACH': 'ACH',
+      '%RH': '%RH', '%rh': '%RH'
+    };
+
+    function _normalizeUnit(unit) {
+      if (!unit) return null;
+      return UNIT_ALIASES[unit] || unit;
+    }
+
+    // Infer unit for setpoint/limit columns by name pattern.
     var UNIT_HINTS = [
       { re: /\btemp\b/i,                unit: '°F' },
       { re: /\bhumidity\b/i,            unit: '%RH' },
-      { re: /\bach\b|air change/i,       unit: '%' },
+      { re: /\bach\b|air change/i,       unit: 'ACH' },
       { re: /\bzero pressure\b/i,        unit: 'inH₂O' }
     ];
 
@@ -656,21 +666,30 @@ window.mbcxDashboard.components.Compliance = (function () {
       return null;
     }
 
-    // First pass: find all units that have explicit metadata
+    // First pass: find all normalized units and detect ACH columns
     var knownUnits = {};
     dataCols.forEach(function (c) {
-      var u = _colUnit(c);
+      var u = _normalizeUnit(_colUnit(c));
       if (u) knownUnits[u] = true;
+    });
+    // If any column name mentions ACH, ensure ACH is a known unit
+    dataCols.forEach(function (c) {
+      var dis = (_colDisplayName(c) || c.name).toLowerCase();
+      if (dis.indexOf('ach') !== -1 || dis.indexOf('air change') !== -1) knownUnits['ACH'] = true;
     });
 
     // Group columns by unit; infer unit for setpoint/limit columns
     var groups = {};
     var groupOrder = [];
     dataCols.forEach(function (c) {
-      var unit = _colUnit(c);
+      var unit = _normalizeUnit(_colUnit(c));
       if (!unit) {
         var inferred = _inferUnit(_colDisplayName(c) || c.name);
         if (inferred && knownUnits[inferred]) unit = inferred;
+      }
+      // ACH sensor sometimes tagged as "%" — check name to override
+      if ((unit === '%' || !unit) && /\bach\b|air change/i.test(_colDisplayName(c) || c.name)) {
+        unit = 'ACH';
       }
       if (!unit) unit = 'other';
       if (!groups[unit]) { groups[unit] = []; groupOrder.push(unit); }
