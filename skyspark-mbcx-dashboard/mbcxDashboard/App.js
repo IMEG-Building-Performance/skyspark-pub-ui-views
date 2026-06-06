@@ -92,18 +92,29 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       var ctx = NS.App._lastCtx;
       if (!ctx || !ctx.attestKey) return;
       var json = JSON.stringify(cfg).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-      var axon = 'commit(diff(readById(context()->userRef), {mbcxPrefs: "' + json + '"}))';
+      var axon = 'do ' +
+        'username: context()->username; ' +
+        'existing: readAll(mbcxUserConfig and username==username).first; ' +
+        'if (existing != null) ' +
+          'commit(diff(existing, {mbcxPrefs: "' + json + '"})) ' +
+        'else ' +
+          'commit(diff(null, {mbcxUserConfig, username: username, mbcxPrefs: "' + json + '"}, {add})) ' +
+        'end';
       NS.api.evalAxon(ctx.attestKey, ctx.projectName, axon).then(function () {
-        console.log('[mbcxDashboard] Config saved to user record.');
+        console.log('[mbcxDashboard] Config saved to project.');
       }).catch(function (e) {
-        console.warn('[mbcxDashboard] Config save to user failed:', e);
+        console.warn('[mbcxDashboard] Config save failed:', e);
       });
     }, 500);
   }
 
   function _loadConfigRemote(ctx) {
     if (!ctx || !ctx.attestKey) return Promise.resolve(null);
-    return NS.api.evalAxonVal(ctx.attestKey, ctx.projectName, 'readById(context()->userRef)->mbcxPrefs')
+    var axon = 'do ' +
+      'rec: readAll(mbcxUserConfig and username==context()->username).first; ' +
+      'if (rec != null) rec->mbcxPrefs else null ' +
+      'end';
+    return NS.api.evalAxonVal(ctx.attestKey, ctx.projectName, axon)
       .then(function (val) {
         if (!val) return null;
         var str = typeof val === 'string' ? val : (val.val || null);
