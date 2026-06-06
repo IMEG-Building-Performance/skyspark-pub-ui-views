@@ -531,8 +531,7 @@ window.mbcxDashboard.components.Compliance = (function () {
         }
         _parseEquipGrid(grid);
         _renderEquipButtons();
-        var firstRef = _equipList.length && _equipList[0].equipRef ? _equipList[0].equipRef : null;
-        _loadPieChart(firstRef);
+        _onSelectAll();
       })
       .catch(function (err) {
         console.warn('[Compliance] Equipment table fetch failed:', err);
@@ -843,11 +842,10 @@ window.mbcxDashboard.components.Compliance = (function () {
     var chartsEl = _container.querySelector('#compCharts');
     if (chartsEl) chartsEl.innerHTML = '<div class="comp-loading">Loading site-wide charts…</div>';
 
-    var firstRef = _equipList.length && _equipList[0].equipRef ? _equipList[0].equipRef : null;
-    _loadPieChart(firstRef);
+    _loadPieChart('read(equip)->id');
     _filterAuditTable();
 
-    if (!firstRef || !_ctx || !_ctx.attestKey) return;
+    if (!_ctx || !_ctx.attestKey) return;
     var API = NS.api;
     var navRef = _siteNavRef(_ctx.siteRef);
     var dates = _ctx.datesStart + '..' + _ctx.datesEnd;
@@ -858,7 +856,10 @@ window.mbcxDashboard.components.Compliance = (function () {
       var axon = 'view_complianceDashboard_equipPlot(' + navRef + ', ' + dates + ', read(equip)->id, "' + ct.type + '", 1hr)';
       results[i] = null;
       API.evalAxon(_ctx.attestKey, _ctx.projectName, axon)
-        .then(function (grid) { results[i] = grid; })
+        .then(function (grid) {
+          console.log('[Compliance] All chart "' + ct.type + '":', grid && grid.rows ? grid.rows.length + ' rows, ' + grid.cols.length + ' cols' : 'empty/null');
+          results[i] = grid;
+        })
         .catch(function (err) { console.warn('[Compliance] All chart "' + ct.type + '" failed:', err); })
         .then(function () {
           loaded++;
