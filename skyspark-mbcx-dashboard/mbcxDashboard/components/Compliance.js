@@ -200,7 +200,8 @@ window.mbcxDashboard.components.Compliance = (function () {
 
     API.evalAxon(_ctx.attestKey, _ctx.projectName, axon)
       .then(function (grid) {
-        console.log('[Compliance] Equip table response:', JSON.stringify(grid).slice(0, 500));
+        console.log('[Compliance] Equip table response:', JSON.stringify(grid).slice(0, 1000));
+        if (grid.rows && grid.rows[0]) console.log('[Compliance] First row:', JSON.stringify(grid.rows[0]));
         if (!grid || !grid.rows || !grid.rows.length) {
           _showEquipEmpty();
           return;
@@ -216,10 +217,15 @@ window.mbcxDashboard.components.Compliance = (function () {
 
   function _parseEquipGrid(grid) {
     _equipList = grid.rows.map(function (row) {
-      var equip = _extractStr(row.navName || row.equip || row.dis || row.name || '');
-      var area = _extractStr(row.area || row.areaServed || row.spaceRef || '');
-      var pct = _extractNum(row.pct || row.compliance || row.compliancePct);
-      return { equip: equip, area: area, pct: pct, _raw: row };
+      var equipVal = row.equip;
+      var equipDis = _extractStr(equipVal);
+      var equipRef = null;
+      if (equipVal && typeof equipVal === 'object' && (equipVal._kind === 'ref' || equipVal._kind === 'Ref')) {
+        equipRef = '@' + equipVal.val;
+      }
+      var area = _extractStr(row.areaserved || row.areaServed || row.area || '');
+      var pct = _extractNum(row.percentCompliant || row.pct || row.compliance);
+      return { equip: equipDis, equipRef: equipRef, area: area, pct: pct, _raw: row };
     });
   }
 
@@ -264,7 +270,8 @@ window.mbcxDashboard.components.Compliance = (function () {
     var rollup = _plotRollup + 'h';
 
     var navRef = _siteNavRef(siteRef);
-    var axon = 'view_complianceDashboard_equipPlot(' + navRef + ', ' + dates + ', "' + equipName + '", "Compliance by Space", ' + rollup + ')';
+    var equipArg = sp.equipRef || ('"' + equipName + '"');
+    var axon = 'view_complianceDashboard_equipPlot(' + navRef + ', ' + dates + ', ' + equipArg + ', "Compliance by Space", ' + rollup + ')';
     console.log('[Compliance] Plot axon:', axon);
 
     _destroyLineCharts();
