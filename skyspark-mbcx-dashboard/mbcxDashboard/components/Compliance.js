@@ -14,6 +14,7 @@ window.mbcxDashboard.components.Compliance = (function () {
   var _container = null;
   var _plotRollup = 1;
   var _auditGrid = null;
+  var _allChartsGen = 0;
 
   var ROLLUP_OPTIONS = [0.25, 1, 2, 4, 8, 12, 24];
   var ROLLUP_LABELS = { 0.25: '15min', 1: '1h', 2: '2h', 4: '4h', 8: '8h', 12: '12h', 24: '24h' };
@@ -850,21 +851,20 @@ window.mbcxDashboard.components.Compliance = (function () {
     var navRef = _siteNavRef(_ctx.siteRef);
     var dates = _ctx.datesStart + '..' + _ctx.datesEnd;
 
+    var gen = ++_allChartsGen;
     var loaded = 0;
     var results = [];
     ALL_CHART_TYPES.forEach(function (ct, i) {
       var axon = 'view_complianceDashboard_equipPlot(' + navRef + ', ' + dates + ', read(equip)->id, "' + ct.type + '", 1hr)';
-      console.log('[Compliance] All chart axon:', axon);
       results[i] = null;
       API.evalAxon(_ctx.attestKey, _ctx.projectName, axon)
         .then(function (grid) {
-          console.log('[Compliance] All chart "' + ct.type + '":', grid && grid.rows ? grid.rows.length + ' rows, ' + grid.cols.length + ' cols' : 'empty/null');
           results[i] = grid;
         })
         .catch(function (err) { console.warn('[Compliance] All chart "' + ct.type + '" failed:', err); })
         .then(function () {
           loaded++;
-          if (loaded === ALL_CHART_TYPES.length) _renderAllCharts(results);
+          if (loaded === ALL_CHART_TYPES.length && gen === _allChartsGen) _renderAllCharts(results);
         });
     });
   }
@@ -1029,6 +1029,7 @@ window.mbcxDashboard.components.Compliance = (function () {
     _searchQuery = '';
     _equipList = [];
     _auditGrid = null;
+    _allChartsGen++;
     _container = null;
     _ctx = null;
   }
