@@ -234,8 +234,10 @@ window.mbcxDashboard.components.Compliance = (function () {
 
     var axon = 'view_complianceDashboard_equipPlot(' + navRef + ', ' + dates + ', ' + equipArg + ', "Time By Fault", 1)';
 
+    console.log('[Compliance] Pie axon:', axon);
     API.evalAxon(_ctx.attestKey, _ctx.projectName, axon)
       .then(function (grid) {
+        console.log('[Compliance] Pie response:', JSON.stringify(grid).slice(0, 800));
         if (!grid || !grid.cols || !grid.rows || !grid.rows.length) {
           _showPieEmpty();
           return;
