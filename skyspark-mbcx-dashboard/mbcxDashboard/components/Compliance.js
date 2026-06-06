@@ -250,39 +250,29 @@ window.mbcxDashboard.components.Compliance = (function () {
   }
 
   function _buildPieFromGrid(grid) {
-    var faultCols = [];
+    // Grid format: cols are dis + v0,v1,… where each vN.meta.dis is the fault name
+    // and vN.meta.color is the chart color. Row values are duration {_kind:"number", val:N, unit:"h"}.
+    var row = grid.rows[0];
+    if (!row) { _showPieEmpty(); return; }
+
+    var faults = [];
     grid.cols.forEach(function (c) {
-      if (c.name === 'ts' || c.name === 'id') return;
-      var dis = (_colDisplayName(c) || c.name).toLowerCase();
-      if (dis.indexOf('zone -') !== -1 || dis.indexOf('compliance') !== -1 ||
-          dis.indexOf('fault') !== -1 || dis.indexOf('out of') !== -1) {
-        faultCols.push(c);
+      if (c.name === 'dis') return;
+      var name = _colDisplayName(c);
+      var color = (c.meta && c.meta.color) || PIE_COLORS[faults.length % PIE_COLORS.length];
+      var val = _extractNum(row[c.name]);
+      if (val !== null && val > 0) {
+        var unit = '';
+        if (row[c.name] && row[c.name].unit) unit = row[c.name].unit;
+        faults.push({ name: name, val: val, unit: unit, color: color });
       }
     });
 
-    if (!faultCols.length) {
-      _showPieEmpty();
-      return;
-    }
-
-    var faultTotals = faultCols.map(function (c) {
-      var count = 0;
-      grid.rows.forEach(function (row) {
-        var v = _extractNum(row[c.name]);
-        if (v !== null && v > 0) count++;
-      });
-      return { name: _colDisplayName(c), count: count };
-    }).filter(function (f) { return f.count > 0; });
-
-    if (!faultTotals.length) {
-      _showPieEmpty();
-      return;
-    }
-
-    _renderPieChart(faultTotals);
+    if (!faults.length) { _showPieEmpty(); return; }
+    _renderPieChart(faults);
   }
 
-  function _renderPieChart(faultTotals) {
+  function _renderPieChart(faults) {
     if (!_container || !window.Chart) return;
     if (_pieChart) { try { _pieChart.destroy(); } catch (e) {} _pieChart = null; }
 
@@ -295,10 +285,10 @@ window.mbcxDashboard.components.Compliance = (function () {
     _pieChart = new window.Chart(canvas, {
       type: 'doughnut',
       data: {
-        labels: faultTotals.map(function (f) { return f.name; }),
+        labels: faults.map(function (f) { return f.name; }),
         datasets: [{
-          data: faultTotals.map(function (f) { return f.count; }),
-          backgroundColor: faultTotals.map(function (f, i) { return PIE_COLORS[i % PIE_COLORS.length]; }),
+          data: faults.map(function (f) { return f.val; }),
+          backgroundColor: faults.map(function (f) { return f.color; }),
           borderWidth: 2,
           borderColor: '#fff'
         }]
@@ -322,7 +312,9 @@ window.mbcxDashboard.components.Compliance = (function () {
           tooltip: {
             callbacks: {
               label: function (ctx) {
-                return ' ' + ctx.label + ': ' + ctx.parsed + ' intervals';
+                var f = faults[ctx.dataIndex];
+                var u = f && f.unit ? f.unit : 'h';
+                return ' ' + ctx.label + ': ' + ctx.parsed + u;
               }
             }
           }
@@ -446,7 +438,7 @@ window.mbcxDashboard.components.Compliance = (function () {
           return;
         }
         _buildChartsFromGrid(grid);
-        _buildPieFromGrid(grid);
+        _loadPieChart(sp.equipRef);
       })
       .catch(function (err) {
         console.warn('[Compliance] Plot fetch failed:', err);
