@@ -144,8 +144,16 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       if (!datesEnd && saved.datesEnd) datesEnd = saved.datesEnd;
     }
 
+    var userName = null;
+    try {
+      var user = view.session().user();
+      userName = typeof user.dis === 'function' ? user.dis() : (user.dis || null);
+      if (!userName) userName = typeof user.toStr === 'function' ? user.toStr() : String(user);
+    } catch (e) { /* no session or user */ }
+
     var ctx = { attestKey: attestKey, projectName: projectName, siteRef: siteRef,
-                datesStart: datesStart, datesEnd: datesEnd, siteName: saved ? saved.siteName : null };
+                datesStart: datesStart, datesEnd: datesEnd, siteName: saved ? saved.siteName : null,
+                userName: userName };
     console.log('[mbcxDashboard] ctx:', {
       hasAttestKey: !!attestKey, projectName: projectName,
       siteRef: siteRef, datesStart: datesStart, datesEnd: datesEnd,

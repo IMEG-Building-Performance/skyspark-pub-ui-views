@@ -28,7 +28,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
 
   NS.Components = {};
 
-  var _configTabs = [
+  var _defaultTabOrder = [
     { key: 'summary',    label: 'Summary' },
     { key: 'faults',     label: 'Faults' },
     { key: 'compliance', label: 'Compliance' },
@@ -37,25 +37,50 @@ window.mbcxDashboard = window.mbcxDashboard || {};
     { key: 'meetings',   label: 'Meetings' }
   ];
 
-  function _loadTabVisibility() {
+  var _dateRangeOptions = [
+    { value: 7,  label: '7 days' },
+    { value: 14, label: '14 days' },
+    { value: 30, label: '30 days' },
+    { value: 60, label: '60 days' },
+    { value: 90, label: '90 days' }
+  ];
+
+  var _themeOptions = [
+    { value: 'auto', label: 'Auto (System)' },
+    { value: 'dark', label: 'Dark' },
+    { value: 'light', label: 'Light' }
+  ];
+
+  function _loadConfig() {
     try {
-      var raw = sessionStorage.getItem('mbcxDashboard_tabVis');
+      var raw = localStorage.getItem('mbcxDashboard_config');
       if (raw) return JSON.parse(raw);
     } catch (e) {}
-    var def = {};
-    _configTabs.forEach(function (t) { def[t.key] = true; });
-    return def;
+    return null;
   }
 
-  function _saveTabVisibility(vis) {
-    try { sessionStorage.setItem('mbcxDashboard_tabVis', JSON.stringify(vis)); } catch (e) {}
+  function _saveConfig(cfg) {
+    try { localStorage.setItem('mbcxDashboard_config', JSON.stringify(cfg)); } catch (e) {}
+  }
+
+  function _getConfig() {
+    var cfg = _loadConfig() || {};
+    if (!cfg.tabVisibility) {
+      cfg.tabVisibility = {};
+      _defaultTabOrder.forEach(function (t) { cfg.tabVisibility[t.key] = true; });
+    }
+    if (!cfg.tabOrder) cfg.tabOrder = _defaultTabOrder.map(function (t) { return t.key; });
+    if (!cfg.defaultTab) cfg.defaultTab = 'summary';
+    if (!cfg.dateRange) cfg.dateRange = 30;
+    if (!cfg.theme) cfg.theme = 'auto';
+    return cfg;
   }
 
   NS.App = {
     _lastData:  null,
     _lastCtx:   null,
     _activeTab: null,
-    _tabVisibility: _loadTabVisibility(),
+    _config: _getConfig(),
 
     _persistState: function () {
       var c = NS.App._lastCtx;
@@ -88,7 +113,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       };
       NS.Components = co;
 
-      var startVal = _fmtDate(ctx && ctx.datesStart) || _isoDate(-30);
+      var startVal = _fmtDate(ctx && ctx.datesStart) || _isoDate(-(NS.App._config.dateRange || 30));
       var endVal   = _fmtDate(ctx && ctx.datesEnd)   || _isoDate(0);
       var titleTxt = (ctx && ctx.siteName)
         ? 'MBCx Dashboard — ' + ctx.siteName
@@ -322,9 +347,10 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       });
 
       NS.App._applyTabVisibility(container);
+      NS.App._applyTheme(container);
 
       if (ctx.siteRef) {
-        NS.App._showTab(container, 'summary', co, data, ctx);
+        NS.App._showTab(container, NS.App.getDefaultTab(), co, data, ctx);
       } else {
         _showNoSitePrompt(content);
       }
@@ -485,57 +511,213 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         ].join('\n');
       }
       else if (tab === 'config') {
-        content.innerHTML = NS.App._renderConfigPage();
-        NS.App._initConfigToggles(container, content, co, data, ctx);
+        content.innerHTML = NS.App._renderConfigPage(ctx);
+        NS.App._initConfigPage(container, content, co, data, ctx);
       }
     },
 
     _applyTabVisibility: function (container) {
-      var vis = NS.App._tabVisibility;
-      container.querySelectorAll('.dash-sb-nav .dash-sb-nav-item').forEach(function (btn) {
-        var key = btn.getAttribute('data-tab');
-        if (key && vis.hasOwnProperty(key)) {
-          btn.style.display = vis[key] ? '' : 'none';
-          var sub = btn.nextElementSibling;
-          if (sub && sub.classList.contains('dash-sb-sub')) {
-            sub.style.display = vis[key] ? '' : 'none';
-          }
+      var cfg = NS.App._config;
+      var nav = container.querySelector('.dash-sb-nav');
+      if (!nav) return;
+
+      // Reorder and show/hide
+      var order = cfg.tabOrder || _defaultTabOrder.map(function (t) { return t.key; });
+      var vis = cfg.tabVisibility || {};
+
+      order.forEach(function (key) {
+        var btn = nav.querySelector('.dash-sb-nav-item[data-tab="' + key + '"]');
+        if (!btn) return;
+        var show = vis[key] !== false;
+        btn.style.display = show ? '' : 'none';
+        nav.appendChild(btn);
+        var sub = btn.nextElementSibling;
+        if (!sub || !sub.classList.contains('dash-sb-sub')) {
+          sub = nav.querySelector('.dash-sb-sub[data-parent="' + key + '"]');
+        }
+        if (sub && sub.classList.contains('dash-sb-sub')) {
+          sub.style.display = show ? '' : 'none';
+          nav.appendChild(sub);
         }
       });
     },
 
-    _renderConfigPage: function () {
-      var vis = NS.App._tabVisibility;
-      var rows = _configTabs.map(function (t) {
-        var checked = vis[t.key] ? ' checked' : '';
-        return '<label class="cfg-toggle-row">' +
-          '<span class="cfg-toggle-label">' + t.label + '</span>' +
-          '<input type="checkbox" class="cfg-toggle-input" data-key="' + t.key + '"' + checked + '>' +
-          '<span class="cfg-toggle-slider"></span>' +
-        '</label>';
+    _applyTheme: function (container) {
+      var theme = NS.App._config.theme || 'auto';
+      var shell = container.querySelector('.dash-shell') || container;
+      shell.classList.remove('dash-theme-dark', 'dash-theme-light');
+      if (theme === 'dark') shell.classList.add('dash-theme-dark');
+      else if (theme === 'light') shell.classList.add('dash-theme-light');
+    },
+
+    getDefaultDateRange: function () {
+      return NS.App._config.dateRange || 30;
+    },
+
+    getDefaultTab: function () {
+      return NS.App._config.defaultTab || 'summary';
+    },
+
+    _renderConfigPage: function (ctx) {
+      var cfg = NS.App._config;
+      var vis = cfg.tabVisibility;
+      var order = cfg.tabOrder || _defaultTabOrder.map(function (t) { return t.key; });
+
+      var tabLabelMap = {};
+      _defaultTabOrder.forEach(function (t) { tabLabelMap[t.key] = t.label; });
+
+      // Section 1: User info
+      var userName = (ctx && ctx.userName) || 'Unknown';
+      var userSection = [
+        '<div class="cfg-section">',
+        '  <h3 class="cfg-section-title">Current User</h3>',
+        '  <div class="cfg-user-card">',
+        '    <svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20" class="cfg-user-icon"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>',
+        '    <span class="cfg-user-name">' + userName + '</span>',
+        '  </div>',
+        '</div>'
+      ].join('\n');
+
+      // Section 2: Tab visibility with ordering arrows
+      var tabRows = order.map(function (key, idx) {
+        var checked = vis[key] !== false ? ' checked' : '';
+        var label = tabLabelMap[key] || key;
+        var upDisabled = idx === 0 ? ' disabled' : '';
+        var downDisabled = idx === order.length - 1 ? ' disabled' : '';
+        return '<div class="cfg-tab-row" data-key="' + key + '">' +
+          '<div class="cfg-tab-arrows">' +
+            '<button class="cfg-arrow-btn cfg-arrow-up" data-dir="up" data-key="' + key + '"' + upDisabled + '>&#9650;</button>' +
+            '<button class="cfg-arrow-btn cfg-arrow-down" data-dir="down" data-key="' + key + '"' + downDisabled + '>&#9660;</button>' +
+          '</div>' +
+          '<span class="cfg-toggle-label">' + label + '</span>' +
+          '<label class="cfg-toggle-wrap">' +
+            '<input type="checkbox" class="cfg-toggle-input" data-key="' + key + '"' + checked + '>' +
+            '<span class="cfg-toggle-slider"></span>' +
+          '</label>' +
+        '</div>';
       }).join('');
+
+      var tabSection = [
+        '<div class="cfg-section">',
+        '  <h3 class="cfg-section-title">Sidebar Tabs</h3>',
+        '  <p class="cfg-section-desc">Toggle visibility and reorder tabs using arrows.</p>',
+        '  <div class="cfg-toggles">' + tabRows + '</div>',
+        '</div>'
+      ].join('\n');
+
+      // Section 3: Default landing tab
+      var landingOpts = order.filter(function (k) { return vis[k] !== false; }).map(function (key) {
+        var sel = cfg.defaultTab === key ? ' selected' : '';
+        return '<option value="' + key + '"' + sel + '>' + (tabLabelMap[key] || key) + '</option>';
+      }).join('');
+
+      var landingSection = [
+        '<div class="cfg-section">',
+        '  <h3 class="cfg-section-title">Default Landing Tab</h3>',
+        '  <p class="cfg-section-desc">Which tab loads when the dashboard opens.</p>',
+        '  <select class="cfg-select" id="cfgDefaultTab">' + landingOpts + '</select>',
+        '</div>'
+      ].join('\n');
+
+      // Section 4: Date range default
+      var dateOpts = _dateRangeOptions.map(function (o) {
+        var sel = cfg.dateRange === o.value ? ' selected' : '';
+        return '<option value="' + o.value + '"' + sel + '>' + o.label + '</option>';
+      }).join('');
+
+      var dateSection = [
+        '<div class="cfg-section">',
+        '  <h3 class="cfg-section-title">Default Date Range</h3>',
+        '  <p class="cfg-section-desc">Lookback period when no date is specified.</p>',
+        '  <select class="cfg-select" id="cfgDateRange">' + dateOpts + '</select>',
+        '</div>'
+      ].join('\n');
+
+      // Section 5: Theme
+      var themeOpts = _themeOptions.map(function (o) {
+        var sel = cfg.theme === o.value ? ' selected' : '';
+        return '<option value="' + o.value + '"' + sel + '>' + o.label + '</option>';
+      }).join('');
+
+      var themeSection = [
+        '<div class="cfg-section">',
+        '  <h3 class="cfg-section-title">Theme</h3>',
+        '  <p class="cfg-section-desc">Control the dashboard appearance.</p>',
+        '  <select class="cfg-select" id="cfgTheme">' + themeOpts + '</select>',
+        '</div>'
+      ].join('\n');
 
       return [
         '<div class="page cfg-page">',
         '  <h2 class="cfg-title">Configuration</h2>',
-        '  <div class="cfg-section">',
-        '    <h3 class="cfg-section-title">Visible Tabs</h3>',
-        '    <p class="cfg-section-desc">Toggle which tabs appear in the sidebar navigation.</p>',
-        '    <div class="cfg-toggles">' + rows + '</div>',
-        '  </div>',
+        userSection,
+        tabSection,
+        landingSection,
+        dateSection,
+        themeSection,
         '</div>'
       ].join('\n');
     },
 
-    _initConfigToggles: function (container, content, co, data, ctx) {
+    _initConfigPage: function (container, content, co, data, ctx) {
+      // Tab visibility toggles
       content.querySelectorAll('.cfg-toggle-input').forEach(function (input) {
         input.addEventListener('change', function () {
           var key = input.getAttribute('data-key');
-          NS.App._tabVisibility[key] = input.checked;
-          _saveTabVisibility(NS.App._tabVisibility);
+          NS.App._config.tabVisibility[key] = input.checked;
+          _saveConfig(NS.App._config);
           NS.App._applyTabVisibility(container);
         });
       });
+
+      // Tab reorder arrows
+      content.querySelectorAll('.cfg-arrow-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var key = btn.getAttribute('data-key');
+          var dir = btn.getAttribute('data-dir');
+          var order = NS.App._config.tabOrder;
+          var idx = order.indexOf(key);
+          if (idx === -1) return;
+          var swapIdx = dir === 'up' ? idx - 1 : idx + 1;
+          if (swapIdx < 0 || swapIdx >= order.length) return;
+          var tmp = order[idx];
+          order[idx] = order[swapIdx];
+          order[swapIdx] = tmp;
+          _saveConfig(NS.App._config);
+          NS.App._applyTabVisibility(container);
+          // Re-render config page to update arrow states
+          content.innerHTML = NS.App._renderConfigPage(ctx);
+          NS.App._initConfigPage(container, content, co, data, ctx);
+        });
+      });
+
+      // Default tab select
+      var tabSelect = content.querySelector('#cfgDefaultTab');
+      if (tabSelect) {
+        tabSelect.addEventListener('change', function () {
+          NS.App._config.defaultTab = tabSelect.value;
+          _saveConfig(NS.App._config);
+        });
+      }
+
+      // Date range select
+      var dateSelect = content.querySelector('#cfgDateRange');
+      if (dateSelect) {
+        dateSelect.addEventListener('change', function () {
+          NS.App._config.dateRange = parseInt(dateSelect.value, 10);
+          _saveConfig(NS.App._config);
+        });
+      }
+
+      // Theme select
+      var themeSelect = content.querySelector('#cfgTheme');
+      if (themeSelect) {
+        themeSelect.addEventListener('change', function () {
+          NS.App._config.theme = themeSelect.value;
+          _saveConfig(NS.App._config);
+          NS.App._applyTheme(container);
+        });
+      }
     }
   };
 
