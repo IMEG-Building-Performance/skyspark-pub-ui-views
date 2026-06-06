@@ -69,6 +69,13 @@ window.mbcxDashboard.components.Compliance = (function () {
     return col.name;
   }
 
+  function _colFullName(col) {
+    if (col.meta && col.meta.id && typeof col.meta.id === 'object' && col.meta.id.dis) {
+      return col.meta.id.dis;
+    }
+    return _colDisplayName(col);
+  }
+
   function _colUnit(col) {
     if (col.meta) {
       if (col.meta.unit) return col.meta.unit;
@@ -931,7 +938,7 @@ window.mbcxDashboard.components.Compliance = (function () {
         var isDashed = c.name.toLowerCase().indexOf('max') !== -1 || c.name.toLowerCase().indexOf('min') !== -1 ||
                        c.name.toLowerCase().indexOf('limit') !== -1 || c.name.toLowerCase().indexOf('sp') !== -1;
         return {
-          label: _colDisplayName(c),
+          label: _colFullName(c),
           data: data,
           borderColor: CHART_COLORS[ci % CHART_COLORS.length],
           backgroundColor: CHART_COLORS[ci % CHART_COLORS.length],
