@@ -647,6 +647,22 @@
 }
 #mbcxDashboard .dash-sidebar--collapsed .dash-sb-nav-item span { opacity: 0; width: 0; overflow: hidden; }
 
+#mbcxDashboard .dash-sb-sub {
+  display: none; flex-direction: column;
+  padding: 2px 0 4px 29px;
+}
+#mbcxDashboard .dash-sb-sub--open { display: flex; }
+#mbcxDashboard .dash-sb-sub-item {
+  border: none; background: none; text-align: left;
+  font-size: 12px; font-weight: 400; font-family: inherit;
+  color: rgba(255,255,255,0.48); cursor: pointer;
+  padding: 5px 10px; border-radius: 4px;
+  transition: background 0.12s, color 0.12s;
+}
+#mbcxDashboard .dash-sb-sub-item:hover { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.85); }
+#mbcxDashboard .dash-sb-sub-item.active { color: #fff; font-weight: 600; background: rgba(255,255,255,0.08); }
+#mbcxDashboard .dash-sidebar--collapsed .dash-sb-sub { display: none; }
+
 #mbcxDashboard .dash-sb-footer {
   border-top: 1px solid rgba(255,255,255,0.08);
   padding: 10px 12px; flex-shrink: 0;

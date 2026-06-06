@@ -94,6 +94,12 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         '  <nav class="dash-sb-nav">',
         '    <button class="dash-sb-nav-item" data-tab="summary">'  + _icons.summary  + '<span>Summary</span></button>',
         '    <button class="dash-sb-nav-item" data-tab="faults">'     + _icons.faults     + '<span>Faults</span></button>',
+        '    <div class="dash-sb-sub" data-parent="faults">',
+        '      <button class="dash-sb-sub-item" data-tab="fault-summary">Summary</button>',
+        '      <button class="dash-sb-sub-item" data-tab="fault-list">Fault List</button>',
+        '      <button class="dash-sb-sub-item" data-tab="fault-summaries">Fault Summaries</button>',
+        '      <button class="dash-sb-sub-item" data-tab="fault-log">Fault Log</button>',
+        '    </div>',
         '    <button class="dash-sb-nav-item" data-tab="compliance">' + _icons.compliance + '<span>Compliance</span></button>',
         '    <button class="dash-sb-nav-item" data-tab="equipment">'  + _icons.equipment  + '<span>Equipment</span></button>',
         '    <button class="dash-sb-nav-item" data-tab="trends">'   + _icons.trends   + '<span>Trends</span></button>',
@@ -274,6 +280,17 @@ window.mbcxDashboard = window.mbcxDashboard || {};
             _showNoSitePrompt(content);
             return;
           }
+          var tab = btn.getAttribute('data-tab');
+          var sub = btn.nextElementSibling;
+          if (sub && sub.classList.contains('dash-sb-sub')) {
+            sub.classList.toggle('dash-sb-sub--open');
+          }
+          NS.App._showTab(container, tab, co, data, ctx);
+        });
+      });
+      container.querySelectorAll('.dash-sb-sub-item').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          if (!ctx.siteRef) { _showNoSitePrompt(content); return; }
           NS.App._showTab(container, btn.getAttribute('data-tab'), co, data, ctx);
         });
       });
@@ -353,9 +370,18 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       NS.App._activeTab = tab;
       NS.App._persistState();
 
+      var faultTabs = ['faults', 'fault-summary', 'fault-list', 'fault-summaries', 'fault-log'];
+      var isFaultTab = faultTabs.indexOf(tab) !== -1;
+
       container.querySelectorAll('.dash-sb-nav-item').forEach(function (btn) {
+        var t = btn.getAttribute('data-tab');
+        btn.classList.toggle('active', t === tab || (t === 'faults' && isFaultTab));
+      });
+      container.querySelectorAll('.dash-sb-sub-item').forEach(function (btn) {
         btn.classList.toggle('active', btn.getAttribute('data-tab') === tab);
       });
+      var faultSub = container.querySelector('.dash-sb-sub[data-parent="faults"]');
+      if (faultSub) faultSub.classList.toggle('dash-sb-sub--open', isFaultTab);
 
       var content = container.querySelector('#mbcxContent');
       content.classList.toggle('dash-content--fixed', tab === 'trends');
@@ -374,7 +400,12 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         if (co.AHU)                     co.AHU.initLive(container, ctx || null);
         if (co.TerminalUnits)           co.TerminalUnits.initLive(container, ctx || null);
       }
-      else if (tab === 'faults') {
+      else if (tab === 'faults' || tab === 'fault-list') {
+        NS.App._activeTab = 'fault-list';
+        NS.App._persistState();
+        container.querySelectorAll('.dash-sb-sub-item').forEach(function (btn) {
+          btn.classList.toggle('active', btn.getAttribute('data-tab') === 'fault-list');
+        });
         content.innerHTML = co.FaultList
           ? co.FaultList.renderPage()
           : '<div class="tu-loading">Fault List not loaded.</div>';
@@ -384,6 +415,23 @@ window.mbcxDashboard = window.mbcxDashboard || {};
           };
           co.FaultList.initLive(container, ctx || null);
         }
+      }
+      else if (tab === 'fault-summary' || tab === 'fault-summaries' || tab === 'fault-log') {
+        var subLabels = { 'fault-summary': 'Summary', 'fault-summaries': 'Fault Summaries', 'fault-log': 'Fault Log' };
+        content.innerHTML = [
+          '<div class="page" style="display:flex;align-items:center;justify-content:center;min-height:70vh;">',
+          '  <div style="text-align:center;">',
+          '    <svg viewBox="0 0 24 24" width="80" height="80" fill="none" stroke="#5a6070" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:16px;">',
+          '      <rect x="2" y="6" width="20" height="12" rx="2"/>',
+          '      <path d="M12 6V4m-4 2V5m8 1V5"/>',
+          '      <circle cx="12" cy="12" r="2.5"/>',
+          '      <path d="M14.5 12H18m-12 0h3.5"/>',
+          '    </svg>',
+          '    <div style="font-size:1.15rem;font-weight:600;color:#8b95a5;margin-bottom:6px;">Under Construction</div>',
+          '    <div style="font-size:.85rem;color:#5a6070;">' + subLabels[tab] + ' coming soon.</div>',
+          '  </div>',
+          '</div>'
+        ].join('\n');
       }
       else if (tab === 'trends') {
         if (co.TrendingView) co.TrendingView.showInContent(content, ctx || {});
