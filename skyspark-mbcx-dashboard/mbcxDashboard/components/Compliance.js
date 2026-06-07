@@ -1401,8 +1401,16 @@ window.mbcxDashboard.components.Compliance = (function () {
     if (!_container) return;
     var body = _container.querySelector('#compBody');
     if (!body) return;
-    var rect = body.getBoundingClientRect();
-    var available = window.innerHeight - rect.top - 20;
+    var page = body.closest('.comp-page');
+    var bodyRect = body.getBoundingClientRect();
+    var bottomEdge;
+    if (page) {
+      var pageRect = page.getBoundingClientRect();
+      bottomEdge = pageRect.top + page.clientHeight;
+    } else {
+      bottomEdge = window.innerHeight;
+    }
+    var available = bottomEdge - bodyRect.top - 20;
     if (available < 300) available = 300;
     body.style.height = available + 'px';
     body.classList.add('comp-body--sized');
