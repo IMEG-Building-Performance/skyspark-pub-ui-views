@@ -448,6 +448,19 @@ window.mbcxDashboard.components.EquipmentView = (function () {
     return { html: '<span class="eq-cv-val">' + raw + '</span>', isNull: false };
   }
 
+  function _groupByUnit(points) {
+    var groups = {}, order = [];
+    points.forEach(function (p) {
+      var u = p.unit || (p.isBool ? 'Status' : 'Other');
+      if (!groups[u]) { groups[u] = []; order.push(u); }
+      groups[u].push(p);
+    });
+    order.forEach(function (u) {
+      groups[u].sort(function (a, b) { return a.name.localeCompare(b.name); });
+    });
+    return order.map(function (u) { return { unit: u, items: groups[u] }; });
+  }
+
   function _renderCurvals(points) {
     var el = _container && _container.querySelector('#eqCurvalCard');
     if (!el) return;
@@ -463,17 +476,23 @@ window.mbcxDashboard.components.EquipmentView = (function () {
     }
     el.style.display = '';
 
-    var sorted = points.slice().sort(function (a, b) { return a.name.localeCompare(b.name); });
-    var rows = sorted.map(function (p) {
-      var fmt = _fmtCurDisplay(p);
-      return '<tr class="eq-cv-tr' + (fmt.isNull ? ' eq-cv-tr--na' : '') + '">' +
-        '<td class="eq-cv-td-name" title="' + p.name + '">' + p.name + '</td>' +
-        '<td class="eq-cv-td-val">' + fmt.html + '</td>' +
-      '</tr>';
+    var groups = _groupByUnit(points);
+    var cards = groups.map(function (g) {
+      var rows = g.items.map(function (p) {
+        var fmt = _fmtCurDisplay(p);
+        return '<tr class="eq-cv-tr' + (fmt.isNull ? ' eq-cv-tr--na' : '') + '">' +
+          '<td class="eq-cv-td-name" title="' + p.name + '">' + p.name + '</td>' +
+          '<td class="eq-cv-td-val">' + fmt.html + '</td>' +
+        '</tr>';
+      }).join('');
+      return '<div class="eq-cv-card">' +
+        '<div class="eq-cv-card-label">' + g.unit + '<span class="eq-cv-card-count">' + g.items.length + '</span></div>' +
+        '<table class="eq-cv-table"><tbody>' + rows + '</tbody></table>' +
+      '</div>';
     }).join('');
 
     el.innerHTML = '<div class="eq-card-header"><div class="eq-section-title">Current Values</div></div>' +
-      '<div class="eq-cv-scroll"><table class="eq-cv-table"><tbody>' + rows + '</tbody></table></div>';
+      '<div class="eq-cv-carousel">' + cards + '</div>';
   }
 
   // ── KPI strip ─────────────────────────────────────────────────────
