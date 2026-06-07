@@ -69,13 +69,13 @@ window.mbcxDashboard.components.EquipmentView = (function () {
         var parsed = HP.parseGrid(grid);
         _equipList = parsed.rows.map(function (r) {
           var id = r.id && r.id.val ? r.id.val : (r.id || '');
-          var dis = (r.dis && typeof r.dis === 'string') ? r.dis
-                  : (r.id && r.id.dis) ? r.id.dis
-                  : id;
+          var dis = _strVal(r.navName) || _strVal(r.dis) ||
+                    (r.id && r.id.dis ? r.id.dis : '') || id;
           var equipType = r.equipType ? _strVal(r.equipType) : _inferType(dis);
           return { id: id, dis: dis, type: equipType, _raw: r };
         }).filter(function (e) { return e.id; });
 
+        _equipList.sort(function (a, b) { return a.dis.localeCompare(b.dis); });
         if (_equipList.length) {
           _selectedId = _equipList[0].id;
           _renderHeader();
