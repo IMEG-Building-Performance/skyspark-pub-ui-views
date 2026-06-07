@@ -15,6 +15,7 @@ window.mbcxDashboard.components.Compliance = (function () {
   var _plotRollup = 1;
   var _auditGrid = null;
   var _allChartsGen = 0;
+  var _kpiPct = { current: null, previous: null };
 
   var ROLLUP_OPTIONS = [0.25, 1, 2, 4, 8, 12, 24];
   var ROLLUP_LABELS = { 0.25: '15min', 1: '1h', 2: '2h', 4: '4h', 8: '8h', 12: '12h', 24: '24h' };
@@ -354,6 +355,8 @@ window.mbcxDashboard.components.Compliance = (function () {
           '<div class="comp-ov-kpi-dates" id="compDatesPrevious">—</div>' +
         '</div>' +
       '</div>' +
+      '<div class="comp-ov-delta" id="compDelta"></div>' +
+      '<div class="comp-ov-stats" id="compStats"></div>' +
     '</div>';
   }
 
@@ -450,10 +453,47 @@ window.mbcxDashboard.components.Compliance = (function () {
     if (isNaN(pct)) pct = 0;
     var subtitle = _extractStr(row.subtitle);
 
+    _kpiPct[which.toLowerCase()] = pct;
+
     var ringEl = _container.querySelector('#compRing' + which);
     var datesEl = _container.querySelector('#compDates' + which);
     if (ringEl) ringEl.innerHTML = _ring(pct, 64);
     if (datesEl) datesEl.textContent = subtitle || '—';
+
+    _updateDelta();
+  }
+
+  function _updateDelta() {
+    if (!_container) return;
+    var deltaEl = _container.querySelector('#compDelta');
+    if (deltaEl && _kpiPct.current !== null && _kpiPct.previous !== null) {
+      var diff = _kpiPct.current - _kpiPct.previous;
+      var sign = diff > 0 ? '+' : '';
+      var arrow = diff > 0 ? '&#9650;' : diff < 0 ? '&#9660;' : '';
+      var color = diff > 0 ? '#22c55e' : diff < 0 ? '#ef4444' : 'var(--gray-500)';
+      deltaEl.innerHTML = '<span class="comp-delta-arrow" style="color:' + color + '">' + arrow + '</span>' +
+        '<span class="comp-delta-val" style="color:' + color + '">' + sign + diff.toFixed(1) + '%</span>' +
+        '<span class="comp-delta-label">vs. previous</span>';
+    }
+    _updateOverviewStats();
+  }
+
+  function _updateOverviewStats() {
+    if (!_container) return;
+    var statsEl = _container.querySelector('#compStats');
+    if (!statsEl) return;
+    var total = _equipList.length;
+    if (!total) { statsEl.innerHTML = ''; return; }
+    var compliant = 0;
+    var attention = 0;
+    _equipList.forEach(function (sp) {
+      if (sp.pct !== null && sp.pct >= 100) compliant++;
+      else attention++;
+    });
+    statsEl.innerHTML =
+      '<div class="comp-ov-stat"><div class="comp-ov-stat-val">' + total + '</div><div class="comp-ov-stat-label">Equipment</div></div>' +
+      '<div class="comp-ov-stat"><div class="comp-ov-stat-val" style="color:#22c55e">' + compliant + '</div><div class="comp-ov-stat-label">Compliant</div></div>' +
+      '<div class="comp-ov-stat"><div class="comp-ov-stat-val" style="color:' + (attention > 0 ? '#ef4444' : '#22c55e') + '">' + attention + '</div><div class="comp-ov-stat-label">Need Attention</div></div>';
   }
 
   // ── Pie chart — Time by Fault ───────────────────────────────────────
@@ -765,6 +805,7 @@ window.mbcxDashboard.components.Compliance = (function () {
         }
         _parseEquipGrid(grid);
         _renderEquipButtons();
+        _updateOverviewStats();
         _onSelectAll();
       })
       .catch(function (err) {
@@ -1331,6 +1372,7 @@ window.mbcxDashboard.components.Compliance = (function () {
     _searchQuery = '';
     _equipList = [];
     _auditGrid = null;
+    _kpiPct = { current: null, previous: null };
     var searchInput = container.querySelector('#compSearch');
     if (searchInput) {
       searchInput.addEventListener('input', function () {
