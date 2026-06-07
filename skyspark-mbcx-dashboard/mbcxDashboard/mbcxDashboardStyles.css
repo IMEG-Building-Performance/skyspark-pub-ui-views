@@ -2021,7 +2021,7 @@
 #mbcxDashboard .comp-body {
   display: grid; grid-template-columns: 280px 1fr; gap: 16px;
   margin-bottom: 16px;
-  flex: 1 0 auto; min-height: calc(100vh - 180px);
+  flex: 1 0 auto; min-height: calc(100vh - 280px);
 }
 
 /* Sidebar */
