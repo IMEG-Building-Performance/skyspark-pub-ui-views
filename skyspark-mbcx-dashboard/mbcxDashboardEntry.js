@@ -69,8 +69,6 @@ var mbcxDashboardHandler = {};
       loadModules(function () {
         loaded = true;
         loading = false;
-        var comps = Object.keys((window.mbcxDashboard || {}).components || {});
-        console.log('[mbcxDashboard] loaded. Components: ' + comps.join(', '));
         pendingCalls.forEach(function (a) { window.mbcxDashboardApp.onUpdate(a); });
         pendingCalls = [];
       });

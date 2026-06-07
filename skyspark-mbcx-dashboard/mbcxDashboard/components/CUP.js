@@ -346,17 +346,10 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       // Load real chart data when credentials are available
       var _hasCredentials = !!(ctx && ctx.attestKey && ctx.projectName && ctx.siteRef);
       var _hasLoader      = !!(NS.evals && NS.evals.loadCupSummary);
-      console.log('[mbcxDashboard] CUP.initCard — siteRef:', ctx && ctx.siteRef,
-        '| hasCredentials:', _hasCredentials, '| hasLoader:', _hasLoader);
-
       if (_hasCredentials && _hasLoader) {
         NS.evals.loadCupSummary(ctx.attestKey, ctx.projectName, ctx.siteRef)
           .then(function (chartData) {
             var el = document.querySelector('#cupCard');
-            console.log('[mbcxDashboard] CUP chart resolved — el found:', !!el,
-              '| cooling.current non-null months:', chartData.cooling
-                ? chartData.cooling.current.filter(function(v){return v!==null;}).length
-                : 'n/a');
 
             if (!el) return;
 

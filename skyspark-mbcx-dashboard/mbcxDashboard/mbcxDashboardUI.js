@@ -54,7 +54,6 @@ window.mbcxDashboard = window.mbcxDashboard || {};
     var b64 = parts[parts.length - 1];  // last segment is the base64 payload
     try {
       var decoded = atob(b64); // "id:@p:waubonseeCommunityCollege:r:308c0427-5b3d45a7"
-      console.log('[mbcxDashboard] nav decoded:', decoded);
       // Take everything from the first @ — that is the full Ref literal.
       // Trim any trailing whitespace or dis suffix (space + display name).
       var atIdx = decoded.indexOf('@');
@@ -100,10 +99,8 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       try {
         var siteVal = view.var('site');
         if (siteVal != null) {
-          // Log raw values to aid diagnosis
           var _toAxon = typeof siteVal.toAxon === 'function' ? siteVal.toAxon() : null;
           var _toStr  = typeof siteVal.toStr  === 'function' ? siteVal.toStr()  : String(siteVal);
-          console.log('[mbcxDashboard] site toAxon:', _toAxon, '| toStr:', _toStr);
 
           if (_toAxon) {
             // Decode @nav: refs to plain @p:project:r:uuid; pass others through.
@@ -122,7 +119,6 @@ window.mbcxDashboard = window.mbcxDashboard || {};
             if (spaceIdx !== -1) s = s.slice(0, spaceIdx);
             siteRef = _resolveNavRef(s);
           }
-          console.log('[mbcxDashboard] siteRef:', siteRef);
         }
       } catch (e) {
         console.warn('[mbcxDashboard] Could not read site var:', e);
@@ -154,12 +150,6 @@ window.mbcxDashboard = window.mbcxDashboard || {};
     var ctx = { attestKey: attestKey, projectName: projectName, siteRef: siteRef,
                 datesStart: datesStart, datesEnd: datesEnd, siteName: saved ? saved.siteName : null,
                 userName: userName };
-    console.log('[mbcxDashboard] ctx:', {
-      hasAttestKey: !!attestKey, projectName: projectName,
-      siteRef: siteRef, datesStart: datesStart, datesEnd: datesEnd,
-      restoredTab: saved ? saved.tab : null
-    });
-
     function launch(data) {
       container.innerHTML = '';
       try { NS.App.init(container, data, ctx); }
@@ -201,5 +191,4 @@ window.mbcxDashboard = window.mbcxDashboard || {};
   };
 
   window.mbcxDashboardApp = NS;
-  console.log('[mbcxDashboard] UI module ready.');
 })(window.mbcxDashboard);

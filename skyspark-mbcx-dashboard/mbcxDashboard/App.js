@@ -100,9 +100,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         'else ' +
           'commit(diff(null, {mbcxUserConfig, username: username, mbcxPrefs: "' + json + '"}, {add})) ' +
         'end';
-      NS.api.evalAxon(ctx.attestKey, ctx.projectName, axon).then(function () {
-        console.log('[mbcxDashboard] Config saved to project.');
-      }).catch(function (e) {
+      NS.api.evalAxon(ctx.attestKey, ctx.projectName, axon).catch(function (e) {
         console.warn('[mbcxDashboard] Config save failed:', e);
       });
     }, 500);
@@ -269,7 +267,6 @@ window.mbcxDashboard = window.mbcxDashboard || {};
 
       // ── Populate site list ────────────────────────────────────────────
       if (ctx && ctx.attestKey && ctx.projectName) {
-        console.log('[mbcxDashboard] Loading sites — project:', ctx.projectName, 'siteRef:', ctx.siteRef);
         NS.api.evalAxon(ctx.attestKey, ctx.projectName, 'readAll(site)')
           .then(function (grid) {
             var rows = (grid.rows || []).slice();

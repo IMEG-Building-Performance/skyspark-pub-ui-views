@@ -85,8 +85,6 @@ window.mbcxDashboard.evals = window.mbcxDashboard.evals || {};
       };
     });
 
-    console.log('[mbcxDashboard] loadCupSummary — firing', calls.length, 'API calls for siteRef:', siteRef);
-
     return Promise.all(calls.map(function (c) {
       return API.evalAxon(attestKey, projectName, c.expr)
         .then(function (grid) {
@@ -111,8 +109,6 @@ window.mbcxDashboard.evals = window.mbcxDashboard.evals || {};
           unit:    out[sys].unit
         };
       });
-      console.log('[mbcxDashboard] CUPSummary parsed results:', JSON.stringify(summary));
-
       return out;
     });
   };

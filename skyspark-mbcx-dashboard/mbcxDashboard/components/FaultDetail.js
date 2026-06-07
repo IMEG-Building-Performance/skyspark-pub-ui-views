@@ -56,7 +56,6 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
 
   function _parseHisGrid(grid) {
     if (!grid || !grid.cols || !grid.rows || !grid.rows.length) return null;
-    console.log('[FaultDetail] Grid cols:', JSON.stringify(grid.cols.map(function(c) { return { name: c.name, meta: c.meta, dis: c.dis }; })));
     var tsCol = null;
     var dataCols = [];
     grid.cols.forEach(function (c) {
@@ -483,11 +482,9 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       var dateRange = (startDate && endDate) ? startDate + '..' + endDate : 'pastMonth';
 
       var axon = 'readAll(point and his and equipRef->navName=="' + equipName + '" and siteRef==' + siteRef + ').hisRead(' + dateRange + ')';
-      console.log('[FaultDetail] Chart axon:', axon);
 
       API.evalAxon(ctx.attestKey, ctx.projectName, axon)
         .then(function (grid) {
-          console.log('[FaultDetail] Chart grid:', grid && grid.cols && grid.cols.length, 'cols,', grid && grid.rows && grid.rows.length, 'rows');
           var parsed = _parseHisGrid(grid);
           if (!parsed) {
             this._showChartFallback(wrapEl, loadingEl, fault);
