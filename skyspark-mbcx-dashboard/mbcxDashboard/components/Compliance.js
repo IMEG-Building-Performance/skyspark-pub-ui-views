@@ -1410,7 +1410,9 @@ window.mbcxDashboard.components.Compliance = (function () {
     } else {
       bottomEdge = window.innerHeight;
     }
-    var available = bottomEdge - bodyRect.top - 20;
+    var pageStyles = page ? window.getComputedStyle(page) : null;
+    var pagePadBottom = pageStyles ? parseInt(pageStyles.paddingBottom, 10) || 0 : 0;
+    var available = bottomEdge - bodyRect.top - pagePadBottom;
     if (available < 300) available = 300;
     body.style.height = available + 'px';
     body.classList.add('comp-body--sized');
