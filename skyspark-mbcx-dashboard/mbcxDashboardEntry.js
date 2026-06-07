@@ -26,6 +26,7 @@ var mbcxDashboardHandler = {};
     { src: 'components/ReheatScatter.js' },
     { src: 'components/TerminalUnits.js' },
     { src: 'components/FaultList.js' },
+    { src: 'components/FaultSummaries.js' },
     { src: 'components/FaultDetail.js' },
     { src: 'components/MeetingView.js' },
     { src: 'components/TrendingView.js' },

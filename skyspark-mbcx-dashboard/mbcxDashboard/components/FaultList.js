@@ -105,6 +105,10 @@ window.mbcxDashboard.components.FaultList = {
       '  <div class="fl-page-header">',
       '    <div class="fl-page-title">MBCx Fault List</div>',
       '    <div class="fl-page-meta" id="flMeta">Active faults</div>',
+      '    <button class="fl-copy-btn" id="flCopyBtn" title="Copy table to clipboard (paste into Excel/Sheets)">',
+      '      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>',
+      '      Copy List',
+      '    </button>',
       '  </div>',
 
       '  <div class="tu-kpi-strip fl-kpi-strip">',
@@ -130,8 +134,35 @@ window.mbcxDashboard.components.FaultList = {
     ].join('\n');
   },
 
+  _copyTable: function (container) {
+    if (!this._state || !this._state.rows) return;
+    var headers = FL_COLS.map(function (k) { return FL_LABELS[k]; });
+    var rows = this._state.rows.map(function (r) {
+      return FL_COLS.map(function (k) {
+        var v = r[k];
+        if (v === null || v === undefined || v === '') return '';
+        if (k === 'faultActive') { var n = parseFloat(v); return isNaN(n) ? v : n.toFixed(1) + '%'; }
+        if (k === 'sumDur')      { var n2 = parseFloat(v); return isNaN(n2) ? v : n2.toFixed(0) + 'h'; }
+        return String(v);
+      });
+    });
+    var tsv = [headers].concat(rows).map(function (row) { return row.join('\t'); }).join('\n');
+    navigator.clipboard.writeText(tsv).then(function () {
+      var btn = container.querySelector('#flCopyBtn');
+      if (btn) { btn.textContent = '✓ Copied!'; setTimeout(function () { btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy List'; }, 2000); }
+    }).catch(function () {
+      var ta = document.createElement('textarea');
+      ta.value = tsv; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+      document.body.removeChild(ta);
+    });
+  },
+
   initLive: function (container, ctx) {
     var self = this;
+
+    var copyBtn = container.querySelector('#flCopyBtn');
+    if (copyBtn) copyBtn.addEventListener('click', function () { self._copyTable(container); });
 
     // Wire filter input regardless of data source
     var filterInput = container.querySelector('#flFilterInput');
