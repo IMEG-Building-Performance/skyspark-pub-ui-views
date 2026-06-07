@@ -974,10 +974,7 @@ window.mbcxDashboard.components.Compliance = (function () {
             }
           },
           plugins: {
-            legend: {
-              position: 'top', align: 'end',
-              labels: { usePointStyle: true, pointStyle: 'circle', font: { size: 10 }, padding: 12, boxWidth: 7 }
-            },
+            legend: { display: false },
             tooltip: { enabled: true, mode: 'index', intersect: false }
           }
         }
