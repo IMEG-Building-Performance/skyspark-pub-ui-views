@@ -414,7 +414,17 @@ window.mbcxDashboard.components.Compliance = (function () {
           '</div>' +
         '</div>' +
       '</div>' +
+      _renderScrollHint() +
       _renderAuditSection() +
+    '</div>';
+  }
+
+  function _renderScrollHint() {
+    return '<div class="comp-scroll-hint" id="compScrollHint">' +
+      '<span class="comp-scroll-hint-text">Compliance Audit Report</span>' +
+      '<svg class="comp-scroll-hint-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" ' +
+        'stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">' +
+        '<polyline points="6 9 12 15 18 9"/></svg>' +
     '</div>';
   }
 
@@ -1389,27 +1399,80 @@ window.mbcxDashboard.components.Compliance = (function () {
       });
     }
 
-    requestAnimationFrame(_sizeBody);
-    window.addEventListener('resize', _sizeBody);
+    setTimeout(function () { _sizeBody(true); }, 150);
+    window.addEventListener('resize', _onResize);
+    _bindScrollHint();
 
     _loadEquipTable();
     _loadComplianceCards();
     _loadAuditReport();
   }
 
-  function _sizeBody() {
+  function _onResize() { _sizeBody(false); }
+
+  function _bindScrollHint() {
+    if (!_container) return;
+    var hint = _container.querySelector('#compScrollHint');
+    if (!hint) return;
+    var body = _container.querySelector('#compBody');
+    var audit = _container.querySelector('.comp-audit-section');
+    var scrollParent = body && (body.closest('.dash-content') || body.parentElement);
+    if (!scrollParent) return;
+
+    hint.addEventListener('click', function () {
+      if (audit) audit.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+    scrollParent.addEventListener('scroll', function () {
+      hint.classList.toggle('comp-scroll-hint--hidden', scrollParent.scrollTop > 24);
+    });
+  }
+
+  var _sizeBodyRaf = null;
+  var _lastWindowW = 0;
+  var _lastWindowH = 0;
+  function _sizeBody(force) {
+    if (_sizeBodyRaf) return;
+    var ww = window.innerWidth, wh = window.innerHeight;
+    if (!force && Math.abs(_lastWindowW - ww) < 20 && Math.abs(_lastWindowH - wh) < 20) return;
+    _lastWindowW = ww;
+    _lastWindowH = wh;
+    _sizeBodyRaf = requestAnimationFrame(function () {
+      _sizeBodyRaf = null;
+      _sizeBodyNow();
+    });
+  }
+  function _sizeBodyNow() {
     if (!_container) return;
     var body = _container.querySelector('#compBody');
     if (!body) return;
+
+    var scrollParent = body.closest('.dash-content') || body.parentElement;
+    var scrollH = scrollParent.clientHeight;
+
+    // Scroll to top so getBoundingClientRect is stable
+    var savedScroll = scrollParent.scrollTop;
+    scrollParent.scrollTop = 0;
+
+    var scrollRect = scrollParent.getBoundingClientRect();
     var bodyRect = body.getBoundingClientRect();
-    var available = window.innerHeight - bodyRect.top - 8;
+    var bodyTop = bodyRect.top - scrollRect.top;
+
+    scrollParent.scrollTop = savedScroll;
+
+    // Reserve room for the scroll hint so it sits at the bottom of the first screen
+    var hint = _container.querySelector('#compScrollHint');
+    var hintH = hint ? hint.offsetHeight : 0;
+
+    var available = scrollH - bodyTop - hintH;
     if (available < 300) available = 300;
+
     body.style.height = available + 'px';
     body.classList.add('comp-body--sized');
   }
 
   function destroy() {
-    window.removeEventListener('resize', _sizeBody);
+    window.removeEventListener('resize', _onResize);
     _destroyLineCharts();
     if (_pieChart) { try { _pieChart.destroy(); } catch (e) {} _pieChart = null; }
     _selectedIdx = -1;
