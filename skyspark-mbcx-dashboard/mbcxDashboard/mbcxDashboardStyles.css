@@ -1305,6 +1305,46 @@
 }
 #mbcxDashboard .eq-notes-body { padding: 0; }
 
+/* current values card */
+#mbcxDashboard .eq-curval-card {
+  background: var(--card-bg); border: 1px solid var(--card-border);
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+#mbcxDashboard .eq-cv-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 6px 16px; margin-top: 10px;
+}
+#mbcxDashboard .eq-cv-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 0; font-size: .82rem;
+}
+#mbcxDashboard .eq-cv-dot {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+}
+#mbcxDashboard .eq-cv-name {
+  flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--gray-700);
+}
+#mbcxDashboard .eq-cv-val {
+  font-weight: 600; color: var(--gray-900); white-space: nowrap;
+}
+#mbcxDashboard .eq-cv-status {
+  font-size: .73rem; color: var(--gray-400); white-space: nowrap; margin-left: 4px;
+}
+
+/* trend charts area — unit-split panels */
+#mbcxDashboard .eq-charts-area {
+  display: flex; flex-direction: column; gap: 16px; margin-top: 4px;
+}
+#mbcxDashboard .eq-chart-panel {
+  background: var(--gray-50); border: 1px solid var(--card-border);
+  border-radius: 8px; padding: 12px 14px;
+}
+#mbcxDashboard .eq-panel-title {
+  font-size: .78rem; font-weight: 600; color: var(--gray-500);
+  text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px;
+}
+
 /* ── Reheat Scatter (rs-*) ── */
 #mbcxDashboard .rs-svg {
   width: 100%; height: auto; display: block;
