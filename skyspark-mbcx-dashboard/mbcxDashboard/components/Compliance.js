@@ -1389,7 +1389,7 @@ window.mbcxDashboard.components.Compliance = (function () {
       });
     }
 
-    _sizeBody();
+    requestAnimationFrame(_sizeBody);
     window.addEventListener('resize', _sizeBody);
 
     _loadEquipTable();
@@ -1401,18 +1401,8 @@ window.mbcxDashboard.components.Compliance = (function () {
     if (!_container) return;
     var body = _container.querySelector('#compBody');
     if (!body) return;
-    var page = body.closest('.comp-page');
     var bodyRect = body.getBoundingClientRect();
-    var bottomEdge;
-    if (page) {
-      var pageRect = page.getBoundingClientRect();
-      bottomEdge = pageRect.top + page.clientHeight;
-    } else {
-      bottomEdge = window.innerHeight;
-    }
-    var pageStyles = page ? window.getComputedStyle(page) : null;
-    var pagePadBottom = pageStyles ? parseInt(pageStyles.paddingBottom, 10) || 0 : 0;
-    var available = bottomEdge - bodyRect.top - pagePadBottom;
+    var available = window.innerHeight - bodyRect.top - 8;
     if (available < 300) available = 300;
     body.style.height = available + 'px';
     body.classList.add('comp-body--sized');
