@@ -876,20 +876,25 @@ window.mbcxDashboard.components.Compliance = (function () {
     });
   }
 
+  var _carouselIdx = 0;
+  var _carouselPanels = [];
+
   function _renderAllCharts(results) {
     if (!_container || _selectedIdx !== -1) return;
     var chartsEl = _container.querySelector('#compCharts');
     if (!chartsEl) return;
     _destroyLineCharts();
     chartsEl.innerHTML = '';
+    _carouselPanels = [];
+    _carouselIdx = 0;
 
     var Chart = window.Chart;
     if (!Chart) { chartsEl.innerHTML = '<div class="comp-loading">Chart.js not loaded.</div>'; return; }
 
+    var validCharts = [];
     ALL_CHART_TYPES.forEach(function (ct, i) {
       var grid = results[i];
       if (!grid || !grid.cols || !grid.rows || !grid.rows.length) return;
-
       var tsCol = null;
       var dataCols = [];
       grid.cols.forEach(function (c) {
@@ -901,90 +906,181 @@ window.mbcxDashboard.components.Compliance = (function () {
         dataCols.push(c);
       });
       if (!tsCol || !dataCols.length) return;
-
-      var labels = grid.rows.map(function (row) {
-        var ts = row[tsCol];
-        if (typeof ts === 'string') return ts;
-        if (ts && ts._kind === 'dateTime') return ts.val;
-        if (ts && ts.val) return ts.val;
-        return '';
-      });
-      var fmtLabels = labels.map(function (l) {
-        try {
-          var d = new Date(l);
-          if (!isNaN(d)) return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) +
-            ' ' + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-        } catch (e) {}
-        return l;
-      });
-
-      var wrap = document.createElement('div');
-      wrap.className = 'comp-chart-panel';
-      var titleEl = document.createElement('div');
-      titleEl.className = 'comp-panel-title';
-      titleEl.textContent = ct.label;
-      wrap.appendChild(titleEl);
-      var canvasWrap = document.createElement('div');
-      canvasWrap.className = 'comp-canvas-wrap';
-      var canvas = document.createElement('canvas');
-      canvasWrap.appendChild(canvas);
-      wrap.appendChild(canvasWrap);
-      chartsEl.appendChild(wrap);
-
-      var colorIdx = 0;
-      var datasets = dataCols.map(function (c) {
-        var data = grid.rows.map(function (row) { return _extractNum(row[c.name]); });
-        var ci = colorIdx++;
-        var isDashed = c.name.toLowerCase().indexOf('max') !== -1 || c.name.toLowerCase().indexOf('min') !== -1 ||
-                       c.name.toLowerCase().indexOf('limit') !== -1 || c.name.toLowerCase().indexOf('sp') !== -1;
-        return {
-          label: _colFullName(c),
-          data: data,
-          borderColor: CHART_COLORS[ci % CHART_COLORS.length],
-          backgroundColor: CHART_COLORS[ci % CHART_COLORS.length],
-          borderWidth: 1.5,
-          borderDash: isDashed ? [5, 3] : [],
-          pointRadius: 0,
-          pointHitRadius: 4,
-          fill: false,
-          tension: 0.2
-        };
-      });
-
-      var unit = _colUnit(dataCols[0]) || '';
-      var chart = new Chart(canvas, {
-        type: 'line',
-        data: { labels: fmtLabels, datasets: datasets },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          animation: false,
-          interaction: { mode: 'index', intersect: false },
-          scales: {
-            x: {
-              ticks: { font: { size: 10 }, color: '#9ca3af', maxRotation: 45, autoSkip: true, maxTicksLimit: 10 },
-              grid: { display: false }
-            },
-            y: {
-              ticks: {
-                font: { size: 10 }, color: '#9ca3af',
-                callback: function (v) { return v + unit; }
-              },
-              grid: { color: '#F3F4F6' }
-            }
-          },
-          plugins: {
-            legend: { display: false },
-            tooltip: { enabled: true, mode: 'index', intersect: false }
-          }
-        }
-      });
-      _charts.push(chart);
+      validCharts.push({ ct: ct, grid: grid, tsCol: tsCol, dataCols: dataCols });
     });
 
-    if (!chartsEl.children.length) {
+    if (!validCharts.length) {
       chartsEl.innerHTML = '<div class="comp-loading">No site-wide chart data available.</div>';
+      return;
     }
+
+    // Build carousel wrapper
+    var carousel = document.createElement('div');
+    carousel.className = 'comp-carousel';
+
+    var navLeft = document.createElement('button');
+    navLeft.className = 'comp-carousel-arrow comp-carousel-left';
+    navLeft.innerHTML = '&#9664;';
+    var navRight = document.createElement('button');
+    navRight.className = 'comp-carousel-arrow comp-carousel-right';
+    navRight.innerHTML = '&#9654;';
+
+    var viewport = document.createElement('div');
+    viewport.className = 'comp-carousel-viewport';
+
+    // Individual chart slides
+    validCharts.forEach(function (vc) {
+      var slide = _buildAllChartSlide(vc, Chart, false);
+      viewport.appendChild(slide);
+      _carouselPanels.push(slide);
+    });
+
+    // Final "All" slide — 2x2 grid of all charts
+    var allSlide = document.createElement('div');
+    allSlide.className = 'comp-carousel-slide';
+    var allGrid = document.createElement('div');
+    allGrid.className = 'comp-carousel-all-grid';
+    validCharts.forEach(function (vc) {
+      var mini = _buildAllChartSlide(vc, Chart, true);
+      mini.className = 'comp-chart-panel';
+      allGrid.appendChild(mini);
+    });
+    allSlide.appendChild(allGrid);
+    viewport.appendChild(allSlide);
+    _carouselPanels.push(allSlide);
+
+    // Dot indicators
+    var dots = document.createElement('div');
+    dots.className = 'comp-carousel-dots';
+    _carouselPanels.forEach(function (_, pi) {
+      var dot = document.createElement('button');
+      dot.className = 'comp-carousel-dot' + (pi === 0 ? ' comp-carousel-dot--active' : '');
+      var isAll = pi === _carouselPanels.length - 1;
+      dot.textContent = isAll ? 'All' : '';
+      dot.setAttribute('data-pidx', pi);
+      dot.addEventListener('click', function () { _goToSlide(pi); });
+      dots.appendChild(dot);
+    });
+
+    carousel.appendChild(navLeft);
+    carousel.appendChild(viewport);
+    carousel.appendChild(navRight);
+    chartsEl.appendChild(carousel);
+    chartsEl.appendChild(dots);
+
+    navLeft.addEventListener('click', function () { _goToSlide(_carouselIdx - 1); });
+    navRight.addEventListener('click', function () { _goToSlide(_carouselIdx + 1); });
+
+    _goToSlide(0);
+  }
+
+  function _buildAllChartSlide(vc, Chart, mini) {
+    var grid = vc.grid;
+    var tsCol = vc.tsCol;
+    var dataCols = vc.dataCols;
+
+    var labels = grid.rows.map(function (row) {
+      var ts = row[tsCol];
+      if (typeof ts === 'string') return ts;
+      if (ts && ts._kind === 'dateTime') return ts.val;
+      if (ts && ts.val) return ts.val;
+      return '';
+    });
+    var fmtLabels = labels.map(function (l) {
+      try {
+        var d = new Date(l);
+        if (!isNaN(d)) return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) +
+          ' ' + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+      } catch (e) {}
+      return l;
+    });
+
+    var wrap = document.createElement('div');
+    wrap.className = mini ? 'comp-chart-panel' : 'comp-carousel-slide';
+
+    var titleEl = document.createElement('div');
+    titleEl.className = 'comp-panel-title';
+    titleEl.textContent = vc.ct.label;
+    wrap.appendChild(titleEl);
+
+    var canvasWrap = document.createElement('div');
+    canvasWrap.className = 'comp-canvas-wrap';
+    var canvas = document.createElement('canvas');
+    canvasWrap.appendChild(canvas);
+    wrap.appendChild(canvasWrap);
+
+    var colorIdx = 0;
+    var datasets = dataCols.map(function (c) {
+      var data = grid.rows.map(function (row) { return _extractNum(row[c.name]); });
+      var ci = colorIdx++;
+      var isDashed = c.name.toLowerCase().indexOf('max') !== -1 || c.name.toLowerCase().indexOf('min') !== -1 ||
+                     c.name.toLowerCase().indexOf('limit') !== -1 || c.name.toLowerCase().indexOf('sp') !== -1;
+      return {
+        label: _colFullName(c),
+        data: data,
+        borderColor: CHART_COLORS[ci % CHART_COLORS.length],
+        backgroundColor: CHART_COLORS[ci % CHART_COLORS.length],
+        borderWidth: 1.5,
+        borderDash: isDashed ? [5, 3] : [],
+        pointRadius: 0,
+        pointHitRadius: 4,
+        fill: false,
+        tension: 0.2
+      };
+    });
+
+    var unit = _colUnit(dataCols[0]) || '';
+    var chart = new Chart(canvas, {
+      type: 'line',
+      data: { labels: fmtLabels, datasets: datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        interaction: { mode: 'index', intersect: false },
+        scales: {
+          x: {
+            ticks: { font: { size: mini ? 8 : 10 }, color: '#9ca3af', maxRotation: 45, autoSkip: true, maxTicksLimit: mini ? 6 : 10 },
+            grid: { display: false }
+          },
+          y: {
+            ticks: {
+              font: { size: mini ? 8 : 10 }, color: '#9ca3af',
+              callback: function (v) { return v + unit; }
+            },
+            grid: { color: '#F3F4F6' }
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: { enabled: true, mode: 'index', intersect: false }
+        }
+      }
+    });
+    _charts.push(chart);
+    return wrap;
+  }
+
+  function _goToSlide(idx) {
+    if (!_carouselPanels.length) return;
+    if (idx < 0) idx = _carouselPanels.length - 1;
+    if (idx >= _carouselPanels.length) idx = 0;
+    _carouselIdx = idx;
+
+    _carouselPanels.forEach(function (slide, si) {
+      slide.style.display = si === idx ? '' : 'none';
+    });
+
+    if (!_container) return;
+    _container.querySelectorAll('.comp-carousel-dot').forEach(function (dot) {
+      dot.classList.toggle('comp-carousel-dot--active',
+        parseInt(dot.getAttribute('data-pidx'), 10) === idx);
+    });
+
+    var leftBtn = _container.querySelector('.comp-carousel-left');
+    var rightBtn = _container.querySelector('.comp-carousel-right');
+    if (leftBtn) leftBtn.style.visibility = '';
+    if (rightBtn) rightBtn.style.visibility = '';
   }
 
   function _bindEquipClicks() {

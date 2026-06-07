@@ -2111,6 +2111,52 @@
 }
 #mbcxDashboard .comp-canvas-wrap { position: relative; flex: 1; min-height: 100px; }
 
+/* Site-wide chart carousel */
+#mbcxDashboard .comp-carousel {
+  display: flex; align-items: stretch; flex: 1; min-height: 0; gap: 0;
+}
+#mbcxDashboard .comp-carousel-viewport {
+  flex: 1; min-width: 0; min-height: 0; position: relative;
+}
+#mbcxDashboard .comp-carousel-slide {
+  display: flex; flex-direction: column; width: 100%; height: 100%;
+}
+#mbcxDashboard .comp-carousel-arrow {
+  flex-shrink: 0; width: 28px; background: none; border: none;
+  cursor: pointer; font-size: 1rem; color: var(--gray-400);
+  display: flex; align-items: center; justify-content: center;
+  transition: color .15s;
+}
+#mbcxDashboard .comp-carousel-arrow:hover { color: var(--gray-700); }
+#mbcxDashboard .comp-carousel-dots {
+  display: flex; justify-content: center; gap: 6px; padding: 6px 0 0;
+}
+#mbcxDashboard .comp-carousel-dot {
+  width: 8px; height: 8px; border-radius: 8px; border: none;
+  background: var(--gray-300); cursor: pointer; padding: 0;
+  font-size: 0; line-height: 0; transition: background .15s;
+}
+#mbcxDashboard .comp-carousel-dot:last-child {
+  width: auto; padding: 0 6px; font-size: .6rem; line-height: 8px;
+  border-radius: 4px; color: var(--gray-500);
+}
+#mbcxDashboard .comp-carousel-dot--active {
+  background: var(--blue-500, #2563eb);
+}
+#mbcxDashboard .comp-carousel-dot--active:last-child {
+  color: #fff;
+}
+#mbcxDashboard .comp-carousel-all-grid {
+  display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr;
+  gap: 8px; flex: 1; min-height: 0; width: 100%; height: 100%;
+}
+#mbcxDashboard .comp-carousel-all-grid .comp-chart-panel {
+  min-height: 0;
+}
+#mbcxDashboard .comp-carousel-all-grid .comp-canvas-wrap {
+  min-height: 60px;
+}
+
 /* Audit section — full width below body */
 #mbcxDashboard .comp-audit-section {
   background: var(--card-bg, #fff); border: 1px solid var(--gray-200);
