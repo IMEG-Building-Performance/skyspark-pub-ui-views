@@ -142,7 +142,7 @@ window.mbcxDashboard.components.FaultList = {
         var v = r[k];
         if (v === null || v === undefined || v === '') return '';
         if (k === 'faultActive') { var n = parseFloat(v); return isNaN(n) ? v : n.toFixed(1) + '%'; }
-        if (k === 'sumDur')      { var n2 = parseFloat(v); return isNaN(n2) ? v : n2.toFixed(0) + 'h'; }
+        if (k === 'sumDur')      { var n2 = parseFloat(v); return isNaN(n2) ? v : n2.toFixed(0); }
         return String(v);
       });
     });
