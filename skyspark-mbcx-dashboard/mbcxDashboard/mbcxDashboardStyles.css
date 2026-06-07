@@ -1990,10 +1990,10 @@
 
 /* Overview KPIs row */
 #mbcxDashboard .comp-overview {
-  display: flex; align-items: center; gap: 24px;
+  display: flex; align-items: center; gap: 24px; flex-wrap: nowrap;
   padding: 16px 20px; margin-bottom: 20px; flex-shrink: 0;
   background: var(--card-bg, #fff); border: 1px solid var(--gray-200);
-  border-radius: 10px;
+  border-radius: 10px; overflow: hidden;
 }
 #mbcxDashboard .comp-ov-kpi { display: flex; align-items: center; gap: 12px; }
 #mbcxDashboard .comp-ring text { font-family: inherit; }

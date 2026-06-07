@@ -1389,17 +1389,25 @@ window.mbcxDashboard.components.Compliance = (function () {
       });
     }
 
-    _sizeBody();
-    window.addEventListener('resize', _sizeBody);
+    _sizeBody(true);
+    window.addEventListener('resize', _onResize);
 
     _loadEquipTable();
     _loadComplianceCards();
     _loadAuditReport();
   }
 
+  function _onResize() { _sizeBody(false); }
+
   var _sizeBodyRaf = null;
-  function _sizeBody() {
+  var _lastWindowW = 0;
+  var _lastWindowH = 0;
+  function _sizeBody(force) {
     if (_sizeBodyRaf) return;
+    var ww = window.innerWidth, wh = window.innerHeight;
+    if (!force && _lastWindowW === ww && _lastWindowH === wh) return;
+    _lastWindowW = ww;
+    _lastWindowH = wh;
     _sizeBodyRaf = requestAnimationFrame(function () {
       _sizeBodyRaf = null;
       _sizeBodyNow();
@@ -1440,7 +1448,7 @@ window.mbcxDashboard.components.Compliance = (function () {
   }
 
   function destroy() {
-    window.removeEventListener('resize', _sizeBody);
+    window.removeEventListener('resize', _onResize);
     _destroyLineCharts();
     if (_pieChart) { try { _pieChart.destroy(); } catch (e) {} _pieChart = null; }
     _selectedIdx = -1;
