@@ -597,16 +597,24 @@ window.mbcxDashboard.components.EquipmentView = (function () {
       return;
     }
 
-    // Separate boolean columns from numeric
+    // Separate boolean columns from numeric — only use point tag, not data guessing
     var boolMembers = [];
     var numericGroups = {}, numericOrder = [];
     groupOrder.forEach(function (unit) {
       groups[unit].forEach(function (m) {
-        var data = rows.map(function (r) { return _numVal(r[m.col.name]); });
-        var isBool = (m.point && m.point.isBool) || data.every(function (v) { return v === null || v === 0 || v === 1; });
+        var isBool = m.point && m.point.isBool;
         if (isBool) {
+          var data = rows.map(function (r) {
+            var v = r[m.col.name];
+            if (v === true || v === 'true' || v === 1) return 1;
+            if (v === false || v === 'false' || v === 0) return 0;
+            if (v === null || v === undefined) return null;
+            if (typeof v === 'object' && v.val !== undefined) return v.val ? 1 : 0;
+            return null;
+          });
           boolMembers.push({ col: m.col, point: m.point, data: data });
         } else {
+          var data = rows.map(function (r) { return _numVal(r[m.col.name]); });
           if (!numericGroups[unit]) { numericGroups[unit] = []; numericOrder.push(unit); }
           numericGroups[unit].push({ col: m.col, point: m.point, data: data });
         }
