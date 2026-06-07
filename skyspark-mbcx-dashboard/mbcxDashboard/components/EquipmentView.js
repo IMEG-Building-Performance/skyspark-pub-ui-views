@@ -576,14 +576,17 @@ window.mbcxDashboard.components.EquipmentView = (function () {
       return '';
     });
 
-    // Match grid cols back to _lastPoints to get unit info
+    // Match grid cols back to _lastPoints to get unit/name info
     var dataCols = cols.filter(function (c) { return c.name !== 'ts' && c.name !== 'id'; });
 
-    // Group cols by unit
+    // Group cols by unit — match via meta.id ref, column name, or positional index
     var groups = {}, groupOrder = [];
-    dataCols.forEach(function (c) {
-      // Find matching point for unit
-      var ptMatch = _lastPoints.find(function (p) { return p.id === c.name || p.id.replace(/^@/, '') === c.name; });
+    dataCols.forEach(function (c, idx) {
+      var metaId = c.meta && c.meta.id ? (c.meta.id.val || String(c.meta.id)).replace(/^@/, '') : '';
+      var ptMatch = _lastPoints.find(function (p) {
+        var pid = p.id.replace(/^@/, '');
+        return pid === c.name || pid === c.name.replace(/^@/, '') || pid === metaId;
+      }) || (_lastPoints[idx] || null);
       var unit = (ptMatch && ptMatch.unit) || (c.meta && c.meta.unit ? _strVal(c.meta.unit) : '') || 'other';
       if (!groups[unit]) { groups[unit] = []; groupOrder.push(unit); }
       groups[unit].push({ col: c, point: ptMatch });
