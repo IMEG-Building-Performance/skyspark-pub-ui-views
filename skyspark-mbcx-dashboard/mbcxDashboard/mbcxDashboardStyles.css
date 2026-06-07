@@ -2020,7 +2020,8 @@
 /* Body: sidebar + charts side by side */
 #mbcxDashboard .comp-body {
   display: grid; grid-template-columns: 280px 1fr; gap: 16px;
-  min-height: 420px; margin-bottom: 16px; flex: 1;
+  margin-bottom: 16px;
+  flex: 1 0 auto; min-height: calc(100vh - 180px);
 }
 
 /* Sidebar */
