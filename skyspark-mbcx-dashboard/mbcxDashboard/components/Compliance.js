@@ -42,11 +42,37 @@ window.mbcxDashboard.components.Compliance = (function () {
     '#0891B2', '#BE185D', '#4F46E5', '#CA8A04', '#15803D'
   ];
 
-  // ── Crosshair plugin — vertical line follows mouse, click pins tooltip ──
+  // ── Crosshair plugin — vertical line + hover label, click pins full tooltip ──
+
+  function _nearestDatasetIndex(chart, x, y) {
+    var best = -1, bestDist = Infinity;
+    chart.data.datasets.forEach(function (ds, di) {
+      var meta = chart.getDatasetMeta(di);
+      if (meta.hidden) return;
+      meta.data.forEach(function (pt) {
+        var d = Math.abs(pt.y - y);
+        if (Math.abs(pt.x - x) < 10 && d < bestDist) { bestDist = d; best = di; }
+      });
+    });
+    return best;
+  }
+
+  function _nearestIndex(chart, x) {
+    var scale = chart.scales.x;
+    if (!scale) return -1;
+    var best = -1, bestDist = Infinity;
+    scale.ticks.forEach(function (t, i) {
+      var px = scale.getPixelForTick(i);
+      var d = Math.abs(px - x);
+      if (d < bestDist) { bestDist = d; best = i; }
+    });
+    return best;
+  }
+
   var crosshairPlugin = {
     id: 'crosshair',
     afterInit: function (chart) {
-      chart._crosshair = { x: null, pinned: false };
+      chart._crosshair = { x: null, y: null, pinned: false };
     },
     afterEvent: function (chart, args) {
       var evt = args.event;
@@ -59,11 +85,13 @@ window.mbcxDashboard.components.Compliance = (function () {
         if (chart._crosshair.pinned) {
           chart._crosshair.pinned = false;
           chart._crosshair.x = inside ? x : null;
+          chart._crosshair.y = inside ? y : null;
           chart.tooltip.setActiveElements([], { x: 0, y: 0 });
           chart.update('none');
         } else if (inside) {
           chart._crosshair.pinned = true;
           chart._crosshair.x = x;
+          chart._crosshair.y = y;
         }
         return;
       }
@@ -71,28 +99,93 @@ window.mbcxDashboard.components.Compliance = (function () {
       if (evt.type === 'mousemove') {
         if (chart._crosshair.pinned) return;
         chart._crosshair.x = inside ? x : null;
+        chart._crosshair.y = inside ? y : null;
         chart.draw();
       }
 
       if (evt.type === 'mouseout') {
         if (chart._crosshair.pinned) return;
         chart._crosshair.x = null;
+        chart._crosshair.y = null;
         chart.draw();
       }
     },
     afterDraw: function (chart) {
-      var x = chart._crosshair && chart._crosshair.x;
-      if (x === null || x === undefined) return;
+      var ch = chart._crosshair;
+      if (!ch || ch.x === null) return;
       var area = chart.chartArea;
       var ctx = chart.ctx;
+
+      // Draw vertical crosshair line
       ctx.save();
       ctx.beginPath();
-      ctx.moveTo(x, area.top);
-      ctx.lineTo(x, area.bottom);
+      ctx.moveTo(ch.x, area.top);
+      ctx.lineTo(ch.x, area.bottom);
       ctx.lineWidth = 1;
       ctx.strokeStyle = 'rgba(0,0,0,0.3)';
       ctx.setLineDash([4, 3]);
       ctx.stroke();
+      ctx.restore();
+
+      // If pinned, the built-in tooltip handles display
+      if (ch.pinned) return;
+
+      // Hover label: find nearest dataset point and show timestamp + value
+      var di = _nearestDatasetIndex(chart, ch.x, ch.y || (area.top + area.bottom) / 2);
+      if (di === -1) di = 0;
+      var meta = chart.getDatasetMeta(di);
+      if (!meta || !meta.data.length) return;
+
+      // Find closest data point on x-axis
+      var closestPt = null, closestIdx = -1, closestDist = Infinity;
+      meta.data.forEach(function (pt, pi) {
+        var d = Math.abs(pt.x - ch.x);
+        if (d < closestDist) { closestDist = d; closestPt = pt; closestIdx = pi; }
+      });
+      if (!closestPt || closestIdx === -1) return;
+
+      var label = chart.data.labels[closestIdx] || '';
+      var val = chart.data.datasets[di].data[closestIdx];
+      var unit = '';
+      var yScale = chart.scales.y;
+      if (yScale && yScale.options && yScale.options.ticks && yScale.options.ticks.callback) {
+        unit = yScale.options.ticks.callback(0, 0, []).replace('0', '');
+      }
+      var valStr = val !== null && val !== undefined ? (typeof val === 'number' ? val.toFixed(2) : val) : '—';
+      var text = label + ' • ' + valStr + unit;
+
+      // Draw highlight dot
+      var color = chart.data.datasets[di].borderColor || '#2563EB';
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(closestPt.x, closestPt.y, 4, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.restore();
+
+      // Draw label box
+      ctx.save();
+      ctx.font = '11px -apple-system, BlinkMacSystemFont, sans-serif';
+      var tw = ctx.measureText(text).width;
+      var pad = 6;
+      var bw = tw + pad * 2;
+      var bh = 20;
+      var bx = closestPt.x - bw / 2;
+      var by = area.top - bh - 4;
+      if (bx < area.left) bx = area.left;
+      if (bx + bw > area.right) bx = area.right - bw;
+      if (by < 0) by = area.top + 4;
+
+      ctx.fillStyle = 'rgba(50,50,50,0.85)';
+      ctx.beginPath();
+      ctx.roundRect(bx, by, bw, bh, 4);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, bx + pad, by + bh / 2);
       ctx.restore();
     }
   };
