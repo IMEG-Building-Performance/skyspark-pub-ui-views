@@ -1389,7 +1389,7 @@ window.mbcxDashboard.components.Compliance = (function () {
       });
     }
 
-    _sizeBody(true);
+    setTimeout(function () { _sizeBody(true); }, 150);
     window.addEventListener('resize', _onResize);
 
     _loadEquipTable();
@@ -1405,7 +1405,7 @@ window.mbcxDashboard.components.Compliance = (function () {
   function _sizeBody(force) {
     if (_sizeBodyRaf) return;
     var ww = window.innerWidth, wh = window.innerHeight;
-    if (!force && _lastWindowW === ww && _lastWindowH === wh) return;
+    if (!force && Math.abs(_lastWindowW - ww) < 20 && Math.abs(_lastWindowH - wh) < 20) return;
     _lastWindowW = ww;
     _lastWindowH = wh;
     _sizeBodyRaf = requestAnimationFrame(function () {
@@ -1418,29 +1418,25 @@ window.mbcxDashboard.components.Compliance = (function () {
     var body = _container.querySelector('#compBody');
     if (!body) return;
 
-    body.style.height = '';
-    body.classList.remove('comp-body--sized');
-
     var scrollParent = body.closest('.dash-content') || body.parentElement;
-    var page = _container.querySelector('.comp-page') || body.parentElement;
-    var overview = _container.querySelector('.comp-overview');
-
-    void body.offsetHeight;
-
     var scrollH = scrollParent.clientHeight;
-    var overviewH = overview ? overview.offsetHeight : 0;
-    var pageStyle = window.getComputedStyle(page);
-    var pagePadTop = parseFloat(pageStyle.paddingTop) || 0;
-    var overviewMBot = overview ? parseFloat(window.getComputedStyle(overview).marginBottom) || 0 : 0;
 
-    var available = scrollH - pagePadTop - overviewH - overviewMBot;
+    // Scroll to top so getBoundingClientRect is stable
+    var savedScroll = scrollParent.scrollTop;
+    scrollParent.scrollTop = 0;
+
+    var scrollRect = scrollParent.getBoundingClientRect();
+    var bodyRect = body.getBoundingClientRect();
+    var bodyTop = bodyRect.top - scrollRect.top;
+
+    scrollParent.scrollTop = savedScroll;
+
+    var available = scrollH - bodyTop;
     if (available < 300) available = 300;
 
     console.log('[Compliance _sizeBody]',
       'scrollH:', scrollH,
-      'overviewH:', overviewH,
-      'pagePadTop:', pagePadTop,
-      'overviewMBot:', overviewMBot,
+      'bodyTop:', bodyTop,
       'available:', available);
 
     body.style.height = available + 'px';
