@@ -1389,7 +1389,7 @@ window.mbcxDashboard.components.Compliance = (function () {
       });
     }
 
-    requestAnimationFrame(_sizeBody);
+    _sizeBody();
     window.addEventListener('resize', _sizeBody);
 
     _loadEquipTable();
@@ -1397,20 +1397,32 @@ window.mbcxDashboard.components.Compliance = (function () {
     _loadAuditReport();
   }
 
+  var _sizeBodyRaf = null;
   function _sizeBody() {
+    if (_sizeBodyRaf) return;
+    _sizeBodyRaf = requestAnimationFrame(function () {
+      _sizeBodyRaf = null;
+      _sizeBodyNow();
+    });
+  }
+  function _sizeBodyNow() {
     if (!_container) return;
     var body = _container.querySelector('#compBody');
     if (!body) return;
+
+    body.style.height = '';
+    body.classList.remove('comp-body--sized');
 
     var scrollParent = body.closest('.dash-content') || body.parentElement;
     var page = _container.querySelector('.comp-page') || body.parentElement;
     var overview = _container.querySelector('.comp-overview');
 
+    void body.offsetHeight;
+
     var scrollH = scrollParent.clientHeight;
     var overviewH = overview ? overview.offsetHeight : 0;
     var pageStyle = window.getComputedStyle(page);
     var pagePadTop = parseFloat(pageStyle.paddingTop) || 0;
-    var pagePadBot = parseFloat(pageStyle.paddingBottom) || 0;
     var overviewMBot = overview ? parseFloat(window.getComputedStyle(overview).marginBottom) || 0 : 0;
 
     var available = scrollH - pagePadTop - overviewH - overviewMBot;
