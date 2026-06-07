@@ -1403,20 +1403,26 @@ window.mbcxDashboard.components.Compliance = (function () {
     if (!body) return;
 
     var scrollParent = body.closest('.dash-content') || body.parentElement;
-    var scrollRect = scrollParent.getBoundingClientRect();
-    var bodyRect = body.getBoundingClientRect();
-    var offsetInScroll = bodyRect.top - scrollRect.top;
-    var available = scrollRect.height - offsetInScroll;
+    var page = _container.querySelector('.comp-page') || body.parentElement;
+    var overview = _container.querySelector('.comp-overview');
+
+    var scrollH = scrollParent.clientHeight;
+    var overviewH = overview ? overview.offsetHeight : 0;
+    var pageStyle = window.getComputedStyle(page);
+    var pagePadTop = parseFloat(pageStyle.paddingTop) || 0;
+    var pagePadBot = parseFloat(pageStyle.paddingBottom) || 0;
+    var overviewMBot = overview ? parseFloat(window.getComputedStyle(overview).marginBottom) || 0 : 0;
+
+    var available = scrollH - pagePadTop - overviewH - overviewMBot - pagePadBot;
     if (available < 300) available = 300;
 
     console.log('[Compliance _sizeBody]',
-      'scrollParent:', scrollParent.className,
-      'scrollRect.height:', scrollRect.height,
-      'bodyRect.top:', bodyRect.top,
-      'scrollRect.top:', scrollRect.top,
-      'offsetInScroll:', offsetInScroll,
-      'available:', available,
-      'window.innerHeight:', window.innerHeight);
+      'scrollH:', scrollH,
+      'overviewH:', overviewH,
+      'pagePadTop:', pagePadTop,
+      'pagePadBot:', pagePadBot,
+      'overviewMBot:', overviewMBot,
+      'available:', available);
 
     body.style.height = available + 'px';
     body.classList.add('comp-body--sized');
