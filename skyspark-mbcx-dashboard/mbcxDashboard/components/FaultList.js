@@ -17,8 +17,8 @@ var FL_DEMO_FAULTS = [
   { id:12, equipment:'CUP-HW-1',  faultName:'HW supply temp below setpoint',               sevNorm:1, sumDur:340,  faultActive:47 },
 ];
 
-var FL_COLS = ['equipment', 'faultName', 'sevNorm', 'sumDur', 'faultActive'];
-var FL_LABELS = { equipment:'Equipment', faultName:'Fault', sevNorm:'Severity', sumDur:'Duration', faultActive:'%' };
+var FL_COLS = ['faultName', 'equipment', 'sumDur', 'sevNorm', 'faultActive'];
+var FL_LABELS = { faultName:'Fault Name', equipment:'Equipment', sumDur:'Duration (hours)', sevNorm:'Severity', faultActive:'Fault Active %' };
 
 var FL_CONDITIONS = [
   { id: 'sevHigh',  label: 'Severity ≥ 7',  test: function (r) { return typeof r.sevNorm === 'number' && r.sevNorm >= 7; }, color: '#FEE2E2', activeColor: '#DC2626', activeText: '#fff' },
