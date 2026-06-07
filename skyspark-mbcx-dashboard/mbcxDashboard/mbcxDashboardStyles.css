@@ -1368,6 +1368,44 @@
   text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px;
 }
 
+/* runtime bars (boolean points) */
+#mbcxDashboard .eq-rt-wrap {
+  display: flex; flex-direction: column; gap: 4px;
+}
+#mbcxDashboard .eq-rt-row {
+  display: flex; align-items: center; gap: 8px; height: 22px;
+}
+#mbcxDashboard .eq-rt-label {
+  flex: 0 0 140px; font-size: .72rem; color: var(--gray-700);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right;
+}
+#mbcxDashboard .eq-rt-bar {
+  flex: 1; position: relative; height: 14px; background: var(--gray-200);
+  border-radius: 3px; overflow: hidden;
+}
+#mbcxDashboard .eq-rt-seg {
+  position: absolute; top: 0; height: 100%; background: var(--gray-200);
+}
+#mbcxDashboard .eq-rt-seg--on {
+  background: var(--imeg-green);
+}
+#mbcxDashboard .eq-rt-axis {
+  position: relative; height: 16px; margin-left: 148px; margin-top: 2px;
+}
+#mbcxDashboard .eq-rt-tick {
+  position: absolute; font-size: .62rem; color: var(--gray-400);
+  transform: translateX(-50%); white-space: nowrap;
+}
+#mbcxDashboard .eq-rt-legend {
+  display: flex; gap: 14px; margin-left: 148px; margin-top: 6px;
+  font-size: .68rem; color: var(--gray-500);
+}
+#mbcxDashboard .eq-rt-leg-item { display: flex; align-items: center; gap: 4px; }
+#mbcxDashboard .eq-rt-leg-swatch {
+  width: 12px; height: 8px; border-radius: 2px; background: var(--gray-200);
+}
+#mbcxDashboard .eq-rt-leg-swatch.eq-rt-seg--on { background: var(--imeg-green); }
+
 /* ── Reheat Scatter (rs-*) ── */
 #mbcxDashboard .rs-svg {
   width: 100%; height: auto; display: block;

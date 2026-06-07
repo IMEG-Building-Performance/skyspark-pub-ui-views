@@ -597,9 +597,26 @@ window.mbcxDashboard.components.EquipmentView = (function () {
       return;
     }
 
-    var colorIdx = 0;
+    // Separate boolean columns from numeric
+    var boolMembers = [];
+    var numericGroups = {}, numericOrder = [];
     groupOrder.forEach(function (unit) {
-      var members = groups[unit];
+      groups[unit].forEach(function (m) {
+        var data = rows.map(function (r) { return _numVal(r[m.col.name]); });
+        var isBool = (m.point && m.point.isBool) || data.every(function (v) { return v === null || v === 0 || v === 1; });
+        if (isBool) {
+          boolMembers.push({ col: m.col, point: m.point, data: data });
+        } else {
+          if (!numericGroups[unit]) { numericGroups[unit] = []; numericOrder.push(unit); }
+          numericGroups[unit].push({ col: m.col, point: m.point, data: data });
+        }
+      });
+    });
+
+    // Render numeric line charts
+    var colorIdx = 0;
+    numericOrder.forEach(function (unit) {
+      var members = numericGroups[unit];
 
       var wrap = document.createElement('div');
       wrap.className = 'eq-chart-panel';
@@ -619,11 +636,10 @@ window.mbcxDashboard.components.EquipmentView = (function () {
       var datasets = members.map(function (m) {
         var ci = colorIdx++;
         var name = (m.point && m.point.name) ? m.point.name : (m.col.meta && m.col.meta.dis ? _strVal(m.col.meta.dis) : m.col.name);
-        var data = rows.map(function (r) { return _numVal(r[m.col.name]); });
         var isDashed = /\bsp\b|setpoint|limit|max|min/i.test(name);
         return {
           label: name,
-          data: data,
+          data: m.data,
           borderColor: CHART_COLORS[ci % CHART_COLORS.length],
           backgroundColor: CHART_COLORS[ci % CHART_COLORS.length],
           borderWidth: 1.5,
@@ -655,6 +671,98 @@ window.mbcxDashboard.components.EquipmentView = (function () {
       });
       _charts.push(chart);
     });
+
+    // Render boolean runtime bars
+    if (boolMembers.length) {
+      _buildRuntimeBars(area, labels, rows, boolMembers);
+    }
+  }
+
+  // ── Runtime bars (boolean points) ──────────────────────────────────
+
+  function _buildRuntimeBars(area, labels, rows, members) {
+    var wrap = document.createElement('div');
+    wrap.className = 'eq-chart-panel';
+
+    var titleEl = document.createElement('div');
+    titleEl.className = 'eq-panel-title';
+    titleEl.textContent = 'Runtime';
+    wrap.appendChild(titleEl);
+
+    var inner = document.createElement('div');
+    inner.className = 'eq-rt-wrap';
+
+    // Parse timestamps for proportional positioning
+    var timestamps = rows.map(function (r) {
+      var ts = r.ts;
+      var s = typeof ts === 'string' ? ts : (ts && ts.val ? ts.val : '');
+      var d = new Date(s);
+      return isNaN(d) ? 0 : d.getTime();
+    });
+    var tMin = timestamps[0] || 0;
+    var tMax = timestamps[timestamps.length - 1] || 1;
+    var tSpan = tMax - tMin || 1;
+
+    members.forEach(function (m) {
+      var name = (m.point && m.point.name) ? m.point.name : m.col.name;
+      var row = document.createElement('div');
+      row.className = 'eq-rt-row';
+
+      var label = document.createElement('div');
+      label.className = 'eq-rt-label';
+      label.textContent = name;
+      label.title = name;
+      row.appendChild(label);
+
+      var bar = document.createElement('div');
+      bar.className = 'eq-rt-bar';
+
+      // Build segments of contiguous on/off
+      var data = m.data;
+      var i = 0;
+      while (i < data.length) {
+        var val = data[i] === 1 ? 1 : 0;
+        var start = i;
+        while (i < data.length && ((data[i] === 1 ? 1 : 0) === val || data[i] === null)) {
+          if (data[i] !== null) val = data[i] === 1 ? 1 : 0;
+          i++;
+        }
+        var x0 = (timestamps[start] - tMin) / tSpan * 100;
+        var x1 = (timestamps[Math.min(i, data.length - 1)] - tMin) / tSpan * 100;
+        var seg = document.createElement('div');
+        seg.className = 'eq-rt-seg' + (val ? ' eq-rt-seg--on' : '');
+        seg.style.left = x0 + '%';
+        seg.style.width = Math.max(x1 - x0, 0.3) + '%';
+        bar.appendChild(seg);
+      }
+      row.appendChild(bar);
+      inner.appendChild(row);
+    });
+
+    wrap.appendChild(inner);
+
+    // Time axis labels
+    var axis = document.createElement('div');
+    axis.className = 'eq-rt-axis';
+    var tickCount = Math.min(6, labels.length);
+    for (var t = 0; t < tickCount; t++) {
+      var idx = Math.round(t * (labels.length - 1) / (tickCount - 1));
+      var tick = document.createElement('span');
+      tick.className = 'eq-rt-tick';
+      tick.textContent = labels[idx];
+      tick.style.left = (idx / (labels.length - 1) * 100) + '%';
+      axis.appendChild(tick);
+    }
+    wrap.appendChild(axis);
+
+    // Legend
+    var legend = document.createElement('div');
+    legend.className = 'eq-rt-legend';
+    legend.innerHTML = '<span class="eq-rt-leg-item"><span class="eq-rt-leg-swatch eq-rt-seg--on"></span>On</span>' +
+      '<span class="eq-rt-leg-item"><span class="eq-rt-leg-swatch"></span>Off</span>';
+    wrap.appendChild(legend);
+
+    area.appendChild(wrap);
   }
 
   // ── Faults card ────────────────────────────────────────────────────
