@@ -1308,32 +1308,24 @@
 /* current values card */
 #mbcxDashboard .eq-curval-card {
   background: var(--card-bg); border: 1px solid var(--gray-200);
-  border-radius: 10px; padding: 16px 20px 20px;
+  border-radius: 10px; padding: 16px 20px 4px;
 }
-#mbcxDashboard .eq-cv-groups {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 16px; margin-top: 10px;
-}
-#mbcxDashboard .eq-cv-group-label {
-  font-size: .7rem; font-weight: 700; color: var(--gray-500);
-  text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px;
+#mbcxDashboard .eq-cv-scroll {
+  max-height: 220px; overflow-y: auto; margin-top: 8px;
 }
 #mbcxDashboard .eq-cv-table {
   width: 100%; border-collapse: collapse; font-size: .78rem;
 }
 #mbcxDashboard .eq-cv-tr { border-bottom: 1px solid var(--gray-100); }
-#mbcxDashboard .eq-cv-tr--na { opacity: .45; }
+#mbcxDashboard .eq-cv-tr--na { opacity: .4; }
 #mbcxDashboard .eq-cv-td-name {
-  padding: 5px 8px 5px 0; color: var(--gray-700);
-  max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  padding: 5px 12px 5px 0; color: var(--gray-700); white-space: nowrap;
 }
 #mbcxDashboard .eq-cv-td-val {
-  padding: 5px 0; text-align: right; white-space: nowrap;
+  padding: 5px 0; text-align: right; white-space: nowrap; width: 1%;
 }
-#mbcxDashboard .eq-cv-val {
-  font-weight: 600; color: var(--gray-900);
-}
-#mbcxDashboard .eq-cv-na { color: var(--gray-300); }
+#mbcxDashboard .eq-cv-val { font-weight: 600; color: var(--gray-900); }
+#mbcxDashboard .eq-cv-na  { color: var(--gray-300); }
 #mbcxDashboard .eq-cv-unit {
   font-weight: 400; color: var(--gray-400); font-size: .7rem; margin-left: 3px;
 }
@@ -1341,12 +1333,8 @@
   display: inline-block; padding: 1px 8px; border-radius: 10px;
   font-size: .7rem; font-weight: 600; letter-spacing: .03em;
 }
-#mbcxDashboard .eq-cv-pill--on {
-  background: var(--imeg-green-lt); color: var(--imeg-green);
-}
-#mbcxDashboard .eq-cv-pill--off {
-  background: var(--gray-100); color: var(--gray-400);
-}
+#mbcxDashboard .eq-cv-pill--on  { background: var(--imeg-green-lt); color: var(--imeg-green); }
+#mbcxDashboard .eq-cv-pill--off { background: var(--gray-100); color: var(--gray-400); }
 
 /* trend charts area — unit-split panels */
 #mbcxDashboard .eq-charts-area {
