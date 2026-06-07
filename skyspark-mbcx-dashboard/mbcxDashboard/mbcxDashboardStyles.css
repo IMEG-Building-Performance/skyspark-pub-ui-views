@@ -2009,7 +2009,7 @@
 /* Body: sidebar + charts side by side */
 #mbcxDashboard .comp-body {
   display: grid; grid-template-columns: 280px 1fr; gap: 16px;
-  min-height: 0; margin-bottom: 16px;
+  min-height: 420px; margin-bottom: 16px;
 }
 
 /* Sidebar */
@@ -2097,7 +2097,10 @@
 #mbcxDashboard .comp-download-btn:hover { background: var(--gray-50); border-color: var(--gray-400); }
 #mbcxDashboard .comp-charts {
   display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr;
-  gap: 12px; flex: 1; min-height: 0;
+  gap: 12px; flex: 1; min-height: 300px;
+}
+#mbcxDashboard .comp-charts:has(.comp-carousel) {
+  display: flex; flex-direction: column;
 }
 #mbcxDashboard .comp-chart-panel {
   border: 1px solid var(--gray-100); border-radius: 8px;
@@ -2113,13 +2116,13 @@
 
 /* Site-wide chart carousel */
 #mbcxDashboard .comp-carousel {
-  display: flex; align-items: stretch; flex: 1; min-height: 0; gap: 0;
+  display: flex; align-items: stretch; flex: 1; min-height: 0;
 }
 #mbcxDashboard .comp-carousel-viewport {
-  flex: 1; min-width: 0; min-height: 0; position: relative;
+  flex: 1; min-width: 0; display: flex; flex-direction: column;
 }
 #mbcxDashboard .comp-carousel-slide {
-  display: flex; flex-direction: column; width: 100%; height: 100%;
+  display: flex; flex-direction: column; flex: 1; min-height: 0;
 }
 #mbcxDashboard .comp-carousel-arrow {
   flex-shrink: 0; width: 28px; background: none; border: none;
