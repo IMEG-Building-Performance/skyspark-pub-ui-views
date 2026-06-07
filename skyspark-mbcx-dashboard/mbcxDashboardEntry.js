@@ -28,6 +28,7 @@ var mbcxDashboardHandler = {};
     { src: 'components/FaultList.js' },
     { src: 'components/FaultSummaries.js' },
     { src: 'components/FaultDetail.js' },
+    { src: 'components/EquipmentView.js' },
     { src: 'components/MeetingView.js' },
     { src: 'components/TrendingView.js' },
     { src: 'components/Footer.js' },

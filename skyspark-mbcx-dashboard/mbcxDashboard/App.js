@@ -165,6 +165,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         FaultList:      window.mbcxDashboard.components.FaultList,
         FaultSummaries: window.mbcxDashboard.components.FaultSummaries,
         FaultDetail:    window.mbcxDashboard.components.FaultDetail,
+        EquipmentView:  window.mbcxDashboard.components.EquipmentView,
         MeetingView:    window.mbcxDashboard.components.MeetingView,
         TrendingView:   window.mbcxDashboard.components.TrendingView,
         Compliance:     window.mbcxDashboard.components.Compliance,
@@ -573,20 +574,14 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         }
       }
       else if (tab === 'equipment') {
-        content.innerHTML = [
-          '<div class="page" style="display:flex;align-items:center;justify-content:center;min-height:70vh;">',
-          '  <div style="text-align:center;">',
-          '    <svg viewBox="0 0 24 24" width="80" height="80" fill="none" stroke="#5a6070" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:16px;">',
-          '      <rect x="2" y="6" width="20" height="12" rx="2"/>',
-          '      <path d="M12 6V4m-4 2V5m8 1V5"/>',
-          '      <circle cx="12" cy="12" r="2.5"/>',
-          '      <path d="M14.5 12H18m-12 0h3.5"/>',
-          '    </svg>',
-          '    <div style="font-size:1.15rem;font-weight:600;color:#8b95a5;margin-bottom:6px;">Under Construction</div>',
-          '    <div style="font-size:.85rem;color:#5a6070;">Equipment features coming soon.</div>',
-          '  </div>',
-          '</div>'
-        ].join('\n');
+        NS.App._activeTab = 'equipment';
+        NS.App._persistState();
+        if (co.EquipmentView) {
+          content.innerHTML = co.EquipmentView.renderPage();
+          co.EquipmentView.initLive(content, ctx || null);
+        } else {
+          content.innerHTML = '<div class="page" style="padding:32px;color:#9ca3af;">Equipment view not loaded.</div>';
+        }
       }
       else if (tab === 'config') {
         content.innerHTML = NS.App._renderConfigPage(ctx);

@@ -1209,6 +1209,102 @@
 #mbcxDashboard .fs-td-info { width: 28px; padding-left: 8px; }
 #mbcxDashboard .fs-td-name { font-weight: 500; }
 
+/* ── Equipment View (eq-*) ── */
+#mbcxDashboard .eq-page {
+  max-width: 960px; margin: 0 auto; padding: 32px 24px 48px;
+  display: flex; flex-direction: column; gap: 20px;
+}
+#mbcxDashboard .eq-selector-wrap { position: relative; margin-bottom: 12px; }
+#mbcxDashboard .eq-selector-btn {
+  display: flex; align-items: center; gap: 8px; width: 100%; max-width: 340px;
+  padding: 8px 14px; border: 1px solid var(--gray-200); border-radius: 8px;
+  background: var(--card-bg, #fff); font-size: .875rem; font-family: inherit;
+  cursor: pointer; color: var(--card-fg, #111); text-align: left;
+}
+#mbcxDashboard .eq-selector-arrow { color: var(--gray-400); font-size: .75rem; margin-left: auto; }
+#mbcxDashboard .eq-selector-dropdown {
+  position: absolute; top: 100%; left: 0; margin-top: 4px; z-index: 50;
+  background: var(--card-bg, #fff); border: 1px solid var(--gray-200);
+  border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,.1);
+  width: 100%; max-width: 340px; max-height: 280px; overflow-y: auto;
+}
+#mbcxDashboard .eq-selector-opt {
+  display: block; width: 100%; text-align: left; padding: 10px 14px;
+  border: none; border-bottom: 1px solid var(--gray-100);
+  background: transparent; font-size: .875rem; cursor: pointer;
+  color: var(--card-fg, #111); font-family: inherit;
+}
+#mbcxDashboard .eq-selector-opt:hover { background: var(--gray-50); }
+#mbcxDashboard .eq-selector-opt--sel { background: var(--gray-100); }
+#mbcxDashboard .eq-selector-opt-type { color: var(--gray-400); margin-left: 8px; font-size: .75rem; }
+#mbcxDashboard .eq-title { font-size: 1.6rem; font-weight: 700; color: var(--card-fg, #111); line-height: 1.2; }
+#mbcxDashboard .eq-subtitle { font-size: .8rem; color: var(--gray-500); margin-top: 2px; }
+
+#mbcxDashboard .eq-kpi-strip { display: flex; gap: 16px; flex-wrap: wrap; }
+#mbcxDashboard .eq-kpi-card {
+  flex: 1; min-width: 160px; background: var(--card-bg, #fff);
+  border: 1px solid var(--gray-200); border-radius: 12px; padding: 20px 22px;
+}
+#mbcxDashboard .eq-kpi-label { font-size: .7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--gray-400); margin-bottom: 8px; }
+#mbcxDashboard .eq-kpi-val { font-size: 2.1rem; font-weight: 700; color: var(--card-fg, #111); line-height: 1.1; }
+#mbcxDashboard .eq-kpi-sub { font-size: .75rem; color: var(--gray-400); margin-top: 4px; }
+
+#mbcxDashboard .eq-trend-card,
+#mbcxDashboard .eq-faults-card,
+#mbcxDashboard .eq-notes-card {
+  background: var(--card-bg, #fff); border: 1px solid var(--gray-200);
+  border-radius: 12px; padding: 22px 24px;
+}
+#mbcxDashboard .eq-card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px;
+}
+#mbcxDashboard .eq-section-title { font-size: 1.05rem; font-weight: 600; color: var(--card-fg, #111); }
+#mbcxDashboard .eq-range-btns { display: flex; gap: 4px; }
+#mbcxDashboard .eq-range-btn {
+  padding: 4px 12px; font-size: .75rem; font-weight: 500; border-radius: 6px;
+  border: 1px solid var(--gray-200); cursor: pointer; background: var(--card-bg, #fff);
+  color: var(--gray-500); font-family: inherit; transition: all .12s;
+}
+#mbcxDashboard .eq-range-btn--active { background: var(--imeg-blue); border-color: var(--imeg-blue); color: #fff; }
+
+#mbcxDashboard .eq-point-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+#mbcxDashboard .eq-point-chip {
+  display: flex; align-items: center; gap: 5px; padding: 4px 10px;
+  font-size: .75rem; border-radius: 6px; cursor: pointer; border: 1px solid var(--gray-200);
+  background: var(--card-bg, #fff); color: var(--gray-400); font-family: inherit; transition: all .12s;
+}
+#mbcxDashboard .eq-point-chip--active { font-weight: 600; }
+#mbcxDashboard .eq-point-chip-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+#mbcxDashboard .eq-canvas-wrap { position: relative; height: 280px; }
+#mbcxDashboard .eq-canvas-wrap canvas { width: 100%; height: 100%; }
+
+#mbcxDashboard .eq-fault-row {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 12px 0; border-bottom: 1px solid var(--gray-100);
+}
+#mbcxDashboard .eq-fault-row:last-child { border-bottom: none; }
+#mbcxDashboard .eq-fault-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+#mbcxDashboard .eq-fault-info { flex: 1; min-width: 0; }
+#mbcxDashboard .eq-fault-name { font-size: .85rem; font-weight: 600; color: var(--card-fg, #111); }
+#mbcxDashboard .eq-fault-point { font-size: .75rem; color: var(--gray-400); margin-top: 2px; }
+#mbcxDashboard .eq-fault-dur { font-size: .75rem; color: var(--gray-400); white-space: nowrap; margin-top: 2px; }
+#mbcxDashboard .eq-fault-badge {
+  background: #fef2f2; color: #ef4444; font-size: .72rem; font-weight: 600;
+  padding: 2px 10px; border-radius: 999px;
+}
+#mbcxDashboard .eq-empty-center { text-align: center; padding: 28px 0; color: var(--gray-400); }
+#mbcxDashboard .eq-check { font-size: 1.4rem; }
+#mbcxDashboard .eq-empty-msg { font-size: .85rem; margin-top: 4px; color: var(--gray-400); }
+#mbcxDashboard .eq-loading { font-size: .85rem; color: var(--gray-400); padding: 24px; text-align: center; }
+
+#mbcxDashboard .eq-construction-banner {
+  background: #fef3c7; padding: 10px 24px; font-size: .8rem; font-weight: 600;
+  color: #92400e; display: flex; align-items: center; gap: 6px;
+  border-radius: 12px 12px 0 0; margin: -22px -24px 16px;
+}
+#mbcxDashboard .eq-notes-body { padding: 0; }
+
 /* ── Reheat Scatter (rs-*) ── */
 #mbcxDashboard .rs-svg {
   width: 100%; height: auto; display: block;
