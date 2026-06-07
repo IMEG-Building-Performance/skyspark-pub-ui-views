@@ -42,6 +42,83 @@ window.mbcxDashboard.components.Compliance = (function () {
     '#0891B2', '#BE185D', '#4F46E5', '#CA8A04', '#15803D'
   ];
 
+  // ── Crosshair plugin — vertical line follows mouse, click pins tooltip ──
+  var crosshairPlugin = {
+    id: 'crosshair',
+    afterInit: function (chart) {
+      chart._crosshair = { x: null, pinned: false };
+    },
+    afterEvent: function (chart, args) {
+      var evt = args.event;
+      var area = chart.chartArea;
+      if (!area) return;
+      var x = evt.x, y = evt.y;
+      var inside = x >= area.left && x <= area.right && y >= area.top && y <= area.bottom;
+
+      if (evt.type === 'click') {
+        if (chart._crosshair.pinned) {
+          chart._crosshair.pinned = false;
+          chart._crosshair.x = inside ? x : null;
+          chart.tooltip.setActiveElements([], { x: 0, y: 0 });
+          chart.update('none');
+        } else if (inside) {
+          chart._crosshair.pinned = true;
+          chart._crosshair.x = x;
+        }
+        return;
+      }
+
+      if (evt.type === 'mousemove') {
+        if (chart._crosshair.pinned) return;
+        chart._crosshair.x = inside ? x : null;
+        chart.draw();
+      }
+
+      if (evt.type === 'mouseout') {
+        if (chart._crosshair.pinned) return;
+        chart._crosshair.x = null;
+        chart.draw();
+      }
+    },
+    afterDraw: function (chart) {
+      var x = chart._crosshair && chart._crosshair.x;
+      if (x === null || x === undefined) return;
+      var area = chart.chartArea;
+      var ctx = chart.ctx;
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(x, area.top);
+      ctx.lineTo(x, area.bottom);
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+      ctx.setLineDash([4, 3]);
+      ctx.stroke();
+      ctx.restore();
+    }
+  };
+
+  function _crosshairTooltipOpts(sortFn) {
+    return {
+      enabled: true,
+      mode: 'index',
+      intersect: false,
+      itemSort: sortFn,
+      external: function (context) {
+        var chart = context.chart;
+        if (!chart._crosshair) return;
+        if (!chart._crosshair.pinned && context.tooltip.opacity > 0) {
+          context.tooltip.opacity = 0;
+        }
+      }
+    };
+  }
+
+  function _crosshairInteraction() {
+    return { mode: 'index', intersect: false };
+  }
+
+  var _tooltipSort = function (a, b) { return (b.parsed.y || 0) - (a.parsed.y || 0); };
+
   // ── Helpers ────────────────────────────────────────────────────────
 
   function _extractNum(v) {
@@ -769,12 +846,14 @@ window.mbcxDashboard.components.Compliance = (function () {
 
       var chart = new Chart(canvas, {
         type: 'line',
+        plugins: [crosshairPlugin],
         data: { labels: fmtLabels, datasets: datasets },
         options: {
           responsive: true,
           maintainAspectRatio: false,
           animation: false,
-          interaction: { mode: 'index', intersect: false },
+          events: ['mousemove', 'mouseout', 'click'],
+          interaction: _crosshairInteraction(),
           scales: {
             x: {
               ticks: { font: { size: 10 }, color: '#9ca3af', maxRotation: 45, autoSkip: true, maxTicksLimit: 10 },
@@ -796,10 +875,7 @@ window.mbcxDashboard.components.Compliance = (function () {
                 font: { size: 10 }, padding: 12, boxWidth: 7
               }
             },
-            tooltip: {
-              enabled: true, mode: 'index', intersect: false,
-              itemSort: function (a, b) { return (b.parsed.y || 0) - (a.parsed.y || 0); }
-            }
+            tooltip: _crosshairTooltipOpts(_tooltipSort)
           }
         }
       });
@@ -1035,12 +1111,14 @@ window.mbcxDashboard.components.Compliance = (function () {
     var unit = _colUnit(dataCols[0]) || '';
     var chart = new Chart(canvas, {
       type: 'line',
+      plugins: [crosshairPlugin],
       data: { labels: fmtLabels, datasets: datasets },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         animation: false,
-        interaction: { mode: 'index', intersect: false },
+        events: ['mousemove', 'mouseout', 'click'],
+        interaction: _crosshairInteraction(),
         scales: {
           x: {
             ticks: { font: { size: mini ? 8 : 10 }, color: '#9ca3af', maxRotation: 45, autoSkip: true, maxTicksLimit: mini ? 6 : 10 },
@@ -1056,10 +1134,7 @@ window.mbcxDashboard.components.Compliance = (function () {
         },
         plugins: {
           legend: { display: false },
-          tooltip: {
-            enabled: true, mode: 'index', intersect: false,
-            itemSort: function (a, b) { return (b.parsed.y || 0) - (a.parsed.y || 0); }
-          }
+          tooltip: _crosshairTooltipOpts(_tooltipSort)
         }
       }
     });
