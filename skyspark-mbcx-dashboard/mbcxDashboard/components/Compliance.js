@@ -1402,7 +1402,7 @@ window.mbcxDashboard.components.Compliance = (function () {
     var body = _container.querySelector('#compBody');
     if (!body) return;
     var bodyRect = body.getBoundingClientRect();
-    var available = window.innerHeight - bodyRect.top - 8;
+    var available = window.innerHeight - bodyRect.top - 16;
     if (available < 300) available = 300;
     body.style.height = available + 'px';
     body.classList.add('comp-body--sized');

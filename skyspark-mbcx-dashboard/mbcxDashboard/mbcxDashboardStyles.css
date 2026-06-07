@@ -1985,8 +1985,7 @@
 
 /* ── Compliance ─────────────────────────────────────────────────────── */
 #mbcxDashboard .comp-page {
-  padding: 20px 24px 32px; overflow-y: auto; height: 100%;
-  display: flex; flex-direction: column; box-sizing: border-box;
+  padding: 20px 24px 32px; box-sizing: border-box;
 }
 
 /* Overview KPIs row */
@@ -2017,12 +2016,18 @@
 #mbcxDashboard .comp-ov-stat-val { font-size: 1.5rem; font-weight: 800; color: var(--card-fg, #111); line-height: 1; }
 #mbcxDashboard .comp-ov-stat-label { font-size: .68rem; color: var(--gray-500); margin-top: 3px; white-space: nowrap; }
 
-/* Body: sidebar + charts side by side */
+/* Body: sidebar + charts side by side — fills to bottom of viewport */
 #mbcxDashboard .comp-body {
   display: grid; grid-template-columns: 280px 1fr; gap: 16px;
-  margin-bottom: 0; flex: 0 0 auto;
+  margin-bottom: 0; flex: 0 0 auto; min-height: 300px;
 }
 #mbcxDashboard .comp-body.comp-body--sized {
+  overflow: hidden;
+}
+#mbcxDashboard .comp-body.comp-body--sized .comp-sidebar {
+  overflow: hidden;
+}
+#mbcxDashboard .comp-body.comp-body--sized .comp-chart-section {
   overflow: hidden;
 }
 
@@ -2059,7 +2064,7 @@
 #mbcxDashboard .comp-search::placeholder { color: var(--gray-400); }
 #mbcxDashboard .comp-space-list {
   display: flex; flex-direction: column; gap: 4px;
-  overflow-y: auto; max-height: 420px;
+  overflow-y: auto; flex: 1; min-height: 60px;
 }
 
 #mbcxDashboard .comp-space {
@@ -2096,7 +2101,7 @@
 #mbcxDashboard .comp-chart-section {
   background: var(--card-bg, #fff); border: 1px solid var(--gray-200);
   border-radius: 10px; padding: 16px 20px 20px;
-  display: flex; flex-direction: column;
+  display: flex; flex-direction: column; min-height: 0;
 }
 #mbcxDashboard .comp-chart-header {
   display: flex; align-items: center; justify-content: space-between;
@@ -2114,7 +2119,7 @@
 #mbcxDashboard .comp-download-btn:hover { background: var(--gray-50); border-color: var(--gray-400); }
 #mbcxDashboard .comp-charts {
   display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr;
-  gap: 12px; flex: 1; min-height: 300px;
+  gap: 12px; flex: 1; min-height: 0; overflow: hidden;
 }
 #mbcxDashboard .comp-charts:has(.comp-carousel) {
   display: flex; flex-direction: column;
@@ -2212,10 +2217,10 @@
   font-weight: 600; white-space: nowrap; color: var(--card-fg, #111);
 }
 
-/* Audit section — full width below body */
+/* Audit section — full width below body, starts below the fold */
 #mbcxDashboard .comp-audit-section {
   background: var(--card-bg, #fff); border: 1px solid var(--gray-200);
-  border-radius: 10px; padding: 16px 20px 12px;
+  border-radius: 10px; padding: 16px 20px 12px; margin-top: 20px;
 }
 #mbcxDashboard .comp-section-heading {
   font-size: .9rem; font-weight: 700; color: var(--card-fg, #111); margin: 0;
