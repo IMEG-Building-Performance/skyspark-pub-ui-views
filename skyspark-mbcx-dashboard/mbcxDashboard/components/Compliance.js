@@ -82,20 +82,14 @@ window.mbcxDashboard.components.Compliance = (function () {
       chart._crosshair._panel.remove();
       chart._crosshair._panel = null;
     }
-    if (chart._crosshair._dismiss) {
-      document.removeEventListener('click', chart._crosshair._dismiss, true);
-      chart._crosshair._dismiss = null;
-    }
     chart._crosshair.pinned = false;
-    chart.draw();
   }
 
-  function _showPinnedPanel(chart, dataIdx) {
+  function _showPinnedPanel(chart, dataIdx, clickX, clickY) {
     var ch = chart._crosshair;
     var unit = _getChartUnit(chart);
     var label = chart.data.labels[dataIdx] || '';
 
-    // Gather all series values at this index, sorted descending
     var items = [];
     chart.data.datasets.forEach(function (ds, di) {
       var meta = chart.getDatasetMeta(di);
@@ -110,7 +104,6 @@ window.mbcxDashboard.components.Compliance = (function () {
     });
     items.sort(function (a, b) { return ((b.val || 0) - (a.val || 0)); });
 
-    // Build HTML panel
     var panel = document.createElement('div');
     panel.className = 'comp-pin-panel';
 
@@ -128,43 +121,34 @@ window.mbcxDashboard.components.Compliance = (function () {
 
     panel.innerHTML = header + '<div class="comp-pin-rows">' + rows + '</div>';
 
-    // Position relative to the chart canvas
-    var canvasRect = chart.canvas.getBoundingClientRect();
+    // Position at the click location relative to the canvas wrapper
     var wrapEl = chart.canvas.parentElement;
     wrapEl.style.position = 'relative';
     panel.style.position = 'absolute';
     panel.style.zIndex = '50';
-    // Place near the crosshair x, centered vertically
-    var meta0 = chart.getDatasetMeta(0);
-    var ptX = meta0.data[dataIdx] ? meta0.data[dataIdx].x : ch.x;
-    var left = ptX + 12;
-    // If panel would overflow right, flip to left side
-    panel.style.top = '0px';
-    panel.style.left = left + 'px';
-    panel.style.maxHeight = '100%';
+    panel.style.left = clickX + 'px';
+    panel.style.top = clickY + 'px';
+    panel.style.maxHeight = (wrapEl.clientHeight - clickY) + 'px';
     wrapEl.appendChild(panel);
 
-    // Check if it overflows right and flip
+    // Clamp so it doesn't overflow the wrapper
     var panelRect = panel.getBoundingClientRect();
     var wrapRect = wrapEl.getBoundingClientRect();
     if (panelRect.right > wrapRect.right - 4) {
-      panel.style.left = '';
-      panel.style.right = (wrapRect.right - ptX + 12) + 'px';
+      panel.style.left = Math.max(0, clickX - panel.offsetWidth) + 'px';
+    }
+    if (panelRect.bottom > wrapRect.bottom - 4) {
+      panel.style.top = Math.max(0, clickY - panel.offsetHeight) + 'px';
+      panel.style.maxHeight = '';
     }
 
     ch._panel = panel;
-
-    // Dismiss on next click anywhere (use capture + setTimeout to skip this click)
-    setTimeout(function () {
-      ch._dismiss = function () { _dismissPinnedPanel(chart); };
-      document.addEventListener('click', ch._dismiss, true);
-    }, 0);
   }
 
   var crosshairPlugin = {
     id: 'crosshair',
     afterInit: function (chart) {
-      chart._crosshair = { x: null, y: null, pinned: false, _panel: null, _dismiss: null };
+      chart._crosshair = { x: null, y: null, pinned: false, _panel: null };
     },
     beforeDestroy: function (chart) {
       if (chart._crosshair) _dismissPinnedPanel(chart);
@@ -177,14 +161,20 @@ window.mbcxDashboard.components.Compliance = (function () {
       var inside = x >= area.left && x <= area.right && y >= area.top && y <= area.bottom;
 
       if (evt.type === 'click') {
-        if (chart._crosshair.pinned) return; // dismiss handler will handle it
+        if (chart._crosshair.pinned) {
+          _dismissPinnedPanel(chart);
+          chart._crosshair.x = inside ? x : null;
+          chart._crosshair.y = inside ? y : null;
+          chart.draw();
+          return;
+        }
         if (inside) {
           var idx = _closestDataIndex(chart, x);
           if (idx === -1) return;
           chart._crosshair.pinned = true;
           chart._crosshair.x = x;
           chart._crosshair.y = y;
-          _showPinnedPanel(chart, idx);
+          _showPinnedPanel(chart, idx, x, y);
         }
         return;
       }
