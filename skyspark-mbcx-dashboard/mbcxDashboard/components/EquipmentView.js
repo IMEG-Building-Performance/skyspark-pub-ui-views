@@ -360,7 +360,7 @@ window.mbcxDashboard.components.EquipmentView = (function () {
           var curVal = r.curVal !== undefined ? _numVal(r.curVal) : null;
           var curStr = r.curVal !== undefined ? _strVal(r.curVal) : null;
           var kind = _strVal(r.kind) || '';
-          var isBool = kind === 'Bool' || curStr === 'true' || curStr === 'false' || r.enum !== undefined;
+          var isBool = kind === 'Bool' || (r.enum !== undefined && !unit);
           var isCmd = r.cmd !== undefined || r.writable !== undefined;
           var isSp = r.sp !== undefined;
           var isSensor = r.sensor !== undefined;
