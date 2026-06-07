@@ -1401,9 +1401,23 @@ window.mbcxDashboard.components.Compliance = (function () {
     if (!_container) return;
     var body = _container.querySelector('#compBody');
     if (!body) return;
+
+    var scrollParent = body.closest('.dash-content') || body.parentElement;
+    var scrollRect = scrollParent.getBoundingClientRect();
     var bodyRect = body.getBoundingClientRect();
-    var available = window.innerHeight - bodyRect.top - 16;
+    var offsetInScroll = bodyRect.top - scrollRect.top;
+    var available = scrollRect.height - offsetInScroll;
     if (available < 300) available = 300;
+
+    console.log('[Compliance _sizeBody]',
+      'scrollParent:', scrollParent.className,
+      'scrollRect.height:', scrollRect.height,
+      'bodyRect.top:', bodyRect.top,
+      'scrollRect.top:', scrollRect.top,
+      'offsetInScroll:', offsetInScroll,
+      'available:', available,
+      'window.innerHeight:', window.innerHeight);
+
     body.style.height = available + 'px';
     body.classList.add('comp-body--sized');
   }
