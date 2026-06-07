@@ -402,7 +402,7 @@ window.mbcxDashboard.components.Compliance = (function () {
   function render() {
     return '<div class="comp-page">' +
       _renderOverviewKPIs() +
-      '<div class="comp-body">' +
+      '<div class="comp-body" id="compBody">' +
         _renderSpaceList() +
         '<div class="comp-chart-section">' +
           '<div class="comp-chart-header">' +
@@ -1389,12 +1389,27 @@ window.mbcxDashboard.components.Compliance = (function () {
       });
     }
 
+    _sizeBody();
+    window.addEventListener('resize', _sizeBody);
+
     _loadEquipTable();
     _loadComplianceCards();
     _loadAuditReport();
   }
 
+  function _sizeBody() {
+    if (!_container) return;
+    var body = _container.querySelector('#compBody');
+    if (!body) return;
+    var rect = body.getBoundingClientRect();
+    var available = window.innerHeight - rect.top - 20;
+    if (available < 300) available = 300;
+    body.style.height = available + 'px';
+    body.classList.add('comp-body--sized');
+  }
+
   function destroy() {
+    window.removeEventListener('resize', _sizeBody);
     _destroyLineCharts();
     if (_pieChart) { try { _pieChart.destroy(); } catch (e) {} _pieChart = null; }
     _selectedIdx = -1;
