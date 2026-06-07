@@ -1413,14 +1413,13 @@ window.mbcxDashboard.components.Compliance = (function () {
     var pagePadBot = parseFloat(pageStyle.paddingBottom) || 0;
     var overviewMBot = overview ? parseFloat(window.getComputedStyle(overview).marginBottom) || 0 : 0;
 
-    var available = scrollH - pagePadTop - overviewH - overviewMBot - pagePadBot;
+    var available = scrollH - pagePadTop - overviewH - overviewMBot;
     if (available < 300) available = 300;
 
     console.log('[Compliance _sizeBody]',
       'scrollH:', scrollH,
       'overviewH:', overviewH,
       'pagePadTop:', pagePadTop,
-      'pagePadBot:', pagePadBot,
       'overviewMBot:', overviewMBot,
       'available:', available);
 
