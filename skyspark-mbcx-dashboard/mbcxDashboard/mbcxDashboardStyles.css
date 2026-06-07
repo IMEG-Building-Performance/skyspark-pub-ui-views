@@ -2160,6 +2160,41 @@
   min-height: 60px;
 }
 
+/* Pinned tooltip panel */
+#mbcxDashboard .comp-pin-panel {
+  background: var(--card-bg, #fff); border: 1px solid var(--gray-200);
+  border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,.12);
+  padding: 10px 14px; min-width: 260px; max-width: 420px;
+  overflow-y: auto; font-size: .78rem;
+}
+#mbcxDashboard .comp-pin-header {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding-bottom: 6px; margin-bottom: 6px; border-bottom: 1px solid var(--gray-100);
+  gap: 16px;
+}
+#mbcxDashboard .comp-pin-ts-label {
+  font-weight: 700; color: var(--card-fg, #111); white-space: nowrap;
+}
+#mbcxDashboard .comp-pin-ts-val {
+  color: var(--gray-600); white-space: nowrap;
+}
+#mbcxDashboard .comp-pin-rows {
+  display: flex; flex-direction: column; gap: 3px;
+}
+#mbcxDashboard .comp-pin-row {
+  display: flex; align-items: center; gap: 8px;
+}
+#mbcxDashboard .comp-pin-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+#mbcxDashboard .comp-pin-name {
+  flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--card-fg, #333);
+}
+#mbcxDashboard .comp-pin-val {
+  font-weight: 600; white-space: nowrap; color: var(--card-fg, #111);
+}
+
 /* Audit section — full width below body */
 #mbcxDashboard .comp-audit-section {
   background: var(--card-bg, #fff); border: 1px solid var(--gray-200);

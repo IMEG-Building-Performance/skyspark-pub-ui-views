@@ -42,37 +42,132 @@ window.mbcxDashboard.components.Compliance = (function () {
     '#0891B2', '#BE185D', '#4F46E5', '#CA8A04', '#15803D'
   ];
 
-  // ── Crosshair plugin — vertical line + hover label, click pins full tooltip ──
+  // ── Crosshair plugin — hover label + click-to-pin HTML panel ──
 
-  function _nearestDatasetIndex(chart, x, y) {
+  function _closestDataIndex(chart, px) {
+    var meta = chart.getDatasetMeta(0);
+    if (!meta || !meta.data.length) return -1;
     var best = -1, bestDist = Infinity;
-    chart.data.datasets.forEach(function (ds, di) {
-      var meta = chart.getDatasetMeta(di);
-      if (meta.hidden) return;
-      meta.data.forEach(function (pt) {
-        var d = Math.abs(pt.y - y);
-        if (Math.abs(pt.x - x) < 10 && d < bestDist) { bestDist = d; best = di; }
-      });
-    });
-    return best;
-  }
-
-  function _nearestIndex(chart, x) {
-    var scale = chart.scales.x;
-    if (!scale) return -1;
-    var best = -1, bestDist = Infinity;
-    scale.ticks.forEach(function (t, i) {
-      var px = scale.getPixelForTick(i);
-      var d = Math.abs(px - x);
+    meta.data.forEach(function (pt, i) {
+      var d = Math.abs(pt.x - px);
       if (d < bestDist) { bestDist = d; best = i; }
     });
     return best;
   }
 
+  function _nearestDatasetIndex(chart, px, py) {
+    var best = -1, bestDist = Infinity;
+    chart.data.datasets.forEach(function (ds, di) {
+      var meta = chart.getDatasetMeta(di);
+      if (meta.hidden) return;
+      meta.data.forEach(function (pt) {
+        if (Math.abs(pt.x - px) > 10) return;
+        var d = Math.abs(pt.y - py);
+        if (d < bestDist) { bestDist = d; best = di; }
+      });
+    });
+    return best;
+  }
+
+  function _getChartUnit(chart) {
+    var yScale = chart.scales.y;
+    if (yScale && yScale.options && yScale.options.ticks && yScale.options.ticks.callback) {
+      return yScale.options.ticks.callback(0, 0, []).replace('0', '');
+    }
+    return '';
+  }
+
+  function _dismissPinnedPanel(chart) {
+    if (chart._crosshair._panel) {
+      chart._crosshair._panel.remove();
+      chart._crosshair._panel = null;
+    }
+    if (chart._crosshair._dismiss) {
+      document.removeEventListener('click', chart._crosshair._dismiss, true);
+      chart._crosshair._dismiss = null;
+    }
+    chart._crosshair.pinned = false;
+    chart.draw();
+  }
+
+  function _showPinnedPanel(chart, dataIdx) {
+    var ch = chart._crosshair;
+    var unit = _getChartUnit(chart);
+    var label = chart.data.labels[dataIdx] || '';
+
+    // Gather all series values at this index, sorted descending
+    var items = [];
+    chart.data.datasets.forEach(function (ds, di) {
+      var meta = chart.getDatasetMeta(di);
+      if (meta.hidden) return;
+      var v = ds.data[dataIdx];
+      items.push({
+        color: ds.borderColor || CHART_COLORS[di % CHART_COLORS.length],
+        name: ds.label || ('Series ' + di),
+        val: v,
+        valStr: v !== null && v !== undefined ? (typeof v === 'number' ? v.toFixed(2) + unit : String(v)) : '—'
+      });
+    });
+    items.sort(function (a, b) { return ((b.val || 0) - (a.val || 0)); });
+
+    // Build HTML panel
+    var panel = document.createElement('div');
+    panel.className = 'comp-pin-panel';
+
+    var header = '<div class="comp-pin-header">' +
+      '<span class="comp-pin-ts-label">Timestamp</span>' +
+      '<span class="comp-pin-ts-val">' + label + '</span></div>';
+
+    var rows = items.map(function (it) {
+      return '<div class="comp-pin-row">' +
+        '<span class="comp-pin-dot" style="background:' + it.color + '"></span>' +
+        '<span class="comp-pin-name">' + it.name + '</span>' +
+        '<span class="comp-pin-val">' + it.valStr + '</span>' +
+      '</div>';
+    }).join('');
+
+    panel.innerHTML = header + '<div class="comp-pin-rows">' + rows + '</div>';
+
+    // Position relative to the chart canvas
+    var canvasRect = chart.canvas.getBoundingClientRect();
+    var wrapEl = chart.canvas.parentElement;
+    wrapEl.style.position = 'relative';
+    panel.style.position = 'absolute';
+    panel.style.zIndex = '50';
+    // Place near the crosshair x, centered vertically
+    var meta0 = chart.getDatasetMeta(0);
+    var ptX = meta0.data[dataIdx] ? meta0.data[dataIdx].x : ch.x;
+    var left = ptX + 12;
+    // If panel would overflow right, flip to left side
+    panel.style.top = '0px';
+    panel.style.left = left + 'px';
+    panel.style.maxHeight = '100%';
+    wrapEl.appendChild(panel);
+
+    // Check if it overflows right and flip
+    var panelRect = panel.getBoundingClientRect();
+    var wrapRect = wrapEl.getBoundingClientRect();
+    if (panelRect.right > wrapRect.right - 4) {
+      panel.style.left = '';
+      panel.style.right = (wrapRect.right - ptX + 12) + 'px';
+    }
+
+    ch._panel = panel;
+
+    // Dismiss on next click anywhere (use capture + setTimeout to skip this click)
+    setTimeout(function () {
+      ch._dismiss = function () { _dismissPinnedPanel(chart); };
+      document.addEventListener('click', ch._dismiss, true);
+    }, 0);
+  }
+
   var crosshairPlugin = {
     id: 'crosshair',
     afterInit: function (chart) {
-      chart._crosshair = { x: null, y: null, pinned: false };
+      chart._crosshair = { x: null, y: null, pinned: false, _panel: null, _dismiss: null };
+    },
+    beforeDestroy: function (chart) {
+      if (chart._crosshair) _dismissPinnedPanel(chart);
     },
     afterEvent: function (chart, args) {
       var evt = args.event;
@@ -82,16 +177,14 @@ window.mbcxDashboard.components.Compliance = (function () {
       var inside = x >= area.left && x <= area.right && y >= area.top && y <= area.bottom;
 
       if (evt.type === 'click') {
-        if (chart._crosshair.pinned) {
-          chart._crosshair.pinned = false;
-          chart._crosshair.x = inside ? x : null;
-          chart._crosshair.y = inside ? y : null;
-          chart.tooltip.setActiveElements([], { x: 0, y: 0 });
-          chart.update('none');
-        } else if (inside) {
+        if (chart._crosshair.pinned) return; // dismiss handler will handle it
+        if (inside) {
+          var idx = _closestDataIndex(chart, x);
+          if (idx === -1) return;
           chart._crosshair.pinned = true;
           chart._crosshair.x = x;
           chart._crosshair.y = y;
+          _showPinnedPanel(chart, idx);
         }
         return;
       }
@@ -116,7 +209,7 @@ window.mbcxDashboard.components.Compliance = (function () {
       var area = chart.chartArea;
       var ctx = chart.ctx;
 
-      // Draw vertical crosshair line
+      // Vertical crosshair line
       ctx.save();
       ctx.beginPath();
       ctx.moveTo(ch.x, area.top);
@@ -127,16 +220,15 @@ window.mbcxDashboard.components.Compliance = (function () {
       ctx.stroke();
       ctx.restore();
 
-      // If pinned, the built-in tooltip handles display
+      // When pinned, the HTML panel is showing — no canvas label needed
       if (ch.pinned) return;
 
-      // Hover label: find nearest dataset point and show timestamp + value
+      // Hover label: nearest dataset point
       var di = _nearestDatasetIndex(chart, ch.x, ch.y || (area.top + area.bottom) / 2);
       if (di === -1) di = 0;
       var meta = chart.getDatasetMeta(di);
       if (!meta || !meta.data.length) return;
 
-      // Find closest data point on x-axis
       var closestPt = null, closestIdx = -1, closestDist = Infinity;
       meta.data.forEach(function (pt, pi) {
         var d = Math.abs(pt.x - ch.x);
@@ -146,15 +238,11 @@ window.mbcxDashboard.components.Compliance = (function () {
 
       var label = chart.data.labels[closestIdx] || '';
       var val = chart.data.datasets[di].data[closestIdx];
-      var unit = '';
-      var yScale = chart.scales.y;
-      if (yScale && yScale.options && yScale.options.ticks && yScale.options.ticks.callback) {
-        unit = yScale.options.ticks.callback(0, 0, []).replace('0', '');
-      }
+      var unit = _getChartUnit(chart);
       var valStr = val !== null && val !== undefined ? (typeof val === 'number' ? val.toFixed(2) : val) : '—';
       var text = label + ' • ' + valStr + unit;
 
-      // Draw highlight dot
+      // Highlight dot
       var color = chart.data.datasets[di].borderColor || '#2563EB';
       ctx.save();
       ctx.beginPath();
@@ -166,7 +254,7 @@ window.mbcxDashboard.components.Compliance = (function () {
       ctx.stroke();
       ctx.restore();
 
-      // Draw label box
+      // Label box
       ctx.save();
       ctx.font = '11px -apple-system, BlinkMacSystemFont, sans-serif';
       var tw = ctx.measureText(text).width;
@@ -189,28 +277,6 @@ window.mbcxDashboard.components.Compliance = (function () {
       ctx.restore();
     }
   };
-
-  function _crosshairTooltipOpts(sortFn) {
-    return {
-      enabled: true,
-      mode: 'index',
-      intersect: false,
-      itemSort: sortFn,
-      external: function (context) {
-        var chart = context.chart;
-        if (!chart._crosshair) return;
-        if (!chart._crosshair.pinned && context.tooltip.opacity > 0) {
-          context.tooltip.opacity = 0;
-        }
-      }
-    };
-  }
-
-  function _crosshairInteraction() {
-    return { mode: 'index', intersect: false };
-  }
-
-  var _tooltipSort = function (a, b) { return (b.parsed.y || 0) - (a.parsed.y || 0); };
 
   // ── Helpers ────────────────────────────────────────────────────────
 
@@ -946,7 +1012,7 @@ window.mbcxDashboard.components.Compliance = (function () {
           maintainAspectRatio: false,
           animation: false,
           events: ['mousemove', 'mouseout', 'click'],
-          interaction: _crosshairInteraction(),
+          interaction: { mode: 'index', intersect: false },
           scales: {
             x: {
               ticks: { font: { size: 10 }, color: '#9ca3af', maxRotation: 45, autoSkip: true, maxTicksLimit: 10 },
@@ -968,7 +1034,7 @@ window.mbcxDashboard.components.Compliance = (function () {
                 font: { size: 10 }, padding: 12, boxWidth: 7
               }
             },
-            tooltip: _crosshairTooltipOpts(_tooltipSort)
+            tooltip: { enabled: false }
           }
         }
       });
@@ -1211,7 +1277,7 @@ window.mbcxDashboard.components.Compliance = (function () {
         maintainAspectRatio: false,
         animation: false,
         events: ['mousemove', 'mouseout', 'click'],
-        interaction: _crosshairInteraction(),
+        interaction: { mode: 'index', intersect: false },
         scales: {
           x: {
             ticks: { font: { size: mini ? 8 : 10 }, color: '#9ca3af', maxRotation: 45, autoSkip: true, maxTicksLimit: mini ? 6 : 10 },
@@ -1227,7 +1293,7 @@ window.mbcxDashboard.components.Compliance = (function () {
         },
         plugins: {
           legend: { display: false },
-          tooltip: _crosshairTooltipOpts(_tooltipSort)
+          tooltip: { enabled: false }
         }
       }
     });
