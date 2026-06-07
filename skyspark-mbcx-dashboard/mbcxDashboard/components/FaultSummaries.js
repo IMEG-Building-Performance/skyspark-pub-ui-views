@@ -1,8 +1,10 @@
 // components/FaultSummaries.js — Fault Summaries table
+console.log('[FaultSummaries] Script loading…');
 window.mbcxDashboard = window.mbcxDashboard || {};
 window.mbcxDashboard.components = window.mbcxDashboard.components || {};
 
 window.mbcxDashboard.components.FaultSummaries = (function () {
+  console.log('[FaultSummaries] IIFE executing…');
 
   var _state = null;
 
@@ -207,6 +209,7 @@ window.mbcxDashboard.components.FaultSummaries = (function () {
   }
 
   function initLive(container, ctx) {
+    console.log('[FaultSummaries] initLive called, ctx:', ctx ? { attestKey: !!ctx.attestKey, siteRef: ctx.siteRef, projectName: ctx.projectName } : null);
     var copyBtn = container.querySelector('#fsCopyBtn');
     if (copyBtn) copyBtn.addEventListener('click', function () { _copyTable(container); });
 
@@ -235,8 +238,10 @@ window.mbcxDashboard.components.FaultSummaries = (function () {
       ctx.siteRef + ', ' + dateArg +
       ', 10%, @nav:rule.all, "Fault Summaries", "", "Show All")';
 
+    console.log('[FaultSummaries] Axon query:', axon);
     API.evalAxon(ctx.attestKey, ctx.projectName, axon)
       .then(function (grid) {
+        console.log('[FaultSummaries] Grid received:', grid ? { cols: grid.cols ? grid.cols.length : 0, rows: grid.rows ? grid.rows.length : 0 } : null);
         var parsed = HP.parseGrid(grid);
         if (!parsed.rows.length) {
           if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="padding:24px;color:#9CA3AF;font-size:12px;text-align:center;">No fault summary data returned for this site and date range.</td></tr>';
