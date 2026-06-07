@@ -1467,11 +1467,6 @@ window.mbcxDashboard.components.Compliance = (function () {
     var available = scrollH - bodyTop - hintH;
     if (available < 300) available = 300;
 
-    console.log('[Compliance _sizeBody]',
-      'scrollH:', scrollH,
-      'bodyTop:', bodyTop,
-      'available:', available);
-
     body.style.height = available + 'px';
     body.classList.add('comp-body--sized');
   }
