@@ -1145,6 +1145,28 @@
 }
 #mbcxDashboard .dash-content--fixed { overflow: hidden; }
 
+/* ── Fault page tabs ── */
+#mbcxDashboard .fl-page-outer { display: flex; flex-direction: column; height: 100%; }
+#mbcxDashboard .fl-page-tabs {
+  display: flex; gap: 0; padding: 0 32px;
+  border-bottom: 2px solid var(--gray-200); flex-shrink: 0;
+  background: var(--card-bg, #fff);
+}
+#mbcxDashboard .fl-page-tab {
+  padding: 12px 20px; border: none; background: none; cursor: pointer;
+  font-size: .85rem; font-weight: 600; font-family: inherit;
+  color: var(--gray-500); position: relative;
+  transition: color .15s;
+}
+#mbcxDashboard .fl-page-tab:hover { color: var(--gray-700); }
+#mbcxDashboard .fl-page-tab--active {
+  color: var(--imeg-blue, #4A6FA5);
+}
+#mbcxDashboard .fl-page-tab--active::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: -2px;
+  height: 2px; background: var(--imeg-blue, #4A6FA5);
+}
+
 /* ── Fault List full-page (fl-page) ── */
 #mbcxDashboard .fl-page { padding: 24px 32px 48px; }
 #mbcxDashboard .fl-page-header {

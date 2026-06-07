@@ -204,8 +204,6 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         '    <button class="dash-sb-nav-item" data-tab="summary">'  + _icons.summary  + '<span>Summary</span></button>',
         '    <button class="dash-sb-nav-item" data-tab="faults">'     + _icons.faults     + '<span>Faults</span></button>',
         '    <div class="dash-sb-sub" data-parent="faults">',
-        '      <button class="dash-sb-sub-item" data-tab="fault-list">Fault List</button>',
-        '      <button class="dash-sb-sub-item" data-tab="fault-summaries">Fault Summaries</button>',
         '      <button class="dash-sb-sub-item" data-tab="fault-log">Fault Log</button>',
         '    </div>',
         '    <button class="dash-sb-nav-item" data-tab="compliance">' + _icons.compliance + '<span>Compliance</span></button>',
@@ -485,7 +483,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       NS.App._activeTab = tab;
       NS.App._persistState();
 
-      var faultTabs = ['faults', 'fault-list', 'fault-summaries', 'fault-log'];
+      var faultTabs = ['faults', 'fault-list', 'fault-log'];
       var isFaultTab = faultTabs.indexOf(tab) !== -1;
 
       container.querySelectorAll('.dash-sb-nav-item').forEach(function (btn) {
@@ -518,28 +516,39 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       else if (tab === 'faults' || tab === 'fault-list') {
         NS.App._activeTab = 'fault-list';
         NS.App._persistState();
-        container.querySelectorAll('.dash-sb-sub-item').forEach(function (btn) {
-          btn.classList.toggle('active', btn.getAttribute('data-tab') === 'fault-list');
+
+        content.innerHTML = [
+          '<div class="fl-page-outer">',
+          '  <div class="fl-page-tabs">',
+          '    <button class="fl-page-tab fl-page-tab--active" data-fltab="list">Fault List</button>',
+          '    <button class="fl-page-tab" data-fltab="summaries">Fault Summaries</button>',
+          '  </div>',
+          '  <div id="flTabContent"></div>',
+          '</div>'
+        ].join('\n');
+
+        var flTabContent = content.querySelector('#flTabContent');
+        var flTabs = content.querySelectorAll('.fl-page-tab');
+
+        function showFlTab(which) {
+          flTabs.forEach(function (t) { t.classList.toggle('fl-page-tab--active', t.getAttribute('data-fltab') === which); });
+          if (which === 'list') {
+            flTabContent.innerHTML = co.FaultList ? co.FaultList.renderPage() : '<div class="tu-loading">Fault List not loaded.</div>';
+            if (co.FaultList) {
+              co.FaultList.onFaultClick = function (fault) { NS.App.showFaultDetail(container, fault, co); };
+              co.FaultList.initLive(container, ctx || null);
+            }
+          } else {
+            flTabContent.innerHTML = co.FaultSummaries ? co.FaultSummaries.renderPage() : '<div class="tu-loading">Fault Summaries not loaded.</div>';
+            if (co.FaultSummaries) co.FaultSummaries.initLive(flTabContent, ctx || null);
+          }
+        }
+
+        flTabs.forEach(function (t) {
+          t.addEventListener('click', function () { showFlTab(t.getAttribute('data-fltab')); });
         });
-        content.innerHTML = co.FaultList
-          ? co.FaultList.renderPage()
-          : '<div class="tu-loading">Fault List not loaded.</div>';
-        if (co.FaultList) {
-          co.FaultList.onFaultClick = function (fault) {
-            NS.App.showFaultDetail(container, fault, co);
-          };
-          co.FaultList.initLive(container, ctx || null);
-        }
-      }
-      else if (tab === 'fault-summaries') {
-        NS.App._activeTab = 'fault-summaries';
-        NS.App._persistState();
-        if (co.FaultSummaries) {
-          content.innerHTML = co.FaultSummaries.renderPage();
-          co.FaultSummaries.initLive(content, ctx || null);
-        } else {
-          content.innerHTML = '<div class="page" style="padding:32px;color:#9ca3af;">Fault Summaries not loaded.</div>';
-        }
+
+        showFlTab('list');
       }
       else if (tab === 'fault-log') {
         content.innerHTML = [
