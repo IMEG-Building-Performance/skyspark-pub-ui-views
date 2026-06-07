@@ -796,7 +796,10 @@ window.mbcxDashboard.components.Compliance = (function () {
                 font: { size: 10 }, padding: 12, boxWidth: 7
               }
             },
-            tooltip: { enabled: true, mode: 'index', intersect: false }
+            tooltip: {
+              enabled: true, mode: 'index', intersect: false,
+              itemSort: function (a, b) { return (b.parsed.y || 0) - (a.parsed.y || 0); }
+            }
           }
         }
       });
@@ -1053,7 +1056,10 @@ window.mbcxDashboard.components.Compliance = (function () {
         },
         plugins: {
           legend: { display: false },
-          tooltip: { enabled: true, mode: 'index', intersect: false }
+          tooltip: {
+            enabled: true, mode: 'index', intersect: false,
+            itemSort: function (a, b) { return (b.parsed.y || 0) - (a.parsed.y || 0); }
+          }
         }
       }
     });
