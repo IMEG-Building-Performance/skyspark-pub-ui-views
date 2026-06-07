@@ -31,6 +31,8 @@ var mbcxDashboardHandler = {};
     { src: 'components/TrendingView.js' },
     { src: 'components/Footer.js' },
     { src: 'components/DateRangePicker.js' },
+    { src: 'components/SiteSelector.js' },
+    { src: 'components/Compliance.js' },
     { src: 'App.js' },
     { src: 'mbcxDashboardUI.js' }
   ];
@@ -67,8 +69,6 @@ var mbcxDashboardHandler = {};
       loadModules(function () {
         loaded = true;
         loading = false;
-        var comps = Object.keys((window.mbcxDashboard || {}).components || {});
-        console.log('[mbcxDashboard] loaded. Components: ' + comps.join(', '));
         pendingCalls.forEach(function (a) { window.mbcxDashboardApp.onUpdate(a); });
         pendingCalls = [];
       });

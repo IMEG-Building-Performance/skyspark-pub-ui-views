@@ -352,12 +352,10 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     var HP  = window.mbcxDashboard.haystackParser;
     var dateArg = (ctx.datesStart && ctx.datesEnd) ? ctx.datesStart + '..' + ctx.datesEnd : 'today()';
     var axon = 'view_cxAppSummary(' + ctx.siteRef + ', ' + dateArg + ', 4, ' + equipId + ', null)';
-    console.log('[TrendingView] History axon:', axon);
 
     API.evalAxon(ctx.attestKey, ctx.projectName, axon)
       .then(function (grid) {
         var parsed = HP.parseGrid(grid);
-        console.log('[TrendingView] History cols:', parsed.cols, '(' + parsed.rows.length + ' rows)');
         if (!parsed.rows.length) {
           root.querySelector('#trPointChips').innerHTML = '<span style="color:#9CA3AF;font-size:12px">No history data returned</span>';
           return;
@@ -397,13 +395,10 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     var HP  = window.mbcxDashboard.haystackParser;
     var dateArg = (ctx.datesStart && ctx.datesEnd) ? ctx.datesStart + '..' + ctx.datesEnd : 'today()';
     var axon = 'view_cxAppSummary(' + ctx.siteRef + ', ' + dateArg + ', 1, null, null)';
-    console.log('[TrendingView] Equip list axon:', axon);
 
     API.evalAxon(ctx.attestKey, ctx.projectName, axon)
       .then(function (grid) {
-        console.log('[TrendingView] Raw equip grid:', JSON.stringify(grid).slice(0, 400));
         var parsed = HP.parseGrid(grid);
-        console.log('[TrendingView] Equip list cols:', parsed.cols.map(function(c){return typeof c==='string'?c:c.name;}), '(' + parsed.rows.length + ' rows)');
         if (!parsed.rows.length) {
           if (listEl) listEl.innerHTML = '<div style="padding:12px;color:#9CA3AF;font-size:12px">No equipment found</div>';
           return;
