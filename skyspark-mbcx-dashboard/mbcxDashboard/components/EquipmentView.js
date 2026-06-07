@@ -359,7 +359,12 @@ window.mbcxDashboard.components.EquipmentView = (function () {
           var hasCurVal = r.curVal !== undefined || r.curStatus !== undefined;
           var curVal = r.curVal !== undefined ? _numVal(r.curVal) : null;
           var curStr = r.curVal !== undefined ? _strVal(r.curVal) : null;
-          return { id: id, name: dis, unit: unit, hasCurVal: hasCurVal, curVal: curVal, curStr: curStr, _raw: r };
+          var kind = _strVal(r.kind) || '';
+          var isBool = kind === 'Bool' || curStr === 'true' || curStr === 'false' || r.enum !== undefined;
+          var isCmd = r.cmd !== undefined || r.writable !== undefined;
+          var isSp = r.sp !== undefined;
+          var isSensor = r.sensor !== undefined;
+          return { id: id, name: dis, unit: unit, hasCurVal: hasCurVal, curVal: curVal, curStr: curStr, kind: kind, isBool: isBool, isCmd: isCmd, isSp: isSp, isSensor: isSensor, _raw: r };
         }).filter(function (p) { return p.id; });
 
         _lastPoints = points;
@@ -412,15 +417,54 @@ window.mbcxDashboard.components.EquipmentView = (function () {
   function _fmtCurVal(v, unit) {
     if (v === null || v === undefined) return '—';
     if (typeof v === 'object') {
-      if (v._kind === 'number') return v.val.toFixed(1) + (unit || (v.unit ? ' ' + v.unit : ''));
+      if (v._kind === 'number') return _roundNum(v.val) + (unit || (v.unit ? ' ' + v.unit : ''));
       if (v.dis) return v.dis;
       if (v.val !== undefined) return String(v.val);
     }
-    if (typeof v === 'number') return v.toFixed(1) + (unit ? ' ' + unit : '');
+    if (typeof v === 'number') return _roundNum(v) + (unit ? ' ' + unit : '');
     return String(v);
   }
 
+  function _roundNum(n) {
+    if (n === null || n === undefined || isNaN(n)) return '—';
+    if (Math.abs(n) >= 100) return Math.round(n).toString();
+    if (Math.abs(n) >= 10) return n.toFixed(1);
+    return n.toFixed(2);
+  }
+
   // ── Current Values section ─────────────────────────────────────────
+
+  function _categorizeCurvals(points) {
+    var cats = { 'Temperatures': [], 'Humidity': [], 'Pressures': [], 'Flows': [], 'Dampers & Valves': [], 'Commands & Status': [], 'Other': [] };
+    points.forEach(function (p) {
+      var n = p.name.toLowerCase();
+      var u = (p.unit || '').toLowerCase();
+      if (u === '°f' || u === '°c' || u === 'δ°f' || u === 'δ°c' || /temp/i.test(n)) { cats['Temperatures'].push(p); }
+      else if (u === '%rh' || /humid/i.test(n)) { cats['Humidity'].push(p); }
+      else if (u === 'inh₂o' || u === 'psi' || u === 'kpa' || /pressure|static/i.test(n)) { cats['Pressures'].push(p); }
+      else if (u === 'cfm' || u === 'gpm' || u === 'l/s' || /flow/i.test(n)) { cats['Flows'].push(p); }
+      else if (/damper|valve/i.test(n)) { cats['Dampers & Valves'].push(p); }
+      else if (p.isBool || p.isCmd || /cmd|command|status|enable|run|alarm|fan\s*speed|vfd/i.test(n)) { cats['Commands & Status'].push(p); }
+      else { cats['Other'].push(p); }
+    });
+    var out = [];
+    Object.keys(cats).forEach(function (k) { if (cats[k].length) out.push({ label: k, items: cats[k] }); });
+    return out;
+  }
+
+  function _fmtCurDisplay(p) {
+    var raw = p.curStr || (p.curVal !== null && p.curVal !== undefined ? String(p.curVal) : null);
+    if (!raw && raw !== 0) return { html: '<span class="eq-cv-val eq-cv-na">—</span>', isNull: true };
+    if (raw === 'true' || raw === 'false') {
+      var on = raw === 'true';
+      return { html: '<span class="eq-cv-pill eq-cv-pill--' + (on ? 'on' : 'off') + '">' + (on ? 'ON' : 'OFF') + '</span>', isNull: false };
+    }
+    var n = _numVal(raw);
+    if (n !== null && !isNaN(n)) {
+      return { html: '<span class="eq-cv-val">' + _roundNum(n) + '</span>' + (p.unit ? '<span class="eq-cv-unit">' + p.unit + '</span>' : ''), isNull: false };
+    }
+    return { html: '<span class="eq-cv-val">' + raw + '</span>', isNull: false };
+  }
 
   function _renderCurvals(points) {
     var el = _container && _container.querySelector('#eqCurvalCard');
@@ -437,19 +481,23 @@ window.mbcxDashboard.components.EquipmentView = (function () {
     }
     el.style.display = '';
 
-    var rows = points.map(function (p, i) {
-      var color = CHART_COLORS[i % CHART_COLORS.length];
-      var valStr = p.curStr || (p.curVal !== null ? p.curVal.toFixed(1) + (p.unit ? ' ' + p.unit : '') : '—');
-      return '<div class="eq-cv-row">' +
-        '<span class="eq-cv-dot" style="background:' + color + '"></span>' +
-        '<span class="eq-cv-name">' + p.name + '</span>' +
-        '<span class="eq-cv-val">' + valStr + '</span>' +
-        (p.curStatus ? '<span class="eq-cv-status">' + p.curStatus + '</span>' : '') +
+    var groups = _categorizeCurvals(points);
+    var html = groups.map(function (g) {
+      var rows = g.items.map(function (p) {
+        var fmt = _fmtCurDisplay(p);
+        return '<tr class="eq-cv-tr' + (fmt.isNull ? ' eq-cv-tr--na' : '') + '">' +
+          '<td class="eq-cv-td-name" title="' + p.name + '">' + p.name + '</td>' +
+          '<td class="eq-cv-td-val">' + fmt.html + '</td>' +
+        '</tr>';
+      }).join('');
+      return '<div class="eq-cv-group">' +
+        '<div class="eq-cv-group-label">' + g.label + '</div>' +
+        '<table class="eq-cv-table"><tbody>' + rows + '</tbody></table>' +
       '</div>';
     }).join('');
 
     el.innerHTML = '<div class="eq-card-header"><div class="eq-section-title">Current Values</div></div>' +
-      '<div class="eq-cv-grid">' + rows + '</div>';
+      '<div class="eq-cv-groups">' + html + '</div>';
   }
 
   // ── KPI strip ─────────────────────────────────────────────────────
