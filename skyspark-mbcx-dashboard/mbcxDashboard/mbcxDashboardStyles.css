@@ -1391,11 +1391,13 @@
 }
 #mbcxDashboard .eq-rt-axis {
   position: relative; height: 16px; margin-left: 148px; margin-top: 2px;
+  overflow: hidden;
 }
 #mbcxDashboard .eq-rt-tick {
   position: absolute; font-size: .62rem; color: var(--gray-400);
   transform: translateX(-50%); white-space: nowrap;
 }
+#mbcxDashboard .eq-rt-tick:last-child { transform: translateX(-100%); }
 #mbcxDashboard .eq-rt-legend {
   display: flex; gap: 14px; margin-left: 148px; margin-top: 6px;
   font-size: .68rem; color: var(--gray-500);

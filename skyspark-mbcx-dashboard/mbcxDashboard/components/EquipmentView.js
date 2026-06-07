@@ -606,10 +606,17 @@ window.mbcxDashboard.components.EquipmentView = (function () {
         if (isBool) {
           var data = rows.map(function (r) {
             var v = r[m.col.name];
-            if (v === true || v === 'true' || v === 1) return 1;
-            if (v === false || v === 'false' || v === 0) return 0;
             if (v === null || v === undefined) return null;
-            if (typeof v === 'object' && v.val !== undefined) return v.val ? 1 : 0;
+            if (v === true || v === 1 || v === 'true') return 1;
+            if (v === false || v === 0 || v === 'false') return 0;
+            if (typeof v === 'object') {
+              if (v._kind === 'marker' || v._kind === 'bool') return v.val === false ? 0 : 1;
+              if (v._kind === 'number') return v.val ? 1 : 0;
+              if (v.val !== undefined) return v.val ? 1 : 0;
+            }
+            var s = String(v).toLowerCase();
+            if (s === 'true' || s === 'on' || s === '1' || s === 'm:') return 1;
+            if (s === 'false' || s === 'off' || s === '0') return 0;
             return null;
           });
           boolMembers.push({ col: m.col, point: m.point, data: data });
