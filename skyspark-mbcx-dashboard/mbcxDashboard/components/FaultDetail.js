@@ -467,6 +467,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
           (fault.sparksLink ? '<a class="fd-sparks-link fd-sparks-link-sm" href="' + fault.sparksLink + '" target="_blank">SkySpark &#8599;</a>' : '') +
         '          </div>',
         '        </div>',
+        '        <div class="fd-fault-bar-wrap" id="fdFaultBar"></div>',
         '        <div class="fd-chart-wrap" id="fdChartWrap">',
         '          <div class="fd-chart-loading" id="fdChartLoading">Loading trend data…</div>',
         '        </div>',
@@ -548,8 +549,79 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         });
       }
 
-      // Fetch point history for chart (default: pastMonth)
+      // Fetch fault activity bar and point trend chart
+      this._loadFaultActivityBar(contentEl, fault, ctx);
       this._loadTrendChart(contentEl, fault, ctx, 'pastMonth');
+    },
+
+    _loadFaultActivityBar: function (contentEl, fault, ctx) {
+      var barEl = contentEl.querySelector('#fdFaultBar');
+      if (!barEl) return;
+      if (!ctx || !ctx.attestKey || !ctx.projectName) return;
+
+      var raw = fault._raw || {};
+      var idRef = raw.id;
+      var refVal = null;
+      if (idRef && typeof idRef === 'object' && (idRef._kind === 'ref' || idRef._kind === 'Ref')) {
+        refVal = idRef.val;
+      } else if (typeof idRef === 'string' && idRef.charAt(0) === '@') {
+        refVal = idRef.slice(1);
+      }
+      if (!refVal) return;
+
+      var startDate = _extractDate(raw.reportStartDate) || ctx.datesStart;
+      var endDate   = _extractDate(raw.reportEndDate)   || ctx.datesEnd;
+      var dateRange = (startDate && endDate) ? startDate + '..' + endDate : 'pastMonth';
+
+      var axon = 'read(id==@' + refVal + ').hisRead(' + dateRange + ')';
+
+      NS.api.evalAxon(ctx.attestKey, ctx.projectName, axon)
+        .then(function (grid) {
+          var parsed = _parseHisGrid(grid);
+          if (!parsed || !parsed.dataCols.length) return;
+          var col = parsed.dataCols[0];
+          var rawData = parsed.datasets[col.name];
+          var hasAnyTrue = rawData.some(function (v) { return v === 1 || v === true; });
+          if (!hasAnyTrue) return;
+
+          var timestamps = parsed.labels.map(function (l) {
+            var d = new Date(l); return isNaN(d) ? 0 : d.getTime();
+          });
+          var tMin = timestamps[0] || 0;
+          var tMax = timestamps[timestamps.length - 1] || 1;
+          var tSpan = tMax - tMin || 1;
+
+          var label = document.createElement('div');
+          label.className = 'fd-fbar-label';
+          label.textContent = fault.faultName || 'Fault Active';
+          barEl.appendChild(label);
+
+          var bar = document.createElement('div');
+          bar.className = 'fd-fbar-track';
+
+          var i = 0;
+          while (i < rawData.length) {
+            var isOn = rawData[i] === 1 || rawData[i] === true;
+            var start = i;
+            while (i < rawData.length) {
+              var cur = rawData[i] === 1 || rawData[i] === true;
+              if (rawData[i] !== null && cur !== isOn) break;
+              i++;
+            }
+            var x0 = (timestamps[start] - tMin) / tSpan * 100;
+            var x1 = (timestamps[Math.min(i, rawData.length - 1)] - tMin) / tSpan * 100;
+            var seg = document.createElement('div');
+            seg.className = 'fd-fbar-seg' + (isOn ? ' fd-fbar-seg--on' : '');
+            seg.style.left  = x0 + '%';
+            seg.style.width = Math.max(x1 - x0, 0.2) + '%';
+            bar.appendChild(seg);
+          }
+          barEl.appendChild(bar);
+          barEl.classList.add('fd-fault-bar-wrap--loaded');
+        })
+        .catch(function (err) {
+          console.warn('[FaultDetail] Fault activity bar fetch failed:', err);
+        });
     },
 
     _loadTrendChart: function (contentEl, fault, ctx, rangeKey) {

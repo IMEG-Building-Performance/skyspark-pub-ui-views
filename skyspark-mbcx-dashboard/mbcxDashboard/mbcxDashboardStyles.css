@@ -1582,6 +1582,22 @@
 }
 #mbcxDashboard .fd-spark-seg--fault { background: #DC2626; }
 
+/* Fault activity bar (from fault record's own hisRead) */
+#mbcxDashboard .fd-fault-bar-wrap { width:100%; margin-bottom:0; }
+#mbcxDashboard .fd-fault-bar-wrap--loaded { margin-bottom:10px; }
+#mbcxDashboard .fd-fbar-label {
+  font-size:11px; font-weight:500; color:#374151;
+  margin-bottom:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+#mbcxDashboard .fd-fbar-track {
+  position:relative; height:14px; background:#f3f4f6;
+  border-radius:3px; overflow:hidden; width:100%;
+}
+#mbcxDashboard .fd-fbar-seg {
+  position:absolute; top:0; height:100%; background:#e5e7eb;
+}
+#mbcxDashboard .fd-fbar-seg--on { background:#d97706; }
+
 /* Trend date range buttons */
 #mbcxDashboard .fd-card-title { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
 #mbcxDashboard .fd-trend-range { display: flex; gap: 4px; align-items: center; }
