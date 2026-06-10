@@ -834,6 +834,8 @@
   transition: background 0.1s, border-color 0.1s;
 }
 #mbcxDashboard .dp-shortcut-btn:hover { background: #f3f4f6; border-color: #d1d5db; }
+#mbcxDashboard .dp-recent-list { display: flex; flex-direction: column; gap: 4px; padding: 12px; }
+#mbcxDashboard .dp-recent-empty { padding: 24px; text-align: center; color: #9ca3af; font-size: 12px; }
 
 /* Footer */
 #mbcxDashboard .dp-footer {
@@ -1555,36 +1557,30 @@
 }
 #mbcxDashboard .fd-card-sub { font-size:11px; font-weight:400; color:var(--gray-400); }
 
-/* Fault spark bar */
-#mbcxDashboard .fd-spark-wrap { padding: 4px 0; }
+/* Fault spark bar (inline at top of chart area) */
+#mbcxDashboard .fd-spark-section {
+  margin-bottom: 12px; padding-bottom: 10px;
+  border-bottom: 1px solid var(--gray-200);
+}
+#mbcxDashboard .fd-spark-section-title {
+  font-size: .72rem; font-weight: 700; color: var(--gray-500);
+  text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px;
+}
+#mbcxDashboard .fd-spark-row {
+  display: flex; align-items: center; gap: 8px; height: 20px; margin-bottom: 3px;
+}
+#mbcxDashboard .fd-spark-label {
+  flex: 0 0 120px; font-size: .7rem; color: var(--gray-600);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right;
+}
 #mbcxDashboard .fd-spark-bar {
-  position: relative; height: 18px; background: var(--gray-200);
+  flex: 1; position: relative; height: 14px; background: var(--gray-200);
   border-radius: 3px; overflow: hidden;
 }
 #mbcxDashboard .fd-spark-seg {
   position: absolute; top: 0; height: 100%; background: var(--gray-200);
 }
 #mbcxDashboard .fd-spark-seg--fault { background: #DC2626; }
-#mbcxDashboard .fd-spark-axis {
-  position: relative; height: 16px; margin-top: 2px; overflow: hidden;
-}
-#mbcxDashboard .fd-spark-tick {
-  position: absolute; font-size: .62rem; color: var(--gray-400);
-  transform: translateX(-50%); white-space: nowrap;
-}
-#mbcxDashboard .fd-spark-tick:last-child { transform: translateX(-100%); }
-#mbcxDashboard .fd-spark-legend {
-  display: flex; gap: 14px; margin-top: 4px;
-  font-size: .68rem; color: var(--gray-500);
-}
-#mbcxDashboard .fd-spark-leg { display: flex; align-items: center; gap: 4px; }
-#mbcxDashboard .fd-spark-sw {
-  width: 12px; height: 8px; border-radius: 2px; background: var(--gray-200);
-}
-#mbcxDashboard .fd-spark-sw.fd-spark-seg--fault { background: #DC2626; }
-#mbcxDashboard .fd-spark-empty {
-  font-size: .78rem; color: var(--gray-400); padding: 12px 0;
-}
 
 /* Trend date range buttons */
 #mbcxDashboard .fd-card-title { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
