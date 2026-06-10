@@ -1208,6 +1208,11 @@
 #mbcxDashboard .fs-info-btn:hover { color: var(--imeg-blue); }
 #mbcxDashboard .fs-td-info { width: 28px; padding-left: 8px; }
 #mbcxDashboard .fs-td-name { font-weight: 500; }
+#mbcxDashboard .fs-change { font-size: .78rem; font-weight: 600; white-space: nowrap; }
+#mbcxDashboard .fs-change--up { color: #DC2626; }
+#mbcxDashboard .fs-change--down { color: #059669; }
+#mbcxDashboard .fs-change--flat { color: var(--gray-400); }
+#mbcxDashboard .fs-change--na { color: var(--gray-300); }
 
 /* ── Equipment View (eq-*) ── */
 #mbcxDashboard .eq-page {
@@ -1466,7 +1471,28 @@
 .rs-flag-sensor  { color: #94a3b8; }
 
 /* ── Fault List (fl-*) ── */
-#mbcxDashboard .fl-kpi-strip { grid-template-columns: repeat(5, 1fr) !important; }
+#mbcxDashboard .fl-kpi-strip {
+  display: flex !important; align-items: center; gap: 0;
+  padding: 16px 20px !important; margin-bottom: 16px !important;
+  background: var(--card-bg, #fff); border: 1px solid var(--gray-200);
+  border-radius: 10px; border-bottom: none !important;
+}
+#mbcxDashboard .fl-kpi-strip .tu-kpi {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 0 20px; border-right: 1px solid var(--gray-200);
+  flex: 1;
+}
+#mbcxDashboard .fl-kpi-strip .tu-kpi:last-child { border-right: none; }
+#mbcxDashboard .fl-kpi-strip .tu-kpi-val {
+  font-size: 1.5rem; font-weight: 800; line-height: 1;
+}
+#mbcxDashboard .fl-kpi-strip .tu-kpi-label {
+  font-size: .68rem; color: var(--gray-500); margin-top: 3px; margin-bottom: 0;
+  white-space: nowrap;
+}
+#mbcxDashboard .fl-kpi-strip .tu-kpi-unit {
+  font-size: .65rem; margin-top: 2px;
+}
 #mbcxDashboard .fl-table { width: 100%; }
 #mbcxDashboard .fl-table .tu-th,
 #mbcxDashboard .fl-table .tu-td { text-align: left; }
@@ -1528,6 +1554,50 @@
   margin-bottom:14px; display:flex; align-items:baseline; gap:8px;
 }
 #mbcxDashboard .fd-card-sub { font-size:11px; font-weight:400; color:var(--gray-400); }
+
+/* Fault spark bar */
+#mbcxDashboard .fd-spark-wrap { padding: 4px 0; }
+#mbcxDashboard .fd-spark-bar {
+  position: relative; height: 18px; background: var(--gray-200);
+  border-radius: 3px; overflow: hidden;
+}
+#mbcxDashboard .fd-spark-seg {
+  position: absolute; top: 0; height: 100%; background: var(--gray-200);
+}
+#mbcxDashboard .fd-spark-seg--fault { background: #DC2626; }
+#mbcxDashboard .fd-spark-axis {
+  position: relative; height: 16px; margin-top: 2px; overflow: hidden;
+}
+#mbcxDashboard .fd-spark-tick {
+  position: absolute; font-size: .62rem; color: var(--gray-400);
+  transform: translateX(-50%); white-space: nowrap;
+}
+#mbcxDashboard .fd-spark-tick:last-child { transform: translateX(-100%); }
+#mbcxDashboard .fd-spark-legend {
+  display: flex; gap: 14px; margin-top: 4px;
+  font-size: .68rem; color: var(--gray-500);
+}
+#mbcxDashboard .fd-spark-leg { display: flex; align-items: center; gap: 4px; }
+#mbcxDashboard .fd-spark-sw {
+  width: 12px; height: 8px; border-radius: 2px; background: var(--gray-200);
+}
+#mbcxDashboard .fd-spark-sw.fd-spark-seg--fault { background: #DC2626; }
+#mbcxDashboard .fd-spark-empty {
+  font-size: .78rem; color: var(--gray-400); padding: 12px 0;
+}
+
+/* Trend date range buttons */
+#mbcxDashboard .fd-card-title { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+#mbcxDashboard .fd-trend-range { display: flex; gap: 4px; align-items: center; }
+#mbcxDashboard .fd-range-btn {
+  padding: 3px 10px; font-size: .7rem; font-weight: 500; border-radius: 5px;
+  border: 1px solid var(--gray-200); cursor: pointer; background: var(--card-bg, #fff);
+  color: var(--gray-500); font-family: inherit; transition: all .12s;
+}
+#mbcxDashboard .fd-range-btn:hover { border-color: var(--gray-300); }
+#mbcxDashboard .fd-range-btn--active {
+  background: var(--imeg-blue); border-color: var(--imeg-blue); color: #fff;
+}
 
 /* Chart / SkySpark iframe */
 #mbcxDashboard .fd-chart-wrap {
