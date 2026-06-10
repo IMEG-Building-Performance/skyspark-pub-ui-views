@@ -21,7 +21,10 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
   function _extractRef(obj) {
     if (!obj) return null;
     if (typeof obj === 'object' && (obj._kind === 'ref' || obj._kind === 'Ref')) return '@' + obj.val;
+    // haystackParser.val() unwraps refs to {id, dis} or a bare id string
+    if (typeof obj === 'object' && obj.id) return '@' + String(obj.id).replace(/^@/, '');
     if (typeof obj === 'string' && obj.charAt(0) === '@') return obj;
+    if (typeof obj === 'string' && /^[rp]:[\w:.~-]+$/.test(obj)) return '@' + obj;
     return null;
   }
 
@@ -159,12 +162,12 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       var n = times.length - 1;
       var ctx = chart.ctx;
       ctx.save();
-      ctx.fillStyle = 'rgba(234, 88, 12, 0.10)';
       _sparkWins.forEach(function (w) {
         if (w.e < times[0] || w.s > times[times.length - 1]) return;
         var x0 = area.left + (_fracPos(times, w.s) / n) * (area.right - area.left);
         var x1 = area.left + (_fracPos(times, w.e) / n) * (area.right - area.left);
         if (x1 - x0 < 1) x1 = x0 + 1;
+        ctx.fillStyle = 'rgba(234, 88, 12, ' + (w.a != null ? w.a : 0.10) + ')';
         ctx.fillRect(x0, area.top, x1 - x0, area.bottom - area.top);
       });
       ctx.restore();
@@ -621,26 +624,30 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       if (!barEl) return;
       if (!ctx || !ctx.attestKey || !ctx.projectName) return;
 
+      var self = this;
       var raw = fault._raw || {};
-      var idRef = raw.id;
-      var refVal = null;
-      if (idRef && typeof idRef === 'object' && (idRef._kind === 'ref' || idRef._kind === 'Ref')) {
-        refVal = idRef.val;
-      } else if (typeof idRef === 'string' && idRef.charAt(0) === '@') {
-        refVal = idRef.slice(1);
-      }
-      if (!refVal) return;
+      var idRef = _extractRef(raw.id);
 
       var startDate = _extractDate(raw.reportStartDate) || ctx.datesStart;
       var endDate   = _extractDate(raw.reportEndDate)   || ctx.datesEnd;
       var dateRange = (startDate && endDate) ? startDate + '..' + endDate : 'pastMonth';
 
-      var axon = 'read(id==@' + refVal + ').hisRead(' + dateRange + ')';
+      if (!idRef) {
+        console.warn('[FaultDetail] Fault row has no id ref — using ruleSparks daily bar.');
+        self._loadRuleSparksBar(barEl, fault, ctx, dateRange);
+        return;
+      }
+
+      var axon = 'read(id==' + idRef + ').hisRead(' + dateRange + ')';
 
       NS.api.evalAxon(ctx.attestKey, ctx.projectName, axon)
         .then(function (grid) {
           var parsed = _parseHisGrid(grid);
-          if (!parsed || !parsed.dataCols.length) return;
+          if (!parsed || !parsed.dataCols.length) {
+            console.warn('[FaultDetail] Fault record has no history — using ruleSparks daily bar.');
+            self._loadRuleSparksBar(barEl, fault, ctx, dateRange);
+            return;
+          }
           var col = parsed.dataCols[0];
           var rawData = parsed.datasets[col.name];
           var hasAnyTrue = rawData.some(function (v) { return v === 1 || v === true; });
@@ -690,7 +697,89 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
           _charts.forEach(function (c) { try { c.update('none'); } catch (e) {} });
         })
         .catch(function (err) {
-          console.warn('[FaultDetail] Fault activity bar fetch failed:', err);
+          console.warn('[FaultDetail] Fault record hisRead failed — using ruleSparks daily bar.', err);
+          self._loadRuleSparksBar(barEl, fault, ctx, dateRange);
+        });
+    },
+
+    // Fallback: daily spark durations via ruleSparks(), rendered as a heat
+    // strip (opacity ∝ hours/day) like SkySpark's own spark view. Exact
+    // intra-day periods aren't available from this source.
+    _loadRuleSparksBar: function (barEl, fault, ctx, dateRange) {
+      var raw = fault._raw || {};
+      var equipName = raw.equipment || fault.equipment;
+      var siteRef = _extractRef(raw.siteRef) || ctx.siteRef;
+      if (!equipName || !fault.faultName) return;
+
+      var axon = 'ruleSparks(read(equip and navName==' + _q(equipName) +
+        (siteRef ? ' and siteRef==' + siteRef : '') + ', false), ' + dateRange +
+        ', read(rule and dis==' + _q(fault.faultName) + ', false))';
+
+      NS.api.evalAxon(ctx.attestKey, ctx.projectName, axon)
+        .then(function (grid) {
+          var days = [];
+          (grid.rows || []).forEach(function (row) {
+            var dv = row.date;
+            var dStr = (dv && typeof dv === 'object') ? dv.val : dv;
+            var t = Date.parse(String(dStr || '').slice(0, 10) + 'T00:00:00');
+            if (isNaN(t)) return;
+            var d = row.dur, hours = 0;
+            if (typeof d === 'number') hours = d;
+            else if (d && typeof d === 'object' && typeof d.val === 'number') {
+              var u = String(d.unit || 'h').toLowerCase();
+              hours = u.indexOf('min') === 0 ? d.val / 60
+                    : (u === 's' || u === 'sec') ? d.val / 3600
+                    : d.val;
+            }
+            if (hours > 0) days.push({ t: t, hours: Math.min(hours, 24) });
+          });
+          if (!days.length) {
+            console.warn('[FaultDetail] ruleSparks returned no spark days. Expr:', axon);
+            return;
+          }
+
+          // Domain: the explicit date range when we have one, else the data.
+          var m = String(dateRange).match(/^(\d{4}-\d{2}-\d{2})\.\.(\d{4}-\d{2}-\d{2})$/);
+          var tMin, tMax;
+          if (m) {
+            tMin = Date.parse(m[1] + 'T00:00:00');
+            tMax = Date.parse(m[2] + 'T00:00:00') + 86400000;
+          } else {
+            tMin = days[0].t; tMax = days[0].t + 86400000;
+            days.forEach(function (d) {
+              if (d.t < tMin) tMin = d.t;
+              if (d.t + 86400000 > tMax) tMax = d.t + 86400000;
+            });
+          }
+          var tSpan = (tMax - tMin) || 1;
+
+          var label = document.createElement('div');
+          label.className = 'fd-fbar-label';
+          label.textContent = (fault.faultName || 'Fault Active') + ' — hrs/day';
+          barEl.appendChild(label);
+
+          var bar = document.createElement('div');
+          bar.className = 'fd-fbar-track';
+          days.forEach(function (d) {
+            var seg = document.createElement('div');
+            seg.className = 'fd-fbar-seg fd-fbar-seg--on';
+            seg.style.left    = ((d.t - tMin) / tSpan * 100) + '%';
+            seg.style.width   = Math.max(86400000 / tSpan * 100, 0.2) + '%';
+            seg.style.opacity = (0.18 + 0.82 * (d.hours / 24)).toFixed(2);
+            seg.title = Math.round(d.hours * 10) / 10 + ' h active';
+            bar.appendChild(seg);
+          });
+          barEl.appendChild(bar);
+          barEl.classList.add('fd-fault-bar-wrap--loaded');
+
+          // Day-wide chart bands, intensity-scaled like the strip.
+          _sparkWins = days.map(function (d) {
+            return { s: d.t, e: d.t + 86400000, a: 0.03 + 0.12 * (d.hours / 24) };
+          });
+          _charts.forEach(function (c) { try { c.update('none'); } catch (e) {} });
+        })
+        .catch(function (err) {
+          console.warn('[FaultDetail] ruleSparks fetch failed (bar hidden):', err, '\nExpr:', axon);
         });
     },
 
