@@ -118,11 +118,10 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
   };
 
   // ── Fault-active overlay ───────────────────────────────────────────────
-  // Spark windows for the current fault, fetched in parallel with the trend
-  // data. Rendered two ways: a strip above the charts (overview) and shaded
-  // bands inside each chart panel (correlation). Hidden if the fetch fails.
+  // Active windows from the fault record's own history (loaded by
+  // _loadFaultActivityBar), shaded into every chart panel by the
+  // sparkBands plugin so trend behavior can be correlated with the fault.
   var _sparkWins = null;   // [{s, e}] epoch-ms windows, or null if unavailable
-  var _domain    = null;   // {t0, t1} strip time domain in epoch ms
   var _charts    = [];     // live Chart instances on this page
 
   function _q(s) {
@@ -133,7 +132,6 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     _charts.forEach(function (c) { try { c.destroy(); } catch (e) {} });
     _charts = [];
     _sparkWins = null;
-    _domain = null;
   }
 
   // Fractional position of epoch time t on a category axis whose ticks
@@ -163,6 +161,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       ctx.save();
       ctx.fillStyle = 'rgba(234, 88, 12, 0.10)';
       _sparkWins.forEach(function (w) {
+        if (w.e < times[0] || w.s > times[times.length - 1]) return;
         var x0 = area.left + (_fracPos(times, w.s) / n) * (area.right - area.left);
         var x1 = area.left + (_fracPos(times, w.e) / n) * (area.right - area.left);
         if (x1 - x0 < 1) x1 = x0 + 1;
@@ -171,78 +170,6 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       ctx.restore();
     }
   };
-
-  function _renderSparkStrip() {
-    var strip = document.getElementById('fdSparkStrip');
-    if (!strip) return;
-    if (!_sparkWins || !_sparkWins.length || !_domain || _domain.t1 <= _domain.t0) {
-      strip.style.display = 'none';
-      return;
-    }
-    var t0 = _domain.t0, t1 = _domain.t1;
-    var segs = _sparkWins.map(function (w) {
-      var l = Math.max(0, (w.s - t0) / (t1 - t0)) * 100;
-      var r = Math.min(1, (w.e - t0) / (t1 - t0)) * 100;
-      if (r <= 0 || l >= 100) return '';
-      return '<div class="fd-spark-seg" style="left:' + l.toFixed(2) +
-        '%;width:' + Math.max(r - l, 0.15).toFixed(2) + '%;"></div>';
-    }).join('');
-    strip.innerHTML =
-      '<div class="fd-spark-label">Fault Active</div>' +
-      '<div class="fd-spark-track">' + segs + '</div>';
-    strip.style.display = '';
-    // Indent the track to line up with the chart plot area (y-axis labels
-    // occupy the left edge of each canvas).
-    var first = _charts[0];
-    var track = strip.querySelector('.fd-spark-track');
-    if (first && first.chartArea && track) {
-      track.style.marginLeft  = Math.round(first.chartArea.left) + 'px';
-      track.style.marginRight = Math.round(first.canvas.clientWidth - first.chartArea.right) + 'px';
-    }
-  }
-
-  function _refreshSparkUI() {
-    _renderSparkStrip();
-    _charts.forEach(function (c) { c.update('none'); });
-  }
-
-  function _loadSparks(fault, ctx, dateRange, siteRef, equipName) {
-    var raw = fault._raw || {};
-    var ruleRef = _extractRef(raw.ruleRef);
-    var ruleExpr = ruleRef
-      ? 'readById(' + ruleRef + ')'
-      : 'read(rule and dis==' + _q(fault.faultName) + ', false)';
-    var axon = 'sparks(' + ruleExpr + ', ' + dateRange +
-      ', readAll(equip and siteRef==' + siteRef + ' and navName==' + _q(equipName) + '))';
-
-    NS.api.evalAxon(ctx.attestKey, ctx.projectName, axon)
-      .then(function (grid) {
-        var wins = [];
-        (grid.rows || []).forEach(function (row) {
-          var ts = row.ts;
-          var tsStr = (ts && typeof ts === 'object') ? ts.val : ts;
-          var s = new Date(tsStr).getTime();
-          if (isNaN(s)) return;
-          var d = row.dur, hours = 0;
-          if (typeof d === 'number') hours = d;
-          else if (d && typeof d === 'object' && typeof d.val === 'number') {
-            var u = String(d.unit || 'h').toLowerCase();
-            hours = u.indexOf('min') === 0 ? d.val / 60
-                  : (u === 's' || u === 'sec') ? d.val / 3600
-                  : d.val;
-          }
-          // Floor of 15 min so short sparks stay visible on a month-wide bar.
-          wins.push({ s: s, e: s + Math.max(hours, 0.25) * 3600000 });
-        });
-        _sparkWins = wins;
-        _refreshSparkUI();
-      })
-      .catch(function (err) {
-        console.warn('[FaultDetail] Spark fetch failed (active bar hidden):', err);
-        _sparkWins = null;
-        _refreshSparkUI();
-      });
-  }
 
   function _renderCharts(containerId, parsed) {
     if (typeof Chart === 'undefined') return;
@@ -258,12 +185,9 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     });
 
     // Epoch times per label — used to place fault-active bands on the
-    // category axis and to set the strip's time domain.
+    // category axis.
     var labelTimes = parsed.labels.map(function (l) { return new Date(l).getTime(); });
     var timesValid = labelTimes.length > 1 && !labelTimes.some(isNaN);
-    if (timesValid) {
-      _domain = { t0: labelTimes[0], t1: labelTimes[labelTimes.length - 1] };
-    }
 
     var UNIT_ORDER = ['°F', '%', 'cfm', '%RH', 'inH₂O', 'psi', 'bool'];
     function _unitRank(u) {
@@ -459,9 +383,6 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     });
 
     _resizeChartWrap(container, chartInstances);
-
-    // Spark data may have arrived before the charts — paint it now.
-    setTimeout(_renderSparkStrip, 0);
   }
 
   function _resizeChartWrap(container, chartInstances) {
@@ -740,6 +661,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
           var bar = document.createElement('div');
           bar.className = 'fd-fbar-track';
 
+          var wins = [];
           var i = 0;
           while (i < rawData.length) {
             var isOn = rawData[i] === 1 || rawData[i] === true;
@@ -749,16 +671,23 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
               if (rawData[i] !== null && cur !== isOn) break;
               i++;
             }
+            var endIdx = Math.min(i, rawData.length - 1);
             var x0 = (timestamps[start] - tMin) / tSpan * 100;
-            var x1 = (timestamps[Math.min(i, rawData.length - 1)] - tMin) / tSpan * 100;
+            var x1 = (timestamps[endIdx] - tMin) / tSpan * 100;
             var seg = document.createElement('div');
             seg.className = 'fd-fbar-seg' + (isOn ? ' fd-fbar-seg--on' : '');
             seg.style.left  = x0 + '%';
             seg.style.width = Math.max(x1 - x0, 0.2) + '%';
             bar.appendChild(seg);
+            if (isOn) wins.push({ s: timestamps[start], e: timestamps[endIdx] });
           }
           barEl.appendChild(bar);
           barEl.classList.add('fd-fault-bar-wrap--loaded');
+
+          // Shade the same active windows into the trend charts (sparkBands
+          // plugin); charts may render before or after this data arrives.
+          _sparkWins = wins;
+          _charts.forEach(function (c) { try { c.update('none'); } catch (e) {} });
         })
         .catch(function (err) {
           console.warn('[FaultDetail] Fault activity bar fetch failed:', err);
@@ -776,6 +705,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         var ci = Chart.getChart(c);
         if (ci) ci.destroy();
       });
+      _charts = [];
       wrapEl.innerHTML = '<div class="fd-chart-loading" id="fdChartLoading">Loading trend data…</div>';
       loadingEl = wrapEl.querySelector('#fdChartLoading');
 
@@ -803,14 +733,6 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       }
 
       var axon = 'readAll(point and his and equipRef->navName==' + _q(equipName) + ' and siteRef==' + siteRef + ').hisRead(' + dateRange + ')';
-
-      // Strip domain from the requested range (refined to actual data span
-      // once the trend grid renders); spark fetch runs in parallel.
-      if (startDate && endDate) {
-        var t0 = Date.parse(startDate), t1 = Date.parse(endDate) + 86400000;
-        if (!isNaN(t0) && !isNaN(t1)) _domain = { t0: t0, t1: t1 };
-      }
-      _loadSparks(fault, ctx, dateRange, siteRef, equipName);
 
       API.evalAxon(ctx.attestKey, ctx.projectName, axon)
         .then(function (grid) {
