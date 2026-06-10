@@ -269,6 +269,165 @@ window.mbcxDashboard.components.Compliance = (function () {
     }
   };
 
+  // ── Fault-active overlay (ported from FaultDetail) ─────────────────
+
+  var _sparkWins = null;
+
+  function _fracPos(times, t) {
+    var n = times.length;
+    if (n < 2) return 0;
+    if (t <= times[0]) return 0;
+    if (t >= times[n - 1]) return n - 1;
+    var lo = 0, hi = n - 1;
+    while (hi - lo > 1) {
+      var mid = (lo + hi) >> 1;
+      if (times[mid] <= t) lo = mid; else hi = mid;
+    }
+    var span = times[hi] - times[lo];
+    return lo + (span > 0 ? (t - times[lo]) / span : 0);
+  }
+
+  var sparkBandsPlugin = {
+    id: 'compSparkBands',
+    beforeDatasetsDraw: function (chart) {
+      var times = chart.$mbcxTimes;
+      if (!_sparkWins || !_sparkWins.length || !times || times.length < 2) return;
+      var area = chart.chartArea;
+      var n = times.length - 1;
+      var ctx = chart.ctx;
+      ctx.save();
+      _sparkWins.forEach(function (w) {
+        if (w.e < times[0] || w.s > times[times.length - 1]) return;
+        var x0 = area.left + (_fracPos(times, w.s) / n) * (area.right - area.left);
+        var x1 = area.left + (_fracPos(times, w.e) / n) * (area.right - area.left);
+        if (x1 - x0 < 1) x1 = x0 + 1;
+        ctx.fillStyle = 'rgba(234, 88, 12, 0.10)';
+        ctx.fillRect(x0, area.top, x1 - x0, area.bottom - area.top);
+      });
+      ctx.restore();
+    }
+  };
+
+  function _mergeCompWins(wins) {
+    wins.sort(function (a, b) { return a.s - b.s; });
+    var MERGE_GAP = 1 * 3600000;
+    var merged = [];
+    wins.forEach(function (w) {
+      var last = merged[merged.length - 1];
+      if (last && w.s - last.e <= MERGE_GAP) {
+        if (w.e > last.e) last.e = w.e;
+      } else {
+        merged.push({ s: w.s, e: w.e });
+      }
+    });
+    return merged;
+  }
+
+  function _q(s) {
+    return '"' + String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+  }
+
+  function _extractRef(obj) {
+    if (!obj) return null;
+    if (typeof obj === 'object' && (obj._kind === 'ref' || obj._kind === 'Ref')) return '@' + obj.val;
+    if (typeof obj === 'object' && obj.id) return '@' + String(obj.id).replace(/^@/, '');
+    if (typeof obj === 'string' && obj.charAt(0) === '@') return obj;
+    return null;
+  }
+
+  function _loadCompFaultBar(equipName, equipRef) {
+    _sparkWins = null;
+    var barEl = _container ? _container.querySelector('#compFaultBar') : null;
+    if (barEl) { barEl.innerHTML = ''; barEl.classList.remove('fd-fault-bar-wrap--loaded'); }
+    if (!_ctx || !_ctx.attestKey || !equipName) return;
+
+    var dates = _ctx.datesStart + '..' + _ctx.datesEnd;
+    var siteRef = _ctx.siteRef;
+
+    // Use ruleSparks to get fault-active periods for this equipment
+    var axon = 'do\n' +
+      '  eq: read(equip and navName==' + _q(equipName) +
+      (siteRef ? ' and siteRef==' + siteRef : '') + ', false)\n' +
+      '  if (eq == null) return null\n' +
+      '  ruleSparks(eq, ' + dates + ').ruleSparkHis\n' +
+      'end';
+
+    NS.api.evalAxon(_ctx.attestKey, _ctx.projectName, axon)
+      .then(function (grid) {
+        if (!grid || !grid.rows || !grid.rows.length) return;
+        var valCol = null;
+        (grid.cols || []).forEach(function (c) {
+          if (!valCol && c.name !== 'ts') valCol = c.name;
+        });
+        var wins = [];
+        grid.rows.forEach(function (row) {
+          var ts = row.ts;
+          var s = Date.parse((ts && typeof ts === 'object') ? ts.val : ts);
+          if (isNaN(s)) return;
+          var d = valCol ? row[valCol] : null, hours = 0;
+          if (typeof d === 'number') hours = d;
+          else if (d && typeof d === 'object' && typeof d.val === 'number') {
+            var u = String(d.unit || 'h').toLowerCase();
+            hours = u.indexOf('min') === 0 ? d.val / 60
+                  : (u === 's' || u === 'sec') ? d.val / 3600
+                  : d.val;
+          }
+          if (hours <= 0) return;
+          wins.push({ s: s, e: s + hours * 3600000 });
+        });
+        if (!wins.length) return;
+        wins = _mergeCompWins(wins);
+
+        _sparkWins = wins;
+        _charts.forEach(function (c) { try { c.update('none'); } catch (e) {} });
+
+        if (!barEl) return;
+        var m = String(dates).match(/^(\d{4}-\d{2}-\d{2})\.\.(\d{4}-\d{2}-\d{2})$/);
+        var tMin, tMax;
+        if (m) {
+          tMin = Date.parse(m[1] + 'T00:00:00');
+          tMax = Date.parse(m[2] + 'T00:00:00') + 86400000;
+        } else {
+          tMin = wins[0].s; tMax = wins[wins.length - 1].e;
+        }
+        var tSpan = (tMax - tMin) || 1;
+
+        var label = document.createElement('div');
+        label.className = 'fd-fbar-label';
+        label.textContent = equipName + ' — Fault Activity';
+        barEl.appendChild(label);
+
+        var bar = document.createElement('div');
+        bar.className = 'fd-fbar-track';
+        wins.forEach(function (w) {
+          var seg = document.createElement('div');
+          seg.className = 'fd-fbar-seg fd-fbar-seg--on';
+          seg.style.left  = (Math.max(w.s - tMin, 0) / tSpan * 100) + '%';
+          seg.style.width = Math.max((w.e - w.s) / tSpan * 100, 0.2) + '%';
+          bar.appendChild(seg);
+        });
+        barEl.appendChild(bar);
+        barEl.classList.add('fd-fault-bar-wrap--loaded');
+
+        // Align bar track with chart plot area
+        setTimeout(function () {
+          var first = _charts[0];
+          if (!first || !first.chartArea || !first.canvas) return;
+          var canvasRect = first.canvas.getBoundingClientRect();
+          var wrapRect = barEl.getBoundingClientRect();
+          var ml = Math.max(0, Math.round(canvasRect.left + first.chartArea.left - wrapRect.left));
+          var mr = Math.max(0, Math.round(wrapRect.right - canvasRect.left - first.chartArea.right));
+          barEl.querySelectorAll('.fd-fbar-track').forEach(function (track) {
+            track.style.marginLeft  = ml + 'px';
+            track.style.marginRight = mr + 'px';
+          });
+        }, 100);
+      })
+      .catch(function (err) {
+        console.warn('[Compliance] Fault bar fetch failed:', err);
+      });
+  }
+
   // ── Helpers ────────────────────────────────────────────────────────
 
   function _extractNum(v) {
@@ -409,6 +568,7 @@ window.mbcxDashboard.components.Compliance = (function () {
             '<h3 class="comp-chart-heading" id="compChartHeading">Select equipment to view charts</h3>' +
             _renderRollupSelector() +
           '</div>' +
+          '<div class="fd-fault-bar-wrap" id="compFaultBar"></div>' +
           '<div class="comp-charts" id="compCharts">' +
             '<div class="comp-loading">Select an equipment item to view compliance charts.</div>' +
           '</div>' +
@@ -888,6 +1048,7 @@ window.mbcxDashboard.components.Compliance = (function () {
           return;
         }
         _buildChartsFromGrid(grid);
+        _loadCompFaultBar(sp.equip, sp.equipRef);
         _loadPieChart(sp.equipRef);
         _filterAuditTable();
       })
@@ -1000,6 +1161,9 @@ window.mbcxDashboard.components.Compliance = (function () {
       return l;
     });
 
+    var labelTimes = labels.map(function (l) { return new Date(l).getTime(); });
+    var timesValid = labelTimes.length > 1 && !labelTimes.some(isNaN);
+
     var Chart = window.Chart;
     if (!Chart) {
       chartsEl.innerHTML = '<div class="comp-loading">Chart.js not loaded.</div>';
@@ -1046,7 +1210,7 @@ window.mbcxDashboard.components.Compliance = (function () {
 
       var chart = new Chart(canvas, {
         type: 'line',
-        plugins: [crosshairPlugin],
+        plugins: [crosshairPlugin, sparkBandsPlugin],
         data: { labels: fmtLabels, datasets: datasets },
         options: {
           responsive: true,
@@ -1079,6 +1243,7 @@ window.mbcxDashboard.components.Compliance = (function () {
           }
         }
       });
+      if (timesValid) chart.$mbcxTimes = labelTimes;
       _charts.push(chart);
     });
   }
@@ -1125,6 +1290,9 @@ window.mbcxDashboard.components.Compliance = (function () {
   function _onSelectAll() {
     var heading = _container.querySelector('#compChartHeading');
     if (heading) heading.textContent = 'All Equipment';
+    _sparkWins = null;
+    var barEl = _container.querySelector('#compFaultBar');
+    if (barEl) { barEl.innerHTML = ''; barEl.classList.remove('fd-fault-bar-wrap--loaded'); }
     _destroyLineCharts();
     var chartsEl = _container.querySelector('#compCharts');
     if (chartsEl) chartsEl.innerHTML = '<div class="comp-loading">Loading site-wide charts…</div>';
@@ -1473,6 +1641,7 @@ window.mbcxDashboard.components.Compliance = (function () {
 
   function destroy() {
     window.removeEventListener('resize', _onResize);
+    _sparkWins = null;
     _destroyLineCharts();
     if (_pieChart) { try { _pieChart.destroy(); } catch (e) {} _pieChart = null; }
     _selectedIdx = -1;
