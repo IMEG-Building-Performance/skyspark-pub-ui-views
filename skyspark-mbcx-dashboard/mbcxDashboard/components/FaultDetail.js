@@ -702,9 +702,8 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         });
     },
 
-    // Fallback: daily spark durations via ruleSparks(), rendered as a heat
-    // strip (opacity ∝ hours/day) like SkySpark's own spark view. Exact
-    // intra-day periods aren't available from this source.
+    // Fallback: spark periods via ruleSparks().ruleSparkHis — one row per
+    // spark with ts = start time and value = duration (hours).
     _loadRuleSparksBar: function (barEl, fault, ctx, dateRange) {
       var raw = fault._raw || {};
       var equipName = raw.equipment || fault.equipment;
@@ -713,17 +712,21 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
 
       var axon = 'ruleSparks(read(equip and navName==' + _q(equipName) +
         (siteRef ? ' and siteRef==' + siteRef : '') + ', false), ' + dateRange +
-        ', read(rule and dis==' + _q(fault.faultName) + ', false))';
+        ', read(rule and dis==' + _q(fault.faultName) + ', false)).ruleSparkHis';
 
       NS.api.evalAxon(ctx.attestKey, ctx.projectName, axon)
         .then(function (grid) {
-          var days = [];
+          // Value column is the first non-ts column.
+          var valCol = null;
+          ((grid && grid.cols) || []).forEach(function (c) {
+            if (!valCol && c.name !== 'ts') valCol = c.name;
+          });
+          var wins = [];
           (grid.rows || []).forEach(function (row) {
-            var dv = row.date;
-            var dStr = (dv && typeof dv === 'object') ? dv.val : dv;
-            var t = Date.parse(String(dStr || '').slice(0, 10) + 'T00:00:00');
-            if (isNaN(t)) return;
-            var d = row.dur, hours = 0;
+            var ts = row.ts;
+            var s = Date.parse((ts && typeof ts === 'object') ? ts.val : ts);
+            if (isNaN(s)) return;
+            var d = valCol ? row[valCol] : null, hours = 0;
             if (typeof d === 'number') hours = d;
             else if (d && typeof d === 'object' && typeof d.val === 'number') {
               var u = String(d.unit || 'h').toLowerCase();
@@ -731,10 +734,11 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
                     : (u === 's' || u === 'sec') ? d.val / 3600
                     : d.val;
             }
-            if (hours > 0) days.push({ t: t, hours: Math.min(hours, 24) });
+            if (hours <= 0) return;
+            wins.push({ s: s, e: s + hours * 3600000, hours: hours });
           });
-          if (!days.length) {
-            console.warn('[FaultDetail] ruleSparks returned no spark days. Expr:', axon);
+          if (!wins.length) {
+            console.warn('[FaultDetail] ruleSparkHis returned no spark periods. Expr:', axon);
             return;
           }
 
@@ -745,41 +749,40 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
             tMin = Date.parse(m[1] + 'T00:00:00');
             tMax = Date.parse(m[2] + 'T00:00:00') + 86400000;
           } else {
-            tMin = days[0].t; tMax = days[0].t + 86400000;
-            days.forEach(function (d) {
-              if (d.t < tMin) tMin = d.t;
-              if (d.t + 86400000 > tMax) tMax = d.t + 86400000;
+            tMin = wins[0].s; tMax = wins[0].e;
+            wins.forEach(function (w) {
+              if (w.s < tMin) tMin = w.s;
+              if (w.e > tMax) tMax = w.e;
             });
           }
           var tSpan = (tMax - tMin) || 1;
 
           var label = document.createElement('div');
           label.className = 'fd-fbar-label';
-          label.textContent = (fault.faultName || 'Fault Active') + ' — hrs/day';
+          label.textContent = fault.faultName || 'Fault Active';
           barEl.appendChild(label);
 
           var bar = document.createElement('div');
           bar.className = 'fd-fbar-track';
-          days.forEach(function (d) {
+          wins.forEach(function (w) {
             var seg = document.createElement('div');
             seg.className = 'fd-fbar-seg fd-fbar-seg--on';
-            seg.style.left    = ((d.t - tMin) / tSpan * 100) + '%';
-            seg.style.width   = Math.max(86400000 / tSpan * 100, 0.2) + '%';
-            seg.style.opacity = (0.18 + 0.82 * (d.hours / 24)).toFixed(2);
-            seg.title = Math.round(d.hours * 10) / 10 + ' h active';
+            seg.style.left  = (Math.max(w.s - tMin, 0) / tSpan * 100) + '%';
+            seg.style.width = Math.max((w.e - w.s) / tSpan * 100, 0.2) + '%';
+            seg.title = new Date(w.s).toLocaleString(undefined,
+              { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) +
+              ' · ' + Math.round(w.hours * 10) / 10 + ' h active';
             bar.appendChild(seg);
           });
           barEl.appendChild(bar);
           barEl.classList.add('fd-fault-bar-wrap--loaded');
 
-          // Day-wide chart bands, intensity-scaled like the strip.
-          _sparkWins = days.map(function (d) {
-            return { s: d.t, e: d.t + 86400000, a: 0.03 + 0.12 * (d.hours / 24) };
-          });
+          // Shade the same periods into the trend charts.
+          _sparkWins = wins;
           _charts.forEach(function (c) { try { c.update('none'); } catch (e) {} });
         })
         .catch(function (err) {
-          console.warn('[FaultDetail] ruleSparks fetch failed (bar hidden):', err, '\nExpr:', axon);
+          console.warn('[FaultDetail] ruleSparkHis fetch failed (bar hidden):', err, '\nExpr:', axon);
         });
     },
 
