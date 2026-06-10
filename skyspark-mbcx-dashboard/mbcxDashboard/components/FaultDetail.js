@@ -197,7 +197,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
   // SkySpark's spark view); weekend-sized gaps stay split.
   function _mergeWins(wins) {
     wins.sort(function (a, b) { return a.s - b.s; });
-    var MERGE_GAP = 16 * 3600000;
+    var MERGE_GAP = 1 * 3600000;
     var merged = [];
     wins.forEach(function (w) {
       var last = merged[merged.length - 1];
