@@ -179,9 +179,15 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
   function _alignFaultBar() {
     var first = _charts[0];
     if (!first || !first.chartArea || !first.canvas) return;
-    document.querySelectorAll('#fdFaultBar .fd-fbar-track').forEach(function (track) {
-      track.style.marginLeft  = Math.round(first.chartArea.left) + 'px';
-      track.style.marginRight = Math.round(first.canvas.clientWidth - first.chartArea.right) + 'px';
+    var canvasRect = first.canvas.getBoundingClientRect();
+    var wrapEl = document.getElementById('fdFaultBar');
+    if (!wrapEl) return;
+    var wrapRect = wrapEl.getBoundingClientRect();
+    var ml = Math.max(0, Math.round(canvasRect.left + first.chartArea.left - wrapRect.left));
+    var mr = Math.max(0, Math.round(wrapRect.right - canvasRect.left - first.chartArea.right));
+    wrapEl.querySelectorAll('.fd-fbar-track').forEach(function (track) {
+      track.style.marginLeft  = ml + 'px';
+      track.style.marginRight = mr + 'px';
     });
   }
 
@@ -644,17 +650,40 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
           btn.addEventListener('click', function () {
             trendRangeEl.querySelectorAll('.fd-range-btn').forEach(function (b) { b.classList.remove('fd-range-btn--active'); });
             btn.classList.add('fd-range-btn--active');
-            self._loadTrendChart(contentEl, fault, ctx, btn.getAttribute('data-range'));
+            self._loadAll(contentEl, fault, ctx, btn.getAttribute('data-range'));
           });
         });
       }
 
-      // Fetch fault activity bar and point trend chart
-      this._loadFaultActivityBar(contentEl, fault, ctx);
-      this._loadTrendChart(contentEl, fault, ctx, 'pastMonth');
+      // Fetch fault activity bar and point trend chart (same date range)
+      this._currentRangeKey = 'pastMonth';
+      this._loadAll(contentEl, fault, ctx, 'pastMonth');
     },
 
-    _loadFaultActivityBar: function (contentEl, fault, ctx) {
+    _computeDateRange: function (fault, ctx, rangeKey) {
+      var raw = fault._raw || {};
+      if (rangeKey === 'report') {
+        var startDate = _extractDate(raw.reportStartDate) || ctx.datesStart;
+        var endDate = _extractDate(raw.reportEndDate) || ctx.datesEnd;
+        return (startDate && endDate) ? startDate + '..' + endDate : 'pastMonth';
+      } else if (rangeKey === 'pastWeek') {
+        return 'pastWeek';
+      }
+      return 'pastMonth';
+    },
+
+    _loadAll: function (contentEl, fault, ctx, rangeKey) {
+      var dateRange = this._computeDateRange(fault, ctx, rangeKey);
+      // Clear previous spark data
+      _sparkWins = null;
+      var barEl = contentEl.querySelector('#fdFaultBar');
+      if (barEl) barEl.innerHTML = '';
+      if (barEl) barEl.classList.remove('fd-fault-bar-wrap--loaded');
+      this._loadFaultActivityBar(contentEl, fault, ctx, dateRange);
+      this._loadTrendChart(contentEl, fault, ctx, rangeKey);
+    },
+
+    _loadFaultActivityBar: function (contentEl, fault, ctx, dateRange) {
       var barEl = contentEl.querySelector('#fdFaultBar');
       if (!barEl) return;
       if (!ctx || !ctx.attestKey || !ctx.projectName) return;
@@ -662,10 +691,6 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       var self = this;
       var raw = fault._raw || {};
       var idRef = _extractRef(raw.id);
-
-      var startDate = _extractDate(raw.reportStartDate) || ctx.datesStart;
-      var endDate   = _extractDate(raw.reportEndDate)   || ctx.datesEnd;
-      var dateRange = (startDate && endDate) ? startDate + '..' + endDate : 'pastMonth';
 
       if (!idRef) {
         console.warn('[FaultDetail] Fault row has no id ref — using ruleSparks daily bar.');
@@ -855,16 +880,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         return;
       }
 
-      var dateRange;
-      if (rangeKey === 'report') {
-        var startDate = _extractDate(raw.reportStartDate) || ctx.datesStart;
-        var endDate = _extractDate(raw.reportEndDate) || ctx.datesEnd;
-        dateRange = (startDate && endDate) ? startDate + '..' + endDate : 'pastMonth';
-      } else if (rangeKey === 'pastWeek') {
-        dateRange = 'pastWeek';
-      } else {
-        dateRange = 'pastMonth';
-      }
+      var dateRange = this._computeDateRange(fault, ctx, rangeKey);
 
       var axon = 'readAll(point and his and equipRef->navName==' + _q(equipName) + ' and siteRef==' + siteRef + ').hisRead(' + dateRange + ')';
 

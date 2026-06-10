@@ -1583,7 +1583,9 @@
 #mbcxDashboard .fd-spark-seg--fault { background: #DC2626; }
 
 /* Fault activity bar (from fault record's own hisRead) */
-#mbcxDashboard .fd-fault-bar-wrap { width:100%; margin-bottom:0; }
+#mbcxDashboard .fd-fault-bar-wrap {
+  width:100%; margin-bottom:0; overflow:hidden; box-sizing:border-box;
+}
 #mbcxDashboard .fd-fault-bar-wrap--loaded { margin-bottom:10px; }
 #mbcxDashboard .fd-fbar-label {
   font-size:11px; font-weight:500; color:#374151;
@@ -1591,7 +1593,7 @@
 }
 #mbcxDashboard .fd-fbar-track {
   position:relative; height:14px; background:#f3f4f6;
-  border-radius:3px; overflow:hidden; width:100%;
+  border-radius:3px; overflow:hidden; box-sizing:border-box;
 }
 #mbcxDashboard .fd-fbar-seg {
   position:absolute; top:0; height:100%; background:#e5e7eb;
