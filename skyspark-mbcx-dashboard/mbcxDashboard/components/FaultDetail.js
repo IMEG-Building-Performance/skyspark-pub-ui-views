@@ -285,6 +285,78 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     });
     groupOrder.sort(function (a, b) { return _unitRank(a) - _unitRank(b); });
 
+    // Separate boolean columns for spark bar rendering
+    var boolGroups = [];
+    var numericGroupOrder = [];
+    var numericGroups = {};
+    groupOrder.forEach(function (unit) {
+      var bools = [], nums = [];
+      groups[unit].forEach(function (m) {
+        var data = parsed.datasets[m.col.name];
+        var allBool = data.every(function (v) { return v === null || v === 0 || v === 1; });
+        var unitLower = (unit || '').toLowerCase();
+        if (allBool && (unitLower === 'bool' || unitLower === 'boolean' || unitLower === 'other')) {
+          bools.push(m);
+        } else {
+          nums.push(m);
+        }
+      });
+      if (bools.length) boolGroups = boolGroups.concat(bools);
+      if (nums.length) {
+        numericGroups[unit] = nums;
+        numericGroupOrder.push(unit);
+      }
+    });
+
+    // Render fault spark bars at the top of the chart area
+    if (boolGroups.length) {
+      var sparkWrap = document.createElement('div');
+      sparkWrap.className = 'fd-spark-section';
+      var sparkTitle = document.createElement('div');
+      sparkTitle.className = 'fd-spark-section-title';
+      sparkTitle.textContent = 'Fault Activity';
+      sparkWrap.appendChild(sparkTitle);
+
+      var timestamps = parsed.labels.map(function (l) { var d = new Date(l); return isNaN(d) ? 0 : d.getTime(); });
+      var tMin = timestamps[0] || 0, tMax = timestamps[timestamps.length - 1] || 1;
+      var tSpan = tMax - tMin || 1;
+
+      boolGroups.forEach(function (m) {
+        var name = _colDisplayName(m.col);
+        var data = parsed.datasets[m.col.name];
+        var row = document.createElement('div');
+        row.className = 'fd-spark-row';
+        var label = document.createElement('div');
+        label.className = 'fd-spark-label';
+        label.textContent = name;
+        label.title = name;
+        row.appendChild(label);
+
+        var bar = document.createElement('div');
+        bar.className = 'fd-spark-bar';
+        var i = 0;
+        while (i < data.length) {
+          var val = (data[i] === 1 || data[i] === true) ? 1 : 0;
+          var start = i;
+          while (i < data.length) {
+            var cur = (data[i] === 1 || data[i] === true) ? 1 : 0;
+            if (data[i] !== null && cur !== val) break;
+            i++;
+          }
+          var x0 = (timestamps[start] - tMin) / tSpan * 100;
+          var x1 = (timestamps[Math.min(i, data.length - 1)] - tMin) / tSpan * 100;
+          var seg = document.createElement('div');
+          seg.className = 'fd-spark-seg' + (val ? ' fd-spark-seg--fault' : '');
+          seg.style.left = x0 + '%';
+          seg.style.width = Math.max(x1 - x0, 0.3) + '%';
+          bar.appendChild(seg);
+        }
+        row.appendChild(bar);
+        sparkWrap.appendChild(row);
+      });
+      container.appendChild(sparkWrap);
+    }
+
     // Toggle bar
     var toggleBar = document.createElement('div');
     toggleBar.className = 'fd-chart-toggles';
@@ -293,8 +365,8 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     var panels = {};
     var chartInstances = [];
     var colorIdx = 0;
-    groupOrder.forEach(function (unit) {
-      var members = groups[unit];
+    numericGroupOrder.forEach(function (unit) {
+      var members = numericGroups[unit];
 
       // Toggle chip
       var chip = document.createElement('button');
@@ -462,6 +534,8 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     ].join('\n');
   }
 
+  // ── Spark/fault bar ───────────────────────────────────────────────────────
+
   // ── Public API ─────────────────────────────────────────────────────────────
   NS.components.FaultDetail = {
 
@@ -525,10 +599,16 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
 
         '    <div class="fd-col-left">',
         '      <div class="fd-card fd-card-chart">',
-        '        <div class="fd-card-title">Fault Trend' +
-          (fault.sparksLink ? ' <a class="fd-sparks-link fd-sparks-link-sm" href="' + fault.sparksLink + '" target="_blank">SkySpark &#8599;</a>' : '') +
-        '</div>',
-        '        <div class="fd-spark-strip" id="fdSparkStrip" style="display:none"></div>',
+        '        <div class="fd-card-title">',
+        '          <span>Fault Trend</span>',
+        '          <div class="fd-trend-range" id="fdTrendRange">',
+        '            <button class="fd-range-btn fd-range-btn--active" data-range="pastMonth">Past Month</button>',
+        '            <button class="fd-range-btn" data-range="pastWeek">Past Week</button>',
+        '            <button class="fd-range-btn" data-range="report">Report Period</button>',
+          (fault.sparksLink ? '<a class="fd-sparks-link fd-sparks-link-sm" href="' + fault.sparksLink + '" target="_blank">SkySpark &#8599;</a>' : '') +
+        '          </div>',
+        '        </div>',
+        '        <div class="fd-fault-bar-wrap" id="fdFaultBar"></div>',
         '        <div class="fd-chart-wrap" id="fdChartWrap">',
         '          <div class="fd-chart-loading" id="fdChartLoading">Loading trend data…</div>',
         '        </div>',
@@ -597,15 +677,107 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         }
       }
 
-      // Fetch point history for chart
-      this._loadTrendChart(contentEl, fault, ctx);
+      // Trend range buttons
+      var self = this;
+      var trendRangeEl = contentEl.querySelector('#fdTrendRange');
+      if (trendRangeEl) {
+        trendRangeEl.querySelectorAll('.fd-range-btn').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            trendRangeEl.querySelectorAll('.fd-range-btn').forEach(function (b) { b.classList.remove('fd-range-btn--active'); });
+            btn.classList.add('fd-range-btn--active');
+            self._loadTrendChart(contentEl, fault, ctx, btn.getAttribute('data-range'));
+          });
+        });
+      }
+
+      // Fetch fault activity bar and point trend chart
+      this._loadFaultActivityBar(contentEl, fault, ctx);
+      this._loadTrendChart(contentEl, fault, ctx, 'pastMonth');
     },
 
-    _loadTrendChart: function (contentEl, fault, ctx) {
+    _loadFaultActivityBar: function (contentEl, fault, ctx) {
+      var barEl = contentEl.querySelector('#fdFaultBar');
+      if (!barEl) return;
+      if (!ctx || !ctx.attestKey || !ctx.projectName) return;
+
+      var raw = fault._raw || {};
+      var idRef = raw.id;
+      var refVal = null;
+      if (idRef && typeof idRef === 'object' && (idRef._kind === 'ref' || idRef._kind === 'Ref')) {
+        refVal = idRef.val;
+      } else if (typeof idRef === 'string' && idRef.charAt(0) === '@') {
+        refVal = idRef.slice(1);
+      }
+      if (!refVal) return;
+
+      var startDate = _extractDate(raw.reportStartDate) || ctx.datesStart;
+      var endDate   = _extractDate(raw.reportEndDate)   || ctx.datesEnd;
+      var dateRange = (startDate && endDate) ? startDate + '..' + endDate : 'pastMonth';
+
+      var axon = 'read(id==@' + refVal + ').hisRead(' + dateRange + ')';
+
+      NS.api.evalAxon(ctx.attestKey, ctx.projectName, axon)
+        .then(function (grid) {
+          var parsed = _parseHisGrid(grid);
+          if (!parsed || !parsed.dataCols.length) return;
+          var col = parsed.dataCols[0];
+          var rawData = parsed.datasets[col.name];
+          var hasAnyTrue = rawData.some(function (v) { return v === 1 || v === true; });
+          if (!hasAnyTrue) return;
+
+          var timestamps = parsed.labels.map(function (l) {
+            var d = new Date(l); return isNaN(d) ? 0 : d.getTime();
+          });
+          var tMin = timestamps[0] || 0;
+          var tMax = timestamps[timestamps.length - 1] || 1;
+          var tSpan = tMax - tMin || 1;
+
+          var label = document.createElement('div');
+          label.className = 'fd-fbar-label';
+          label.textContent = fault.faultName || 'Fault Active';
+          barEl.appendChild(label);
+
+          var bar = document.createElement('div');
+          bar.className = 'fd-fbar-track';
+
+          var i = 0;
+          while (i < rawData.length) {
+            var isOn = rawData[i] === 1 || rawData[i] === true;
+            var start = i;
+            while (i < rawData.length) {
+              var cur = rawData[i] === 1 || rawData[i] === true;
+              if (rawData[i] !== null && cur !== isOn) break;
+              i++;
+            }
+            var x0 = (timestamps[start] - tMin) / tSpan * 100;
+            var x1 = (timestamps[Math.min(i, rawData.length - 1)] - tMin) / tSpan * 100;
+            var seg = document.createElement('div');
+            seg.className = 'fd-fbar-seg' + (isOn ? ' fd-fbar-seg--on' : '');
+            seg.style.left  = x0 + '%';
+            seg.style.width = Math.max(x1 - x0, 0.2) + '%';
+            bar.appendChild(seg);
+          }
+          barEl.appendChild(bar);
+          barEl.classList.add('fd-fault-bar-wrap--loaded');
+        })
+        .catch(function (err) {
+          console.warn('[FaultDetail] Fault activity bar fetch failed:', err);
+        });
+    },
+
+    _loadTrendChart: function (contentEl, fault, ctx, rangeKey) {
       var API = NS.api;
       var loadingEl = contentEl.querySelector('#fdChartLoading');
       var wrapEl = contentEl.querySelector('#fdChartWrap');
       var raw = fault._raw || {};
+
+      // Clear previous charts
+      wrapEl.querySelectorAll('canvas').forEach(function (c) {
+        var ci = Chart.getChart(c);
+        if (ci) ci.destroy();
+      });
+      wrapEl.innerHTML = '<div class="fd-chart-loading" id="fdChartLoading">Loading trend data…</div>';
+      loadingEl = wrapEl.querySelector('#fdChartLoading');
 
       if (!ctx || !ctx.attestKey || !ctx.projectName) {
         this._showChartFallback(wrapEl, loadingEl, fault);
@@ -619,9 +791,16 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         return;
       }
 
-      var startDate = _extractDate(raw.reportStartDate) || ctx.datesStart;
-      var endDate = _extractDate(raw.reportEndDate) || ctx.datesEnd;
-      var dateRange = (startDate && endDate) ? startDate + '..' + endDate : 'pastMonth';
+      var dateRange;
+      if (rangeKey === 'report') {
+        var startDate = _extractDate(raw.reportStartDate) || ctx.datesStart;
+        var endDate = _extractDate(raw.reportEndDate) || ctx.datesEnd;
+        dateRange = (startDate && endDate) ? startDate + '..' + endDate : 'pastMonth';
+      } else if (rangeKey === 'pastWeek') {
+        dateRange = 'pastWeek';
+      } else {
+        dateRange = 'pastMonth';
+      }
 
       var axon = 'readAll(point and his and equipRef->navName==' + _q(equipName) + ' and siteRef==' + siteRef + ').hisRead(' + dateRange + ')';
 
