@@ -174,6 +174,38 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     }
   };
 
+  // Indent the activity bar track so its time axis lines up with the chart
+  // plot area (the y-axis labels inset the plot from the card edge).
+  function _alignFaultBar() {
+    var first = _charts[0];
+    if (!first || !first.chartArea || !first.canvas) return;
+    document.querySelectorAll('#fdFaultBar .fd-fbar-track').forEach(function (track) {
+      track.style.marginLeft  = Math.round(first.chartArea.left) + 'px';
+      track.style.marginRight = Math.round(first.canvas.clientWidth - first.chartArea.right) + 'px';
+    });
+  }
+
+  // Sparks are recorded per occupied day, so a continuously active fault
+  // comes back as daily windows with overnight gaps. Merge windows whose
+  // gap is under 16h into one span so multi-day runs render solid (matching
+  // SkySpark's spark view); weekend-sized gaps stay split.
+  function _mergeWins(wins) {
+    wins.sort(function (a, b) { return a.s - b.s; });
+    var MERGE_GAP = 16 * 3600000;
+    var merged = [];
+    wins.forEach(function (w) {
+      var last = merged[merged.length - 1];
+      if (last && w.s - last.e <= MERGE_GAP) {
+        if (w.e > last.e) last.e = w.e;
+        last.hours += w.hours;
+        last.count++;
+      } else {
+        merged.push({ s: w.s, e: w.e, hours: w.hours, count: 1 });
+      }
+    });
+    return merged;
+  }
+
   function _renderCharts(containerId, parsed) {
     if (typeof Chart === 'undefined') return;
     var container = document.getElementById(containerId);
@@ -386,6 +418,9 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     });
 
     _resizeChartWrap(container, chartInstances);
+
+    // Charts may render after the activity bar — align its track now.
+    setTimeout(_alignFaultBar, 0);
   }
 
   function _resizeChartWrap(container, chartInstances) {
@@ -690,6 +725,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
           }
           barEl.appendChild(bar);
           barEl.classList.add('fd-fault-bar-wrap--loaded');
+          _alignFaultBar();
 
           // Shade the same active windows into the trend charts (sparkBands
           // plugin); charts may render before or after this data arrives.
@@ -741,6 +777,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
             console.warn('[FaultDetail] ruleSparkHis returned no spark periods. Expr:', axon);
             return;
           }
+          wins = _mergeWins(wins);
 
           // Domain: the explicit date range when we have one, else the data.
           var m = String(dateRange).match(/^(\d{4}-\d{2}-\d{2})\.\.(\d{4}-\d{2}-\d{2})$/);
@@ -769,13 +806,18 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
             seg.className = 'fd-fbar-seg fd-fbar-seg--on';
             seg.style.left  = (Math.max(w.s - tMin, 0) / tSpan * 100) + '%';
             seg.style.width = Math.max((w.e - w.s) / tSpan * 100, 0.2) + '%';
-            seg.title = new Date(w.s).toLocaleString(undefined,
-              { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) +
-              ' · ' + Math.round(w.hours * 10) / 10 + ' h active';
+            var fmtT = function (t) {
+              return new Date(t).toLocaleString(undefined,
+                { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+            };
+            seg.title = fmtT(w.s) + ' – ' + fmtT(w.e) +
+              ' · ' + Math.round(w.hours * 10) / 10 + ' h active' +
+              (w.count > 1 ? ' (' + w.count + ' sparks)' : '');
             bar.appendChild(seg);
           });
           barEl.appendChild(bar);
           barEl.classList.add('fd-fault-bar-wrap--loaded');
+          _alignFaultBar();
 
           // Shade the same periods into the trend charts.
           _sparkWins = wins;
