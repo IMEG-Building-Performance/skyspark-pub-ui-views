@@ -1,4 +1,4 @@
-// components/FaultLog.js — MBCx Fault Log (remediation tracker)
+// components/FaultLog.js \u2014 MBCx Fault Log (remediation tracker)
 window.mbcxDashboard = window.mbcxDashboard || {};
 window.mbcxDashboard.components = window.mbcxDashboard.components || {};
 
@@ -19,17 +19,17 @@ window.mbcxDashboard.components.FaultLog = (function () {
     { key: 'comments',     label: 'Comments',    minWidth: '200px' }
   ];
 
-  // ── State ──────────────────────────────────────────────────────────────
+  // \u2500\u2500 State \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
   var _rows = [];
   var _sort = { key: 'id', dir: 'asc' };
   var _filters = { equipId: '', status: '', priority: '', assignedTo: '' };
   var _expandedId = null;
   var _container = null;
 
-  // ── Helpers ────────────────────────────────────────────────────────────
+  // \u2500\u2500 Helpers \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 
   function _fmtDate(d) {
-    if (!d) return '—';
+    if (!d) return '\u2014';
     var dt = new Date(d + 'T00:00:00');
     return isNaN(dt) ? d : dt.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: '2-digit' });
   }
@@ -47,7 +47,7 @@ window.mbcxDashboard.components.FaultLog = (function () {
     return found.length ? parseInt(found[0], 10) : null;
   }
 
-  // ── KPIs ───────────────────────────────────────────────────────────────
+  // \u2500\u2500 KPIs \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 
   function _renderKPIs() {
     var open = _rows.filter(function (r) { return r.status === 'Open'; });
@@ -55,7 +55,7 @@ window.mbcxDashboard.components.FaultLog = (function () {
     var unassigned = open.filter(function (r) { return !r.assignedTo; });
     var avgPriority = open.length
       ? (open.reduce(function (s, r) { return s + (r.priority || 0); }, 0) / open.length).toFixed(1)
-      : '—';
+      : '\u2014';
 
     function kpi(label, value, accent, sub) {
       return '<div class="flog-kpi-card">' +
@@ -67,13 +67,13 @@ window.mbcxDashboard.components.FaultLog = (function () {
 
     return '<div class="flog-kpi-row">' +
       kpi('Open Faults', open.length, '#ef4444', closed.length + ' closed') +
-      kpi('Avg Priority', avgPriority, '#1a1a1a', '1 = High · 3 = Low') +
+      kpi('Avg Priority', avgPriority, '#1a1a1a', '1 = High \u00b7 3 = Low') +
       kpi('Unassigned', unassigned.length, unassigned.length > 0 ? '#f59e0b' : '#10b981', 'Open faults') +
       kpi('Total Logged', _rows.length, '#2563eb', 'all time') +
       '</div>';
   }
 
-  // ── Toolbar ────────────────────────────────────────────────────────────
+  // \u2500\u2500 Toolbar \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 
   function _uniqueVals(key) {
     var seen = {};
@@ -117,12 +117,12 @@ window.mbcxDashboard.components.FaultLog = (function () {
     '</div>';
   }
 
-  // ── Table ──────────────────────────────────────────────────────────────
+  // \u2500\u2500 Table \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 
   function _renderThead() {
     var cells = COLS.map(function (col) {
       var active = _sort.key === col.key;
-      var arrow = active ? (_sort.dir === 'asc' ? ' ▲' : ' ▼') : ' ⇅';
+      var arrow = active ? (_sort.dir === 'asc' ? ' \u25b2' : ' \u25bc') : ' \u21c5';
       var style = 'width:' + (col.width || 'auto') + ';' + (col.minWidth ? 'min-width:' + col.minWidth + ';' : '');
       return '<th class="flog-th" style="' + style + '" data-sortkey="' + col.key + '">' +
         '<div class="flog-th-label">' + col.label + '<span class="flog-sort-ind" style="opacity:' + (active ? 1 : 0.35) + '">' + arrow + '</span></div>' +
@@ -164,7 +164,7 @@ window.mbcxDashboard.components.FaultLog = (function () {
       } else if (k === 'dateResolved') {
         cell = '<span style="font-size:12px;color:' + (v ? '#4b5563' : '#d1d5db') + ';white-space:nowrap">' + _fmtDate(v) + '</span>';
       } else if (k === 'assignedTo') {
-        cell = '<span style="font-size:12px;color:' + (v ? '#4b5563' : '#d1d5db') + '">' + _esc(v || '—') + '</span>';
+        cell = '<span style="font-size:12px;color:' + (v ? '#4b5563' : '#d1d5db') + '">' + _esc(v || '\u2014') + '</span>';
       } else if (k === 'comments') {
         var first = _esc(commentLines[0] || '');
         var more = commentLines.length > 1 && !expanded
@@ -231,7 +231,7 @@ window.mbcxDashboard.components.FaultLog = (function () {
     '</div>';
   }
 
-  // ── Full page HTML ─────────────────────────────────────────────────────
+  // \u2500\u2500 Full page HTML \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 
   function renderPage() {
     return '<div class="flog-page">' +
@@ -240,7 +240,7 @@ window.mbcxDashboard.components.FaultLog = (function () {
     '</div>';
   }
 
-  // ── Init / bind ────────────────────────────────────────────────────────
+  // \u2500\u2500 Init / bind \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 
   function _render() {
     if (!_container) return;
@@ -297,7 +297,7 @@ window.mbcxDashboard.components.FaultLog = (function () {
     });
   }
 
-  // ── Live data mapping ──────────────────────────────────────────────────
+  // \u2500\u2500 Live data mapping \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 
   function _mapFromGrid(grid) {
     if (!grid || !grid.rows) return [];
@@ -333,27 +333,27 @@ window.mbcxDashboard.components.FaultLog = (function () {
     });
   }
 
-  // ── Demo data ──────────────────────────────────────────────────────────
+  // \u2500\u2500 Demo data \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 
   var _demoRows = [
-    { id:1,  name:'Discharge Air Temp Out of Range',     equipId:'ahu-1',     equipDis:'AHU-1',     status:'Open',   priority:1, dateAdded:'2026-04-12', dateResolved:null,         assignedTo:'J. Martinez', comments:'4/12 - DAT consistently 8°F above setpoint during occupied hours. Checked valve actuator — appears functional.' },
+    { id:1,  name:'Discharge Air Temp Out of Range',     equipId:'ahu-1',     equipDis:'AHU-1',     status:'Open',   priority:1, dateAdded:'2026-04-12', dateResolved:null,         assignedTo:'J. Martinez', comments:'4/12 - DAT consistently 8\u00b0F above setpoint during occupied hours. Checked valve actuator \u2014 appears functional.' },
     { id:2,  name:'Simultaneous Heating and Cooling',     equipId:'ahu-1',     equipDis:'AHU-1',     status:'Open',   priority:2, dateAdded:'2026-03-28', dateResolved:null,         assignedTo:'K. Patel',    comments:'3/28 - HtgVlv and ClgVlv both >20% open during mild OAT conditions. Likely sequencing issue.' },
-    { id:3,  name:'Supply Fan VFD Hunting',               equipId:'ahu-1',     equipDis:'AHU-1',     status:'Closed', priority:3, dateAdded:'2026-02-10', dateResolved:'2026-03-15', assignedTo:'J. Martinez', comments:'2/10 - SF speed oscillating ±15% around setpoint.\n3/15 - PID loop retuned. Resolved.' },
+    { id:3,  name:'Supply Fan VFD Hunting',               equipId:'ahu-1',     equipDis:'AHU-1',     status:'Closed', priority:3, dateAdded:'2026-02-10', dateResolved:'2026-03-15', assignedTo:'J. Martinez', comments:'2/10 - SF speed oscillating \u00b115% around setpoint.\n3/15 - PID loop retuned. Resolved.' },
     { id:4,  name:'Flow Modulates while Fan is Constant', equipId:'ahu-2',     equipDis:'AHU-2',     status:'Closed', priority:0, dateAdded:'2026-02-25', dateResolved:'2026-05-11', assignedTo:'',            comments:'2/25 - Total flow drops ~4k CFM each night. Pressure looks odd.\n3/2 - Ductwork issue confirmed. 80 Hz on SF.\n5/11 - Resolved after ductwork repair.' },
-    { id:5,  name:'High CHW Supply Temp',                 equipId:'chiller-1', equipDis:'Chiller-1', status:'Open',   priority:2, dateAdded:'2026-05-20', dateResolved:null,         assignedTo:'R. Chen',     comments:'5/20 - CHWST running 3°F above setpoint at partial load. Possible refrigerant charge issue.' },
-    { id:6,  name:'Zone Temp Exceeds Setpoint',           equipId:'vav-101',   equipDis:'VAV-101',   status:'Open',   priority:1, dateAdded:'2026-06-01', dateResolved:null,         assignedTo:'K. Patel',    comments:'6/1 - Zone consistently 5°F above setpoint. Reheat valve stuck open?\n6/8 - Still faulting. Consistently 5°F above setpoint. Reopen?' },
+    { id:5,  name:'High CHW Supply Temp',                 equipId:'chiller-1', equipDis:'Chiller-1', status:'Open',   priority:2, dateAdded:'2026-05-20', dateResolved:null,         assignedTo:'R. Chen',     comments:'5/20 - CHWST running 3\u00b0F above setpoint at partial load. Possible refrigerant charge issue.' },
+    { id:6,  name:'Zone Temp Exceeds Setpoint',           equipId:'vav-101',   equipDis:'VAV-101',   status:'Open',   priority:1, dateAdded:'2026-06-01', dateResolved:null,         assignedTo:'K. Patel',    comments:'6/1 - Zone consistently 5\u00b0F above setpoint. Reheat valve stuck open?\n6/8 - Still faulting. Consistently 5\u00b0F above setpoint. Reopen?' },
     { id:7,  name:'Low Airflow at Full Demand',           equipId:'vav-101',   equipDis:'VAV-101',   status:'Open',   priority:2, dateAdded:'2026-05-15', dateResolved:null,         assignedTo:'J. Martinez', comments:'5/15 - Airflow at ~60% of design max when damper fully open. Upstream static issue or damper linkage.' },
     { id:8,  name:'Condenser Pressure High',              equipId:'chiller-1', equipDis:'Chiller-1', status:'Closed', priority:1, dateAdded:'2026-01-18', dateResolved:'2026-02-05', assignedTo:'R. Chen',     comments:'1/18 - Head pressure elevated.\n2/5 - Condenser tubes cleaned. Resolved.' },
     { id:9,  name:'Economizer Not Modulating',            equipId:'ahu-1',     equipDis:'AHU-1',     status:'Open',   priority:2, dateAdded:'2026-05-30', dateResolved:null,         assignedTo:'',            comments:'5/30 - OA damper fixed at minimum position during favorable OAT. Actuator or signal issue.' },
     { id:10, name:'Short Cycling on Lead Boiler',         equipId:'boiler-1',  equipDis:'Boiler-1',  status:'Closed', priority:2, dateAdded:'2025-12-05', dateResolved:'2026-01-10', assignedTo:'K. Patel',    comments:'12/5 - Boiler cycling on/off every 3-4 min.\n1/10 - Differential setpoint widened. Stable now.' },
-    { id:11, name:'HW Supply Temp Overshoot',             equipId:'boiler-1',  equipDis:'Boiler-1',  status:'Open',   priority:3, dateAdded:'2026-06-08', dateResolved:null,         assignedTo:'',            comments:'6/8 - HWST overshooting setpoint by 10°F on startup. Firing rate ramp too aggressive.' },
+    { id:11, name:'HW Supply Temp Overshoot',             equipId:'boiler-1',  equipDis:'Boiler-1',  status:'Open',   priority:3, dateAdded:'2026-06-08', dateResolved:null,         assignedTo:'',            comments:'6/8 - HWST overshooting setpoint by 10\u00b0F on startup. Firing rate ramp too aggressive.' },
     { id:12, name:'Mixed Air Temp Sensor Drift',          equipId:'ahu-2',     equipDis:'AHU-2',     status:'Open',   priority:1, dateAdded:'2026-06-05', dateResolved:null,         assignedTo:'J. Martinez', comments:'6/5 - MAT reading doesn\'t reconcile with OAT/RAT blend. Sensor may need recalibration.' },
     { id:13, name:'Reheat Valve Stuck Closed',            equipId:'vav-102',   equipDis:'VAV-102',   status:'Open',   priority:1, dateAdded:'2026-06-09', dateResolved:null,         assignedTo:'K. Patel',    comments:'6/9 - Zone undershoot in morning warmup. Valve reading 0% despite demand.' },
     { id:14, name:'Cooling Valve Leaking Through',        equipId:'ahu-2',     equipDis:'AHU-2',     status:'Closed', priority:2, dateAdded:'2026-03-01', dateResolved:'2026-04-20', assignedTo:'R. Chen',     comments:'3/1 - DAT drops below setpoint when valve commanded closed.\n4/20 - Valve replaced. Verified.' },
-    { id:15, name:'OAT Sensor Reading High',              equipId:'ahu-1',     equipDis:'AHU-1',     status:'Closed', priority:3, dateAdded:'2026-01-05', dateResolved:'2026-01-20', assignedTo:'J. Martinez', comments:'1/5 - OAT reading 12°F above NOAA. Sensor in direct sunlight.\n1/20 - Relocated sensor. Resolved.' }
+    { id:15, name:'OAT Sensor Reading High',              equipId:'ahu-1',     equipDis:'AHU-1',     status:'Closed', priority:3, dateAdded:'2026-01-05', dateResolved:'2026-01-20', assignedTo:'J. Martinez', comments:'1/5 - OAT reading 12\u00b0F above NOAA. Sensor in direct sunlight.\n1/20 - Relocated sensor. Resolved.' }
   ];
 
-  // ── Public API ─────────────────────────────────────────────────────────
+  // \u2500\u2500 Public API \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 
   function initLive(container, ctx) {
     _container = container;
@@ -365,7 +365,7 @@ window.mbcxDashboard.components.FaultLog = (function () {
     if (ctx && ctx.attestKey) {
       _rows = [];
       _render();
-      // Placeholder — swap axon call below when a real endpoint exists
+      // Placeholder \u2014 swap axon call below when a real endpoint exists
       // NS.api.evalAxon(ctx.attestKey, ctx.projectName, 'faultLog(...)').then(function(grid){
       //   _rows = _mapFromGrid(grid);
       //   _render();
