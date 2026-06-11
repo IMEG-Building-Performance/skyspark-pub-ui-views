@@ -1291,13 +1291,17 @@ window.mbcxDashboard.components.Compliance = (function () {
       _charts.forEach(function (chart) {
         var panel = chart._compPanel;
         if (!panel || !chart.chartArea || !chart.canvas) return;
-        var bars = panel.querySelectorAll('.comp-fault-bar-inline .fd-fbar-track');
+        var bars = panel.querySelectorAll('.comp-fault-bar-inline');
         if (!bars.length) return;
         var canvasRect = chart.canvas.getBoundingClientRect();
-        var panelRect = panel.getBoundingClientRect();
-        var ml = Math.max(0, Math.round(canvasRect.left + chart.chartArea.left - panelRect.left));
-        var mr = Math.max(0, Math.round(panelRect.right - canvasRect.left - chart.chartArea.right));
-        bars.forEach(function (track) {
+        var plotLeft = canvasRect.left + chart.chartArea.left;
+        var plotRight = canvasRect.left + chart.chartArea.right;
+        bars.forEach(function (barWrap) {
+          var track = barWrap.querySelector('.fd-fbar-track');
+          if (!track) return;
+          var barRect = barWrap.getBoundingClientRect();
+          var ml = Math.max(0, Math.round(plotLeft - barRect.left));
+          var mr = Math.max(0, Math.round(barRect.right - plotRight));
           track.style.marginLeft  = ml + 'px';
           track.style.marginRight = mr + 'px';
         });
