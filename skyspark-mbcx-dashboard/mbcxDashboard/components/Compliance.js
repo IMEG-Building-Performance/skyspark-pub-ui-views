@@ -287,45 +287,65 @@ window.mbcxDashboard.components.Compliance = (function () {
     return null;
   }
 
+  function _isFaulted(v) {
+    if (typeof v === 'number') return v > 0;
+    if (typeof v === 'boolean') return v;
+    if (v && typeof v === 'object') {
+      if (v._kind === 'number') return v.val > 0;
+      if (v._kind === 'bool') return !!v.val;
+      if (typeof v.val === 'boolean') return v.val;
+      if (typeof v.val === 'number') return v.val > 0;
+    }
+    if (typeof v === 'string') {
+      var lv = v.toLowerCase();
+      return lv === 'true' || lv === '1' || lv === 'yes';
+    }
+    return false;
+  }
+
   function _extractFaultWindows(grid, tsCol, faultCol, labelTimes) {
+    // Compute typical rollup step so single-point faults get visible width
+    var step = 0;
+    if (labelTimes.length >= 2) {
+      var diffs = [];
+      for (var k = 1; k < Math.min(labelTimes.length, 20); k++) {
+        var d = labelTimes[k] - labelTimes[k - 1];
+        if (d > 0) diffs.push(d);
+      }
+      if (diffs.length) {
+        diffs.sort(function (a, b) { return a - b; });
+        step = diffs[Math.floor(diffs.length / 2)];
+      }
+    }
+
     var wins = [];
     var inFault = false;
     var startIdx = -1;
     grid.rows.forEach(function (row, i) {
-      var v = row[faultCol.name];
-      var faulted = false;
-      if (typeof v === 'number') faulted = v > 0;
-      else if (typeof v === 'boolean') faulted = v;
-      else if (v && typeof v === 'object') {
-        if (v._kind === 'number') faulted = v.val > 0;
-        else if (v._kind === 'bool') faulted = !!v.val;
-        else if (typeof v.val === 'boolean') faulted = v.val;
-        else if (typeof v.val === 'number') faulted = v.val > 0;
-      }
-      else if (typeof v === 'string') {
-        var lv = v.toLowerCase();
-        faulted = lv === 'true' || lv === '1' || lv === 'yes';
-      }
-
+      var faulted = _isFaulted(row[faultCol.name]);
       if (faulted && !inFault) {
         inFault = true;
         startIdx = i;
       } else if (!faulted && inFault) {
         inFault = false;
-        wins.push({ s: labelTimes[startIdx], e: labelTimes[i] });
+        var eTime = labelTimes[i];
+        // If only one row was faulted, extend by one step
+        if (i - 1 === startIdx && step > 0) eTime = labelTimes[startIdx] + step;
+        wins.push({ s: labelTimes[startIdx], e: eTime });
       }
     });
     if (inFault) {
-      wins.push({ s: labelTimes[startIdx], e: labelTimes[labelTimes.length - 1] });
+      var endTime = labelTimes[labelTimes.length - 1];
+      if (labelTimes.length - 1 === startIdx && step > 0) endTime += step;
+      wins.push({ s: labelTimes[startIdx], e: endTime });
     }
     return wins;
   }
 
   function _buildFaultBar(faultName, wins, labelTimes, wrap) {
     if (!wins.length) return;
-    var tMin = labelTimes[0];
-    var tMax = labelTimes[labelTimes.length - 1];
-    var tSpan = (tMax - tMin) || 1;
+    var n = labelTimes.length - 1;
+    if (n < 1) return;
 
     var barWrap = document.createElement('div');
     barWrap.className = 'fd-fault-bar-wrap fd-fault-bar-wrap--loaded comp-fault-bar-inline';
@@ -338,10 +358,12 @@ window.mbcxDashboard.components.Compliance = (function () {
     var track = document.createElement('div');
     track.className = 'fd-fbar-track';
     wins.forEach(function (w) {
+      var f0 = _fracPos(labelTimes, w.s) / n;
+      var f1 = _fracPos(labelTimes, w.e) / n;
       var seg = document.createElement('div');
       seg.className = 'fd-fbar-seg fd-fbar-seg--on';
-      seg.style.left  = (Math.max(w.s - tMin, 0) / tSpan * 100) + '%';
-      seg.style.width = Math.max((w.e - w.s) / tSpan * 100, 0.2) + '%';
+      seg.style.left  = (f0 * 100) + '%';
+      seg.style.width = Math.max((f1 - f0) * 100, 0.3) + '%';
       track.appendChild(seg);
     });
     barWrap.appendChild(track);
@@ -1249,8 +1271,27 @@ window.mbcxDashboard.components.Compliance = (function () {
         }
       });
       if (timesValid) chart.$mbcxTimes = labelTimes;
+      chart._compPanel = wrap;
       _charts.push(chart);
     });
+
+    // Align fault bar tracks with chart plot areas after render
+    setTimeout(function () {
+      _charts.forEach(function (chart) {
+        var panel = chart._compPanel;
+        if (!panel || !chart.chartArea || !chart.canvas) return;
+        var bars = panel.querySelectorAll('.comp-fault-bar-inline .fd-fbar-track');
+        if (!bars.length) return;
+        var canvasRect = chart.canvas.getBoundingClientRect();
+        var panelRect = panel.getBoundingClientRect();
+        var ml = Math.max(0, Math.round(canvasRect.left + chart.chartArea.left - panelRect.left));
+        var mr = Math.max(0, Math.round(panelRect.right - canvasRect.left - chart.chartArea.right));
+        bars.forEach(function (track) {
+          track.style.marginLeft  = ml + 'px';
+          track.style.marginRight = mr + 'px';
+        });
+      });
+    }, 150);
   }
 
   function _destroyLineCharts() {
