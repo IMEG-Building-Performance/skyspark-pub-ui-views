@@ -269,6 +269,162 @@ window.mbcxDashboard.components.Compliance = (function () {
     }
   };
 
+  // ── Fault-active overlay (ported from FaultDetail) ─────────────────
+
+  // ── Fault column helpers ────────────────────────────────────────────
+  // Map fault columns to the unit group they belong to by name pattern.
+  var FAULT_UNIT_HINTS = [
+    { re: /\btemp/i,              unit: '°F' },
+    { re: /\bhumid/i,             unit: '%RH' },
+    { re: /\bach\b|air change/i,  unit: 'ACH' },
+    { re: /\bpressure/i,          unit: 'inH₂O' }
+  ];
+
+  function _faultUnitMatch(colName) {
+    for (var i = 0; i < FAULT_UNIT_HINTS.length; i++) {
+      if (FAULT_UNIT_HINTS[i].re.test(colName)) return FAULT_UNIT_HINTS[i].unit;
+    }
+    return null;
+  }
+
+  function _isFaulted(v) {
+    if (typeof v === 'number') return v > 0;
+    if (typeof v === 'boolean') return v;
+    if (v && typeof v === 'object') {
+      if (v._kind === 'number') return v.val > 0;
+      if (v._kind === 'bool') return !!v.val;
+      if (typeof v.val === 'boolean') return v.val;
+      if (typeof v.val === 'number') return v.val > 0;
+    }
+    if (typeof v === 'string') {
+      var lv = v.toLowerCase();
+      return lv === 'true' || lv === '1' || lv === 'yes';
+    }
+    return false;
+  }
+
+  function _extractDurationHours(v) {
+    if (typeof v === 'number') return v;
+    if (v && typeof v === 'object' && v._kind === 'number') {
+      var u = String(v.unit || 'h').toLowerCase();
+      if (u.indexOf('min') === 0) return v.val / 60;
+      if (u === 's' || u === 'sec') return v.val / 3600;
+      return v.val;
+    }
+    return 0;
+  }
+
+  function _extractFaultWindows(grid, tsCol, faultCol, labelTimes) {
+    var wins = [];
+    grid.rows.forEach(function (row, i) {
+      var v = row[faultCol.name];
+      if (v == null) return;
+      var faulted = _isFaulted(v);
+      if (!faulted) return;
+      var startTime = labelTimes[i];
+      var hours = _extractDurationHours(v);
+      var endTime = hours > 0 ? startTime + hours * 3600000 : startTime;
+      // Ensure at least one rollup step of visible width
+      if (i < labelTimes.length - 1) {
+        var nextTime = labelTimes[i + 1];
+        if (endTime < nextTime) endTime = nextTime;
+      } else if (i > 0) {
+        var prevStep = labelTimes[i] - labelTimes[i - 1];
+        if (endTime - startTime < prevStep) endTime = startTime + prevStep;
+      }
+      wins.push({ s: startTime, e: endTime });
+    });
+
+    // Merge overlapping or adjacent windows
+    if (wins.length > 1) {
+      wins.sort(function (a, b) { return a.s - b.s; });
+      var merged = [{ s: wins[0].s, e: wins[0].e }];
+      for (var mi = 1; mi < wins.length; mi++) {
+        var last = merged[merged.length - 1];
+        if (wins[mi].s <= last.e) {
+          if (wins[mi].e > last.e) last.e = wins[mi].e;
+        } else {
+          merged.push({ s: wins[mi].s, e: wins[mi].e });
+        }
+      }
+      wins = merged;
+    }
+
+    return wins;
+  }
+
+  function _buildFaultBar(faultName, wins, labelTimes, wrap) {
+    if (!wins.length) return;
+    var n = labelTimes.length - 1;
+    if (n < 1) return;
+
+    var barWrap = document.createElement('div');
+    barWrap.className = 'fd-fault-bar-wrap fd-fault-bar-wrap--loaded comp-fault-bar-inline';
+
+    var label = document.createElement('div');
+    label.className = 'fd-fbar-label';
+    label.textContent = faultName;
+    barWrap.appendChild(label);
+
+    var track = document.createElement('div');
+    track.className = 'fd-fbar-track';
+    wins.forEach(function (w) {
+      var f0 = _fracPos(labelTimes, w.s) / n;
+      var f1 = _fracPos(labelTimes, w.e) / n;
+      var seg = document.createElement('div');
+      seg.className = 'fd-fbar-seg fd-fbar-seg--on';
+      seg.style.left  = (f0 * 100) + '%';
+      seg.style.width = Math.max((f1 - f0) * 100, 1) + '%';
+      track.appendChild(seg);
+    });
+    barWrap.appendChild(track);
+
+    var titleEl = wrap.querySelector('.comp-panel-title');
+    if (titleEl) {
+      titleEl.parentNode.insertBefore(barWrap, titleEl.nextSibling);
+    } else {
+      wrap.insertBefore(barWrap, wrap.firstChild);
+    }
+    return barWrap;
+  }
+
+  function _makeSparkBandsPlugin(winsArr) {
+    return {
+      id: 'compSparkBands_' + Math.random().toString(36).slice(2, 8),
+      beforeDatasetsDraw: function (chart) {
+        var times = chart.$mbcxTimes;
+        if (!winsArr || !winsArr.length || !times || times.length < 2) return;
+        var area = chart.chartArea;
+        var n = times.length - 1;
+        var ctx = chart.ctx;
+        ctx.save();
+        winsArr.forEach(function (w) {
+          if (w.e < times[0] || w.s > times[times.length - 1]) return;
+          var x0 = area.left + (_fracPos(times, w.s) / n) * (area.right - area.left);
+          var x1 = area.left + (_fracPos(times, w.e) / n) * (area.right - area.left);
+          if (x1 - x0 < 3) x1 = x0 + 3;
+          ctx.fillStyle = 'rgba(234, 88, 12, 0.10)';
+          ctx.fillRect(x0, area.top, x1 - x0, area.bottom - area.top);
+        });
+        ctx.restore();
+      }
+    };
+  }
+
+  function _fracPos(times, t) {
+    var n = times.length;
+    if (n < 2) return 0;
+    if (t <= times[0]) return 0;
+    if (t >= times[n - 1]) return n - 1;
+    var lo = 0, hi = n - 1;
+    while (hi - lo > 1) {
+      var mid = (lo + hi) >> 1;
+      if (times[mid] <= t) lo = mid; else hi = mid;
+    }
+    var span = times[hi] - times[lo];
+    return lo + (span > 0 ? (t - times[lo]) / span : 0);
+  }
+
   // ── Helpers ────────────────────────────────────────────────────────
 
   function _extractNum(v) {
@@ -901,6 +1057,7 @@ window.mbcxDashboard.components.Compliance = (function () {
     var chartsEl = _container.querySelector('#compCharts');
     if (!chartsEl) return;
     chartsEl.innerHTML = '';
+    chartsEl.classList.add('comp-charts--stacked');
 
     var tsCol = null;
     var dataCols = [];
@@ -1000,11 +1157,32 @@ window.mbcxDashboard.components.Compliance = (function () {
       return l;
     });
 
+    var labelTimes = labels.map(function (l) { return new Date(l).getTime(); });
+    var timesValid = labelTimes.length > 1 && !labelTimes.some(isNaN);
+
     var Chart = window.Chart;
     if (!Chart) {
       chartsEl.innerHTML = '<div class="comp-loading">Chart.js not loaded.</div>';
       return;
     }
+
+    // Map fault columns to unit groups
+    var faultsByUnit = {};
+    faultCols.forEach(function (fc) {
+      var dis = (_colDisplayName(fc) || fc.name);
+      var matchedUnit = _faultUnitMatch(dis);
+      if (!matchedUnit) {
+        // Try to match against all known group units
+        groupOrder.forEach(function (u) {
+          if (!matchedUnit && _faultUnitMatch(u)) {
+            // Already handled by pattern
+          }
+        });
+      }
+      if (!matchedUnit) matchedUnit = '__unmatched';
+      if (!faultsByUnit[matchedUnit]) faultsByUnit[matchedUnit] = [];
+      faultsByUnit[matchedUnit].push(fc);
+    });
 
     var colorIdx = 0;
     groupOrder.forEach(function (unit) {
@@ -1017,6 +1195,25 @@ window.mbcxDashboard.components.Compliance = (function () {
       titleEl.className = 'comp-panel-title';
       titleEl.textContent = unit === 'other' ? 'Values' : unit;
       wrap.appendChild(titleEl);
+
+      // Build fault bars for this unit group from fault columns
+      var allWinsForChart = [];
+      var unitFaultCols = faultsByUnit[unit] || [];
+      // Also include unmatched fault columns on every chart as fallback
+      if (unitFaultCols.length === 0 && faultsByUnit['__unmatched']) {
+        unitFaultCols = faultsByUnit['__unmatched'];
+      }
+
+      if (timesValid) {
+        unitFaultCols.forEach(function (fc) {
+          var wins = _extractFaultWindows(grid, tsCol, fc, labelTimes);
+          if (wins.length) {
+            var faultName = _colDisplayName(fc) || fc.name;
+            _buildFaultBar(faultName, wins, labelTimes, wrap);
+            allWinsForChart = allWinsForChart.concat(wins);
+          }
+        });
+      }
 
       var canvasWrap = document.createElement('div');
       canvasWrap.className = 'comp-canvas-wrap';
@@ -1044,9 +1241,14 @@ window.mbcxDashboard.components.Compliance = (function () {
         };
       });
 
+      var chartPlugins = [crosshairPlugin];
+      if (allWinsForChart.length && timesValid) {
+        chartPlugins.push(_makeSparkBandsPlugin(allWinsForChart));
+      }
+
       var chart = new Chart(canvas, {
         type: 'line',
-        plugins: [crosshairPlugin],
+        plugins: chartPlugins,
         data: { labels: fmtLabels, datasets: datasets },
         options: {
           responsive: true,
@@ -1079,8 +1281,32 @@ window.mbcxDashboard.components.Compliance = (function () {
           }
         }
       });
+      if (timesValid) chart.$mbcxTimes = labelTimes;
+      chart._compPanel = wrap;
       _charts.push(chart);
     });
+
+    // Align fault bar tracks with chart plot areas after render
+    setTimeout(function () {
+      _charts.forEach(function (chart) {
+        var panel = chart._compPanel;
+        if (!panel || !chart.chartArea || !chart.canvas) return;
+        var bars = panel.querySelectorAll('.comp-fault-bar-inline');
+        if (!bars.length) return;
+        var canvasRect = chart.canvas.getBoundingClientRect();
+        var plotLeft = canvasRect.left + chart.chartArea.left;
+        var plotRight = canvasRect.left + chart.chartArea.right;
+        bars.forEach(function (barWrap) {
+          var track = barWrap.querySelector('.fd-fbar-track');
+          if (!track) return;
+          var barRect = barWrap.getBoundingClientRect();
+          var ml = Math.max(0, Math.round(plotLeft - barRect.left));
+          var mr = Math.max(0, Math.round(barRect.right - plotRight));
+          track.style.marginLeft  = ml + 'px';
+          track.style.marginRight = mr + 'px';
+        });
+      });
+    }, 150);
   }
 
   function _destroyLineCharts() {
@@ -1127,7 +1353,10 @@ window.mbcxDashboard.components.Compliance = (function () {
     if (heading) heading.textContent = 'All Equipment';
     _destroyLineCharts();
     var chartsEl = _container.querySelector('#compCharts');
-    if (chartsEl) chartsEl.innerHTML = '<div class="comp-loading">Loading site-wide charts…</div>';
+    if (chartsEl) {
+      chartsEl.classList.remove('comp-charts--stacked');
+      chartsEl.innerHTML = '<div class="comp-loading">Loading site-wide charts…</div>';
+    }
 
     _loadPieChart('read(equip)->id');
     _filterAuditTable();
