@@ -321,15 +321,37 @@ window.mbcxDashboard.components.Compliance = (function () {
       }
     });
     if (inFault) {
-      // Extend to end; if only last row, still give it some width
       var lastIdx = labelTimes.length - 1;
       var endTime = labelTimes[lastIdx];
       if (startIdx === lastIdx && lastIdx > 0) {
-        // Extend by one interval past the last timestamp
         endTime += (labelTimes[lastIdx] - labelTimes[lastIdx - 1]);
       }
       wins.push({ s: labelTimes[startIdx], e: endTime });
     }
+
+    // Merge windows that are within 2 rollup steps of each other
+    if (wins.length > 1) {
+      var mergeGap = 0;
+      if (labelTimes.length >= 2) {
+        for (var mg = 1; mg < Math.min(labelTimes.length, 10); mg++) {
+          var dd = labelTimes[mg] - labelTimes[mg - 1];
+          if (dd > mergeGap) mergeGap = dd;
+        }
+        mergeGap *= 2;
+      }
+      wins.sort(function (a, b) { return a.s - b.s; });
+      var merged = [wins[0]];
+      for (var mi = 1; mi < wins.length; mi++) {
+        var last = merged[merged.length - 1];
+        if (wins[mi].s - last.e <= mergeGap) {
+          if (wins[mi].e > last.e) last.e = wins[mi].e;
+        } else {
+          merged.push({ s: wins[mi].s, e: wins[mi].e });
+        }
+      }
+      wins = merged;
+    }
+
     return wins;
   }
 
@@ -1186,11 +1208,14 @@ window.mbcxDashboard.components.Compliance = (function () {
 
       if (timesValid) {
         unitFaultCols.forEach(function (fc) {
-          // Debug: log first few values to verify fault detection
-          var sampleVals = grid.rows.slice(0, 5).map(function (r) { return r[fc.name]; });
-          console.log('[Compliance] Fault col "' + (_colDisplayName(fc) || fc.name) + '" unit=' + unit + ' samples:', JSON.stringify(sampleVals));
+          // Debug: log non-null values to understand data shape
+          var nonNull = [];
+          grid.rows.forEach(function (r, ri) {
+            if (r[fc.name] != null && nonNull.length < 5) nonNull.push({ idx: ri, val: r[fc.name] });
+          });
+          console.log('[Compliance] Fault col "' + (_colDisplayName(fc) || fc.name) + '" unit=' + unit + ' non-null samples:', JSON.stringify(nonNull));
           var wins = _extractFaultWindows(grid, tsCol, fc, labelTimes);
-          console.log('[Compliance] Extracted ' + wins.length + ' fault windows');
+          console.log('[Compliance] Extracted ' + wins.length + ' fault windows, totalRows=' + grid.rows.length);
           if (wins.length) {
             var faultName = _colDisplayName(fc) || fc.name;
             _buildFaultBar(faultName, wins, labelTimes, wrap);
