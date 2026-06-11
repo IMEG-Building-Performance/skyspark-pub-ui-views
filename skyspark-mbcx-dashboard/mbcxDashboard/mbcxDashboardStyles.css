@@ -2568,3 +2568,201 @@
   --card-border: #e5e7eb;
   --muted: #6b7280;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Fault Log — remediation tracker
+   ═══════════════════════════════════════════════════════════════════════ */
+#mbcxDashboard .flog-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 18px 20px;
+  min-height: 100%;
+  box-sizing: border-box;
+}
+
+/* KPI cards */
+#mbcxDashboard .flog-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+#mbcxDashboard .flog-kpi-card {
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--card-border, #e5e7eb);
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+#mbcxDashboard .flog-kpi-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: #6b7280;
+}
+#mbcxDashboard .flog-kpi-value {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--card-fg, #111827);
+  line-height: 1.1;
+}
+#mbcxDashboard .flog-kpi-sub {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+/* Toolbar */
+#mbcxDashboard .flog-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+#mbcxDashboard .flog-toolbar-count {
+  font-size: 12px;
+  color: #6b7280;
+  margin-left: auto;
+}
+#mbcxDashboard .flog-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+#mbcxDashboard .flog-badge--open   { background: #fee2e2; color: #b91c1c; }
+#mbcxDashboard .flog-badge--closed { background: #d1fae5; color: #065f46; }
+#mbcxDashboard .flog-clear-btn {
+  margin-left: auto;
+  font-size: 12px;
+  color: #6b7280;
+  background: none;
+  border: 1px solid #d1d5db;
+  border-radius: 5px;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+#mbcxDashboard .flog-clear-btn:hover { background: #f3f4f6; }
+
+/* Table wrapper */
+#mbcxDashboard .flog-table-wrap {
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--card-border, #e5e7eb);
+  border-radius: 8px;
+  overflow: auto;
+  flex: 1 1 auto;
+}
+
+/* Table */
+#mbcxDashboard .flog-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+#mbcxDashboard .flog-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+#mbcxDashboard .flog-table thead tr:first-child th {
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: #6b7280;
+  padding: 8px 10px 4px;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+#mbcxDashboard .flog-table thead tr:first-child th:hover { background: #f0f2f5; }
+#mbcxDashboard .flog-filter-row th {
+  background: #f9fafb;
+  padding: 2px 6px 6px;
+  border-bottom: 2px solid #e5e7eb;
+}
+#mbcxDashboard .flog-filter-sel {
+  width: 100%;
+  font-size: 11px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  padding: 2px 4px;
+  background: #fff;
+  color: #374151;
+}
+#mbcxDashboard .flog-sort-icon { margin-left: 3px; color: #9ca3af; }
+
+/* Body rows */
+#mbcxDashboard .flog-row td { padding: 8px 10px; border-bottom: 1px solid #f3f4f6; vertical-align: top; }
+#mbcxDashboard .flog-row:last-child td { border-bottom: none; }
+#mbcxDashboard .flog-row--even td { background: #fafafa; }
+#mbcxDashboard .flog-row--odd  td { background: #fff; }
+#mbcxDashboard .flog-row:hover td { background: #f0f7ff; }
+
+/* Status pill */
+#mbcxDashboard .flog-status-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+#mbcxDashboard .flog-status-pill--open   { background: #fee2e2; color: #b91c1c; }
+#mbcxDashboard .flog-status-pill--closed { background: #d1fae5; color: #065f46; }
+
+/* Priority dot */
+#mbcxDashboard .flog-priority-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+#mbcxDashboard .flog-priority-dot::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Comments */
+#mbcxDashboard .flog-comment-cell { max-width: 280px; }
+#mbcxDashboard .flog-comment-preview { color: #374151; }
+#mbcxDashboard .flog-comment-full { color: #374151; white-space: pre-wrap; }
+#mbcxDashboard .flog-more-link {
+  display: inline-block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: #1565c0;
+  cursor: pointer;
+  text-decoration: underline;
+}
+#mbcxDashboard .flog-more-link:hover { color: #104ea8; }
+
+/* ID cell */
+#mbcxDashboard .flog-id-cell { color: #9ca3af; font-family: monospace; font-size: 12px; }
+#mbcxDashboard .flog-name-cell { font-weight: 500; color: #111827; }
+#mbcxDashboard .flog-date-cell { color: #6b7280; font-size: 12px; white-space: nowrap; }
+#mbcxDashboard .flog-assignee-cell { font-size: 12px; color: #374151; }
+#mbcxDashboard .flog-equip-cell { font-size: 12px; color: #374151; }
+
+/* Empty state */
+#mbcxDashboard .flog-empty {
+  text-align: center;
+  padding: 48px 20px;
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+@media (max-width: 900px) {
+  #mbcxDashboard .flog-kpi-row { grid-template-columns: repeat(2, 1fr); }
+}

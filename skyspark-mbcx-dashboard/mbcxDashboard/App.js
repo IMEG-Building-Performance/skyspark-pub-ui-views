@@ -169,6 +169,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         MeetingView:    window.mbcxDashboard.components.MeetingView,
         TrendingView:   window.mbcxDashboard.components.TrendingView,
         Compliance:     window.mbcxDashboard.components.Compliance,
+        FaultLog:       window.mbcxDashboard.components.FaultLog,
         Footer:         window.mbcxDashboard.components.Footer
       };
       NS.Components = co;
@@ -552,14 +553,10 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         showFlTab('list');
       }
       else if (tab === 'fault-log') {
-        content.innerHTML = [
-          '<div class="page" style="display:flex;align-items:center;justify-content:center;min-height:70vh;">',
-          '  <div style="text-align:center;">',
-          '    <div style="font-size:1.15rem;font-weight:600;color:#8b95a5;margin-bottom:6px;">Under Construction</div>',
-          '    <div style="font-size:.85rem;color:#5a6070;">Fault Log coming soon.</div>',
-          '  </div>',
-          '</div>'
-        ].join('\n');
+        if (co.FaultLog) {
+          content.innerHTML = co.FaultLog.renderPage();
+          co.FaultLog.initLive(content, ctx || null);
+        }
       }
       else if (tab === 'trends') {
         if (co.TrendingView) co.TrendingView.showInContent(content, ctx || {});
