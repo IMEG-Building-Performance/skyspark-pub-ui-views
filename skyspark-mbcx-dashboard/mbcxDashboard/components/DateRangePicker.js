@@ -372,18 +372,33 @@ window.mbcxDashboard.datePicker = (function () {
         { label:'Last Year', fn: function() { return rangeYear(today().getFullYear()-1); } },
         { label:'Past Year', fn: function() { return rangeYear(today().getFullYear()-1); } }
       ],
-      recent: [
-        { label:'Last 7 Days',  fn: function() { var t2=today(); return { start:fmt(addDays(t2,-6)),  end:fmt(t2), label:'Last 7 Days' }; } },
-        { label:'Last 14 Days', fn: function() { var t2=today(); return { start:fmt(addDays(t2,-13)), end:fmt(t2), label:'Last 14 Days' }; } },
-        { label:'Last 30 Days', fn: function() { var t2=today(); return { start:fmt(addDays(t2,-29)), end:fmt(t2), label:'Last 30 Days' }; } },
-        { label:'Last 90 Days', fn: function() { var t2=today(); return { start:fmt(addDays(t2,-89)), end:fmt(t2), label:'Last 90 Days' }; } }
-      ]
+      recent: []
     };
+
+    var RECENT_KEY = 'mbcx_recent_dates';
+    var RECENT_MAX = 10;
+
+    function _loadRecent() {
+      try {
+        var raw = localStorage.getItem(RECENT_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch(e) { return []; }
+    }
+
+    function _saveRecent(start, end, label) {
+      var list = _loadRecent();
+      var key = start + '|' + end;
+      list = list.filter(function(r) { return r.start + '|' + r.end !== key; });
+      list.unshift({ start: start, end: end, label: label });
+      if (list.length > RECENT_MAX) list = list.slice(0, RECENT_MAX);
+      try { localStorage.setItem(RECENT_KEY, JSON.stringify(list)); } catch(e) {}
+    }
 
     // ── Apply a confirmed range
     function applyRange(start, end, label) {
       currentStart = start; currentEnd = end; currentLabel = label;
       labelText.textContent = label;
+      _saveRecent(start, end, label);
       closeDropdown();
       onChange(start, end);
     }
@@ -540,6 +555,26 @@ window.mbcxDashboard.datePicker = (function () {
       renderOtherPane();
     }
 
+    function renderRecentPane() {
+      selectorPane.innerHTML = '';
+      shortcutPane.innerHTML = '';
+      var list = _loadRecent();
+      if (!list.length) {
+        selectorPane.appendChild(el('div', 'dp-recent-empty', 'No recent date selections'));
+        return;
+      }
+      var wrap = el('div', 'dp-recent-list');
+      list.forEach(function(r) {
+        var b = el('button', 'dp-shortcut-btn', r.label);
+        b.addEventListener('click', function(e) {
+          e.stopPropagation();
+          applyRange(r.start, r.end, r.label);
+        });
+        wrap.appendChild(b);
+      });
+      selectorPane.appendChild(wrap);
+    }
+
     function renderAll() {
       PERIODS.forEach(function(pid) {
         pBtns[pid].classList.toggle('dp-period-btn--active', pid === period);
@@ -552,7 +587,7 @@ window.mbcxDashboard.datePicker = (function () {
       else if (period === 'quarter') { renderQuarterPane(); renderShortcuts(); }
       else if (period === 'year')    { renderYearPane();    renderShortcuts(); }
       else if (period === 'other')   { renderOtherPane();   shortcutPane.innerHTML = ''; }
-      else if (period === 'recent')  { selectorPane.innerHTML = ''; renderShortcuts(); }
+      else if (period === 'recent')  { renderRecentPane(); }
     }
 
     // ── Ok button

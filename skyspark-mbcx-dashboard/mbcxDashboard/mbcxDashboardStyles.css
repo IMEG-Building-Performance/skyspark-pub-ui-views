@@ -834,6 +834,8 @@
   transition: background 0.1s, border-color 0.1s;
 }
 #mbcxDashboard .dp-shortcut-btn:hover { background: #f3f4f6; border-color: #d1d5db; }
+#mbcxDashboard .dp-recent-list { display: flex; flex-direction: column; gap: 4px; padding: 12px; }
+#mbcxDashboard .dp-recent-empty { padding: 24px; text-align: center; color: #9ca3af; font-size: 12px; }
 
 /* Footer */
 #mbcxDashboard .dp-footer {
@@ -1208,6 +1210,11 @@
 #mbcxDashboard .fs-info-btn:hover { color: var(--imeg-blue); }
 #mbcxDashboard .fs-td-info { width: 28px; padding-left: 8px; }
 #mbcxDashboard .fs-td-name { font-weight: 500; }
+#mbcxDashboard .fs-change { font-size: .78rem; font-weight: 600; white-space: nowrap; }
+#mbcxDashboard .fs-change--up { color: #DC2626; }
+#mbcxDashboard .fs-change--down { color: #059669; }
+#mbcxDashboard .fs-change--flat { color: var(--gray-400); }
+#mbcxDashboard .fs-change--na { color: var(--gray-300); }
 
 /* ── Equipment View (eq-*) ── */
 #mbcxDashboard .eq-page {
@@ -1466,7 +1473,28 @@
 .rs-flag-sensor  { color: #94a3b8; }
 
 /* ── Fault List (fl-*) ── */
-#mbcxDashboard .fl-kpi-strip { grid-template-columns: repeat(5, 1fr) !important; }
+#mbcxDashboard .fl-kpi-strip {
+  display: flex !important; align-items: center; gap: 0;
+  padding: 16px 20px !important; margin-bottom: 16px !important;
+  background: var(--card-bg, #fff); border: 1px solid var(--gray-200);
+  border-radius: 10px; border-bottom: none !important;
+}
+#mbcxDashboard .fl-kpi-strip .tu-kpi {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 0 20px; border-right: 1px solid var(--gray-200);
+  flex: 1;
+}
+#mbcxDashboard .fl-kpi-strip .tu-kpi:last-child { border-right: none; }
+#mbcxDashboard .fl-kpi-strip .tu-kpi-val {
+  font-size: 1.5rem; font-weight: 800; line-height: 1;
+}
+#mbcxDashboard .fl-kpi-strip .tu-kpi-label {
+  font-size: .68rem; color: var(--gray-500); margin-top: 3px; margin-bottom: 0;
+  white-space: nowrap;
+}
+#mbcxDashboard .fl-kpi-strip .tu-kpi-unit {
+  font-size: .65rem; margin-top: 2px;
+}
 #mbcxDashboard .fl-table { width: 100%; }
 #mbcxDashboard .fl-table .tu-th,
 #mbcxDashboard .fl-table .tu-td { text-align: left; }
@@ -1528,6 +1556,62 @@
   margin-bottom:14px; display:flex; align-items:baseline; gap:8px;
 }
 #mbcxDashboard .fd-card-sub { font-size:11px; font-weight:400; color:var(--gray-400); }
+
+/* Fault spark bar (inline at top of chart area) */
+#mbcxDashboard .fd-spark-section {
+  margin-bottom: 12px; padding-bottom: 10px;
+  border-bottom: 1px solid var(--gray-200);
+}
+#mbcxDashboard .fd-spark-section-title {
+  font-size: .72rem; font-weight: 700; color: var(--gray-500);
+  text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px;
+}
+#mbcxDashboard .fd-spark-row {
+  display: flex; align-items: center; gap: 8px; height: 20px; margin-bottom: 3px;
+}
+#mbcxDashboard .fd-spark-label {
+  flex: 0 0 120px; font-size: .7rem; color: var(--gray-600);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right;
+}
+#mbcxDashboard .fd-spark-bar {
+  flex: 1; position: relative; height: 14px; background: var(--gray-200);
+  border-radius: 3px; overflow: hidden;
+}
+#mbcxDashboard .fd-spark-seg {
+  position: absolute; top: 0; height: 100%; background: var(--gray-200);
+}
+#mbcxDashboard .fd-spark-seg--fault { background: #DC2626; }
+
+/* Fault activity bar (from fault record's own hisRead) */
+#mbcxDashboard .fd-fault-bar-wrap {
+  width:100%; margin-bottom:0; overflow:hidden; box-sizing:border-box;
+}
+#mbcxDashboard .fd-fault-bar-wrap--loaded { margin-bottom:10px; }
+#mbcxDashboard .fd-fbar-label {
+  font-size:11px; font-weight:500; color:#374151;
+  margin-bottom:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+#mbcxDashboard .fd-fbar-track {
+  position:relative; height:14px; background:#f3f4f6;
+  border-radius:3px; overflow:hidden; box-sizing:border-box;
+}
+#mbcxDashboard .fd-fbar-seg {
+  position:absolute; top:0; height:100%; background:#e5e7eb;
+}
+#mbcxDashboard .fd-fbar-seg--on { background:#d97706; }
+
+/* Trend date range buttons */
+#mbcxDashboard .fd-card-title { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+#mbcxDashboard .fd-trend-range { display: flex; gap: 4px; align-items: center; }
+#mbcxDashboard .fd-range-btn {
+  padding: 3px 10px; font-size: .7rem; font-weight: 500; border-radius: 5px;
+  border: 1px solid var(--gray-200); cursor: pointer; background: var(--card-bg, #fff);
+  color: var(--gray-500); font-family: inherit; transition: all .12s;
+}
+#mbcxDashboard .fd-range-btn:hover { border-color: var(--gray-300); }
+#mbcxDashboard .fd-range-btn--active {
+  background: var(--imeg-blue); border-color: var(--imeg-blue); color: #fff;
+}
 
 /* Chart / SkySpark iframe */
 #mbcxDashboard .fd-chart-wrap {
@@ -2282,6 +2366,9 @@
 #mbcxDashboard .comp-body.comp-body--sized .comp-chart-section {
   overflow: hidden;
 }
+#mbcxDashboard .comp-body.comp-body--sized .comp-chart-section:has(.comp-charts--stacked) {
+  overflow-y: auto;
+}
 
 /* Sidebar */
 #mbcxDashboard .comp-sidebar {
@@ -2375,6 +2462,26 @@
 }
 #mbcxDashboard .comp-charts:has(.comp-carousel) {
   display: flex; flex-direction: column;
+}
+#mbcxDashboard .comp-charts.comp-charts--stacked {
+  display: flex; flex-direction: column; gap: 14px;
+  grid-template-columns: none; grid-template-rows: none;
+  overflow-y: auto; overflow-x: hidden;
+}
+#mbcxDashboard .comp-charts--stacked .comp-chart-panel {
+  flex: 0 0 auto; min-height: 280px; max-height: none;
+}
+#mbcxDashboard .comp-charts--stacked .comp-canvas-wrap {
+  min-height: 220px; height: 220px;
+}
+#mbcxDashboard .comp-fault-bar-inline {
+  margin: 2px 0 6px; width: 100%;
+}
+#mbcxDashboard .comp-fault-bar-inline .fd-fbar-label {
+  font-size: 11px; color: #6b7280; margin-bottom: 4px;
+}
+#mbcxDashboard .comp-fault-bar-inline .fd-fbar-track {
+  height: 18px; border-radius: 4px;
 }
 #mbcxDashboard .comp-chart-panel {
   border: 1px solid var(--gray-100); border-radius: 8px;
@@ -2569,203 +2676,3 @@
   --muted: #6b7280;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════
-   Fault Log — remediation tracker
-   ═══════════════════════════════════════════════════════════════════════ */
-#mbcxDashboard .flog-page {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding: 16px 18px;
-  box-sizing: border-box;
-}
-
-/* KPI cards */
-#mbcxDashboard .flog-kpi-row {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-}
-#mbcxDashboard .flog-kpi-card {
-  background: var(--card-bg, #fff);
-  border: 1px solid var(--card-border, #e5e7eb);
-  border-radius: 7px;
-  padding: 12px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-#mbcxDashboard .flog-kpi-label {
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: .06em;
-  color: #9ca3af;
-}
-#mbcxDashboard .flog-kpi-value {
-  font-size: 24px;
-  font-weight: 700;
-  line-height: 1.15;
-}
-#mbcxDashboard .flog-kpi-sub {
-  font-size: 11px;
-  color: #9ca3af;
-}
-
-/* Table card */
-#mbcxDashboard .flog-table-wrap {
-  background: var(--card-bg, #fff);
-  border: 1px solid var(--card-border, #e5e7eb);
-  border-radius: 7px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Toolbar */
-#mbcxDashboard .flog-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 9px 12px;
-  border-bottom: 1px solid #f0f2f5;
-  flex-wrap: wrap;
-}
-#mbcxDashboard .flog-toolbar-left  { display: flex; align-items: center; gap: 6px; }
-#mbcxDashboard .flog-toolbar-right { display: flex; align-items: center; gap: 8px; margin-left: auto; }
-#mbcxDashboard .flog-showing { font-size: 12px; color: #9ca3af; }
-#mbcxDashboard .flog-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
-}
-#mbcxDashboard .flog-badge--open   { background: #fee2e2; color: #b91c1c; }
-#mbcxDashboard .flog-badge--closed { background: #d1fae5; color: #065f46; }
-#mbcxDashboard .flog-clear-btn {
-  font-size: 11px;
-  color: #6b7280;
-  background: none;
-  border: 1px solid #e5e7eb;
-  border-radius: 4px;
-  padding: 2px 8px;
-  cursor: pointer;
-  line-height: 1.5;
-}
-#mbcxDashboard .flog-clear-btn:hover { background: #f9fafb; }
-
-/* Scroll area */
-#mbcxDashboard .flog-table-scroll { overflow-x: auto; }
-
-/* Table */
-#mbcxDashboard .flog-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-  min-width: 960px;
-}
-
-/* Header */
-#mbcxDashboard .flog-th {
-  background: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
-  padding: 0;
-  white-space: nowrap;
-  vertical-align: bottom;
-  user-select: none;
-}
-#mbcxDashboard .flog-th-label {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  padding: 7px 10px 4px;
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .06em;
-  color: #6b7280;
-  cursor: pointer;
-}
-#mbcxDashboard .flog-th-label:hover { color: #374151; }
-#mbcxDashboard .flog-th-filter { padding: 0 6px 6px; }
-#mbcxDashboard .flog-filter-sel {
-  width: 100%;
-  font-size: 11px;
-  border: 1px solid #e5e7eb;
-  border-radius: 4px;
-  padding: 2px 4px;
-  background: #fff;
-  color: #374151;
-}
-#mbcxDashboard .flog-sort-ind { color: #d1d5db; font-size: 9px; }
-
-/* Body rows */
-#mbcxDashboard .flog-td {
-  padding: 7px 10px;
-  border-bottom: 1px solid #f3f4f6;
-  vertical-align: middle;
-  color: #374151;
-  font-size: 13px;
-}
-#mbcxDashboard .flog-row:last-child .flog-td { border-bottom: none; }
-#mbcxDashboard .flog-row:nth-child(even) .flog-td { background: #fafbfc; }
-#mbcxDashboard .flog-row:hover .flog-td { background: #f0f7ff; }
-
-/* Status pill */
-#mbcxDashboard .flog-status-pill {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-/* Priority */
-#mbcxDashboard .flog-priority-wrap {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  white-space: nowrap;
-}
-#mbcxDashboard .flog-priority-circle {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-#mbcxDashboard .flog-priority-label { font-size: 12px; color: #4b5563; }
-
-/* Comments */
-#mbcxDashboard .flog-comment-cell {
-  max-width: 300px;
-  cursor: pointer;
-}
-#mbcxDashboard .flog-comment-text {
-  font-size: 12px;
-  color: #374151;
-  line-height: 1.4;
-}
-#mbcxDashboard .flog-more-link {
-  display: inline-block;
-  margin-top: 2px;
-  font-size: 11px;
-  color: #1565c0;
-  text-decoration: underline;
-}
-#mbcxDashboard .flog-more-link:hover { color: #104ea8; }
-
-/* Empty state */
-#mbcxDashboard .flog-empty {
-  text-align: center;
-  padding: 48px 20px;
-  color: #9ca3af;
-  font-size: 13px;
-}
-
-@media (max-width: 900px) {
-  #mbcxDashboard .flog-kpi-row { grid-template-columns: repeat(2, 1fr); }
-}

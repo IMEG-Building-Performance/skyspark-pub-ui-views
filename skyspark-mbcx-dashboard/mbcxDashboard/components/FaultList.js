@@ -189,13 +189,11 @@ window.mbcxDashboard.components.FaultList = {
     set('flKpiTotal', faults.length);
     set('flMeta',     faults.length + ' faults');
 
-    // Default sort: severity descending (higher number = more severe)
     var sorted = faults.slice().sort(function (a, b) {
-      var as = typeof a.sevNorm === 'number' ? a.sevNorm : 0;
-      var bs = typeof b.sevNorm === 'number' ? b.sevNorm : 0;
-      return bs - as;
+      var an = String(a.faultName || ''), bn = String(b.faultName || '');
+      return an.localeCompare(bn);
     });
-    this._state = { rows: sorted, sortCol: null, sortDir: 1, filter: '' };
+    this._state = { rows: sorted, sortCol: 'faultName', sortDir: 1, filter: '' };
     this._buildTable(container);
   },
 

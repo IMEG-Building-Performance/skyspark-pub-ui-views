@@ -320,9 +320,14 @@ window.mbcxDashboard = window.mbcxDashboard || {};
           siteName:    siteSelector.getSelectedDis() || (ctx && ctx.siteName)
         };
 
+        var preserveTab = NS.App._activeTab;
         function finish(d) {
           if (spinner) spinner.style.display = 'none';
           NS.App.init(container, d, newCtx);
+          if (preserveTab && preserveTab !== 'config') {
+            NS.App._showTab(container, preserveTab,
+              NS.Components, d, newCtx);
+          }
           NS.App._persistState();
         }
 
