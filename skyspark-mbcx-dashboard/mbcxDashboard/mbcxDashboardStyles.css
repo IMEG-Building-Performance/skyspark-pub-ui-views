@@ -2474,6 +2474,15 @@
 #mbcxDashboard .comp-body.comp-body--sized .comp-chart-section:has(.comp-charts--stacked) {
   overflow-y: auto;
 }
+#mbcxDashboard .comp-fault-bar-inline {
+  margin: 2px 0 6px; width: 100%;
+}
+#mbcxDashboard .comp-fault-bar-inline .fd-fbar-label {
+  font-size: 10px; color: #9ca3af;
+}
+#mbcxDashboard .comp-fault-bar-inline .fd-fbar-track {
+  height: 10px;
+}
 #mbcxDashboard .comp-chart-panel {
   border: 1px solid var(--gray-100); border-radius: 8px;
   padding: 10px 12px 6px; background: var(--card-bg, #fff);
