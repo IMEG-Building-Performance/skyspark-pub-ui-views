@@ -2675,4 +2675,202 @@
   --card-border: #e5e7eb;
   --muted: #6b7280;
 }
+   Fault Log — remediation tracker
+   ═══════════════════════════════════════════════════════════════════════ */
+#mbcxDashboard .flog-page {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 18px;
+  box-sizing: border-box;
+}
 
+/* KPI cards */
+#mbcxDashboard .flog-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+#mbcxDashboard .flog-kpi-card {
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--card-border, #e5e7eb);
+  border-radius: 7px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+#mbcxDashboard .flog-kpi-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: #9ca3af;
+}
+#mbcxDashboard .flog-kpi-value {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.15;
+}
+#mbcxDashboard .flog-kpi-sub {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+/* Table card */
+#mbcxDashboard .flog-table-wrap {
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--card-border, #e5e7eb);
+  border-radius: 7px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Toolbar */
+#mbcxDashboard .flog-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-bottom: 1px solid #f0f2f5;
+  flex-wrap: wrap;
+}
+#mbcxDashboard .flog-toolbar-left  { display: flex; align-items: center; gap: 6px; }
+#mbcxDashboard .flog-toolbar-right { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+#mbcxDashboard .flog-showing { font-size: 12px; color: #9ca3af; }
+#mbcxDashboard .flog-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+#mbcxDashboard .flog-badge--open   { background: #fee2e2; color: #b91c1c; }
+#mbcxDashboard .flog-badge--closed { background: #d1fae5; color: #065f46; }
+#mbcxDashboard .flog-clear-btn {
+  font-size: 11px;
+  color: #6b7280;
+  background: none;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  padding: 2px 8px;
+  cursor: pointer;
+  line-height: 1.5;
+}
+#mbcxDashboard .flog-clear-btn:hover { background: #f9fafb; }
+
+/* Scroll area */
+#mbcxDashboard .flog-table-scroll { overflow-x: auto; }
+
+/* Table */
+#mbcxDashboard .flog-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 960px;
+}
+
+/* Header */
+#mbcxDashboard .flog-th {
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0;
+  white-space: nowrap;
+  vertical-align: bottom;
+  user-select: none;
+}
+#mbcxDashboard .flog-th-label {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 7px 10px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: #6b7280;
+  cursor: pointer;
+}
+#mbcxDashboard .flog-th-label:hover { color: #374151; }
+#mbcxDashboard .flog-th-filter { padding: 0 6px 6px; }
+#mbcxDashboard .flog-filter-sel {
+  width: 100%;
+  font-size: 11px;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  padding: 2px 4px;
+  background: #fff;
+  color: #374151;
+}
+#mbcxDashboard .flog-sort-ind { color: #d1d5db; font-size: 9px; }
+
+/* Body rows */
+#mbcxDashboard .flog-td {
+  padding: 7px 10px;
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: middle;
+  color: #374151;
+  font-size: 13px;
+}
+#mbcxDashboard .flog-row:last-child .flog-td { border-bottom: none; }
+#mbcxDashboard .flog-row:nth-child(even) .flog-td { background: #fafbfc; }
+#mbcxDashboard .flog-row:hover .flog-td { background: #f0f7ff; }
+
+/* Status pill */
+#mbcxDashboard .flog-status-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Priority */
+#mbcxDashboard .flog-priority-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+#mbcxDashboard .flog-priority-circle {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+#mbcxDashboard .flog-priority-label { font-size: 12px; color: #4b5563; }
+
+/* Comments */
+#mbcxDashboard .flog-comment-cell {
+  max-width: 300px;
+  cursor: pointer;
+}
+#mbcxDashboard .flog-comment-text {
+  font-size: 12px;
+  color: #374151;
+  line-height: 1.4;
+}
+#mbcxDashboard .flog-more-link {
+  display: inline-block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: #1565c0;
+  text-decoration: underline;
+}
+#mbcxDashboard .flog-more-link:hover { color: #104ea8; }
+
+/* Empty state */
+#mbcxDashboard .flog-empty {
+  text-align: center;
+  padding: 48px 20px;
+  color: #9ca3af;
+  font-size: 13px;
+}
+
+@media (max-width: 900px) {
+  #mbcxDashboard .flog-kpi-row { grid-template-columns: repeat(2, 1fr); }
+}

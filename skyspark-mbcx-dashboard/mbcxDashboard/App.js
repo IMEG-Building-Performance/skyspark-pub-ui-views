@@ -520,7 +520,6 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       else if (tab === 'faults' || tab === 'fault-list') {
         NS.App._activeTab = 'fault-list';
         NS.App._persistState();
-
         content.innerHTML = [
           '<div class="fl-page-outer">',
           '  <div class="fl-page-tabs">',
