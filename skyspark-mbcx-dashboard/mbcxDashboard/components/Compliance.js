@@ -304,20 +304,6 @@ window.mbcxDashboard.components.Compliance = (function () {
   }
 
   function _extractFaultWindows(grid, tsCol, faultCol, labelTimes) {
-    // Compute typical rollup step so single-point faults get visible width
-    var step = 0;
-    if (labelTimes.length >= 2) {
-      var diffs = [];
-      for (var k = 1; k < Math.min(labelTimes.length, 20); k++) {
-        var d = labelTimes[k] - labelTimes[k - 1];
-        if (d > 0) diffs.push(d);
-      }
-      if (diffs.length) {
-        diffs.sort(function (a, b) { return a - b; });
-        step = diffs[Math.floor(diffs.length / 2)];
-      }
-    }
-
     var wins = [];
     var inFault = false;
     var startIdx = -1;
@@ -328,15 +314,20 @@ window.mbcxDashboard.components.Compliance = (function () {
         startIdx = i;
       } else if (!faulted && inFault) {
         inFault = false;
-        var eTime = labelTimes[i];
-        // If only one row was faulted, extend by one step
-        if (i - 1 === startIdx && step > 0) eTime = labelTimes[startIdx] + step;
-        wins.push({ s: labelTimes[startIdx], e: eTime });
+        // Use index i so the window spans from startIdx to the next non-faulted row
+        // For single-point faults this gives at least one category-slot width
+        var endIdx = Math.max(i, startIdx + 1);
+        wins.push({ s: labelTimes[startIdx], e: labelTimes[Math.min(endIdx, labelTimes.length - 1)] });
       }
     });
     if (inFault) {
-      var endTime = labelTimes[labelTimes.length - 1];
-      if (labelTimes.length - 1 === startIdx && step > 0) endTime += step;
+      // Extend to end; if only last row, still give it some width
+      var lastIdx = labelTimes.length - 1;
+      var endTime = labelTimes[lastIdx];
+      if (startIdx === lastIdx && lastIdx > 0) {
+        // Extend by one interval past the last timestamp
+        endTime += (labelTimes[lastIdx] - labelTimes[lastIdx - 1]);
+      }
       wins.push({ s: labelTimes[startIdx], e: endTime });
     }
     return wins;
@@ -363,7 +354,7 @@ window.mbcxDashboard.components.Compliance = (function () {
       var seg = document.createElement('div');
       seg.className = 'fd-fbar-seg fd-fbar-seg--on';
       seg.style.left  = (f0 * 100) + '%';
-      seg.style.width = Math.max((f1 - f0) * 100, 0.3) + '%';
+      seg.style.width = Math.max((f1 - f0) * 100, 1) + '%';
       track.appendChild(seg);
     });
     barWrap.appendChild(track);
@@ -391,7 +382,7 @@ window.mbcxDashboard.components.Compliance = (function () {
           if (w.e < times[0] || w.s > times[times.length - 1]) return;
           var x0 = area.left + (_fracPos(times, w.s) / n) * (area.right - area.left);
           var x1 = area.left + (_fracPos(times, w.e) / n) * (area.right - area.left);
-          if (x1 - x0 < 1) x1 = x0 + 1;
+          if (x1 - x0 < 3) x1 = x0 + 3;
           ctx.fillStyle = 'rgba(234, 88, 12, 0.10)';
           ctx.fillRect(x0, area.top, x1 - x0, area.bottom - area.top);
         });
@@ -1195,7 +1186,11 @@ window.mbcxDashboard.components.Compliance = (function () {
 
       if (timesValid) {
         unitFaultCols.forEach(function (fc) {
+          // Debug: log first few values to verify fault detection
+          var sampleVals = grid.rows.slice(0, 5).map(function (r) { return r[fc.name]; });
+          console.log('[Compliance] Fault col "' + (_colDisplayName(fc) || fc.name) + '" unit=' + unit + ' samples:', JSON.stringify(sampleVals));
           var wins = _extractFaultWindows(grid, tsCol, fc, labelTimes);
+          console.log('[Compliance] Extracted ' + wins.length + ' fault windows');
           if (wins.length) {
             var faultName = _colDisplayName(fc) || fc.name;
             _buildFaultBar(faultName, wins, labelTimes, wrap);
