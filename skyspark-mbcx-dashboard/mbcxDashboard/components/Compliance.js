@@ -1062,6 +1062,7 @@ window.mbcxDashboard.components.Compliance = (function () {
     var chartsEl = _container.querySelector('#compCharts');
     if (!chartsEl) return;
     chartsEl.innerHTML = '';
+    chartsEl.classList.add('comp-charts--stacked');
 
     var tsCol = null;
     var dataCols = [];
@@ -1295,7 +1296,10 @@ window.mbcxDashboard.components.Compliance = (function () {
     if (barEl) { barEl.innerHTML = ''; barEl.classList.remove('fd-fault-bar-wrap--loaded'); }
     _destroyLineCharts();
     var chartsEl = _container.querySelector('#compCharts');
-    if (chartsEl) chartsEl.innerHTML = '<div class="comp-loading">Loading site-wide charts…</div>';
+    if (chartsEl) {
+      chartsEl.classList.remove('comp-charts--stacked');
+      chartsEl.innerHTML = '<div class="comp-loading">Loading site-wide charts…</div>';
+    }
 
     _loadPieChart('read(equip)->id');
     _filterAuditTable();

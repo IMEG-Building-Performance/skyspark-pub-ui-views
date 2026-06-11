@@ -2460,6 +2460,20 @@
 #mbcxDashboard .comp-charts:has(.comp-carousel) {
   display: flex; flex-direction: column;
 }
+#mbcxDashboard .comp-charts.comp-charts--stacked {
+  display: flex; flex-direction: column; gap: 14px;
+  grid-template-columns: none; grid-template-rows: none;
+  overflow-y: auto; overflow-x: hidden;
+}
+#mbcxDashboard .comp-charts--stacked .comp-chart-panel {
+  flex: 0 0 auto; min-height: 220px; max-height: none;
+}
+#mbcxDashboard .comp-charts--stacked .comp-canvas-wrap {
+  min-height: 180px; height: 180px;
+}
+#mbcxDashboard .comp-body.comp-body--sized .comp-chart-section:has(.comp-charts--stacked) {
+  overflow-y: auto;
+}
 #mbcxDashboard .comp-chart-panel {
   border: 1px solid var(--gray-100); border-radius: 8px;
   padding: 10px 12px 6px; background: var(--card-bg, #fff);
