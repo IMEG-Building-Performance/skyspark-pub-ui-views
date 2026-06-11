@@ -21,7 +21,8 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     has: function (faultId) {
       return _agenda.some(function (i) { return i.fault.id === faultId; });
     },
-    count: function () { return _agenda.length; }
+    count: function () { return _agenda.length; },
+    list:  function () { return _agenda.slice(); }
   };
 
   function _refreshBadge() {

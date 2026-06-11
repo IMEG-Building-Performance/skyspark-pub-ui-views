@@ -10,6 +10,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
     equipment:  '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>',
     trends:     '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L8 10.414l1.293 1.293a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>',
     meetings:   '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/></svg>',
+    prep:       '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/></svg>',
     chevron:    '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>',
     config:     '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path d="M5 4a1 1 0 00-2 0v7.268a2 2 0 000 3.464V16a1 1 0 102 0v-1.268a2 2 0 000-3.464V4zm6 0a1 1 0 10-2 0v1.268a2 2 0 000 3.464V16a1 1 0 102 0V8.732a2 2 0 000-3.464V4zm5 2a1 1 0 112 0v7.268a2 2 0 010 3.464V16a1 1 0 11-2 0v-.268a2 2 0 010-3.464V6z"/></svg>'
   };
@@ -34,7 +35,10 @@ window.mbcxDashboard = window.mbcxDashboard || {};
     { key: 'compliance', label: 'Compliance' },
     { key: 'equipment',  label: 'Equipment' },
     { key: 'trends',     label: 'Trends' },
-    { key: 'meetings',   label: 'Meetings' }
+    { key: 'meetings',   label: 'Meetings' },
+    // TODO(auth): meeting-prep is an internal view — once user roles are
+    // available, hide it for non-elevated users instead of listing it here.
+    { key: 'meeting-prep', label: 'Meeting Prep' }
   ];
 
   var _dateRangeOptions = [
@@ -167,6 +171,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         FaultDetail:    window.mbcxDashboard.components.FaultDetail,
         EquipmentView:  window.mbcxDashboard.components.EquipmentView,
         MeetingView:    window.mbcxDashboard.components.MeetingView,
+        MeetingPrep:    window.mbcxDashboard.components.MeetingPrep,
         TrendingView:   window.mbcxDashboard.components.TrendingView,
         Compliance:     window.mbcxDashboard.components.Compliance,
         Footer:         window.mbcxDashboard.components.Footer
@@ -211,6 +216,9 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         '    <button class="dash-sb-nav-item" data-tab="equipment">'  + _icons.equipment  + '<span>Equipment</span></button>',
         '    <button class="dash-sb-nav-item" data-tab="trends">'   + _icons.trends   + '<span>Trends</span></button>',
         '    <button class="dash-sb-nav-item" data-tab="meetings">' + _icons.meetings + '<span>Meetings</span></button>',
+        // TODO(auth): only render Meeting Prep for elevated users — and
+        // enforce the role server-side in any Axon funcs the view calls.
+        '    <button class="dash-sb-nav-item" data-tab="meeting-prep">' + _icons.prep + '<span>Meeting Prep</span></button>',
         '  </nav>',
 
         '  <div class="dash-sb-footer">',
@@ -571,6 +579,14 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       }
       else if (tab === 'meetings') {
         if (co.MeetingView) co.MeetingView.showInContent(content, ctx || {}, co);
+      }
+      else if (tab === 'meeting-prep') {
+        // TODO(auth): internal view — verify the user's role before showing
+        // once roles are plumbed through (see MeetingPrep.js header).
+        if (co.MeetingPrep) {
+          content.innerHTML = co.MeetingPrep.renderPage();
+          co.MeetingPrep.initLive(content, ctx || null, co, container);
+        }
       }
       else if (tab === 'compliance') {
         if (co.Compliance) {

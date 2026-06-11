@@ -30,6 +30,7 @@ var mbcxDashboardHandler = {};
     { src: 'components/FaultDetail.js' },
     { src: 'components/EquipmentView.js' },
     { src: 'components/MeetingView.js' },
+    { src: 'components/MeetingPrep.js' },
     { src: 'components/TrendingView.js' },
     { src: 'components/Footer.js' },
     { src: 'components/DateRangePicker.js' },
