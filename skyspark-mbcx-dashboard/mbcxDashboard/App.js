@@ -205,9 +205,6 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         '  <nav class="dash-sb-nav">',
         '    <button class="dash-sb-nav-item" data-tab="summary">'  + _icons.summary  + '<span>Summary</span></button>',
         '    <button class="dash-sb-nav-item" data-tab="faults">'     + _icons.faults     + '<span>Faults</span></button>',
-        '    <div class="dash-sb-sub" data-parent="faults">',
-        '      <button class="dash-sb-sub-item" data-tab="fault-log">Fault Log</button>',
-        '    </div>',
         '    <button class="dash-sb-nav-item" data-tab="compliance">' + _icons.compliance + '<span>Compliance</span></button>',
         '    <button class="dash-sb-nav-item" data-tab="equipment">'  + _icons.equipment  + '<span>Equipment</span></button>',
         '    <button class="dash-sb-nav-item" data-tab="trends">'   + _icons.trends   + '<span>Trends</span></button>',
@@ -485,7 +482,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       NS.App._activeTab = tab;
       NS.App._persistState();
 
-      var faultTabs = ['faults', 'fault-list', 'fault-log'];
+      var faultTabs = ['faults', 'fault-list'];
       var isFaultTab = faultTabs.indexOf(tab) !== -1;
 
       container.querySelectorAll('.dash-sb-nav-item').forEach(function (btn) {
@@ -524,6 +521,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
           '  <div class="fl-page-tabs">',
           '    <button class="fl-page-tab fl-page-tab--active" data-fltab="list">Fault List</button>',
           '    <button class="fl-page-tab" data-fltab="summaries">Fault Summaries</button>',
+          '    <button class="fl-page-tab" data-fltab="fault-log">Fault Log</button>',
           '  </div>',
           '  <div id="flTabContent"></div>',
           '</div>'
@@ -540,9 +538,12 @@ window.mbcxDashboard = window.mbcxDashboard || {};
               co.FaultList.onFaultClick = function (fault) { NS.App.showFaultDetail(container, fault, co); };
               co.FaultList.initLive(container, ctx || null);
             }
-          } else {
+          } else if (which === 'summaries') {
             flTabContent.innerHTML = co.FaultSummaries ? co.FaultSummaries.renderPage() : '<div class="tu-loading">Fault Summaries not loaded.</div>';
             if (co.FaultSummaries) co.FaultSummaries.initLive(flTabContent, ctx || null);
+          } else if (which === 'fault-log') {
+            flTabContent.innerHTML = co.FaultLog ? co.FaultLog.renderPage() : '<div class="tu-loading">Fault Log not loaded.</div>';
+            if (co.FaultLog) co.FaultLog.initLive(flTabContent, ctx || null);
           }
         }
 
@@ -551,12 +552,6 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         });
 
         showFlTab('list');
-      }
-      else if (tab === 'fault-log') {
-        if (co.FaultLog) {
-          content.innerHTML = co.FaultLog.renderPage();
-          co.FaultLog.initLive(content, ctx || null);
-        }
       }
       else if (tab === 'trends') {
         if (co.TrendingView) co.TrendingView.showInContent(content, ctx || {});

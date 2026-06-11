@@ -155,8 +155,10 @@ window.mbcxDashboard.components.FaultLog = (function () {
         cell = '<span class="flog-status-pill" style="background:' + sbg + ';color:' + sc + '">' + _esc(v) + '</span>';
       } else if (k === 'priority') {
         var color = PRIORITY_COLORS[row.priority] || '#6b7280';
-        cell = '<span class="flog-priority-dot" style="background:' + color + '"></span>' +
-               '<span style="font-size:12px;color:#4b5563">' + _esc(_priorityLabel(row.priority)) + '</span>';
+        cell = '<span class="flog-priority-wrap">' +
+          '<span class="flog-priority-circle" style="background:' + color + '"></span>' +
+          '<span class="flog-priority-label">' + _esc(_priorityLabel(row.priority)) + '</span>' +
+        '</span>';
       } else if (k === 'dateAdded') {
         cell = '<span style="font-size:12px;color:#4b5563;white-space:nowrap">' + _fmtDate(v) + '</span>';
       } else if (k === 'dateResolved') {
@@ -177,8 +179,7 @@ window.mbcxDashboard.components.FaultLog = (function () {
         return '<td class="flog-td" style="max-width:320px">' + cell + '</td>';
       }
 
-      var tdStyle = k === 'priority' ? 'display:flex;align-items:center;gap:6px;' : '';
-      return '<td class="flog-td" style="' + tdStyle + '">' + cell + '</td>';
+      return '<td class="flog-td">' + cell + '</td>';
     }).join('');
 
     return '<tr class="flog-row" data-rowid="' + row.id + '" style="background:' + bg + ';border-bottom:1px solid #f3f4f6">' +
@@ -221,8 +222,8 @@ window.mbcxDashboard.components.FaultLog = (function () {
 
     return '<div class="flog-table-wrap">' +
       _renderToolbar(filtered.length) +
-      '<div style="overflow-x:auto">' +
-        '<table class="flog-table" style="min-width:1020px">' +
+      '<div class="flog-table-scroll">' +
+        '<table class="flog-table">' +
           _renderThead() +
           '<tbody>' + tbody + '</tbody>' +
         '</table>' +
@@ -234,9 +235,6 @@ window.mbcxDashboard.components.FaultLog = (function () {
 
   function renderPage() {
     return '<div class="flog-page">' +
-      '<div class="flog-page-header">' +
-        '<h1 class="flog-page-title">Fault Log</h1>' +
-      '</div>' +
       '<div id="flogKpis"></div>' +
       '<div id="flogTable"></div>' +
     '</div>';
