@@ -476,9 +476,12 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         btn.classList.toggle('active', btn.getAttribute('data-tab') === 'faults');
       });
       var content = container.querySelector('#mbcxContent');
-      // Remember the fault-list scroll position so Back returns to the
-      // same place (restored in FaultList._populate).
-      if (co.FaultList) co.FaultList._returnScroll = content.scrollTop;
+      // Remember the fault-list scroll position and the opened fault so
+      // Back returns to the same place with the viewed row highlighted.
+      if (co.FaultList) {
+        co.FaultList._returnScroll = content.scrollTop;
+        co.FaultList._returnFid = fault.id;
+      }
       content.classList.remove('dash-content--fixed');
       var allFaults = co.FaultList && co.FaultList._state ? co.FaultList._state.rows : [];
       if (co.FaultDetail) {

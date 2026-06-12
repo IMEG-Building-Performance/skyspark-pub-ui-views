@@ -24,6 +24,8 @@ var FL_CONDITIONS = [
   { id: 'sevHigh',  label: 'Severity ≥ 7',  test: function (r) { return typeof r.sevNorm === 'number' && r.sevNorm >= 7; }, color: '#FEE2E2', activeColor: '#DC2626', activeText: '#fff' },
   { id: 'sevMed',   label: 'Severity 4–6',  test: function (r) { return typeof r.sevNorm === 'number' && r.sevNorm >= 4 && r.sevNorm <= 6; }, color: '#FEF3C7', activeColor: '#D97706', activeText: '#fff' },
   { id: 'pctHigh',  label: '% ≥ 75',        test: function (r) { return typeof r.faultActive === 'number' && r.faultActive >= 75; }, color: '#FEE2E2', activeColor: '#DC2626', activeText: '#fff' },
+  { id: 'isNew',    label: 'New',           test: function (r) { return !!r._isNew; },  color: '#DBEAFE', activeColor: '#2563EB', activeText: '#fff' },
+  { id: 'recent',   label: 'Recent',        test: function (r) { return !!r._recent; }, color: '#DBEAFE', activeColor: '#2563EB', activeText: '#fff' },
 ];
 
 function _flFormatHours(v) {
@@ -184,37 +186,36 @@ window.mbcxDashboard.components.FaultList = {
     }
   },
 
-  // Annotate rows with _isNew (not present in the previous report period)
-  // and _recent (first observed within the last 7 days). Both are
-  // client-side localStorage ledgers — per-browser heuristics until a
-  // server-side fault history exists.
-  _annotateNewRecent: function (rows, ctx, period) {
+  // Annotate rows with:
+  //  _isNew   — absent from the previous report-period snapshot (per-site
+  //             localStorage; rolls when the date range changes)
+  //  _recent  — the fault's duration mostly just occurred: its trailing
+  //             2-week duration is >= 75% of its full-range duration
+  _annotateNewRecent: function (rows, ctx, period, recentDur) {
     try {
       var site = String(ctx.siteRef || '').replace(/^@/, '');
-      var ledgerKey = 'mbcxFaultFirstSeen_' + site;
-      var snapKey   = 'mbcxFaultSnapshot_' + site;
-      var today = new Date().toISOString().slice(0, 10);
-      var ledger = {}, snap = null;
-      try { ledger = JSON.parse(localStorage.getItem(ledgerKey)) || {}; } catch (e) {}
+      var snapKey = 'mbcxFaultSnapshot_' + site;
+      var snap = null;
       try { snap = JSON.parse(localStorage.getItem(snapKey)); } catch (e) {}
 
-      var keys = [];
-      rows.forEach(function (r) {
-        var k = r.equipment + '::' + r.faultName;
-        keys.push(k);
-        if (!ledger[k]) ledger[k] = today;
-        r._firstSeen = ledger[k];
-        r._recent = (Date.parse(today) - Date.parse(ledger[k])) <= 7 * 86400000;
-      });
-      localStorage.setItem(ledgerKey, JSON.stringify(ledger));
-
-      // "New" = absent from the snapshot of the previous (different) report
-      // period; the snapshot rolls when the period changes.
+      var keys = rows.map(function (r) { return r.equipment + '::' + r.faultName; });
       var prevKeys = snap ? (snap.period !== period ? snap.keys : snap.prevKeys) || null : null;
       localStorage.setItem(snapKey, JSON.stringify({ period: period, keys: keys, prevKeys: prevKeys }));
       if (prevKeys) {
         rows.forEach(function (r) {
           r._isNew = prevKeys.indexOf(r.equipment + '::' + r.faultName) === -1;
+        });
+      }
+
+      if (recentDur) {
+        rows.forEach(function (r) {
+          var d2 = recentDur[r.equipment + '::' + r.faultName];
+          if (typeof d2 === 'number' && typeof r.sumDur === 'number' && r.sumDur > 0 &&
+              d2 / r.sumDur >= 0.75) {
+            r._recent = true;
+            r._recentTip = Math.round(d2) + ' of ' + Math.round(r.sumDur) +
+              ' fault hours occurred within the last 2 weeks';
+          }
         });
       }
     } catch (e) { /* annotation is best-effort */ }
@@ -267,16 +268,46 @@ window.mbcxDashboard.components.FaultList = {
       ctx.siteRef + ', ' + dateArg +
       ', 10%, @nav:rule.all, "Fault List", "", "Show All")';
 
-    API.evalAxon(ctx.attestKey, ctx.projectName, axon)
-      .then(function (grid) {
-        var parsed = HP.parseGrid(grid);
+    // Trailing 2-week window — used to flag "recent" faults (faults whose
+    // duration mostly just occurred). Only fetched when the report window
+    // is meaningfully longer than the slice.
+    function isoDaysAgo(n) {
+      var d = new Date(); d.setDate(d.getDate() - n);
+      return d.toISOString().slice(0, 10);
+    }
+    var rangeStart = Date.parse(String(ctx.datesStart || '').slice(0, 10));
+    var wantRecent = !isNaN(rangeStart) && (Date.now() - rangeStart) > 21 * 86400000;
+    var recentPromise = wantRecent
+      ? API.evalAxon(ctx.attestKey, ctx.projectName,
+          'view_MBCxReport_CustomerView_Output(' + ctx.siteRef + ', ' +
+          isoDaysAgo(13) + '..' + isoDaysAgo(0) +
+          ', 10%, @nav:rule.all, "Fault List", "", "Show All")')
+        .catch(function (err) {
+          console.warn('[FaultList] Recent-window fetch failed (Recent flags skipped):', err);
+          return null;
+        })
+      : Promise.resolve(null);
+
+    Promise.all([API.evalAxon(ctx.attestKey, ctx.projectName, axon), recentPromise])
+      .then(function (results) {
+        var parsed = HP.parseGrid(results[0]);
         if (!parsed.rows.length) {
           var tbody = container.querySelector('#flTbody');
           if (tbody) tbody.innerHTML = '<tr><td style="padding:24px;color:#9CA3AF;font-size:12px;text-align:center;">No faults returned for this site and date range.</td></tr>';
           return;
         }
         var rows = self._mapLiveRows(parsed.rows, parsed.cols);
-        self._annotateNewRecent(rows, ctx, dateArg);
+        var recentDur = null;
+        if (results[1]) {
+          recentDur = {};
+          var rparsed = HP.parseGrid(results[1]);
+          self._mapLiveRows(rparsed.rows, rparsed.cols).forEach(function (r) {
+            if (typeof r.sumDur === 'number') {
+              recentDur[r.equipment + '::' + r.faultName] = r.sumDur;
+            }
+          });
+        }
+        self._annotateNewRecent(rows, ctx, dateArg, recentDur);
         self._populate(container, rows);
       })
       .catch(function (err) {
@@ -492,10 +523,12 @@ window.mbcxDashboard.components.FaultList = {
 
     var tbody = container.querySelector('#flTbody');
     if (!tbody) return;
+    var lastFid = this._returnFid;
     tbody.innerHTML = rows.map(function(r){
       var inAgenda = !!(window.mbcxDashboard && window.mbcxDashboard.meeting && window.mbcxDashboard.meeting.has(r.id));
-      var rowCls = 'fl-row fl-row-clickable' + (r._recent ? ' fl-row-recent' : '');
-      var rowTitle = r._recent ? ' title="First observed ' + r._firstSeen + '"' : '';
+      var rowCls = 'fl-row fl-row-clickable' + (r._recent ? ' fl-row-recent' : '') +
+        (lastFid !== undefined && lastFid !== null && r.id === lastFid ? ' fl-row-last' : '');
+      var rowTitle = r._recentTip ? ' title="' + r._recentTip + '"' : '';
       return '<tr class="' + rowCls + '" data-fid="' + r.id + '"' + rowTitle + '>' +
         FL_COLS.map(function (k) {
           var val = r[k];

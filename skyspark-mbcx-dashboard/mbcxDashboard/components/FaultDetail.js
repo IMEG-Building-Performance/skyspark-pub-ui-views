@@ -719,15 +719,16 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         el.style.display = '';
       }
       var raw = fault._raw || {};
-      var inline = raw.areaServed || raw.areaserved;
+      var inline = raw.areaserved || raw.areaServed;
       if (inline) { showArea(inline); return; }
 
       if (!ctx || !ctx.attestKey || !ctx.projectName) return;
       var equipName = raw.equipment || fault.equipment;
       var siteRef = _extractRef(raw.siteRef) || ctx.siteRef;
       if (!equipName || !siteRef) return;
+      // The tag is lowercase "areaserved" on equip recs (camelCase fallback).
       var axon = 'do e: read(equip and navName==' + _q(equipName) + ' and siteRef==' + siteRef +
-        ', false); if (e != null) e["areaServed"] else null end';
+        ', false); if (e == null) null else if (e["areaserved"] != null) e["areaserved"] else e["areaServed"] end';
       NS.api.evalAxonVal(ctx.attestKey, ctx.projectName, axon)
         .then(showArea)
         .catch(function () { /* optional metadata — stay hidden */ });

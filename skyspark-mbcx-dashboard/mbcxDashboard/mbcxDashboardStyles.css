@@ -3429,3 +3429,6 @@
 #mbcxDashboard .fl-row-recent td:first-child {
   box-shadow: inset 3px 0 0 var(--primary);
 }
+
+/* Last-viewed fault row — persistent hover-style highlight after Back */
+#mbcxDashboard .fl-row-last td { background: #F9FAFB; }
