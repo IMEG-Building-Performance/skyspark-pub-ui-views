@@ -3366,3 +3366,25 @@
 }
 #mbcxDashboard .mp-state--agenda { background: var(--imeg-green-lt); color: var(--imeg-green); }
 #mbcxDashboard .mp-state--skip   { background: var(--gray-100); color: var(--gray-500); }
+
+/* ── Meeting Prep: agenda rail ordering ───────────────────────────────── */
+#mbcxDashboard .mp-rail-num {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--gray-400);
+  flex-shrink: 0;
+  width: 14px;
+  text-align: right;
+}
+#mbcxDashboard .mp-rail-arrows { display: flex; flex-direction: column; flex-shrink: 0; }
+#mbcxDashboard .mp-rail-move {
+  border: none;
+  background: none;
+  color: var(--gray-400);
+  font-size: 8px;
+  line-height: 1.1;
+  cursor: pointer;
+  padding: 1px 3px;
+}
+#mbcxDashboard .mp-rail-move:hover:not(:disabled) { color: var(--primary); }
+#mbcxDashboard .mp-rail-move:disabled { opacity: 0.3; cursor: default; }

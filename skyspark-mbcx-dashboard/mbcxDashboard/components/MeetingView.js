@@ -22,7 +22,14 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       return _agenda.some(function (i) { return i.fault.id === faultId; });
     },
     count: function () { return _agenda.length; },
-    list:  function () { return _agenda.slice(); }
+    list:  function () { return _agenda.slice(); },
+    move:  function (faultId, delta) {
+      var idx = -1;
+      _agenda.forEach(function (i, n) { if (i.fault.id === faultId) idx = n; });
+      var j = idx + delta;
+      if (idx === -1 || j < 0 || j >= _agenda.length) return;
+      var tmp = _agenda[idx]; _agenda[idx] = _agenda[j]; _agenda[j] = tmp;
+    }
   };
 
   function _refreshBadge() {

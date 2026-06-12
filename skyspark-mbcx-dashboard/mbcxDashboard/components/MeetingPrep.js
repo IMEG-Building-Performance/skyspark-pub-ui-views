@@ -86,6 +86,14 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
   var _sortKey = 'sev';   // 'sev' | 'active' | 'seen' | 'equip'
   var _hideHandled = false;
 
+  // Live fault list (replaces _DEMO.newFaults when a session is available).
+  var _live = null;
+  var _loading = false;
+
+  function _faults() {
+    return _live || _DEMO.newFaults;
+  }
+
   function _defaultState() {
     return { reviewed: {}, skipped: {} };
   }
@@ -199,7 +207,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
   function _buildGroups() {
     var byEquip = {};
     var order = [];
-    _DEMO.newFaults.forEach(function (f) {
+    _faults().forEach(function (f) {
       if (!byEquip[f.equipment]) { byEquip[f.equipment] = []; order.push(f.equipment); }
       byEquip[f.equipment].push(f);
     });
@@ -277,7 +285,11 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       '<div class="mp-row-main">' +
       '  <div class="mp-row-title">' + (showEquip ? _esc(f.equipment) + ' ' : '') +
            '<span class="mp-row-fault">' + _esc(f.faultName) + '</span></div>' +
-      '  <div class="mp-row-sub">First seen ' + f.firstSeen + ' · ' + f.faultActive + '% active</div>' +
+      '  <div class="mp-row-sub">' + [
+            f.firstSeen ? 'First seen ' + f.firstSeen : '',
+            f.faultActive ? f.faultActive + '% active' : '',
+            f.sumDur ? Math.round(f.sumDur) + ' h' : ''
+          ].filter(function (x) { return x; }).join(' · ') + '</div>' +
       '</div>' +
       _sevChip(f.sevNorm) +
       '<div class="mp-row-acts">' +
@@ -318,7 +330,10 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
   }
 
   function _queueHtml() {
-    var allFaults = _DEMO.newFaults;
+    if (_loading) {
+      return '<div class="mp-rail-empty">Loading fault list&hellip;</div>';
+    }
+    var allFaults = _faults();
     var skippedCount = allFaults.filter(function (f) { return _state.skipped[f.id]; }).length;
     var agendaCount = allFaults.filter(function (f) { return _inAgenda(f.id); }).length;
     var html = [];
@@ -351,7 +366,8 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
   function _newStage() {
     return [
       '<div class="mp-section">',
-      '  <h3 class="mp-section-title">New faults <span class="mp-section-sub">since ' + _DEMO.lastMeeting + '</span>',
+      '  <h3 class="mp-section-title">New faults <span class="mp-section-sub">' +
+           (_live ? 'live fault list &middot; dashboard date range' : 'sample data &middot; since ' + _DEMO.lastMeeting) + '</span>',
       '    <button class="mp-act mp-link" data-gotab="fault-list">Full Fault List &#8599;</button>',
       '    <button class="mp-act mp-link" data-gotab="fault-log">Fault Log &#8599;</button>',
       '  </h3>',
@@ -393,13 +409,18 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     if (!items.length) {
       body = '<div class="mp-rail-empty">No agenda items yet.<br>Add items as you review.</div>';
     } else {
-      body = items.map(function (it) {
+      body = items.map(function (it, idx) {
         var f = it.fault;
         return '<div class="mp-rail-item">' +
+          '<span class="mp-rail-num">' + (idx + 1) + '</span>' +
           '<div class="mp-rail-item-main">' +
           '  <div class="mp-rail-item-equip">' + _esc(f.equipment || '') + '</div>' +
           '  <div class="mp-rail-item-fault">' + _esc(f.faultName || '') + '</div>' +
           '</div>' +
+          '<span class="mp-rail-arrows">' +
+          '  <button class="mp-rail-move" data-railmove="up|' + _esc(String(f.id)) + '"' + (idx === 0 ? ' disabled' : '') + ' title="Move up">&#9650;</button>' +
+          '  <button class="mp-rail-move" data-railmove="down|' + _esc(String(f.id)) + '"' + (idx === items.length - 1 ? ' disabled' : '') + ' title="Move down">&#9660;</button>' +
+          '</span>' +
           '<button class="mp-rail-remove" data-railremove="' + _esc(String(f.id)) + '" title="Remove from agenda">&times;</button>' +
           '</div>';
       }).join('');
@@ -417,12 +438,13 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     for (i = 0; i < _DEMO.logItems.length; i++) {
       if (_DEMO.logItems[i].id === id) return _DEMO.logItems[i];
     }
-    for (i = 0; i < _DEMO.newFaults.length; i++) {
-      if (_DEMO.newFaults[i].id === id) return _DEMO.newFaults[i];
+    var pool = _faults();
+    for (i = 0; i < pool.length; i++) {
+      if (pool[i].id === id) return pool[i];
     }
     if (id.indexOf('equip-') === 0) {
       var equip = id.slice(6);
-      var faults = _DEMO.newFaults.filter(function (f) { return f.equipment === equip; });
+      var faults = pool.filter(function (f) { return f.equipment === equip; });
       if (faults.length) {
         var maxSev = Math.max.apply(null, faults.map(function (f) { return f.sevNorm; }));
         return { id: id, equipment: equip,
@@ -444,6 +466,8 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       _view = 'grouped';
       _sortKey = 'sev';
       _hideHandled = false;
+      _live = null;     // refetched per visit (site/date range may change)
+      _loading = false;
       return [
         '<div class="mp-page">',
         '  <div class="mp-main">',
@@ -465,6 +489,53 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     },
 
     initLive: function (contentEl, ctx, co, container) {
+
+      // Fetch the live fault list — same eval the Fault List tab uses.
+      // Falls back to demo data when there's no session or the call fails.
+      // TODO(data): the range should be "since the last meeting" once
+      // meeting recs exist; for now it follows the dashboard date range.
+      if (ctx && ctx.attestKey && ctx.projectName && ctx.siteRef && !_live) {
+        _loading = true;
+        var dateArg = (ctx.datesStart && ctx.datesEnd)
+          ? ctx.datesStart + '..' + ctx.datesEnd
+          : 'today()';
+        var axon = 'view_MBCxReport_CustomerView_Output(' +
+          ctx.siteRef + ', ' + dateArg +
+          ', 10%, @nav:rule.all, "Fault List", "", "Show All")';
+        NS.api.evalAxon(ctx.attestKey, ctx.projectName, axon)
+          .then(function (grid) {
+            var parsed = NS.haystackParser.parseGrid(grid);
+            function str(v) { if (v == null) return ''; if (typeof v === 'object') return v.dis || v.val || ''; return String(v); }
+            function num(v) {
+              if (typeof v === 'number') return v;
+              if (v && typeof v === 'object' && typeof v.val === 'number') return v.val;
+              var n = parseFloat(v); return isNaN(n) ? 0 : n;
+            }
+            var faults = parsed.rows.map(function (r) {
+              var equipment = str(r.equipment);
+              var faultName = str(r.faultName);
+              return {
+                // Deterministic id so persisted skips survive refetches
+                id: 'f:' + equipment + '::' + faultName,
+                equipment: equipment,
+                faultName: faultName,
+                sevNorm: num(r.sevNorm),
+                faultActive: num(r.faultActive),
+                sumDur: num(r.sumDur),
+                firstSeen: '',
+                _raw: r
+              };
+            }).filter(function (f) { return f.equipment || f.faultName; });
+            _live = faults.length ? faults : null;
+            _loading = false;
+            rerenderStage();
+          })
+          .catch(function (err) {
+            console.warn('[MeetingPrep] Live fault list failed — using demo data:', err);
+            _loading = false;
+            rerenderStage();
+          });
+      }
 
       function rerenderStage() {
         var el = contentEl.querySelector('#mpStage');
@@ -575,7 +646,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
 
         var gSkip = btn.getAttribute('data-gskip');
         if (gSkip) {
-          var gFaults = _DEMO.newFaults.filter(function (f) { return f.equipment === gSkip; });
+          var gFaults = _faults().filter(function (f) { return f.equipment === gSkip; });
           var unskip = gFaults.every(function (f) { return _state.skipped[f.id]; });
           gFaults.forEach(function (f) {
             _state.skipped[f.id] = !unskip;
@@ -611,6 +682,16 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       function wireRail() {
         var rail = contentEl.querySelector('#mpRail');
         if (!rail) return;
+
+        rail.querySelectorAll('[data-railmove]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var parts = btn.getAttribute('data-railmove').split('|');
+            var id = parts.slice(1).join('|');
+            var numId = parseInt(id, 10);
+            NS.meeting.move(String(numId) === id ? numId : id, parts[0] === 'up' ? -1 : 1);
+            rerenderRail();
+          });
+        });
 
         rail.querySelectorAll('[data-railremove]').forEach(function (btn) {
           btn.addEventListener('click', function () {
