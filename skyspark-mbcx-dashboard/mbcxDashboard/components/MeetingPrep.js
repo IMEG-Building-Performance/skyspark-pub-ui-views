@@ -1,9 +1,9 @@
 // components/MeetingPrep.js — Meeting Preparation workspace (demo)
 //
 // Guided two-step flow:
-//   Step 1 — immersive Fault Log review: one open log item at a time,
-//            full-page card. Every item must be reviewed (Next, or added
-//            to the agenda) before step 2 unlocks.
+//   Step 1 — Fault Log review: tabular checklist of open log items; mark
+//            each reviewed (or use Mark All) and add any to the agenda.
+//            Step 2 unlocks once every item is reviewed.
 //   Step 2 — triage new faults since the last meeting (one-click rows).
 // The agenda rail is visible throughout and hands off to the Meetings
 // presenter.
@@ -57,7 +57,6 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
   // TODO(data): replace localStorage with an mbcxMeeting draft rec.
   var STORAGE_KEY = 'mbcxMeetingPrep_draft';
   var _state = null;
-  var _idx = 0;       // current log item in step 1 (not persisted)
   var _stage = 1;     // 1 = log review, 2 = new faults (derived on load)
 
   function _defaultState() {
@@ -85,13 +84,6 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
 
   function _allReviewed() {
     return _reviewedCount() === _DEMO.logItems.length;
-  }
-
-  function _firstUnreviewed() {
-    for (var i = 0; i < _DEMO.logItems.length; i++) {
-      if (!_state.reviewed[_DEMO.logItems[i].id]) return i;
-    }
-    return 0;
   }
 
   // ── Render helpers ────────────────────────────────────────────────────────
@@ -123,40 +115,46 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       '</div>';
   }
 
-  // Step 1: immersive one-at-a-time log review
+  // Step 1: tabular log review — check off items, add any to the agenda.
   function _reviewStage() {
     var items = _DEMO.logItems;
     var n = items.length;
     if (!n) return '<div class="mp-rail-empty">No open Fault Log items — nothing to review.</div>';
-    if (_idx < 0) _idx = 0;
-    if (_idx > n - 1) _idx = n - 1;
-    var it = items[_idx];
     var reviewed = _reviewedCount();
-    var inAg = _inAgenda(it.id);
-    var isLast = _idx === n - 1;
+    var done = _allReviewed();
+
+    var rowsHtml = items.map(function (it) {
+      var isRev = !!_state.reviewed[it.id];
+      var inAg = _inAgenda(it.id);
+      return '<div class="mp-row' + (isRev ? ' mp-row--reviewed' : '') + '">' +
+        '<button class="mp-check' + (isRev ? ' mp-check--on' : '') + '" data-check="' + _esc(it.id) + '"' +
+        ' title="Mark reviewed" aria-pressed="' + isRev + '">' + (isRev ? '&#10003;' : '') + '</button>' +
+        '<span class="mp-id">' + _esc(it.id.replace('log-', '#')) + '</span>' +
+        '<div class="mp-row-main">' +
+        '  <div class="mp-row-title">' + _esc(it.equipment) + ' <span class="mp-row-fault">' + _esc(it.faultName) + '</span></div>' +
+        '  <div class="mp-row-sub">Added ' + it.dateAdded +
+             (it.assignedTo ? ' · ' + _esc(it.assignedTo) : ' · Unassigned') +
+             (it.comments ? ' · ' + _esc(it.comments) : '') + '</div>' +
+        '</div>' +
+        _prioChip(it.priority) +
+        '<div class="mp-row-acts">' +
+          '<button class="mp-act mp-act--primary' + (inAg ? ' mp-act--on' : '') + '" data-agenda="' + _esc(it.id) + '">' + (inAg ? '&#10003; Agenda' : '+ Agenda') + '</button>' +
+        '</div>' +
+        '</div>';
+    }).join('');
 
     return [
-      '<div class="mp-review">',
-      '  <div class="mp-review-progress"><div class="mp-review-progress-fill" style="width:' + Math.round(reviewed / n * 100) + '%"></div></div>',
-      '  <div class="mp-review-count">Item ' + (_idx + 1) + ' of ' + n + ' &middot; ' + reviewed + ' reviewed</div>',
-      '  <div class="mp-review-card' + (_state.reviewed[it.id] ? ' mp-review-card--reviewed' : '') + '">',
-      '    <div class="mp-review-chips">',
-      '      <span class="mp-id">' + _esc(it.id.replace('log-', '#')) + '</span>',
-      '      ' + _prioChip(it.priority),
-      '      <span class="mp-review-assigned">' + (it.assignedTo ? _esc(it.assignedTo) : 'Unassigned') + '</span>',
-      '    </div>',
-      '    <div class="mp-review-equip">' + _esc(it.equipment) + '</div>',
-      '    <div class="mp-review-fault">' + _esc(it.faultName) + '</div>',
-      '    <div class="mp-review-meta">Added ' + it.dateAdded + '</div>',
-      it.comments ? '<div class="mp-review-comments">&ldquo;' + _esc(it.comments) + '&rdquo;</div>' : '',
-      '    <div class="mp-review-actions">',
-      '      <button class="mp-btn' + (inAg ? ' mp-btn--added' : '') + '" data-agenda="' + _esc(it.id) + '">' + (inAg ? '&#10003; On Agenda' : '+ Add to Agenda') + '</button>',
-      '    </div>',
+      '<div class="mp-review-toolbar">',
+      '  <div class="mp-review-toolbar-left">',
+      '    <div class="mp-review-progress mp-review-progress--inline"><div class="mp-review-progress-fill" style="width:' + Math.round(reviewed / n * 100) + '%"></div></div>',
+      '    <span class="mp-review-count-inline">' + reviewed + ' of ' + n + ' reviewed</span>',
       '  </div>',
-      '  <div class="mp-review-nav">',
-      '    <button class="mp-btn" data-nav="prev"' + (_idx === 0 ? ' disabled' : '') + '>&#8592; Prev</button>',
-      '    <button class="mp-btn mp-btn--primary" data-nav="next">' + (isLast ? 'Finish Review &#8594;' : 'Reviewed &middot; Next &#8594;') + '</button>',
-      '  </div>',
+      '  <button class="mp-act" data-markall="1">' + (done ? 'Unmark all' : 'Mark all reviewed') + '</button>',
+      '</div>',
+      rowsHtml,
+      '<div class="mp-review-continue">',
+      '  <button class="mp-btn mp-btn--primary" data-step="2"' + (done ? '' : ' disabled') + '>' +
+           (done ? 'Continue to New Faults &#8594;' : 'Review all items to continue &#8594;') + '</button>',
       '</div>'
     ].join('\n');
   }
@@ -235,7 +233,6 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     renderPage: function () {
       _loadState();
       _stage = _allReviewed() ? 2 : 1;
-      _idx = _firstUnreviewed();
       return [
         '<div class="mp-page">',
         '  <div class="mp-main">',
@@ -271,27 +268,22 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         var step = btn.getAttribute('data-step');
         if (step) {
           _stage = parseInt(step, 10);
-          if (_stage === 1) _idx = _firstUnreviewed();
           rerender();
           return;
         }
 
-        var nav = btn.getAttribute('data-nav');
-        if (nav) {
-          var items = _DEMO.logItems;
-          if (nav === 'prev') {
-            _idx = Math.max(0, _idx - 1);
-          } else {
-            // Advancing marks the current item reviewed
-            _state.reviewed[items[_idx].id] = true;
-            _saveState();
-            if (_idx === items.length - 1) {
-              _stage = _allReviewed() ? 2 : 1;
-              if (_stage === 1) _idx = _firstUnreviewed();
-            } else {
-              _idx++;
-            }
-          }
+        var checkId = btn.getAttribute('data-check');
+        if (checkId) {
+          _state.reviewed[checkId] = !_state.reviewed[checkId];
+          _saveState();
+          rerender();
+          return;
+        }
+
+        if (btn.getAttribute('data-markall')) {
+          var markOn = !_allReviewed();
+          _DEMO.logItems.forEach(function (it) { _state.reviewed[it.id] = markOn; });
+          _saveState();
           rerender();
           return;
         }

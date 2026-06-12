@@ -3216,3 +3216,26 @@
   margin-top: 16px;
 }
 #mbcxDashboard .mp-back-link { margin-top: 10px; }
+
+/* ── Meeting Prep: tabular review toolbar ─────────────────────────────── */
+#mbcxDashboard .mp-review-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+#mbcxDashboard .mp-review-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+#mbcxDashboard .mp-review-progress--inline { flex: 0 0 160px; }
+#mbcxDashboard .mp-review-count-inline { font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+#mbcxDashboard .mp-review-continue {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
