@@ -444,6 +444,20 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     }, 0);
   }
 
+  // Group agenda items (one equipment, several faults) carry the member
+  // faults in fault.groupFaults — render them as a clickable list.
+  function renderGroupFaults(fault) {
+    return (fault.groupFaults || []).map(function (f, i) {
+      var sev = typeof f.sevNorm === 'number' ? f.sevNorm : '—';
+      var pct = typeof f.faultActive === 'number' ? Math.round(f.faultActive) + '%' : '';
+      return '<div class="fd-related-item fd-related-link" data-group-idx="' + i + '">' +
+        '<span class="fd-related-sev">Sev ' + sev + '</span>' +
+        '<span class="fd-related-fault">' + (f.faultName || '') + '</span>' +
+        '<span class="fd-related-pct">' + pct + '</span>' +
+        '</div>';
+    }).join('');
+  }
+
   function renderDiag(fault) {
     var items = [];
 
@@ -510,6 +524,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       var nav      = opts.agendaNav || null;
       var backLabel = nav ? '&#8592; Agenda' : '&#8592; Fault List';
       var inAgenda = !!(NS.meeting && NS.meeting.has(fault.id));
+      var isGroup  = !!(fault.groupFaults && fault.groupFaults.length);
 
       var sevVal = typeof fault.sevNorm === 'number' ? fault.sevNorm : '—';
       var durVal = '—';
@@ -582,8 +597,11 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
 
         '    <div class="fd-col-right">',
         '      <div class="fd-card">',
-        '        <div class="fd-card-title">Diagnostics</div>',
-        '        <div class="fd-diag-list">' + renderDiag(fault) + '</div>',
+        isGroup
+          ? '<div class="fd-card-title">Faults on this Equipment <span class="fd-card-sub">click to inspect</span></div>' +
+            '<div class="fd-related">' + renderGroupFaults(fault) + '</div>'
+          : '<div class="fd-card-title">Diagnostics</div>' +
+            '<div class="fd-diag-list">' + renderDiag(fault) + '</div>',
         '      </div>',
 
         '      <div class="fd-card">',
@@ -600,6 +618,20 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
 
       // Back button
       contentEl.querySelector('#fdBackBtn').addEventListener('click', function () { onBack(); });
+
+      // Group member links — open the member fault's own detail page with
+      // Back returning to this equipment-level view (meeting nav stays on
+      // the group item).
+      var self0 = this;
+      contentEl.querySelectorAll('[data-group-idx]').forEach(function (el) {
+        el.addEventListener('click', function () {
+          var member = fault.groupFaults[parseInt(el.getAttribute('data-group-idx'), 10)];
+          if (!member) return;
+          self0.show(contentEl, member, allFaults, ctx, function () {
+            self0.show(contentEl, fault, allFaults, ctx, onBack, options);
+          });
+        });
+      });
 
       // Related fault links
       var self = this;
@@ -691,6 +723,18 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       var self = this;
       var raw = fault._raw || {};
       var idRef = _extractRef(raw.id);
+
+      // Group items: one labeled spark bar per member fault.
+      if (fault.groupFaults && fault.groupFaults.length) {
+        fault.groupFaults.forEach(function (member) {
+          self._loadRuleSparksBar(barEl, {
+            equipment: member.equipment || fault.equipment,
+            faultName: member.faultName,
+            _raw: member._raw || {}
+          }, ctx, dateRange);
+        });
+        return;
+      }
 
       if (!idRef) {
         console.warn('[FaultDetail] Fault row has no id ref — using ruleSparks daily bar.');
@@ -844,8 +888,9 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
           barEl.classList.add('fd-fault-bar-wrap--loaded');
           _alignFaultBar();
 
-          // Shade the same periods into the trend charts.
-          _sparkWins = wins;
+          // Shade the same periods into the trend charts (accumulate — a
+          // group item loads one bar per member fault).
+          _sparkWins = (_sparkWins || []).concat(wins);
           _charts.forEach(function (c) { try { c.update('none'); } catch (e) {} });
         })
         .catch(function (err) {

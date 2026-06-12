@@ -449,7 +449,10 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         var maxSev = Math.max.apply(null, faults.map(function (f) { return f.sevNorm; }));
         return { id: id, equipment: equip,
           faultName: faults.length + ' new fault' + (faults.length !== 1 ? 's' : '') + ' (max Sev ' + maxSev + ')',
-          sevNorm: maxSev };
+          sevNorm: maxSev,
+          // FaultDetail renders group items as an equipment-level page with
+          // one row + activity bar per member fault.
+          groupFaults: faults };
       }
     }
     return null;
