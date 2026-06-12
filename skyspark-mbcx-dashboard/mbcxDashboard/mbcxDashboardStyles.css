@@ -3393,3 +3393,7 @@
 }
 #mbcxDashboard .mp-rail-move:hover:not(:disabled) { color: var(--primary); }
 #mbcxDashboard .mp-rail-move:disabled { opacity: 0.3; cursor: default; }
+
+/* ── Meeting Prep: embedded agenda (step 3) ───────────────────────────── */
+#mbcxDashboard .mp-agenda-host { margin: 0 -8px; }
+#mbcxDashboard .mp-agenda-host .mtg-page { padding: 4px 8px; }

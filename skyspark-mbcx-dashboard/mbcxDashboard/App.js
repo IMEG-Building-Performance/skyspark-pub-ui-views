@@ -498,6 +498,9 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       if (NS.App._activeTab === 'compliance' && co.Compliance && co.Compliance.destroy) {
         co.Compliance.destroy();
       }
+      if (NS.App._activeTab === 'meeting-prep' && co.MeetingPrep && co.MeetingPrep.destroy) {
+        co.MeetingPrep.destroy();
+      }
       NS.App._activeTab = tab;
       NS.App._persistState();
 

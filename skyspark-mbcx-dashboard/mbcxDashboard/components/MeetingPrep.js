@@ -89,6 +89,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
   // Live fault list (replaces _DEMO.newFaults when a session is available).
   var _live = null;
   var _loading = false;
+  var _co = null;   // component registry, for embedded MeetingView teardown
 
   function _faults() {
     return _live || _DEMO.newFaults;
@@ -146,14 +147,20 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
 
   function _stepper() {
     var unlocked = _allReviewed();
+    var lock = ' <span class="mp-step-lock" title="Finish reviewing the Fault Log first">&#128274;</span>';
     return '<div class="mp-steps">' +
       '<button class="mp-step' + (_stage === 1 ? ' mp-step--active' : ' mp-step--done') + '" data-step="1">' +
         '<span class="mp-step-num">' + (_stage === 1 ? '1' : '&#10003;') + '</span> Review Fault Log' +
       '</button>' +
       '<div class="mp-step-line"></div>' +
-      '<button class="mp-step' + (_stage === 2 ? ' mp-step--active' : '') + (unlocked ? '' : ' mp-step--locked') + '" data-step="2"' + (unlocked ? '' : ' disabled') + '>' +
-        '<span class="mp-step-num">2</span> New Faults' +
-        (unlocked ? '' : ' <span class="mp-step-lock" title="Finish reviewing the Fault Log first">&#128274;</span>') +
+      '<button class="mp-step' + (_stage === 2 ? ' mp-step--active' : (_stage > 2 ? ' mp-step--done' : '')) + (unlocked ? '' : ' mp-step--locked') + '" data-step="2"' + (unlocked ? '' : ' disabled') + '>' +
+        '<span class="mp-step-num">' + (_stage > 2 ? '&#10003;' : '2') + '</span> New Faults' +
+        (unlocked ? '' : lock) +
+      '</button>' +
+      '<div class="mp-step-line"></div>' +
+      '<button class="mp-step' + (_stage === 3 ? ' mp-step--active' : '') + (unlocked ? '' : ' mp-step--locked') + '" data-step="3"' + (unlocked ? '' : ' disabled') + '>' +
+        '<span class="mp-step-num">3</span> Agenda &amp; Present' +
+        (unlocked ? '' : lock) +
       '</button>' +
       '</div>';
   }
@@ -399,7 +406,12 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
   }
 
   function _stageHtml() {
-    return _stepper() + (_stage === 2 ? _newStage() : _reviewStage());
+    // Stage 3 hosts the full MeetingView agenda (add items, drag-reorder,
+    // present mode) — mounted by initLive after the HTML lands.
+    var body = _stage === 3 ? '<div class="mp-agenda-host" id="mpAgendaHost"></div>'
+             : _stage === 2 ? _newStage()
+             : _reviewStage();
+    return _stepper() + body;
   }
 
   // ── Agenda rail ───────────────────────────────────────────────────────────
@@ -492,6 +504,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     },
 
     initLive: function (contentEl, ctx, co, container) {
+      _co = co;
 
       // Fetch the live fault list — same eval the Fault List tab uses.
       // Falls back to demo data when there's no session or the call fails.
@@ -543,6 +556,14 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       function rerenderStage() {
         var el = contentEl.querySelector('#mpStage');
         if (el) el.innerHTML = _stageHtml();
+        // Stage 3 embeds the full Meetings agenda; the rail would be a
+        // duplicate of it, so hide it there.
+        var rail = contentEl.querySelector('#mpRail');
+        if (rail) rail.style.display = _stage === 3 ? 'none' : '';
+        if (_stage === 3 && co && co.MeetingView) {
+          var host = contentEl.querySelector('#mpAgendaHost');
+          if (host) co.MeetingView.showInContent(host, ctx || {}, co);
+        }
         rerenderRail();
       }
 
@@ -582,7 +603,13 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         if (!btn || btn.disabled) return;
 
         var step = btn.getAttribute('data-step');
-        if (step) { _stage = parseInt(step, 10); rerenderStage(); return; }
+        if (step) {
+          var newStage = parseInt(step, 10);
+          if (_stage === 3 && newStage !== 3 && co && co.MeetingView) co.MeetingView.destroy(co);
+          _stage = newStage;
+          rerenderStage();
+          return;
+        }
 
         var checkId = btn.getAttribute('data-check');
         if (checkId) {
@@ -730,16 +757,18 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
 
         var startBtn = rail.querySelector('#mpStartMeeting');
         if (startBtn) startBtn.addEventListener('click', function () {
-          if (container && co && NS.App && NS.App._showTab) {
-            NS.App._showTab(container, 'meetings', co, NS.App._lastData, NS.App._lastCtx);
-          }
+          // Step 3 hosts the full agenda + presenter inside this tab.
+          _stage = 3;
+          rerenderStage();
         });
       }
 
       wireRail();
     },
 
-    destroy: function () {}
+    destroy: function () {
+      if (_stage === 3 && _co && _co.MeetingView) _co.MeetingView.destroy(_co);
+    }
   };
 
 })(window.mbcxDashboard);
