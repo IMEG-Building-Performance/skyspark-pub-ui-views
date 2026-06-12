@@ -3432,3 +3432,14 @@
 
 /* Last-viewed fault row — persistent hover-style highlight after Back */
 #mbcxDashboard .fl-row-last td { background: #F9FAFB; }
+
+/* Area served add/edit affordance (Fault Detail header) */
+#mbcxDashboard .fd-area-edit {
+  background: none;
+  border: none;
+  padding: 0 4px;
+  font-size: 11.5px;
+  color: var(--primary);
+  cursor: pointer;
+}
+#mbcxDashboard .fd-area-edit:hover { text-decoration: underline; }

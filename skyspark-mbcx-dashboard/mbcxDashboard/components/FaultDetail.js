@@ -708,30 +708,66 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     },
 
     // Area served — from the fault row when present, else fetched off the
-    // equip rec. Hidden when unavailable.
+    // equip rec (lowercase "areaserved" tag, camelCase fallback). Users can
+    // add/edit the value; it commits back to the equip rec in SkySpark.
     _loadAreaServed: function (contentEl, fault, ctx) {
       var el = contentEl.querySelector('#fdAreaServed');
-      if (!el || el.textContent) return; // already resolved (range re-load)
-      function showArea(v) {
-        var s = (v && typeof v === 'object') ? (v.dis || v.val || '') : (v || '');
-        if (!s) return;
-        el.textContent = 'Serves: ' + s;
-        el.style.display = '';
-      }
-      var raw = fault._raw || {};
-      var inline = raw.areaserved || raw.areaServed;
-      if (inline) { showArea(inline); return; }
+      if (!el || el.getAttribute('data-fdarea')) return; // once per page
+      el.setAttribute('data-fdarea', '1');
 
-      if (!ctx || !ctx.attestKey || !ctx.projectName) return;
+      var raw = fault._raw || {};
       var equipName = raw.equipment || fault.equipment;
-      var siteRef = _extractRef(raw.siteRef) || ctx.siteRef;
-      if (!equipName || !siteRef) return;
-      // The tag is lowercase "areaserved" on equip recs (camelCase fallback).
+      var siteRef = _extractRef(raw.siteRef) || (ctx && ctx.siteRef);
+      var live = !!(ctx && ctx.attestKey && ctx.projectName);
+      var canWrite = live && equipName && siteRef;
+
+      function valStr(v) {
+        return (v && typeof v === 'object') ? (v.dis || v.val || '') : (v || '');
+      }
+
+      function render(val) {
+        if (val) {
+          el.innerHTML = 'Serves: <span id="fdAreaVal"></span>' +
+            (canWrite ? '<button class="fd-area-edit" title="Edit area served">&#9998;</button>' : '');
+          el.querySelector('#fdAreaVal').textContent = val;
+          el.style.display = '';
+        } else if (canWrite) {
+          el.innerHTML = '<button class="fd-area-edit fd-area-add">+ Add area served</button>';
+          el.style.display = '';
+        } else {
+          el.style.display = 'none';
+          return;
+        }
+        var btn = el.querySelector('.fd-area-edit');
+        if (btn) btn.addEventListener('click', function () { edit(val || ''); });
+      }
+
+      function edit(current) {
+        var input = window.prompt('Area served by ' + equipName + ' (saved to the equip rec):', current);
+        if (input == null) return;
+        input = input.trim();
+        if (!input || input === current) return;
+        // TODO(auth): commit relies on the user's SkySpark permissions; an
+        // elevated-role check belongs server-side once roles are plumbed.
+        var axon = 'do e: read(equip and navName==' + _q(equipName) + ' and siteRef==' + siteRef +
+          ', false); if (e != null) commit(diff(e, {areaserved: ' + _q(input) + '})) end';
+        NS.api.evalAxon(ctx.attestKey, ctx.projectName, axon)
+          .then(function () { render(input); })
+          .catch(function (err) {
+            console.warn('[FaultDetail] areaserved commit failed:', err);
+            window.alert('Could not save area served — check permissions (details in console).');
+          });
+      }
+
+      var inline = valStr(raw.areaserved || raw.areaServed);
+      if (inline) { render(inline); return; }
+      if (!canWrite && !live) { render(''); return; }
+      if (!equipName || !siteRef) { render(''); return; }
       var axon = 'do e: read(equip and navName==' + _q(equipName) + ' and siteRef==' + siteRef +
         ', false); if (e == null) null else if (e["areaserved"] != null) e["areaserved"] else e["areaServed"] end';
       NS.api.evalAxonVal(ctx.attestKey, ctx.projectName, axon)
-        .then(showArea)
-        .catch(function () { /* optional metadata — stay hidden */ });
+        .then(function (v) { render(valStr(v)); })
+        .catch(function () { render(''); });
     },
 
     _loadAll: function (contentEl, fault, ctx, rangeKey) {

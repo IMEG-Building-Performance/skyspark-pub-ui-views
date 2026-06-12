@@ -21,12 +21,35 @@ var FL_COLS = ['faultName', 'equipment', 'sumDur', 'sevNorm', 'faultActive'];
 var FL_LABELS = { faultName:'Fault Name', equipment:'Equipment', sumDur:'Duration (hours)', sevNorm:'Severity', faultActive:'Fault Active %' };
 
 var FL_CONDITIONS = [
-  { id: 'sevHigh',  label: 'Severity ≥ 7',  test: function (r) { return typeof r.sevNorm === 'number' && r.sevNorm >= 7; }, color: '#FEE2E2', activeColor: '#DC2626', activeText: '#fff' },
-  { id: 'sevMed',   label: 'Severity 4–6',  test: function (r) { return typeof r.sevNorm === 'number' && r.sevNorm >= 4 && r.sevNorm <= 6; }, color: '#FEF3C7', activeColor: '#D97706', activeText: '#fff' },
-  { id: 'pctHigh',  label: '% ≥ 75',        test: function (r) { return typeof r.faultActive === 'number' && r.faultActive >= 75; }, color: '#FEE2E2', activeColor: '#DC2626', activeText: '#fff' },
-  { id: 'isNew',    label: 'New',           test: function (r) { return !!r._isNew; },  color: '#DBEAFE', activeColor: '#2563EB', activeText: '#fff' },
-  { id: 'recent',   label: 'Recent',        test: function (r) { return !!r._recent; }, color: '#DBEAFE', activeColor: '#2563EB', activeText: '#fff' },
+  { id: 'sevHigh',  label: 'Severity ≥ 7',  test: function (r) { return typeof r.sevNorm === 'number' && r.sevNorm >= 7; }, color: '#FEE2E2', activeColor: '#DC2626', activeText: '#fff',
+    tip: 'Faults with normalized severity 7 or higher' },
+  { id: 'sevMed',   label: 'Severity 4–6',  test: function (r) { return typeof r.sevNorm === 'number' && r.sevNorm >= 4 && r.sevNorm <= 6; }, color: '#FEF3C7', activeColor: '#D97706', activeText: '#fff',
+    tip: 'Faults with normalized severity between 4 and 6' },
+  { id: 'pctHigh',  label: '% ≥ 75',        test: function (r) { return typeof r.faultActive === 'number' && r.faultActive >= 75; }, color: '#FEE2E2', activeColor: '#DC2626', activeText: '#fff',
+    tip: 'Faults active for at least 75% of the report period' },
+  { id: 'isNew',    label: 'New',           test: function (r) { return !!r._isNew; },  color: '#DBEAFE', activeColor: '#2563EB', activeText: '#fff',
+    tip: 'Not present in the previous report period (the same-length window immediately before the current date range)' },
+  { id: 'recent',   label: 'Recent',        test: function (r) { return !!r._recent; }, color: '#DBEAFE', activeColor: '#2563EB', activeText: '#fff',
+    tip: 'At least 75% of this fault\'s hours occurred within the last 2 weeks' },
 ];
+
+// Same-length window immediately before the current range — matches the
+// Fault Summaries "Change from Last Report" convention.
+function _flPrevDateArg(ctx) {
+  if (!ctx.datesStart || !ctx.datesEnd) return null;
+  var s = new Date(ctx.datesStart + 'T00:00:00');
+  var e = new Date(ctx.datesEnd + 'T00:00:00');
+  if (isNaN(s) || isNaN(e)) return null;
+  var spanMs = e.getTime() - s.getTime();
+  var prevEnd = new Date(s.getTime() - 86400000); // day before start
+  var prevStart = new Date(prevEnd.getTime() - spanMs);
+  function fmt(d) {
+    return d.getFullYear() + '-' +
+      (d.getMonth() < 9 ? '0' : '') + (d.getMonth() + 1) + '-' +
+      (d.getDate() < 10 ? '0' : '') + d.getDate();
+  }
+  return fmt(prevStart) + '..' + fmt(prevEnd);
+}
 
 function _flFormatHours(v) {
   if (typeof v === 'number') return v.toFixed(0) + 'h';
@@ -187,26 +210,17 @@ window.mbcxDashboard.components.FaultList = {
   },
 
   // Annotate rows with:
-  //  _isNew   — absent from the previous report-period snapshot (per-site
-  //             localStorage; rolls when the date range changes)
+  //  _isNew   — absent from the previous report period (the same-length
+  //             window before the current range, fetched live)
   //  _recent  — the fault's duration mostly just occurred: its trailing
   //             2-week duration is >= 75% of its full-range duration
-  _annotateNewRecent: function (rows, ctx, period, recentDur) {
+  _annotateNewRecent: function (rows, recentDur, prevKeys) {
     try {
-      var site = String(ctx.siteRef || '').replace(/^@/, '');
-      var snapKey = 'mbcxFaultSnapshot_' + site;
-      var snap = null;
-      try { snap = JSON.parse(localStorage.getItem(snapKey)); } catch (e) {}
-
-      var keys = rows.map(function (r) { return r.equipment + '::' + r.faultName; });
-      var prevKeys = snap ? (snap.period !== period ? snap.keys : snap.prevKeys) || null : null;
-      localStorage.setItem(snapKey, JSON.stringify({ period: period, keys: keys, prevKeys: prevKeys }));
       if (prevKeys) {
         rows.forEach(function (r) {
-          r._isNew = prevKeys.indexOf(r.equipment + '::' + r.faultName) === -1;
+          r._isNew = !prevKeys[r.equipment + '::' + r.faultName];
         });
       }
-
       if (recentDur) {
         rows.forEach(function (r) {
           var d2 = recentDur[r.equipment + '::' + r.faultName];
@@ -288,7 +302,20 @@ window.mbcxDashboard.components.FaultList = {
         })
       : Promise.resolve(null);
 
-    Promise.all([API.evalAxon(ctx.attestKey, ctx.projectName, axon), recentPromise])
+    // Previous report period (same-length window before the current range) —
+    // used for "New" flags, matching the Fault Summaries change column.
+    var prevDateArg = _flPrevDateArg(ctx);
+    var prevPromise = prevDateArg
+      ? API.evalAxon(ctx.attestKey, ctx.projectName,
+          'view_MBCxReport_CustomerView_Output(' + ctx.siteRef + ', ' + prevDateArg +
+          ', 10%, @nav:rule.all, "Fault List", "", "Show All")')
+        .catch(function (err) {
+          console.warn('[FaultList] Previous-period fetch failed (New flags skipped):', err);
+          return null;
+        })
+      : Promise.resolve(null);
+
+    Promise.all([API.evalAxon(ctx.attestKey, ctx.projectName, axon), recentPromise, prevPromise])
       .then(function (results) {
         var parsed = HP.parseGrid(results[0]);
         if (!parsed.rows.length) {
@@ -307,7 +334,15 @@ window.mbcxDashboard.components.FaultList = {
             }
           });
         }
-        self._annotateNewRecent(rows, ctx, dateArg, recentDur);
+        var prevKeys = null;
+        if (results[2]) {
+          var pparsed = HP.parseGrid(results[2]);
+          prevKeys = {};
+          self._mapLiveRows(pparsed.rows, pparsed.cols).forEach(function (r) {
+            prevKeys[r.equipment + '::' + r.faultName] = true;
+          });
+        }
+        self._annotateNewRecent(rows, recentDur, prevKeys);
         self._populate(container, rows);
       })
       .catch(function (err) {
@@ -391,6 +426,7 @@ window.mbcxDashboard.components.FaultList = {
     var chipHtml = FL_CONDITIONS.map(function (c) {
       if (!condCounts[c.id]) return '';
       return '<button class="tu-cond-chip" data-cond="' + c.id + '"'
+        + (c.tip ? ' title="' + c.tip + '"' : '')
         + ' data-color="' + c.color + '" data-active-color="' + c.activeColor + '" data-active-text="' + c.activeText + '"'
         + ' style="background:' + c.color + ';">'
         + c.label + '<span class="tu-cond-count">' + condCounts[c.id] + '</span></button>';
