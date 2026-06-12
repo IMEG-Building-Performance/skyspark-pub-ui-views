@@ -184,6 +184,42 @@ window.mbcxDashboard.components.FaultList = {
     }
   },
 
+  // Annotate rows with _isNew (not present in the previous report period)
+  // and _recent (first observed within the last 7 days). Both are
+  // client-side localStorage ledgers — per-browser heuristics until a
+  // server-side fault history exists.
+  _annotateNewRecent: function (rows, ctx, period) {
+    try {
+      var site = String(ctx.siteRef || '').replace(/^@/, '');
+      var ledgerKey = 'mbcxFaultFirstSeen_' + site;
+      var snapKey   = 'mbcxFaultSnapshot_' + site;
+      var today = new Date().toISOString().slice(0, 10);
+      var ledger = {}, snap = null;
+      try { ledger = JSON.parse(localStorage.getItem(ledgerKey)) || {}; } catch (e) {}
+      try { snap = JSON.parse(localStorage.getItem(snapKey)); } catch (e) {}
+
+      var keys = [];
+      rows.forEach(function (r) {
+        var k = r.equipment + '::' + r.faultName;
+        keys.push(k);
+        if (!ledger[k]) ledger[k] = today;
+        r._firstSeen = ledger[k];
+        r._recent = (Date.parse(today) - Date.parse(ledger[k])) <= 7 * 86400000;
+      });
+      localStorage.setItem(ledgerKey, JSON.stringify(ledger));
+
+      // "New" = absent from the snapshot of the previous (different) report
+      // period; the snapshot rolls when the period changes.
+      var prevKeys = snap ? (snap.period !== period ? snap.keys : snap.prevKeys) || null : null;
+      localStorage.setItem(snapKey, JSON.stringify({ period: period, keys: keys, prevKeys: prevKeys }));
+      if (prevKeys) {
+        rows.forEach(function (r) {
+          r._isNew = prevKeys.indexOf(r.equipment + '::' + r.faultName) === -1;
+        });
+      }
+    } catch (e) { /* annotation is best-effort */ }
+  },
+
   _populate: function (container, faults) {
     var set = function (id, v) { var el = container.querySelector('#' + id); if (el) el.textContent = v; };
     set('flKpiTotal', faults.length);
@@ -195,6 +231,14 @@ window.mbcxDashboard.components.FaultList = {
     });
     this._state = { rows: sorted, sortCol: 'faultName', sortDir: 1, filter: '' };
     this._buildTable(container);
+
+    // Restore the scroll position saved when a fault detail was opened.
+    var sc = this._returnScroll;
+    if (sc) {
+      this._returnScroll = null;
+      var scroller = container.querySelector('#mbcxContent') || container;
+      requestAnimationFrame(function () { scroller.scrollTop = sc; });
+    }
   },
 
   _fetchLive: function (container, ctx) {
@@ -231,7 +275,9 @@ window.mbcxDashboard.components.FaultList = {
           if (tbody) tbody.innerHTML = '<tr><td style="padding:24px;color:#9CA3AF;font-size:12px;text-align:center;">No faults returned for this site and date range.</td></tr>';
           return;
         }
-        self._populate(container, self._mapLiveRows(parsed.rows, parsed.cols));
+        var rows = self._mapLiveRows(parsed.rows, parsed.cols);
+        self._annotateNewRecent(rows, ctx, dateArg);
+        self._populate(container, rows);
       })
       .catch(function (err) {
         console.error('[FaultList] Live fetch failed:', err);
@@ -448,7 +494,9 @@ window.mbcxDashboard.components.FaultList = {
     if (!tbody) return;
     tbody.innerHTML = rows.map(function(r){
       var inAgenda = !!(window.mbcxDashboard && window.mbcxDashboard.meeting && window.mbcxDashboard.meeting.has(r.id));
-      return '<tr class="fl-row fl-row-clickable" data-fid="' + r.id + '">' +
+      var rowCls = 'fl-row fl-row-clickable' + (r._recent ? ' fl-row-recent' : '');
+      var rowTitle = r._recent ? ' title="First observed ' + r._firstSeen + '"' : '';
+      return '<tr class="' + rowCls + '" data-fid="' + r.id + '"' + rowTitle + '>' +
         FL_COLS.map(function (k) {
           var val = r[k];
           if (val && typeof val === 'object' && val.dis) val = val.dis;
@@ -464,7 +512,11 @@ window.mbcxDashboard.components.FaultList = {
           }
           if (k === 'sumDur') display = _flFormatHours(val);
 
-          return '<td class="' + cls + cf + '">' + (display !== null && display !== undefined && display !== '' ? display : '—') + '</td>';
+          var cellHtml = (display !== null && display !== undefined && display !== '' ? display : '—');
+          if (k === 'faultName' && r._isNew) {
+            cellHtml += ' <span class="fl-new-badge" title="Not present in the previous report period">New</span>';
+          }
+          return '<td class="' + cls + cf + '">' + cellHtml + '</td>';
         }).join('') +
         '<td class="tu-td fl-td-act"><button class="fl-agenda-btn' + (inAgenda ? ' fl-agenda-btn-in' : '') + '" data-fid="' + r.id + '" title="' + (inAgenda ? 'Remove from Meeting Agenda' : 'Add to Meeting Agenda') + '">' + (inAgenda ? '&#10003;' : '+') + '</button></td>' +
         '</tr>';

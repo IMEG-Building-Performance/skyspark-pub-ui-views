@@ -476,6 +476,9 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         btn.classList.toggle('active', btn.getAttribute('data-tab') === 'faults');
       });
       var content = container.querySelector('#mbcxContent');
+      // Remember the fault-list scroll position so Back returns to the
+      // same place (restored in FaultList._populate).
+      if (co.FaultList) co.FaultList._returnScroll = content.scrollTop;
       content.classList.remove('dash-content--fixed');
       var allFaults = co.FaultList && co.FaultList._state ? co.FaultList._state.rows : [];
       if (co.FaultDetail) {

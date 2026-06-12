@@ -369,7 +369,9 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       var chartInst = new Chart(canvas, {
         type: 'line',
         data: { labels: fmtLabels, datasets: datasets },
-        plugins: [crosshairPlugin, sparkBandsPlugin],
+        // Fault-active periods render in the bar above the charts only —
+        // in-plot shading was removed as too noisy.
+        plugins: [crosshairPlugin],
         options: {
           responsive: true,
           maintainAspectRatio: false,
@@ -564,6 +566,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         '    <div class="fd-hd-center">',
         '      <div class="fd-hd-equip">' + (fault.equipment || '') + '</div>',
         '      <div class="fd-hd-fault">' + (fault.faultName || '') + '</div>',
+        '      <div class="fd-hd-area" id="fdAreaServed" style="display:none"></div>',
         '    </div>',
         '    <div class="fd-hd-badges">',
         '      <span class="fd-sev-badge">Sev ' + sevVal + '</span>',
@@ -704,6 +707,32 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       return 'pastMonth';
     },
 
+    // Area served — from the fault row when present, else fetched off the
+    // equip rec. Hidden when unavailable.
+    _loadAreaServed: function (contentEl, fault, ctx) {
+      var el = contentEl.querySelector('#fdAreaServed');
+      if (!el || el.textContent) return; // already resolved (range re-load)
+      function showArea(v) {
+        var s = (v && typeof v === 'object') ? (v.dis || v.val || '') : (v || '');
+        if (!s) return;
+        el.textContent = 'Serves: ' + s;
+        el.style.display = '';
+      }
+      var raw = fault._raw || {};
+      var inline = raw.areaServed || raw.areaserved;
+      if (inline) { showArea(inline); return; }
+
+      if (!ctx || !ctx.attestKey || !ctx.projectName) return;
+      var equipName = raw.equipment || fault.equipment;
+      var siteRef = _extractRef(raw.siteRef) || ctx.siteRef;
+      if (!equipName || !siteRef) return;
+      var axon = 'do e: read(equip and navName==' + _q(equipName) + ' and siteRef==' + siteRef +
+        ', false); if (e != null) e["areaServed"] else null end';
+      NS.api.evalAxonVal(ctx.attestKey, ctx.projectName, axon)
+        .then(showArea)
+        .catch(function () { /* optional metadata — stay hidden */ });
+    },
+
     _loadAll: function (contentEl, fault, ctx, rangeKey) {
       var dateRange = this._computeDateRange(fault, ctx, rangeKey);
       // Clear previous spark data
@@ -711,6 +740,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       var barEl = contentEl.querySelector('#fdFaultBar');
       if (barEl) barEl.innerHTML = '';
       if (barEl) barEl.classList.remove('fd-fault-bar-wrap--loaded');
+      this._loadAreaServed(contentEl, fault, ctx);
       this._loadFaultActivityBar(contentEl, fault, ctx, dateRange);
       this._loadTrendChart(contentEl, fault, ctx, rangeKey);
     },

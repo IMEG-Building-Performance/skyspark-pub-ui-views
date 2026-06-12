@@ -8,14 +8,40 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
   var _agenda = []; // [{ fault, discussed, addedAt }]
   var _nextId  = 9000; // IDs for manually-added items
 
+  // Persist the agenda so a refresh mid-prep (or mid-meeting) doesn't lose
+  // it. _raw grid rows are stripped from storage to keep it small — trend
+  // fetches fall back to ctx dates without them.
+  // TODO(data): move to an mbcxMeeting rec alongside the prep draft.
+  var AGENDA_KEY = 'mbcxMeetingAgenda';
+  function _saveAgenda() {
+    try {
+      localStorage.setItem(AGENDA_KEY, JSON.stringify(_agenda, function (k, v) {
+        return k === '_raw' ? undefined : v;
+      }));
+    } catch (e) {}
+  }
+  (function _loadAgenda() {
+    try {
+      var s = localStorage.getItem(AGENDA_KEY);
+      if (s) {
+        var saved = JSON.parse(s);
+        if (Object.prototype.toString.call(saved) === '[object Array]') {
+          _agenda = saved.filter(function (i) { return i && i.fault; });
+        }
+      }
+    } catch (e) {}
+  })();
+
   NS.meeting = {
     add: function (fault) {
       if (_agenda.some(function (i) { return i.fault.id === fault.id; })) return;
       _agenda.push({ fault: fault, discussed: false, addedAt: Date.now() });
+      _saveAgenda();
       _refreshBadge();
     },
     remove: function (faultId) {
       _agenda = _agenda.filter(function (i) { return i.fault.id !== faultId; });
+      _saveAgenda();
       _refreshBadge();
     },
     has: function (faultId) {
@@ -29,6 +55,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       var j = idx + delta;
       if (idx === -1 || j < 0 || j >= _agenda.length) return;
       var tmp = _agenda[idx]; _agenda[idx] = _agenda[j]; _agenda[j] = tmp;
+      _saveAgenda();
     }
   };
 
@@ -156,6 +183,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       if (clearBtn) {
         clearBtn.addEventListener('click', function () {
           _agenda = [];
+          _saveAgenda();
           _refreshBadge();
           _showAgenda(contentEl, ctx, co);
         });
@@ -239,6 +267,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         if (!isNaN(ridx)) {
           var removed = _agenda[ridx];
           _agenda.splice(ridx, 1);
+          _saveAgenda();
           // keep NS.meeting store in sync for non-manual items
           if (removed && !removed.fault._manual) NS.meeting.remove(removed.fault.id);
           else _refreshBadge();
@@ -309,6 +338,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         if (isNaN(toIdx) || toIdx === draggingIdx) return;
         var moved = _agenda.splice(draggingIdx, 1)[0];
         _agenda.splice(toIdx, 0, moved);
+        _saveAgenda();
         draggingIdx = null;
         _showAgenda(contentEl, ctx, co);
       });
@@ -338,6 +368,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
             : null,
           onMarkDiscussed: function () {
             _agenda[idx].discussed = !_agenda[idx].discussed;
+            _saveAgenda();
             _refreshBadge();
             _present(contentEl, idx, ctx, co);
           }

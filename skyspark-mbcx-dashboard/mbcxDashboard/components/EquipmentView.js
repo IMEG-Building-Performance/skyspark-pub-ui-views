@@ -8,6 +8,7 @@ window.mbcxDashboard.components.EquipmentView = (function () {
   var _ctx = null;
   var _equipList = [];
   var _selectedId = null;
+  var _preselectDis = null; // set via preselect() before navigating here
   var _charts = [];
   var _selectorOpen = false;
   var _lastPoints = [];
@@ -269,6 +270,15 @@ window.mbcxDashboard.components.EquipmentView = (function () {
         _equipList.sort(function (a, b) { return a.dis.localeCompare(b.dis); });
         if (_equipList.length) {
           _selectedId = _equipList[0].id;
+          // Honor a preselect request (e.g. clicking a VAV in the summary
+          // table) — exact match first, then substring.
+          if (_preselectDis) {
+            var want = _preselectDis.toLowerCase();
+            var hit = _equipList.filter(function (e) { return e.dis.toLowerCase() === want; })[0] ||
+                      _equipList.filter(function (e) { return e.dis.toLowerCase().indexOf(want) !== -1; })[0];
+            if (hit) _selectedId = hit.id;
+            _preselectDis = null;
+          }
           _renderHeader();
           _loadEquipDetail();
         } else {
@@ -866,6 +876,11 @@ window.mbcxDashboard.components.EquipmentView = (function () {
     _selectedId = null;
   }
 
-  return { renderPage: renderPage, initLive: initLive, destroy: destroy };
+  return {
+    renderPage: renderPage,
+    initLive: initLive,
+    destroy: destroy,
+    preselect: function (dis) { _preselectDis = dis || null; }
+  };
 
 })();
