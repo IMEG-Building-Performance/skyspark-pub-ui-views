@@ -3239,3 +3239,88 @@
   justify-content: flex-end;
   margin-top: 12px;
 }
+
+/* ── Meeting Prep: triage inbox (step 2) ──────────────────────────────── */
+#mbcxDashboard .mp-triage-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+#mbcxDashboard .mp-search {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  padding: 7px 11px;
+  border: 1px solid var(--gray-300);
+  border-radius: 7px;
+  background: var(--card-bg);
+  color: var(--card-fg);
+}
+#mbcxDashboard .mp-search:focus { outline: none; border-color: var(--primary); }
+#mbcxDashboard .mp-type-chips { display: flex; gap: 5px; flex-shrink: 0; }
+
+#mbcxDashboard .mp-queue-meta {
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+#mbcxDashboard .mp-group {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  margin-bottom: 6px;
+}
+#mbcxDashboard .mp-group--open { border-color: var(--gray-300); }
+#mbcxDashboard .mp-group-hd {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+}
+#mbcxDashboard .mp-group-expand {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 0;
+  min-width: 0;
+}
+#mbcxDashboard .mp-group-caret { color: var(--gray-400); font-size: 11px; }
+#mbcxDashboard .mp-group-equip { font-size: 12.5px; font-weight: 700; color: var(--card-fg); white-space: nowrap; }
+#mbcxDashboard .mp-group-count {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--gray-500);
+  background: var(--gray-100);
+  padding: 1px 7px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+#mbcxDashboard .mp-group-active { font-size: 11px; color: var(--muted); white-space: nowrap; }
+#mbcxDashboard .mp-group-preview {
+  flex: 1;
+  min-width: 0;
+  font-size: 11.5px;
+  color: var(--gray-500);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#mbcxDashboard .mp-group-body {
+  border-top: 1px solid var(--card-border);
+  padding: 6px 12px 8px 30px;
+}
+#mbcxDashboard .mp-row--nested {
+  border: none;
+  border-bottom: 1px solid var(--gray-100);
+  border-radius: 0;
+  margin-bottom: 0;
+  padding: 7px 2px;
+}
+#mbcxDashboard .mp-row--nested:last-child { border-bottom: none; }
+#mbcxDashboard .mp-showmore { display: block; margin: 8px auto; }
+#mbcxDashboard .mp-skipped-toggle { margin-top: 14px; color: var(--muted); }
+#mbcxDashboard .mp-skipped-list { margin-top: 6px; }
