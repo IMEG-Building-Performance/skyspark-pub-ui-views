@@ -1,4 +1,11 @@
-// components/MeetingPrep.js — Meeting Preparation workspace (demo scaffold)
+// components/MeetingPrep.js — Meeting Preparation workspace (demo)
+//
+// Simplified flow: every action is a single click — check an item as
+// reviewed, add it to the agenda, or skip it. Three passes:
+//   1. Open Fault Log items (the carry-over from prior meetings)
+//   2. New faults since the last meeting
+//   3. Performance snapshot (headline KPIs per system)
+// The agenda rail collects items and hands off to the Meetings presenter.
 //
 // INTERNAL VIEW — intended for elevated (superuser) users only.
 // TODO(auth): role gating is NOT implemented yet. Before client deployment:
@@ -6,14 +13,13 @@
 //   2. Enforce server-side: any Axon funcs that read/write prep or meeting
 //      recs must verify the role via context() — hiding the tab is cosmetic.
 //
-// Data: demo only. Each _DEMO block models the contract the live queries
-// (and later the arc / Fault Log integration) need to satisfy:
-//   carried   <- open arcs with last-meeting disposition + current status
-//   newFaults <- live fault list minus faults already linked to an arc
+// TODO(data): demo data only. Live sources when wired:
+//   logItems  <- Fault Log rows with status=="Open"
+//   newFaults <- live fault list minus faults already in the Fault Log
 //   systems   <- headline KPIs from the existing summary/compliance views
-// TODO(data): persist draft state as an mbcxMeeting rec (status: draft) in
-// SkySpark instead of localStorage, so prep survives across machines and
-// becomes the publish queue into the Fault Log.
+// Draft state persists to localStorage for now; should move to an
+// mbcxMeeting draft rec so prep survives across machines and becomes the
+// publish queue into the Fault Log.
 window.mbcxDashboard = window.mbcxDashboard || {};
 window.mbcxDashboard.components = window.mbcxDashboard.components || {};
 
@@ -28,27 +34,18 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
   // ── Demo data ─────────────────────────────────────────────────────────────
   var _DEMO = {
     lastMeeting: '2026-05-14',
-    improvedCount: 4,
-    carried: [
-      { id: 'c1', equipment: 'AHU-2',      faultName: 'OA damper not responding to setpoint',
-        disposition: 'Carry forward', note: 'Actuator replacement quoted — awaiting PO.',
-        decidedOn: '2026-05-14', statusNow: 'active',  trendPct: 9 },
-      { id: 'c2', equipment: 'CUP-CHW-1',  faultName: 'Differential pressure not at setpoint',
-        disposition: 'Monitor', note: 'Suspected sensor drift; verify after recal.',
-        decidedOn: '2026-05-14', statusNow: 'active',  trendPct: -31 },
-      { id: 'c3', equipment: 'VAV-L1-02',  faultName: 'Faulty reheat coil — SAT 95°F',
-        disposition: 'Client action', note: 'Valve scheduled for replacement 5/22.',
-        decidedOn: '2026-05-14', statusNow: 'cleared', trendPct: -100 },
-      { id: 'c4', equipment: 'AHU-1',      faultName: 'Cooling valve stuck open',
-        disposition: 'Resolved', note: 'Rebuilt 4/30 — verified closed.',
-        decidedOn: '2026-05-14', statusNow: 'active',  trendPct: 42, regressed: true }
+    logItems: [
+      { id: 'log-14', equipment: 'AHU-2',     faultName: 'OA damper not responding to setpoint', priority: 'High',   assignedTo: 'J. Miller', dateAdded: '2026-04-16' },
+      { id: 'log-17', equipment: 'CUP-CHW-1', faultName: 'Differential pressure not at setpoint', priority: 'Medium', assignedTo: 'Controls',  dateAdded: '2026-04-30' },
+      { id: 'log-21', equipment: 'VAV-L1-02', faultName: 'Faulty reheat coil — SAT 95°F',        priority: 'High',   assignedTo: '',          dateAdded: '2026-05-14' },
+      { id: 'log-22', equipment: 'AHU-1',     faultName: 'Cooling valve stuck open',             priority: 'Low',    assignedTo: 'J. Miller', dateAdded: '2026-05-14' }
     ],
     newFaults: [
-      { id: 'n1', equipment: 'VAV 2-1 AW', faultName: 'VAV - Damper At 100%',                sevNorm: 7, faultActive: 64, sumDur: 212, firstSeen: '2026-05-19' },
-      { id: 'n2', equipment: 'AHU-3',      faultName: 'Supply air temp sensor drift',        sevNorm: 4, faultActive: 77, sumDur: 198, firstSeen: '2026-05-27' },
-      { id: 'n3', equipment: 'VAV-L2-06',  faultName: 'Zone temp above setpoint >2h occupied', sevNorm: 5, faultActive: 21, sumDur: 36,  firstSeen: '2026-06-02' },
-      { id: 'n4', equipment: 'CUP-HW-1',   faultName: 'HW supply temp below setpoint',       sevNorm: 2, faultActive: 12, sumDur: 18,  firstSeen: '2026-06-05' },
-      { id: 'n5', equipment: 'AHU-1',      faultName: 'VFD speed oscillation >15%',          sevNorm: 3, faultActive: 31, sumDur: 88,  firstSeen: '2026-06-07' }
+      { id: 'n1', equipment: 'VAV 2-1 AW', faultName: 'VAV - Damper At 100%',                  sevNorm: 7, faultActive: 64, firstSeen: '2026-05-19' },
+      { id: 'n2', equipment: 'AHU-3',      faultName: 'Supply air temp sensor drift',          sevNorm: 4, faultActive: 77, firstSeen: '2026-05-27' },
+      { id: 'n3', equipment: 'VAV-L2-06',  faultName: 'Zone temp above setpoint >2h occupied', sevNorm: 5, faultActive: 21, firstSeen: '2026-06-02' },
+      { id: 'n4', equipment: 'CUP-HW-1',   faultName: 'HW supply temp below setpoint',         sevNorm: 2, faultActive: 12, firstSeen: '2026-06-05' },
+      { id: 'n5', equipment: 'AHU-1',      faultName: 'VFD speed oscillation >15%',            sevNorm: 3, faultActive: 31, firstSeen: '2026-06-07' }
     ],
     systems: [
       { key: 'cup', label: 'CUP Performance', kpis: [
@@ -79,7 +76,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
   var _state = null;
 
   function _defaultState() {
-    return { dispositions: {}, triage: {}, dismissReasons: {}, reviewed: {}, obsSeq: 1 };
+    return { reviewed: {}, skipped: {} };
   }
 
   function _loadState() {
@@ -98,26 +95,47 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
   }
 
   // ── Render helpers ────────────────────────────────────────────────────────
-  function _sevBadge(sev) {
+  function _inAgenda(id) {
+    return !!(NS.meeting && NS.meeting.has(id));
+  }
+
+  function _prioChip(p) {
+    var cls = p === 'High' ? 'mp-sev--hi' : p === 'Medium' ? 'mp-sev--med' : 'mp-sev--lo';
+    return '<span class="mp-sev ' + cls + '">' + _esc(p) + '</span>';
+  }
+
+  function _sevChip(sev) {
     var cls = sev >= 6 ? 'mp-sev--hi' : sev >= 4 ? 'mp-sev--med' : 'mp-sev--lo';
     return '<span class="mp-sev ' + cls + '">Sev ' + sev + '</span>';
   }
 
-  function _deltaStrip() {
-    var dismissed = 0, agendaed = 0;
-    _DEMO.newFaults.forEach(function (f) {
-      if (_state.triage[f.id] === 'dismissed') dismissed++;
-      if (_state.triage[f.id] === 'agenda') agendaed++;
+  function _checkBtn(id) {
+    var on = !!_state.reviewed[id];
+    return '<button class="mp-check' + (on ? ' mp-check--on' : '') + '" data-check="' + _esc(id) + '"' +
+      ' title="Mark reviewed" aria-pressed="' + on + '">' +
+      (on ? '&#10003;' : '') + '</button>';
+  }
+
+  function _agendaBtn(id) {
+    var on = _inAgenda(id);
+    return '<button class="mp-act mp-act--primary' + (on ? ' mp-act--on' : '') +
+      '" data-agenda="' + _esc(id) + '">' + (on ? '&#10003; Agenda' : '+ Agenda') + '</button>';
+  }
+
+  function _statStrip() {
+    var total = _DEMO.logItems.length + _DEMO.newFaults.length;
+    var reviewed = 0;
+    _DEMO.logItems.concat(_DEMO.newFaults).forEach(function (it) {
+      if (_state.reviewed[it.id]) reviewed++;
     });
-    var worse = _DEMO.carried.filter(function (c) { return c.statusNow === 'active' && c.trendPct > 0 && !c.regressed; }).length;
-    var regressed = _DEMO.carried.filter(function (c) { return c.regressed; }).length;
+    var agendaCount = (NS.meeting && NS.meeting.count) ? NS.meeting.count() : 0;
     var cells = [
-      { label: 'New',       val: _DEMO.newFaults.length - dismissed, cls: 'mp-delta--new',  sub: agendaed + ' triaged to agenda' },
-      { label: 'Worse',     val: worse,                              cls: 'mp-delta--bad',  sub: 'since last meeting' },
-      { label: 'Improved',  val: _DEMO.improvedCount,                cls: 'mp-delta--good', sub: 'verify & report' },
-      { label: 'Regressed', val: regressed,                          cls: 'mp-delta--reg',  sub: 'previously resolved' }
+      { label: 'Open Log Items', val: _DEMO.logItems.length,  cls: 'mp-delta--bad',  sub: 'carried from prior meetings' },
+      { label: 'New Faults',     val: _DEMO.newFaults.length, cls: 'mp-delta--new',  sub: 'since ' + _DEMO.lastMeeting },
+      { label: 'Reviewed',       val: reviewed + ' / ' + total, cls: 'mp-delta--good', sub: 'prep progress' },
+      { label: 'On Agenda',      val: agendaCount,            cls: 'mp-delta--reg',  sub: 'ready for meeting' }
     ];
-    return '<div class="mp-delta">' + cells.map(function (c) {
+    return '<div class="mp-delta" id="mpStats">' + cells.map(function (c) {
       return '<div class="mp-delta-cell ' + c.cls + '">' +
         '<div class="mp-delta-val">' + c.val + '</div>' +
         '<div class="mp-delta-label">' + c.label + '</div>' +
@@ -126,53 +144,35 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     }).join('') + '</div>';
   }
 
-  function _carriedRows() {
-    return _DEMO.carried.map(function (c) {
-      var decided = _state.dispositions[c.id];
-      var status = c.regressed
-        ? '<span class="mp-status mp-status--reg">Regressed ' + (c.trendPct > 0 ? '+' + c.trendPct + '%' : '') + '</span>'
-        : c.statusNow === 'cleared'
-          ? '<span class="mp-status mp-status--ok">Cleared</span>'
-          : '<span class="mp-status mp-status--on">Active ' + (c.trendPct > 0 ? '+' : '') + c.trendPct + '%</span>';
-      var btn = function (key, label) {
-        return '<button class="mp-act' + (decided === key ? ' mp-act--on' : '') +
-          '" data-carried="' + c.id + '" data-disp="' + key + '">' + label + '</button>';
-      };
-      return '<div class="mp-row' + (decided ? ' mp-row--done' : '') + '">' +
+  function _logRows() {
+    return _DEMO.logItems.map(function (it) {
+      return '<div class="mp-row' + (_state.reviewed[it.id] ? ' mp-row--reviewed' : '') + '">' +
+        _checkBtn(it.id) +
+        '<span class="mp-id">' + _esc(it.id.replace('log-', '#')) + '</span>' +
         '<div class="mp-row-main">' +
-        '  <div class="mp-row-title">' + _esc(c.equipment) + ' <span class="mp-row-fault">' + _esc(c.faultName) + '</span></div>' +
-        '  <div class="mp-row-sub">On ' + c.decidedOn + ': <strong>' + _esc(c.disposition) + '</strong> — ' + _esc(c.note) + '</div>' +
+        '  <div class="mp-row-title">' + _esc(it.equipment) + ' <span class="mp-row-fault">' + _esc(it.faultName) + '</span></div>' +
+        '  <div class="mp-row-sub">Added ' + it.dateAdded + (it.assignedTo ? ' · ' + _esc(it.assignedTo) : ' · Unassigned') + '</div>' +
         '</div>' +
-        status +
-        '<div class="mp-row-acts">' + btn('resolved', 'Resolved') + btn('carry', 'Carry') + btn('escalate', 'Escalate') + '</div>' +
+        _prioChip(it.priority) +
+        '<div class="mp-row-acts">' + _agendaBtn(it.id) + '</div>' +
         '</div>';
     }).join('');
   }
 
-  function _triageRows() {
+  function _newRows() {
     var rows = _DEMO.newFaults.slice().sort(function (a, b) { return b.sevNorm - a.sevNorm; });
     return rows.map(function (f) {
-      var t = _state.triage[f.id];
-      if (t === 'dismissed') {
-        return '<div class="mp-row mp-row--dismissed">' +
-          '<div class="mp-row-main"><div class="mp-row-title">' + _esc(f.equipment) +
-          ' <span class="mp-row-fault">' + _esc(f.faultName) + '</span></div>' +
-          '<div class="mp-row-sub">Dismissed: ' + _esc(_state.dismissReasons[f.id] || '') + '</div></div>' +
-          '<div class="mp-row-acts"><button class="mp-act" data-fault="' + f.id + '" data-triage="undo">Undo</button></div>' +
-          '</div>';
-      }
-      var btn = function (key, label, extraCls) {
-        return '<button class="mp-act' + (t === key ? ' mp-act--on' : '') + (extraCls || '') +
-          '" data-fault="' + f.id + '" data-triage="' + key + '">' + label + '</button>';
-      };
-      return '<div class="mp-row' + (t ? ' mp-row--done' : '') + '">' +
+      var skipped = !!_state.skipped[f.id];
+      return '<div class="mp-row' + (_state.reviewed[f.id] ? ' mp-row--reviewed' : '') + (skipped ? ' mp-row--dismissed' : '') + '">' +
+        _checkBtn(f.id) +
         '<div class="mp-row-main">' +
         '  <div class="mp-row-title">' + _esc(f.equipment) + ' <span class="mp-row-fault">' + _esc(f.faultName) + '</span></div>' +
-        '  <div class="mp-row-sub">First seen ' + f.firstSeen + ' · ' + f.faultActive + '% active · ' + f.sumDur + ' h</div>' +
+        '  <div class="mp-row-sub">First seen ' + f.firstSeen + ' · ' + f.faultActive + '% active</div>' +
         '</div>' +
-        _sevBadge(f.sevNorm) +
+        _sevChip(f.sevNorm) +
         '<div class="mp-row-acts">' +
-          btn('agenda', '+ Agenda', ' mp-act--primary') + btn('monitor', 'Monitor') + btn('dismissed', 'Dismiss') +
+          (skipped ? '' : _agendaBtn(f.id)) +
+          '<button class="mp-act" data-skip="' + _esc(f.id) + '">' + (skipped ? 'Unskip' : 'Skip') + '</button>' +
         '</div>' +
         '</div>';
     }).join('');
@@ -180,11 +180,11 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
 
   function _systemCards() {
     return _DEMO.systems.map(function (s) {
-      var done = !!_state.reviewed[s.key];
-      return '<div class="mp-sys' + (done ? ' mp-sys--done' : '') + '" data-sys="' + s.key + '">' +
+      var id = 'sys-' + s.key;
+      return '<div class="mp-sys">' +
         '<div class="mp-sys-hd">' +
-        '  <label class="mp-sys-check"><input type="checkbox" data-sysreview="' + s.key + '"' + (done ? ' checked' : '') + '> ' + s.label + '</label>' +
-        '  <button class="mp-act" data-flag="' + s.key + '">Flag observation</button>' +
+        '  <span class="mp-sys-label">' + s.label + '</span>' +
+        '  ' + _agendaBtn(id) +
         '</div>' +
         '<div class="mp-sys-kpis">' + s.kpis.map(function (k) {
           return '<div class="mp-kpi mp-kpi--' + k.cls + '"><span class="mp-kpi-val">' + k.val + '</span><span class="mp-kpi-name">' + k.name + '</span></div>';
@@ -197,7 +197,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     var items = (NS.meeting && NS.meeting.list) ? NS.meeting.list() : [];
     var body;
     if (!items.length) {
-      body = '<div class="mp-rail-empty">No agenda items yet.<br>Triage faults or flag observations to build the agenda.</div>';
+      body = '<div class="mp-rail-empty">No agenda items yet.<br>Add log items, new faults, or systems to discuss.</div>';
     } else {
       body = items.map(function (it) {
         var f = it.fault;
@@ -206,7 +206,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
           '  <div class="mp-rail-item-equip">' + _esc(f.equipment || '') + '</div>' +
           '  <div class="mp-rail-item-fault">' + _esc(f.faultName || '') + '</div>' +
           '</div>' +
-          '<button class="mp-rail-remove" data-railremove="' + f.id + '" title="Remove from agenda">&times;</button>' +
+          '<button class="mp-rail-remove" data-railremove="' + _esc(String(f.id)) + '" title="Remove from agenda">&times;</button>' +
           '</div>';
       }).join('');
     }
@@ -216,6 +216,23 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       '  <button class="mp-btn" id="mpExport"' + (items.length ? '' : ' disabled') + '>Copy Agenda</button>' +
       '  <button class="mp-btn mp-btn--primary" id="mpStartMeeting"' + (items.length ? '' : ' disabled') + '>Start Meeting &#8594;</button>' +
       '</div>';
+  }
+
+  // Find the agenda payload for an id (log item, new fault, or system).
+  function _itemForId(id) {
+    var i;
+    for (i = 0; i < _DEMO.logItems.length; i++) {
+      if (_DEMO.logItems[i].id === id) return _DEMO.logItems[i];
+    }
+    for (i = 0; i < _DEMO.newFaults.length; i++) {
+      if (_DEMO.newFaults[i].id === id) return _DEMO.newFaults[i];
+    }
+    for (i = 0; i < _DEMO.systems.length; i++) {
+      if ('sys-' + _DEMO.systems[i].key === id) {
+        return { id: id, equipment: _DEMO.systems[i].label, faultName: 'Performance review', manual: true };
+      }
+    }
+    return null;
   }
 
   // ── Public API ────────────────────────────────────────────────────────────
@@ -236,17 +253,17 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         '        <span class="mp-badge mp-badge--demo" title="All data on this page is sample data">Demo data</span>',
         '      </div>',
         '    </div>',
-        '    ' + _deltaStrip(),
+        '    ' + _statStrip(),
         '    <div class="mp-section">',
-        '      <h3 class="mp-section-title">1 &middot; Review carried items <span class="mp-section-sub">prior dispositions vs. current status</span></h3>',
-        '      <div id="mpCarried">' + _carriedRows() + '</div>',
+        '      <h3 class="mp-section-title">1 &middot; Fault Log items <span class="mp-section-sub">open items carried from prior meetings</span></h3>',
+        '      <div id="mpLog">' + _logRows() + '</div>',
         '    </div>',
         '    <div class="mp-section">',
-        '      <h3 class="mp-section-title">2 &middot; Triage new faults <span class="mp-section-sub">since ' + _DEMO.lastMeeting + '</span></h3>',
-        '      <div id="mpTriage">' + _triageRows() + '</div>',
+        '      <h3 class="mp-section-title">2 &middot; New faults <span class="mp-section-sub">since ' + _DEMO.lastMeeting + '</span></h3>',
+        '      <div id="mpNew">' + _newRows() + '</div>',
         '    </div>',
         '    <div class="mp-section">',
-        '      <h3 class="mp-section-title">3 &middot; Systems walkthrough <span class="mp-section-sub">review each, flag anything meeting-worthy</span></h3>',
+        '      <h3 class="mp-section-title">3 &middot; Performance snapshot <span class="mp-section-sub">add any system worth discussing</span></h3>',
         '      <div class="mp-sys-grid" id="mpSystems">' + _systemCards() + '</div>',
         '    </div>',
         '  </div>',
@@ -256,88 +273,54 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     },
 
     initLive: function (contentEl, ctx, co, container) {
-      var self = this;
 
-      function rerenderRail() {
-        var rail = contentEl.querySelector('#mpRail');
-        if (rail) { rail.innerHTML = _railHtml(); wireRail(); }
+      function rerender() {
+        var el;
+        if ((el = contentEl.querySelector('#mpLog')))      el.innerHTML = _logRows();
+        if ((el = contentEl.querySelector('#mpNew')))      el.innerHTML = _newRows();
+        if ((el = contentEl.querySelector('#mpSystems')))  el.innerHTML = _systemCards();
+        if ((el = contentEl.querySelector('#mpStats')))    el.outerHTML = _statStrip();
+        if ((el = contentEl.querySelector('#mpRail')))   { el.innerHTML = _railHtml(); wireRail(); }
       }
 
-      function rerenderSection(id, html) {
-        var el = contentEl.querySelector(id);
-        if (el) el.innerHTML = html;
-      }
-
-      // Carried-item dispositions
       contentEl.addEventListener('click', function (e) {
         var btn = e.target.closest('button');
         if (!btn) return;
 
-        // Disposition buttons
-        var carriedId = btn.getAttribute('data-carried');
-        if (carriedId) {
-          var disp = btn.getAttribute('data-disp');
-          _state.dispositions[carriedId] = (_state.dispositions[carriedId] === disp) ? null : disp;
-          if (disp === 'escalate' && _state.dispositions[carriedId]) {
-            var c = _DEMO.carried.filter(function (x) { return x.id === carriedId; })[0];
-            if (c && NS.meeting) NS.meeting.add({ id: 'carried-' + c.id, equipment: c.equipment, faultName: c.faultName });
-          }
+        var checkId = btn.getAttribute('data-check');
+        if (checkId) {
+          _state.reviewed[checkId] = !_state.reviewed[checkId];
           _saveState();
-          rerenderSection('#mpCarried', _carriedRows());
-          rerenderRail();
+          rerender();
           return;
         }
 
-        // Triage buttons
-        var faultId = btn.getAttribute('data-fault');
-        if (faultId) {
-          var action = btn.getAttribute('data-triage');
-          var f = _DEMO.newFaults.filter(function (x) { return x.id === faultId; })[0];
-          if (action === 'undo') {
-            delete _state.triage[faultId];
-            delete _state.dismissReasons[faultId];
-          } else if (action === 'dismissed') {
-            var reason = window.prompt('Dismiss reason (required) — e.g. false positive, known condition:');
-            if (!reason) return;
-            _state.triage[faultId] = 'dismissed';
-            _state.dismissReasons[faultId] = reason;
-            if (f && NS.meeting && NS.meeting.has(f.id)) NS.meeting.remove(f.id);
+        var agendaId = btn.getAttribute('data-agenda');
+        if (agendaId && NS.meeting) {
+          var item = _itemForId(agendaId);
+          if (!item) return;
+          if (NS.meeting.has(agendaId)) {
+            NS.meeting.remove(agendaId);
           } else {
-            _state.triage[faultId] = (_state.triage[faultId] === action) ? null : action;
-            if (f && NS.meeting) {
-              if (_state.triage[faultId] === 'agenda') NS.meeting.add(f);
-              else if (NS.meeting.has(f.id)) NS.meeting.remove(f.id);
-            }
+            NS.meeting.add({ id: agendaId, equipment: item.equipment, faultName: item.faultName, sevNorm: item.sevNorm });
+            _state.reviewed[agendaId] = true; // acting on it counts as reviewed
           }
           _saveState();
-          rerenderSection('#mpTriage', _triageRows());
-          rerenderRail();
-          var deltaEl = contentEl.querySelector('.mp-delta');
-          if (deltaEl) deltaEl.outerHTML = _deltaStrip();
+          rerender();
           return;
         }
 
-        // Flag observation
-        var sysKey = btn.getAttribute('data-flag');
-        if (sysKey) {
-          var sys = _DEMO.systems.filter(function (x) { return x.key === sysKey; })[0];
-          var note = window.prompt('Observation for ' + (sys ? sys.label : sysKey) + ':');
-          if (!note || !NS.meeting) return;
-          NS.meeting.add({ id: 'obs-' + (_state.obsSeq++), equipment: (sys ? sys.label : sysKey), faultName: note, manual: true });
+        var skipId = btn.getAttribute('data-skip');
+        if (skipId) {
+          _state.skipped[skipId] = !_state.skipped[skipId];
+          if (_state.skipped[skipId]) {
+            _state.reviewed[skipId] = true; // skipping counts as reviewed
+            if (NS.meeting && NS.meeting.has(skipId)) NS.meeting.remove(skipId);
+          }
           _saveState();
-          rerenderRail();
+          rerender();
           return;
         }
-      });
-
-      // Systems reviewed checkboxes
-      contentEl.addEventListener('change', function (e) {
-        var key = e.target.getAttribute && e.target.getAttribute('data-sysreview');
-        if (!key) return;
-        _state.reviewed[key] = e.target.checked;
-        _saveState();
-        var card = contentEl.querySelector('.mp-sys[data-sys="' + key + '"]');
-        if (card) card.classList.toggle('mp-sys--done', e.target.checked);
       });
 
       function wireRail() {
@@ -347,16 +330,9 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         rail.querySelectorAll('[data-railremove]').forEach(function (btn) {
           btn.addEventListener('click', function () {
             var id = btn.getAttribute('data-railremove');
-            // ids of fault items are numbers; observation/carried ids are strings
             var numId = parseInt(id, 10);
             NS.meeting.remove(String(numId) === id ? numId : id);
-            // Clear triage flag if this was a triaged fault
-            _DEMO.newFaults.forEach(function (f) {
-              if (String(f.id) === id && _state.triage[f.id] === 'agenda') delete _state.triage[f.id];
-            });
-            _saveState();
-            rerenderSection('#mpTriage', _triageRows());
-            rerenderRail();
+            rerender();
           });
         });
 

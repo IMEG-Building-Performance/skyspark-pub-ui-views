@@ -73,6 +73,12 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       _defaultTabOrder.forEach(function (t) { cfg.tabVisibility[t.key] = true; });
     }
     if (!cfg.tabOrder) cfg.tabOrder = _defaultTabOrder.map(function (t) { return t.key; });
+    // Merge in tabs added after the user's config was saved (e.g. a new
+    // view) so they appear in the sidebar and on the Configuration page.
+    _defaultTabOrder.forEach(function (t) {
+      if (cfg.tabOrder.indexOf(t.key) === -1) cfg.tabOrder.push(t.key);
+      if (cfg.tabVisibility[t.key] === undefined) cfg.tabVisibility[t.key] = true;
+    });
     if (!cfg.defaultTab) cfg.defaultTab = 'summary';
     if (!cfg.dateRange) cfg.dateRange = 30;
     if (!cfg.theme) cfg.theme = 'auto';

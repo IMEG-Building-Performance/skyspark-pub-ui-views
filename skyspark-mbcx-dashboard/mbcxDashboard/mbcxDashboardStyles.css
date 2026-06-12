@@ -3088,3 +3088,34 @@
   #mbcxDashboard .mp-page { flex-direction: column; }
   #mbcxDashboard .mp-rail { width: 100%; position: static; }
 }
+
+/* ── Meeting Prep: simplified flow additions ──────────────────────────── */
+#mbcxDashboard .mp-check {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border: 1.5px solid var(--gray-300);
+  border-radius: 5px;
+  background: var(--card-bg);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+#mbcxDashboard .mp-check:hover { border-color: var(--imeg-green); }
+#mbcxDashboard .mp-check--on {
+  background: var(--imeg-green);
+  border-color: var(--imeg-green);
+}
+#mbcxDashboard .mp-row--reviewed { opacity: 0.6; }
+#mbcxDashboard .mp-id {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gray-500);
+  background: var(--gray-100);
+  padding: 2px 7px;
+  border-radius: 5px;
+  flex-shrink: 0;
+}
+#mbcxDashboard .mp-sys-label { font-size: 12.5px; font-weight: 600; color: var(--card-fg); }
