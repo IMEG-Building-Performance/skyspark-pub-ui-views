@@ -96,6 +96,8 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       '  </div>',
       '  <div class="mtg-hd-actions">',
       '    <button class="mtg-add-btn" id="mtgAddBtn">+ Add Item</button>',
+      (_agenda.length && ctx && ctx.attestKey)
+        ? '<button class="mtg-add-btn mtg-end-btn" id="mtgEndBtn" title="Save this agenda as a meeting record in SkySpark and start the next cycle">End Meeting &amp; Save</button>' : '',
       _agenda.length ? '<button class="mtg-clear-btn" id="mtgClearBtn">Clear All</button>' : '',
       '  </div>',
       '</div>',
@@ -186,6 +188,58 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
           _saveAgenda();
           _refreshBadge();
           _showAgenda(contentEl, ctx, co);
+        });
+      }
+
+      // End Meeting & Save — commit this meeting (agenda + prep draft) as a
+      // unique mbcxMeeting rec, then reset for the next cycle. Prep skips
+      // are kept (they persist across meetings by design).
+      // TODO(auth): server-side role check before this ships to clients.
+      // TODO(data): once meeting recs drive Meeting Prep, "last meeting"
+      // dates and the carried-items queue should read from these records.
+      var endBtn = contentEl.querySelector('#mtgEndBtn');
+      if (endBtn) {
+        endBtn.addEventListener('click', function () {
+          if (!window.confirm('Save this agenda as a meeting record and clear it for the next cycle?')) return;
+          var agendaJson = JSON.stringify(_agenda, function (k, v) {
+            return k === '_raw' ? undefined : v;
+          });
+          var prepJson = '';
+          try { prepJson = localStorage.getItem('mbcxMeetingPrep_draft') || ''; } catch (e) {}
+          function q(s) {
+            return '"' + String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+          }
+          var discussed = _agenda.filter(function (i) { return i.discussed; }).length;
+          var axon = 'commit(diff(null, {mbcxMeeting' +
+            ', dis: ' + q('MBCx Meeting ' + new Date().toISOString().slice(0, 10) + (ctx.siteName ? ' — ' + ctx.siteName : '')) +
+            ', date: today()' +
+            (ctx.siteRef ? ', siteRef: ' + ctx.siteRef : '') +
+            ', mbcxItemCount: ' + _agenda.length +
+            ', mbcxDiscussedCount: ' + discussed +
+            ', mbcxAgenda: ' + q(agendaJson) +
+            (prepJson ? ', mbcxPrepDraft: ' + q(prepJson) : '') +
+            '}, {add}))';
+          endBtn.disabled = true;
+          endBtn.textContent = 'Saving…';
+          NS.api.evalAxon(ctx.attestKey, ctx.projectName, axon)
+            .then(function () {
+              _agenda = [];
+              _saveAgenda();
+              _refreshBadge();
+              // New cycle: clear prep review progress, keep persistent skips
+              try {
+                var draft = JSON.parse(localStorage.getItem('mbcxMeetingPrep_draft')) || {};
+                draft.reviewed = {};
+                localStorage.setItem('mbcxMeetingPrep_draft', JSON.stringify(draft));
+              } catch (e) {}
+              _showAgenda(contentEl, ctx, co);
+            })
+            .catch(function (err) {
+              console.warn('[MeetingView] Meeting record save failed:', err);
+              endBtn.disabled = false;
+              endBtn.textContent = 'End Meeting & Save';
+              window.alert('Could not save the meeting record — check permissions (details in console).');
+            });
         });
       }
 

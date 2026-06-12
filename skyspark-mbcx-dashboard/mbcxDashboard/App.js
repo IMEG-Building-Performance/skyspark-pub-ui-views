@@ -135,7 +135,30 @@ window.mbcxDashboard = window.mbcxDashboard || {};
     _lastData:  null,
     _lastCtx:   null,
     _activeTab: null,
+    _activeFault: null,
+    _history:   [],   // in-tool back stack: [{tab, fault?}]
+    _navBack:   false,
     _config: _getConfig(),
+
+    // Record the current view before navigating away, so the Back button
+    // can walk in-tool history before escaping to SkySpark.
+    _pushHistory: function () {
+      if (NS.App._navBack) return;
+      var t = NS.App._activeTab;
+      if (!t) return;
+      var entry;
+      if (t === 'fault-detail' && NS.App._activeFault) {
+        entry = { tab: 'fault-detail', fault: NS.App._activeFault };
+      } else if (t === 'cup-plant-detail' || t === 'cup-equip-detail') {
+        entry = { tab: 'summary' };
+      } else {
+        entry = { tab: (t === 'fault-list' || t === 'fault-log') ? 'faults' : t };
+      }
+      var h = NS.App._history;
+      if (h.length && h[h.length - 1].tab === entry.tab && entry.tab !== 'fault-detail') return;
+      h.push(entry);
+      if (h.length > 25) h.shift();
+    },
 
     _syncConfigFromServer: function (container) {
       var ctx = NS.App._lastCtx;
@@ -268,6 +291,26 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         selectedLabel: ctx.siteName || '— Select site —',
         onChange: function () { doLoad(); }
       });
+
+      // ── Back button: in-tool history first, then escape to SkySpark ──
+      NS.App._history = [];
+      var backBtn = container.querySelector('.dash-back-btn');
+      if (backBtn) {
+        backBtn.addEventListener('click', function (e) {
+          var h = NS.App._history;
+          if (!h || !h.length) return; // empty — follow the href out to SkySpark
+          e.preventDefault();
+          var entry = h.pop();
+          NS.App._navBack = true;
+          try {
+            if (entry.tab === 'fault-detail' && entry.fault) {
+              NS.App.showFaultDetail(container, entry.fault, NS.Components);
+            } else {
+              NS.App._showTab(container, entry.tab, NS.Components, NS.App._lastData, NS.App._lastCtx);
+            }
+          } finally { NS.App._navBack = false; }
+        });
+      }
 
       // ── Sidebar collapse ──────────────────────────────────────────────
       if (collapseBtn) {
@@ -443,6 +486,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
     },
 
     showCupPlantDetail: function (container, systemKey, co, data, ctx) {
+      NS.App._pushHistory();
       if (NS.App._activeTab === 'trends'       && co.TrendingView) co.TrendingView.destroy();
       if (NS.App._activeTab === 'fault-detail' && co.FaultDetail)  co.FaultDetail.destroy();
       if (NS.App._activeTab === 'meetings'     && co.MeetingView)  co.MeetingView.destroy(co);
@@ -456,6 +500,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
     },
 
     showCupEquipDetail: function (container, equipName, systemKey, co, data, ctx) {
+      NS.App._pushHistory();
       if (NS.App._activeTab === 'trends'       && co.TrendingView) co.TrendingView.destroy();
       if (NS.App._activeTab === 'fault-detail' && co.FaultDetail)  co.FaultDetail.destroy();
       if (NS.App._activeTab === 'meetings'     && co.MeetingView)  co.MeetingView.destroy(co);
@@ -468,10 +513,13 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       }
     },
 
-    showFaultDetail: function (container, fault, co) {
+    showFaultDetail: function (container, fault, co, opts) {
+      opts = opts || {};
+      NS.App._pushHistory();
       if (NS.App._activeTab === 'trends' && co.TrendingView) co.TrendingView.destroy();
       if (NS.App._activeTab === 'fault-detail' && co.FaultDetail) co.FaultDetail.destroy();
       NS.App._activeTab = 'fault-detail';
+      NS.App._activeFault = fault;
       container.querySelectorAll('.dash-sb-nav-item').forEach(function (btn) {
         btn.classList.toggle('active', btn.getAttribute('data-tab') === 'faults');
       });
@@ -485,13 +533,15 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       content.classList.remove('dash-content--fixed');
       var allFaults = co.FaultList && co.FaultList._state ? co.FaultList._state.rows : [];
       if (co.FaultDetail) {
-        co.FaultDetail.show(content, fault, allFaults, NS.App._lastCtx, function () {
+        co.FaultDetail.show(content, fault, allFaults, NS.App._lastCtx, opts.onBack || function () {
           NS.App._showTab(container, 'faults', co, NS.App._lastData, NS.App._lastCtx);
-        });
+        }, opts.backLabel ? { backLabel: opts.backLabel } : undefined);
       }
     },
 
     _showTab: function (container, tab, co, data, ctx) {
+      NS.App._pushHistory();
+      NS.App._activeFault = null;
       if (NS.App._activeTab === 'trends' && co.TrendingView && co.TrendingView.destroy) {
         co.TrendingView.destroy();
       }

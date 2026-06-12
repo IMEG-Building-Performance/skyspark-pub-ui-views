@@ -202,7 +202,7 @@ window.mbcxDashboard.components.FaultList = {
       var tbody = container.querySelector('#flTbody');
       var thead = container.querySelector('#flThead');
       if (thead) thead.innerHTML = '';
-      if (tbody) tbody.innerHTML = '<tr><td style="padding:24px;color:#9CA3AF;font-size:12px;text-align:center;">Loading faults…</td></tr>';
+      if (tbody) tbody.innerHTML = '<tr><td class="fl-td-loading" style="padding:24px;color:#9CA3AF;font-size:12px;text-align:center;">Loading faults…</td></tr>';
       this._fetchLive(container, ctx);
     } else {
       this._populate(container, FL_DEMO_FAULTS);

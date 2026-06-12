@@ -524,7 +524,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       _destroyAll();
       var opts     = options || {};
       var nav      = opts.agendaNav || null;
-      var backLabel = nav ? '&#8592; Agenda' : '&#8592; Fault List';
+      var backLabel = nav ? '&#8592; Agenda' : (opts.backLabel || '&#8592; Fault List');
       var inAgenda = !!(NS.meeting && NS.meeting.has(fault.id));
       var isGroup  = !!(fault.groupFaults && fault.groupFaults.length);
 

@@ -3443,3 +3443,32 @@
   cursor: pointer;
 }
 #mbcxDashboard .fd-area-edit:hover { text-decoration: underline; }
+
+/* ── Shared loading spinner — animates every async loading state ─────── */
+@keyframes mbcx-spin-sm { to { transform: rotate(360deg); } }
+#mbcxDashboard .ahu-loading::before,
+#mbcxDashboard .tu-loading::before,
+#mbcxDashboard .comp-loading::before,
+#mbcxDashboard .eq-loading::before,
+#mbcxDashboard .fd-chart-loading::before,
+#mbcxDashboard .mp-loading::before,
+#mbcxDashboard .fl-td-loading::before {
+  content: '';
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  margin-right: 8px;
+  vertical-align: -2px;
+  border: 2px solid var(--gray-200);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: mbcx-spin-sm 0.7s linear infinite;
+}
+
+/* End Meeting & Save (agenda header) */
+#mbcxDashboard .mtg-end-btn { background: var(--imeg-green); border-color: var(--imeg-green); }
+#mbcxDashboard .mtg-end-btn:hover:not(:disabled) { filter: brightness(1.08); }
+#mbcxDashboard .mtg-end-btn:disabled { opacity: 0.6; cursor: default; }
+/* Equipment page fault rows are clickable */
+#mbcxDashboard .eq-fault-row--link { cursor: pointer; border-radius: 6px; }
+#mbcxDashboard .eq-fault-row--link:hover { background: var(--gray-50); }

@@ -338,7 +338,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
 
   function _queueHtml() {
     if (_loading) {
-      return '<div class="mp-rail-empty">Loading fault list&hellip;</div>';
+      return '<div class="mp-rail-empty mp-loading">Loading fault list&hellip;</div>';
     }
     var allFaults = _faults();
     var skippedCount = allFaults.filter(function (f) { return _state.skipped[f.id]; }).length;
