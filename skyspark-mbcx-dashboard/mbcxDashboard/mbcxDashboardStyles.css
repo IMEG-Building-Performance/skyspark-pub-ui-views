@@ -3324,3 +3324,45 @@
 #mbcxDashboard .mp-showmore { display: block; margin: 8px auto; }
 #mbcxDashboard .mp-skipped-toggle { margin-top: 14px; color: var(--muted); }
 #mbcxDashboard .mp-skipped-list { margin-top: 6px; }
+
+/* ── Meeting Prep: full-list triage controls ──────────────────────────── */
+#mbcxDashboard .mp-triage-toolbar--row2 { margin-top: -2px; }
+#mbcxDashboard .mp-select {
+  font-size: 11.5px;
+  padding: 5px 8px;
+  border: 1px solid var(--gray-300);
+  border-radius: 6px;
+  background: var(--card-bg);
+  color: var(--gray-600);
+}
+#mbcxDashboard .mp-hide-handled {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  color: var(--gray-600);
+  cursor: pointer;
+  margin-left: auto;
+  white-space: nowrap;
+}
+#mbcxDashboard .mp-link {
+  border: none;
+  background: none;
+  color: var(--primary);
+  font-weight: 600;
+  padding: 2px 6px;
+}
+#mbcxDashboard .mp-link:hover { background: none; text-decoration: underline; }
+#mbcxDashboard .mp-group--handled { opacity: 0.55; }
+#mbcxDashboard .mp-group--handled:hover { opacity: 1; }
+#mbcxDashboard .mp-state {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+#mbcxDashboard .mp-state--agenda { background: var(--imeg-green-lt); color: var(--imeg-green); }
+#mbcxDashboard .mp-state--skip   { background: var(--gray-100); color: var(--gray-500); }

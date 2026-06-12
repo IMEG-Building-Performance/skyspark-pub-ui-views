@@ -4,11 +4,11 @@
 //   Step 1 — Fault Log review: tabular checklist of open log items; mark
 //            each reviewed (or use Mark All) and add any to the agenda.
 //            Step 2 unlocks once every item is reviewed.
-//   Step 2 — new-fault triage inbox: faults grouped by equipment, ranked
-//            by severity/active%, worked from the top. One-click Agenda /
-//            Skip at group or fault level; decided groups leave the queue;
-//            skips persist across prep sessions so the inbox shrinks over
-//            time instead of resetting.
+//   Step 2 — new-fault triage: the ENTIRE fault list, always. Grouped by
+//            equipment or flat, sortable (severity is just the default),
+//            searchable. Handled items dim in place rather than leaving
+//            the list — the engineer decides what matters, the tool only
+//            offers ordering. Skips persist across prep sessions.
 // The agenda rail is visible throughout and hands off to the Meetings
 // presenter.
 //
@@ -73,8 +73,6 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     ]
   };
 
-  var TOP_N = 8; // groups shown before "Show more" (demo value; ~15 in prod)
-
   // ── Draft state ───────────────────────────────────────────────────────────
   // TODO(data): replace localStorage with an mbcxMeeting draft rec; skips
   // should live server-side so the team shares them across meetings.
@@ -82,10 +80,11 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
   var _state = null;
   var _stage = 1;
   var _expanded = {};     // equipment key -> bool (in-memory)
-  var _showAll = false;
-  var _showSkipped = false;
   var _q = '';            // search text (in-memory)
   var _typeFilter = '';   // '', 'AHU', 'VAV', 'CUP', 'Other'
+  var _view = 'grouped';  // 'grouped' | 'flat'
+  var _sortKey = 'sev';   // 'sev' | 'active' | 'seen' | 'equip'
+  var _hideHandled = false;
 
   function _defaultState() {
     return { reviewed: {}, skipped: {} };
@@ -181,6 +180,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
 
     return [
       '<div class="mp-review-toolbar">',
+      '  <button class="mp-act mp-link" data-gotab="fault-log">Open full Fault Log &#8599;</button>',
       '  <div class="mp-review-toolbar-left">',
       '    <div class="mp-review-progress mp-review-progress--inline"><div class="mp-review-progress-fill" style="width:' + Math.round(reviewed / n * 100) + '%"></div></div>',
       '    <span class="mp-review-count-inline">' + reviewed + ' of ' + n + ' reviewed</span>',
@@ -236,12 +236,47 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     return true;
   }
 
-  function _faultRow(f) {
+  function _sortGroups(groups) {
+    var k = _sortKey;
+    return groups.sort(function (a, b) {
+      if (k === 'equip')  return a.equip.localeCompare(b.equip);
+      if (k === 'active') return (b.maxActive - a.maxActive) || (b.maxSev - a.maxSev);
+      if (k === 'seen') {
+        var as = a.faults.reduce(function (m, f) { return f.firstSeen > m ? f.firstSeen : m; }, '');
+        var bs = b.faults.reduce(function (m, f) { return f.firstSeen > m ? f.firstSeen : m; }, '');
+        return bs.localeCompare(as);
+      }
+      return (b.maxSev - a.maxSev) || (b.maxActive - a.maxActive); // 'sev'
+    });
+  }
+
+  function _sortFaults(faults) {
+    var k = _sortKey;
+    return faults.sort(function (a, b) {
+      if (k === 'equip')  return a.equipment.localeCompare(b.equipment) || (b.sevNorm - a.sevNorm);
+      if (k === 'active') return (b.faultActive - a.faultActive) || (b.sevNorm - a.sevNorm);
+      if (k === 'seen')   return b.firstSeen.localeCompare(a.firstSeen);
+      return (b.sevNorm - a.sevNorm) || (b.faultActive - a.faultActive); // 'sev'
+    });
+  }
+
+  function _faultMatches(f) {
+    if (_typeFilter && _equipType(f.equipment) !== _typeFilter) return false;
+    if (_q) {
+      var q = _q.toLowerCase();
+      if (f.equipment.toLowerCase().indexOf(q) === -1 &&
+          f.faultName.toLowerCase().indexOf(q) === -1) return false;
+    }
+    return true;
+  }
+
+  function _faultRow(f, showEquip) {
     var skipped = !!_state.skipped[f.id];
     var inAg = _inAgenda(f.id);
-    return '<div class="mp-row mp-row--nested' + (skipped ? ' mp-row--dismissed' : '') + '">' +
+    return '<div class="mp-row' + (showEquip ? '' : ' mp-row--nested') + (skipped ? ' mp-row--dismissed' : '') + '">' +
       '<div class="mp-row-main">' +
-      '  <div class="mp-row-title"><span class="mp-row-fault">' + _esc(f.faultName) + '</span></div>' +
+      '  <div class="mp-row-title">' + (showEquip ? _esc(f.equipment) + ' ' : '') +
+           '<span class="mp-row-fault">' + _esc(f.faultName) + '</span></div>' +
       '  <div class="mp-row-sub">First seen ' + f.firstSeen + ' · ' + f.faultActive + '% active</div>' +
       '</div>' +
       _sevChip(f.sevNorm) +
@@ -255,7 +290,14 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
   function _groupRow(g) {
     var open = !!_expanded[g.equip];
     var topFault = g.faults[0];
-    return '<div class="mp-group' + (open ? ' mp-group--open' : '') + '">' +
+    var onAgenda = _inAgenda(_groupId(g));
+    var allSkipped = g.faults.every(function (f) { return _state.skipped[f.id]; });
+    var handled = _groupDecided(g);
+    var stateChip = onAgenda ? '<span class="mp-state mp-state--agenda">On agenda</span>'
+      : allSkipped ? '<span class="mp-state mp-state--skip">Skipped</span>'
+      : handled ? '<span class="mp-state mp-state--agenda">Handled</span>' : '';
+
+    return '<div class="mp-group' + (open ? ' mp-group--open' : '') + (handled ? ' mp-group--handled' : '') + '">' +
       '<div class="mp-group-hd">' +
       '  <button class="mp-group-expand" data-expand="' + _esc(g.equip) + '" aria-expanded="' + open + '">' +
       '    <span class="mp-group-caret">' + (open ? '&#9662;' : '&#9656;') + '</span>' +
@@ -265,50 +307,42 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       '  ' + _sevChip(g.maxSev) +
       '  <span class="mp-group-active">' + g.maxActive + '% max</span>' +
       (!open ? '<span class="mp-group-preview">' + _esc(topFault.faultName) + '</span>' : '<span class="mp-group-preview"></span>') +
+      stateChip +
       '  <div class="mp-row-acts">' +
-      '    <button class="mp-act mp-act--primary" data-gagenda="' + _esc(g.equip) + '">+ Agenda</button>' +
-      '    <button class="mp-act" data-gskip="' + _esc(g.equip) + '">Skip all</button>' +
+      '    <button class="mp-act mp-act--primary' + (onAgenda ? ' mp-act--on' : '') + '" data-gagenda="' + _esc(g.equip) + '">' + (onAgenda ? '&#10003; Agenda' : '+ Agenda') + '</button>' +
+      '    <button class="mp-act" data-gskip="' + _esc(g.equip) + '">' + (allSkipped ? 'Unskip all' : 'Skip all') + '</button>' +
       '  </div>' +
       '</div>' +
-      (open ? '<div class="mp-group-body">' + g.faults.map(_faultRow).join('') + '</div>' : '') +
+      (open ? '<div class="mp-group-body">' + g.faults.map(function (f) { return _faultRow(f, false); }).join('') + '</div>' : '') +
       '</div>';
   }
 
   function _queueHtml() {
-    var groups = _buildGroups();
-    var visible = groups.filter(function (g) { return !_groupDecided(g) && _matchesFilters(g); });
-    var skippedFaults = _DEMO.newFaults.filter(function (f) { return _state.skipped[f.id]; });
-    var decidedCount = groups.length - groups.filter(function (g) { return !_groupDecided(g); }).length;
-
-    var shown = _showAll ? visible : visible.slice(0, TOP_N);
-    var hidden = visible.length - shown.length;
-
+    var allFaults = _DEMO.newFaults;
+    var skippedCount = allFaults.filter(function (f) { return _state.skipped[f.id]; }).length;
+    var agendaCount = allFaults.filter(function (f) { return _inAgenda(f.id); }).length;
     var html = [];
-    html.push('<div class="mp-queue-meta">' +
-      (visible.length
-        ? '<strong>' + visible.length + '</strong> equipment group' + (visible.length !== 1 ? 's' : '') + ' to triage' +
-          (decidedCount ? ' · ' + decidedCount + ' handled' : '')
-        : (_q || _typeFilter ? 'No matches for the current filter.' : '&#127881; Inbox zero — every new fault is triaged.')) +
-      '</div>');
+    var body;
 
-    html.push(shown.map(_groupRow).join(''));
-
-    if (hidden > 0) {
-      html.push('<button class="mp-act mp-showmore" data-showmore="1">Show ' + hidden + ' more &#9662;</button>');
-    }
-
-    if (skippedFaults.length) {
-      html.push('<button class="mp-act mp-skipped-toggle" data-skiptoggle="1">' +
-        (_showSkipped ? '&#9662;' : '&#9656;') + ' Skipped (' + skippedFaults.length + ')</button>');
-      if (_showSkipped) {
-        html.push('<div class="mp-skipped-list">' + skippedFaults.map(function (f) {
-          return '<div class="mp-row mp-row--dismissed">' +
-            '<div class="mp-row-main"><div class="mp-row-title">' + _esc(f.equipment) +
-            ' <span class="mp-row-fault">' + _esc(f.faultName) + '</span></div></div>' +
-            '<div class="mp-row-acts"><button class="mp-act" data-skip="' + _esc(f.id) + '">Unskip</button></div>' +
-            '</div>';
-        }).join('') + '</div>');
+    if (_view === 'flat') {
+      var faults = _sortFaults(allFaults.filter(_faultMatches).slice());
+      if (_hideHandled) {
+        faults = faults.filter(function (f) { return !_state.skipped[f.id] && !_inAgenda(f.id); });
       }
+      html.push('<div class="mp-queue-meta">Showing <strong>' + faults.length + '</strong> of ' + allFaults.length + ' faults' +
+        (skippedCount || agendaCount ? ' · ' + agendaCount + ' on agenda · ' + skippedCount + ' skipped' : '') + '</div>');
+      body = faults.map(function (f) { return _faultRow(f, true); }).join('');
+      html.push(body || '<div class="mp-rail-empty">No faults match the current filters.</div>');
+    } else {
+      var groups = _sortGroups(_buildGroups().filter(_matchesFilters));
+      if (_hideHandled) {
+        groups = groups.filter(function (g) { return !_groupDecided(g); });
+      }
+      html.push('<div class="mp-queue-meta">Showing <strong>' + groups.length + '</strong> equipment group' + (groups.length !== 1 ? 's' : '') +
+        ' · ' + allFaults.length + ' faults total' +
+        (skippedCount || agendaCount ? ' · ' + agendaCount + ' on agenda · ' + skippedCount + ' skipped' : '') + '</div>');
+      body = groups.map(_groupRow).join('');
+      html.push(body || '<div class="mp-rail-empty">No equipment matches the current filters.</div>');
     }
 
     return html.join('\n');
@@ -317,7 +351,10 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
   function _newStage() {
     return [
       '<div class="mp-section">',
-      '  <h3 class="mp-section-title">New faults <span class="mp-section-sub">since ' + _DEMO.lastMeeting + ' &middot; grouped by equipment, worst first</span></h3>',
+      '  <h3 class="mp-section-title">New faults <span class="mp-section-sub">since ' + _DEMO.lastMeeting + '</span>',
+      '    <button class="mp-act mp-link" data-gotab="fault-list">Full Fault List &#8599;</button>',
+      '    <button class="mp-act mp-link" data-gotab="fault-log">Fault Log &#8599;</button>',
+      '  </h3>',
       '  <div class="mp-triage-toolbar">',
       '    <input type="text" class="mp-search" id="mpSearch" placeholder="Search equipment or fault&hellip;" value="' + _esc(_q) + '">',
       '    <div class="mp-type-chips">',
@@ -325,6 +362,19 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         return '<button class="mp-act mp-type-chip' + (_typeFilter === t ? ' mp-act--on' : '') + '" data-typefilter="' + t + '">' + t + '</button>';
       }).join(''),
       '    </div>',
+      '  </div>',
+      '  <div class="mp-triage-toolbar mp-triage-toolbar--row2">',
+      '    <div class="mp-type-chips">',
+      '      <button class="mp-act mp-view-btn' + (_view === 'grouped' ? ' mp-act--on' : '') + '" data-view="grouped">Grouped</button>',
+      '      <button class="mp-act mp-view-btn' + (_view === 'flat' ? ' mp-act--on' : '') + '" data-view="flat">Flat list</button>',
+      '    </div>',
+      '    <select class="mp-select" id="mpSort">',
+      '      <option value="sev"'    + (_sortKey === 'sev'    ? ' selected' : '') + '>Sort: Severity</option>',
+      '      <option value="active"' + (_sortKey === 'active' ? ' selected' : '') + '>Sort: Active %</option>',
+      '      <option value="seen"'   + (_sortKey === 'seen'   ? ' selected' : '') + '>Sort: Newest</option>',
+      '      <option value="equip"'  + (_sortKey === 'equip'  ? ' selected' : '') + '>Sort: Equipment</option>',
+      '    </select>',
+      '    <label class="mp-hide-handled"><input type="checkbox" id="mpHideHandled"' + (_hideHandled ? ' checked' : '') + '> Hide handled</label>',
       '  </div>',
       '  <div id="mpQueue">' + _queueHtml() + '</div>',
       '  <button class="mp-act mp-back-link" data-step="1">&#8592; Revisit Fault Log review</button>',
@@ -389,10 +439,11 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     renderPage: function () {
       _loadState();
       _stage = _allReviewed() ? 2 : 1;
-      _showAll = false;
-      _showSkipped = false;
       _q = '';
       _typeFilter = '';
+      _view = 'grouped';
+      _sortKey = 'sev';
+      _hideHandled = false;
       return [
         '<div class="mp-page">',
         '  <div class="mp-main">',
@@ -436,9 +487,19 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       contentEl.addEventListener('input', function (e) {
         if (e.target && e.target.id === 'mpSearch') {
           _q = e.target.value;
-          _showAll = false;
           var el = contentEl.querySelector('#mpQueue');
           if (el) el.innerHTML = _queueHtml();
+        }
+      });
+
+      contentEl.addEventListener('change', function (e) {
+        if (!e.target) return;
+        if (e.target.id === 'mpSort') {
+          _sortKey = e.target.value;
+          rerenderQueue();
+        } else if (e.target.id === 'mpHideHandled') {
+          _hideHandled = e.target.checked;
+          rerenderQueue();
         }
       });
 
@@ -483,25 +544,42 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
           return;
         }
 
-        if (btn.getAttribute('data-showmore'))  { _showAll = true; rerenderQueue(); return; }
-        if (btn.getAttribute('data-skiptoggle')) { _showSkipped = !_showSkipped; rerenderQueue(); return; }
+        var viewKey = btn.getAttribute('data-view');
+        if (viewKey) {
+          _view = viewKey;
+          contentEl.querySelectorAll('.mp-view-btn').forEach(function (c) {
+            c.classList.toggle('mp-act--on', c.getAttribute('data-view') === _view);
+          });
+          rerenderQueue();
+          return;
+        }
+
+        var goTab = btn.getAttribute('data-gotab');
+        if (goTab && container && co && NS.App && NS.App._showTab) {
+          NS.App._showTab(container, goTab, co, NS.App._lastData, NS.App._lastCtx);
+          return;
+        }
 
         var gAgenda = btn.getAttribute('data-gagenda');
         if (gAgenda && NS.meeting) {
           var gid = 'equip-' + gAgenda;
-          var gItem = _itemForId(gid);
-          if (gItem && !NS.meeting.has(gid)) NS.meeting.add(gItem);
+          if (NS.meeting.has(gid)) {
+            NS.meeting.remove(gid);
+          } else {
+            var gItem = _itemForId(gid);
+            if (gItem) NS.meeting.add(gItem);
+          }
           rerenderQueue();
           return;
         }
 
         var gSkip = btn.getAttribute('data-gskip');
         if (gSkip) {
-          _DEMO.newFaults.forEach(function (f) {
-            if (f.equipment === gSkip) {
-              _state.skipped[f.id] = true;
-              if (NS.meeting && NS.meeting.has(f.id)) NS.meeting.remove(f.id);
-            }
+          var gFaults = _DEMO.newFaults.filter(function (f) { return f.equipment === gSkip; });
+          var unskip = gFaults.every(function (f) { return _state.skipped[f.id]; });
+          gFaults.forEach(function (f) {
+            _state.skipped[f.id] = !unskip;
+            if (!unskip && NS.meeting && NS.meeting.has(f.id)) NS.meeting.remove(f.id);
           });
           _saveState();
           rerenderQueue();
