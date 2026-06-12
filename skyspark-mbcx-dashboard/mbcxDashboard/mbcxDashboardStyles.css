@@ -1778,28 +1778,33 @@
 #mbcxDashboard .fd-mtg-nav {
   position:sticky; top:0; z-index:20;
   display:flex; align-items:center; gap:12px; flex-wrap:wrap;
-  background:var(--imeg-blue); color:#fff;
-  padding:10px 24px; flex-shrink:0;
+  background:var(--card-bg); color:var(--card-fg);
+  border-bottom:1px solid var(--card-border);
+  box-shadow:0 1px 2px rgba(0,0,0,0.04);
+  padding:9px 24px; flex-shrink:0;
 }
-#mbcxDashboard .fd-mtg-pos { font-size:13px; font-weight:600; margin-right:4px; }
+#mbcxDashboard .fd-mtg-pos {
+  font-size:11px; font-weight:700; margin-right:4px;
+  color:var(--muted); text-transform:uppercase; letter-spacing:0.04em;
+}
 #mbcxDashboard .fd-mtg-arrows { display:flex; gap:6px; }
 #mbcxDashboard .fd-mtg-arrow {
-  background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3);
-  color:#fff; padding:5px 14px; border-radius:5px;
+  background:var(--card-bg); border:1px solid var(--gray-300);
+  color:var(--gray-600); padding:5px 14px; border-radius:7px;
   font-size:12px; font-weight:500; cursor:pointer; font-family:inherit;
-  transition:background 0.15s;
+  transition:background 0.15s, border-color 0.15s;
 }
-#mbcxDashboard .fd-mtg-arrow:hover:not(:disabled) { background:rgba(255,255,255,0.25); }
+#mbcxDashboard .fd-mtg-arrow:hover:not(:disabled) { background:var(--gray-50); border-color:var(--gray-400); }
 #mbcxDashboard .fd-mtg-arrow:disabled { opacity:0.4; cursor:default; }
 #mbcxDashboard .fd-discuss-btn {
-  margin-left:auto; background:rgba(255,255,255,0.15);
-  border:1px solid rgba(255,255,255,0.35); color:#fff;
-  padding:6px 16px; border-radius:6px;
+  margin-left:auto; background:var(--primary);
+  border:1px solid var(--primary); color:#fff;
+  padding:6px 16px; border-radius:7px;
   font-size:12px; font-weight:600; cursor:pointer; font-family:inherit;
   transition:background 0.15s;
 }
-#mbcxDashboard .fd-discuss-btn:hover { background:rgba(255,255,255,0.25); }
-#mbcxDashboard .fd-discuss-btn.fd-discuss-done { background:#10b981; border-color:#10b981; }
+#mbcxDashboard .fd-discuss-btn:hover { background:var(--primary-h); }
+#mbcxDashboard .fd-discuss-btn.fd-discuss-done { background:var(--imeg-green); border-color:var(--imeg-green); }
 
 /* ── Meeting View (mtg-*) ────────────────────────────────────────────────── */
 #mbcxDashboard .mtg-page { padding:28px 32px 48px; min-height:100%; }

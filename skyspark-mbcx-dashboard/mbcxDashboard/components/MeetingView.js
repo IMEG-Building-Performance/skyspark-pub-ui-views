@@ -116,15 +116,24 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         '<div class="mtg-list" id="mtgList">',
         _agenda.map(function (item, idx) {
           var f   = item.fault;
-          var cls = f.sev === 'critical' ? 'fl-badge-critical' : 'fl-badge-warning';
-          var lbl = f.sev === 'critical' ? 'Critical' : 'Warning';
+          // Items come from two shapes: the manual add form (equip/fault/sev)
+          // and the fault list / Meeting Prep (equipment/faultName/sevNorm).
+          var equipTxt = f.equip || f.equipment || '';
+          var faultTxt = f.fault || f.faultName || '';
+          var isCrit = f.sev === 'critical' || (typeof f.sevNorm === 'number' && f.sevNorm >= 6);
+          var cls = isCrit ? 'fl-badge-critical' : 'fl-badge-warning';
+          var lbl = isCrit ? 'Critical' : 'Warning';
+          var esc = function (s) {
+            return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+          };
           var manualTag = f._manual ? '<span class="mtg-manual-tag">Custom</span>' : '';
           return '<div class="mtg-item' + (item.discussed ? ' mtg-item-done' : '') + '" data-idx="' + idx + '">' +
             '<div class="mtg-drag-handle" title="Drag to reorder">&#8942;&#8942;</div>' +
             '<div class="mtg-item-num">' + (idx + 1) + '</div>' +
             '<div class="mtg-item-body">' +
-            '  <div class="mtg-item-equip">' + (f.equip || '') + manualTag + '</div>' +
-            '  <div class="mtg-item-fault">' + (f.fault  || '') + '</div>' +
+            '  <div class="mtg-item-equip">' + esc(equipTxt) + manualTag + '</div>' +
+            '  <div class="mtg-item-fault">' + esc(faultTxt) + '</div>' +
             '</div>' +
             '<div class="mtg-item-actions">' +
             '  <span class="fl-badge ' + cls + '">' + lbl + '</span>' +
