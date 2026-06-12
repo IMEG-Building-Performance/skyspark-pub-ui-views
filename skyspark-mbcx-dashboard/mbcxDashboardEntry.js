@@ -36,6 +36,7 @@ var mbcxDashboardHandler = {};
     { src: 'components/DateRangePicker.js' },
     { src: 'components/SiteSelector.js' },
     { src: 'components/Compliance.js' },
+    { src: 'components/FaultLog.js' },
     { src: 'App.js' },
     { src: 'mbcxDashboardUI.js' }
   ];
