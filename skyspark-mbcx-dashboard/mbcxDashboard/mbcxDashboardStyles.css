@@ -1778,28 +1778,33 @@
 #mbcxDashboard .fd-mtg-nav {
   position:sticky; top:0; z-index:20;
   display:flex; align-items:center; gap:12px; flex-wrap:wrap;
-  background:var(--imeg-blue); color:#fff;
-  padding:10px 24px; flex-shrink:0;
+  background:var(--card-bg); color:var(--card-fg);
+  border-bottom:1px solid var(--card-border);
+  box-shadow:0 1px 2px rgba(0,0,0,0.04);
+  padding:9px 24px; flex-shrink:0;
 }
-#mbcxDashboard .fd-mtg-pos { font-size:13px; font-weight:600; margin-right:4px; }
+#mbcxDashboard .fd-mtg-pos {
+  font-size:11px; font-weight:700; margin-right:4px;
+  color:var(--muted); text-transform:uppercase; letter-spacing:0.04em;
+}
 #mbcxDashboard .fd-mtg-arrows { display:flex; gap:6px; }
 #mbcxDashboard .fd-mtg-arrow {
-  background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3);
-  color:#fff; padding:5px 14px; border-radius:5px;
+  background:var(--card-bg); border:1px solid var(--gray-300);
+  color:var(--gray-600); padding:5px 14px; border-radius:7px;
   font-size:12px; font-weight:500; cursor:pointer; font-family:inherit;
-  transition:background 0.15s;
+  transition:background 0.15s, border-color 0.15s;
 }
-#mbcxDashboard .fd-mtg-arrow:hover:not(:disabled) { background:rgba(255,255,255,0.25); }
+#mbcxDashboard .fd-mtg-arrow:hover:not(:disabled) { background:var(--gray-50); border-color:var(--gray-400); }
 #mbcxDashboard .fd-mtg-arrow:disabled { opacity:0.4; cursor:default; }
 #mbcxDashboard .fd-discuss-btn {
-  margin-left:auto; background:rgba(255,255,255,0.15);
-  border:1px solid rgba(255,255,255,0.35); color:#fff;
-  padding:6px 16px; border-radius:6px;
+  margin-left:auto; background:var(--primary);
+  border:1px solid var(--primary); color:#fff;
+  padding:6px 16px; border-radius:7px;
   font-size:12px; font-weight:600; cursor:pointer; font-family:inherit;
   transition:background 0.15s;
 }
-#mbcxDashboard .fd-discuss-btn:hover { background:rgba(255,255,255,0.25); }
-#mbcxDashboard .fd-discuss-btn.fd-discuss-done { background:#10b981; border-color:#10b981; }
+#mbcxDashboard .fd-discuss-btn:hover { background:var(--primary-h); }
+#mbcxDashboard .fd-discuss-btn.fd-discuss-done { background:var(--imeg-green); border-color:var(--imeg-green); }
 
 /* ── Meeting View (mtg-*) ────────────────────────────────────────────────── */
 #mbcxDashboard .mtg-page { padding:28px 32px 48px; min-height:100%; }
@@ -2874,3 +2879,521 @@
 @media (max-width: 900px) {
   #mbcxDashboard .flog-kpi-row { grid-template-columns: repeat(2, 1fr); }
 }
+
+
+/* ── Meeting Prep (internal demo view) ────────────────────────────────── */
+#mbcxDashboard .mp-page {
+  display: flex;
+  gap: 16px;
+  padding: 20px 24px;
+  align-items: flex-start;
+}
+#mbcxDashboard .mp-main { flex: 1; min-width: 0; }
+#mbcxDashboard .mp-hd {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+#mbcxDashboard .mp-title { font-size: 1.15rem; font-weight: 700; color: var(--card-fg); margin: 0; }
+#mbcxDashboard .mp-hd-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+#mbcxDashboard .mp-badges { display: flex; gap: 6px; }
+#mbcxDashboard .mp-badge {
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+  letter-spacing: 0.02em;
+}
+#mbcxDashboard .mp-badge--internal { background: #ede9fe; color: #6d28d9; }
+#mbcxDashboard .mp-badge--demo     { background: var(--amber-lt); color: var(--amber); }
+
+#mbcxDashboard .mp-delta {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 18px;
+}
+#mbcxDashboard .mp-delta-cell {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-left-width: 3px;
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+#mbcxDashboard .mp-delta--new  { border-left-color: var(--imeg-blue); }
+#mbcxDashboard .mp-delta--bad  { border-left-color: var(--amber); }
+#mbcxDashboard .mp-delta--good { border-left-color: var(--imeg-green); }
+#mbcxDashboard .mp-delta--reg  { border-left-color: var(--imeg-red); }
+#mbcxDashboard .mp-delta-val   { font-size: 1.4rem; font-weight: 700; color: var(--card-fg); line-height: 1.1; }
+#mbcxDashboard .mp-delta-label { font-size: 11.5px; font-weight: 600; color: var(--gray-600); }
+#mbcxDashboard .mp-delta-sub   { font-size: 10.5px; color: var(--muted); }
+
+#mbcxDashboard .mp-section { margin-bottom: 20px; }
+#mbcxDashboard .mp-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--card-fg);
+  margin: 0 0 8px;
+}
+#mbcxDashboard .mp-section-sub { font-weight: 400; font-size: 11.5px; color: var(--muted); margin-left: 6px; }
+
+#mbcxDashboard .mp-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 9px 14px;
+  margin-bottom: 6px;
+}
+#mbcxDashboard .mp-row--done      { opacity: 0.75; }
+#mbcxDashboard .mp-row--dismissed { opacity: 0.55; background: var(--gray-50); }
+#mbcxDashboard .mp-row-main  { flex: 1; min-width: 0; }
+#mbcxDashboard .mp-row-title { font-size: 12.5px; font-weight: 600; color: var(--card-fg); }
+#mbcxDashboard .mp-row-fault { font-weight: 400; color: var(--gray-600); }
+#mbcxDashboard .mp-row-sub   { font-size: 11px; color: var(--muted); margin-top: 1px; }
+#mbcxDashboard .mp-row-acts  { display: flex; gap: 5px; flex-shrink: 0; }
+
+#mbcxDashboard .mp-act {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--gray-300);
+  background: var(--card-bg);
+  color: var(--gray-600);
+  cursor: pointer;
+}
+#mbcxDashboard .mp-act:hover      { background: var(--gray-50); }
+#mbcxDashboard .mp-act--on        { background: var(--gray-700); border-color: var(--gray-700); color: #fff; }
+#mbcxDashboard .mp-act--primary   { border-color: var(--primary); color: var(--primary); }
+#mbcxDashboard .mp-act--primary.mp-act--on { background: var(--primary); color: #fff; }
+
+#mbcxDashboard .mp-sev {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+#mbcxDashboard .mp-sev--hi  { background: var(--imeg-red-lt);  color: var(--imeg-red); }
+#mbcxDashboard .mp-sev--med { background: var(--amber-lt);     color: var(--amber); }
+#mbcxDashboard .mp-sev--lo  { background: var(--gray-100);     color: var(--gray-600); }
+
+#mbcxDashboard .mp-status { font-size: 11px; font-weight: 600; flex-shrink: 0; }
+#mbcxDashboard .mp-status--ok  { color: var(--imeg-green); }
+#mbcxDashboard .mp-status--on  { color: var(--amber); }
+#mbcxDashboard .mp-status--reg { color: var(--imeg-red); }
+
+#mbcxDashboard .mp-sys-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+#mbcxDashboard .mp-sys {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+#mbcxDashboard .mp-sys--done { border-color: var(--imeg-green); }
+#mbcxDashboard .mp-sys-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+#mbcxDashboard .mp-sys-check { font-size: 12.5px; font-weight: 600; color: var(--card-fg); cursor: pointer; }
+#mbcxDashboard .mp-sys-kpis  { display: flex; gap: 14px; flex-wrap: wrap; }
+#mbcxDashboard .mp-kpi       { display: flex; flex-direction: column; }
+#mbcxDashboard .mp-kpi-val   { font-size: 13px; font-weight: 700; }
+#mbcxDashboard .mp-kpi-name  { font-size: 10.5px; color: var(--muted); }
+#mbcxDashboard .mp-kpi--ok   .mp-kpi-val { color: var(--imeg-green); }
+#mbcxDashboard .mp-kpi--warn .mp-kpi-val { color: var(--amber); }
+#mbcxDashboard .mp-kpi--neg  .mp-kpi-val { color: var(--imeg-red); }
+
+#mbcxDashboard .mp-rail {
+  width: 270px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 16px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  padding: 12px;
+}
+#mbcxDashboard .mp-rail-hd {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--card-fg);
+  margin-bottom: 8px;
+}
+#mbcxDashboard .mp-rail-count {
+  background: var(--primary);
+  color: #fff;
+  font-size: 10.5px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  margin-left: 4px;
+}
+#mbcxDashboard .mp-rail-empty {
+  font-size: 11.5px;
+  color: var(--muted);
+  text-align: center;
+  padding: 18px 6px;
+  line-height: 1.5;
+}
+#mbcxDashboard .mp-rail-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--card-border);
+  margin-bottom: 5px;
+}
+#mbcxDashboard .mp-rail-item-main  { flex: 1; min-width: 0; }
+#mbcxDashboard .mp-rail-item-equip { font-size: 11px; font-weight: 700; color: var(--card-fg); }
+#mbcxDashboard .mp-rail-item-fault {
+  font-size: 11px;
+  color: var(--gray-600);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#mbcxDashboard .mp-rail-remove {
+  border: none;
+  background: none;
+  color: var(--gray-400);
+  font-size: 15px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px 4px;
+}
+#mbcxDashboard .mp-rail-remove:hover { color: var(--imeg-red); }
+#mbcxDashboard .mp-rail-actions { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+#mbcxDashboard .mp-btn {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 10px;
+  border-radius: 7px;
+  border: 1px solid var(--gray-300);
+  background: var(--card-bg);
+  color: var(--gray-700);
+  cursor: pointer;
+}
+#mbcxDashboard .mp-btn:hover:not(:disabled) { background: var(--gray-50); }
+#mbcxDashboard .mp-btn:disabled { opacity: 0.5; cursor: default; }
+#mbcxDashboard .mp-btn--primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+#mbcxDashboard .mp-btn--primary:hover:not(:disabled) { background: var(--primary-h); }
+
+@media (max-width: 1100px) {
+  #mbcxDashboard .mp-page { flex-direction: column; }
+  #mbcxDashboard .mp-rail { width: 100%; position: static; }
+}
+
+/* ── Meeting Prep: simplified flow additions ──────────────────────────── */
+#mbcxDashboard .mp-check {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border: 1.5px solid var(--gray-300);
+  border-radius: 5px;
+  background: var(--card-bg);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+#mbcxDashboard .mp-check:hover { border-color: var(--imeg-green); }
+#mbcxDashboard .mp-check--on {
+  background: var(--imeg-green);
+  border-color: var(--imeg-green);
+}
+#mbcxDashboard .mp-row--reviewed { opacity: 0.6; }
+#mbcxDashboard .mp-id {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gray-500);
+  background: var(--gray-100);
+  padding: 2px 7px;
+  border-radius: 5px;
+  flex-shrink: 0;
+}
+#mbcxDashboard .mp-sys-label { font-size: 12.5px; font-weight: 600; color: var(--card-fg); }
+
+/* ── Meeting Prep: guided review flow ─────────────────────────────────── */
+#mbcxDashboard .mp-steps {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+#mbcxDashboard .mp-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--gray-500);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 6px;
+}
+#mbcxDashboard .mp-step--active { color: var(--primary); }
+#mbcxDashboard .mp-step--done   { color: var(--imeg-green); }
+#mbcxDashboard .mp-step--locked { cursor: default; opacity: 0.6; }
+#mbcxDashboard .mp-step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  font-size: 11px;
+}
+#mbcxDashboard .mp-step--active .mp-step-num { background: var(--primary); border-color: var(--primary); color: #fff; }
+#mbcxDashboard .mp-step--done   .mp-step-num { background: var(--imeg-green); border-color: var(--imeg-green); color: #fff; }
+#mbcxDashboard .mp-step-line { flex: 0 0 50px; height: 1.5px; background: var(--gray-300); }
+#mbcxDashboard .mp-step-lock { font-size: 11px; }
+
+#mbcxDashboard .mp-review { max-width: 620px; margin: 0 auto; }
+#mbcxDashboard .mp-review-progress {
+  height: 5px;
+  background: var(--gray-100);
+  border-radius: 999px;
+  overflow: hidden;
+}
+#mbcxDashboard .mp-review-progress-fill {
+  height: 100%;
+  background: var(--imeg-green);
+  border-radius: 999px;
+  transition: width 0.25s ease;
+}
+#mbcxDashboard .mp-review-count {
+  font-size: 11.5px;
+  color: var(--muted);
+  text-align: center;
+  margin: 8px 0 16px;
+}
+#mbcxDashboard .mp-review-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 28px 32px;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+#mbcxDashboard .mp-review-card--reviewed { border-color: var(--imeg-green); }
+#mbcxDashboard .mp-review-chips {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+#mbcxDashboard .mp-review-assigned { font-size: 11px; color: var(--muted); }
+#mbcxDashboard .mp-review-equip { font-size: 1.3rem; font-weight: 700; color: var(--card-fg); }
+#mbcxDashboard .mp-review-fault { font-size: 1rem; color: var(--gray-600); margin-top: 2px; }
+#mbcxDashboard .mp-review-meta  { font-size: 11.5px; color: var(--muted); margin-top: 8px; }
+#mbcxDashboard .mp-review-comments {
+  font-size: 12.5px;
+  color: var(--gray-600);
+  font-style: italic;
+  background: var(--gray-50);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-top: 14px;
+}
+#mbcxDashboard .mp-review-actions { margin-top: 18px; }
+#mbcxDashboard .mp-btn--added {
+  border-color: var(--imeg-green);
+  color: var(--imeg-green);
+}
+#mbcxDashboard .mp-review-nav {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 16px;
+}
+#mbcxDashboard .mp-back-link { margin-top: 10px; }
+
+/* ── Meeting Prep: tabular review toolbar ─────────────────────────────── */
+#mbcxDashboard .mp-review-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+#mbcxDashboard .mp-review-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+#mbcxDashboard .mp-review-progress--inline { flex: 0 0 160px; }
+#mbcxDashboard .mp-review-count-inline { font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+#mbcxDashboard .mp-review-continue {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+/* ── Meeting Prep: triage inbox (step 2) ──────────────────────────────── */
+#mbcxDashboard .mp-triage-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+#mbcxDashboard .mp-search {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  padding: 7px 11px;
+  border: 1px solid var(--gray-300);
+  border-radius: 7px;
+  background: var(--card-bg);
+  color: var(--card-fg);
+}
+#mbcxDashboard .mp-search:focus { outline: none; border-color: var(--primary); }
+#mbcxDashboard .mp-type-chips { display: flex; gap: 5px; flex-shrink: 0; }
+
+#mbcxDashboard .mp-queue-meta {
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+#mbcxDashboard .mp-group {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  margin-bottom: 6px;
+}
+#mbcxDashboard .mp-group--open { border-color: var(--gray-300); }
+#mbcxDashboard .mp-group-hd {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+}
+#mbcxDashboard .mp-group-expand {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 0;
+  min-width: 0;
+}
+#mbcxDashboard .mp-group-caret { color: var(--gray-400); font-size: 11px; }
+#mbcxDashboard .mp-group-equip { font-size: 12.5px; font-weight: 700; color: var(--card-fg); white-space: nowrap; }
+#mbcxDashboard .mp-group-count {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--gray-500);
+  background: var(--gray-100);
+  padding: 1px 7px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+#mbcxDashboard .mp-group-active { font-size: 11px; color: var(--muted); white-space: nowrap; }
+#mbcxDashboard .mp-group-preview {
+  flex: 1;
+  min-width: 0;
+  font-size: 11.5px;
+  color: var(--gray-500);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#mbcxDashboard .mp-group-body {
+  border-top: 1px solid var(--card-border);
+  padding: 6px 12px 8px 30px;
+}
+#mbcxDashboard .mp-row--nested {
+  border: none;
+  border-bottom: 1px solid var(--gray-100);
+  border-radius: 0;
+  margin-bottom: 0;
+  padding: 7px 2px;
+}
+#mbcxDashboard .mp-row--nested:last-child { border-bottom: none; }
+#mbcxDashboard .mp-showmore { display: block; margin: 8px auto; }
+#mbcxDashboard .mp-skipped-toggle { margin-top: 14px; color: var(--muted); }
+#mbcxDashboard .mp-skipped-list { margin-top: 6px; }
+
+/* ── Meeting Prep: full-list triage controls ──────────────────────────── */
+#mbcxDashboard .mp-triage-toolbar--row2 { margin-top: -2px; }
+#mbcxDashboard .mp-select {
+  font-size: 11.5px;
+  padding: 5px 8px;
+  border: 1px solid var(--gray-300);
+  border-radius: 6px;
+  background: var(--card-bg);
+  color: var(--gray-600);
+}
+#mbcxDashboard .mp-hide-handled {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  color: var(--gray-600);
+  cursor: pointer;
+  margin-left: auto;
+  white-space: nowrap;
+}
+#mbcxDashboard .mp-link {
+  border: none;
+  background: none;
+  color: var(--primary);
+  font-weight: 600;
+  padding: 2px 6px;
+}
+#mbcxDashboard .mp-link:hover { background: none; text-decoration: underline; }
+#mbcxDashboard .mp-group--handled { opacity: 0.55; }
+#mbcxDashboard .mp-group--handled:hover { opacity: 1; }
+#mbcxDashboard .mp-state {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+#mbcxDashboard .mp-state--agenda { background: var(--imeg-green-lt); color: var(--imeg-green); }
+#mbcxDashboard .mp-state--skip   { background: var(--gray-100); color: var(--gray-500); }
+
+/* ── Meeting Prep: agenda rail ordering ───────────────────────────────── */
+#mbcxDashboard .mp-rail-num {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--gray-400);
+  flex-shrink: 0;
+  width: 14px;
+  text-align: right;
+}
+#mbcxDashboard .mp-rail-arrows { display: flex; flex-direction: column; flex-shrink: 0; }
+#mbcxDashboard .mp-rail-move {
+  border: none;
+  background: none;
+  color: var(--gray-400);
+  font-size: 8px;
+  line-height: 1.1;
+  cursor: pointer;
+  padding: 1px 3px;
+}
+#mbcxDashboard .mp-rail-move:hover:not(:disabled) { color: var(--primary); }
+#mbcxDashboard .mp-rail-move:disabled { opacity: 0.3; cursor: default; }
+
+/* ── Meeting Prep: embedded agenda (step 3) ───────────────────────────── */
+#mbcxDashboard .mp-agenda-host { margin: 0 -8px; }
+#mbcxDashboard .mp-agenda-host .mtg-page { padding: 4px 8px; }
