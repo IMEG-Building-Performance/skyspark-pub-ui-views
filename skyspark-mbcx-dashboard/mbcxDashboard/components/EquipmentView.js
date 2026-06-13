@@ -8,6 +8,7 @@ window.mbcxDashboard.components.EquipmentView = (function () {
   var _ctx = null;
   var _equipList = [];
   var _selectedId = null;
+  var _preselectDis = null; // set via preselect() before navigating here
   var _charts = [];
   var _selectorOpen = false;
   var _lastPoints = [];
@@ -269,6 +270,15 @@ window.mbcxDashboard.components.EquipmentView = (function () {
         _equipList.sort(function (a, b) { return a.dis.localeCompare(b.dis); });
         if (_equipList.length) {
           _selectedId = _equipList[0].id;
+          // Honor a preselect request (e.g. clicking a VAV in the summary
+          // table) — exact match first, then substring.
+          if (_preselectDis) {
+            var want = _preselectDis.toLowerCase();
+            var hit = _equipList.filter(function (e) { return e.dis.toLowerCase() === want; })[0] ||
+                      _equipList.filter(function (e) { return e.dis.toLowerCase().indexOf(want) !== -1; })[0];
+            if (hit) _selectedId = hit.id;
+            _preselectDis = null;
+          }
           _renderHeader();
           _loadEquipDetail();
         } else {
@@ -786,20 +796,31 @@ window.mbcxDashboard.components.EquipmentView = (function () {
     if (!_ctx || !_selectedId) return;
     var API = window.mbcxDashboard.api;
     var HP  = window.mbcxDashboard.haystackParser;
-    var equipRef = '@' + _selectedId.replace(/^@/, '');
+    var sel = _equipList.filter(function (e) { return e.id === _selectedId; })[0];
+    var selDis = sel ? sel.dis : '';
     var dateArg = (_ctx.datesStart && _ctx.datesEnd) ? _ctx.datesStart + '..' + _ctx.datesEnd : 'today()';
-    var axon = 'view_MBCxReport_CustomerView_Output(' + _ctx.siteRef + ', ' + dateArg + ', 10%, ' + equipRef + ', "Fault List", "", "Show All")';
+    // Site-wide fault list filtered by equipment name — same source and
+    // shape as the Faults tab, so rows can open the full Fault Detail.
+    var axon = 'view_MBCxReport_CustomerView_Output(' + _ctx.siteRef + ', ' + dateArg + ', 10%, @nav:rule.all, "Fault List", "", "Show All")';
     API.evalAxon(_ctx.attestKey, _ctx.projectName, axon)
       .then(function (grid) {
-        var HP2 = window.mbcxDashboard.haystackParser;
-        var parsed = HP2.parseGrid(grid);
-        var faults = parsed.rows.map(function (r) {
+        var parsed = HP.parseGrid(grid);
+        var faults = parsed.rows.map(function (r, i) {
           return {
-            name: _strVal(r.faultName),
-            point: _strVal(r.equipment || ''),
-            severity: _sevFromScore(_numVal(r.sevNorm)),
-            dur: _numVal(r.sumDur)
+            id: 'eq-fault-' + i,
+            equipment: _strVal(r.equipment),
+            faultName: _strVal(r.faultName),
+            sevNorm: _numVal(r.sevNorm),
+            faultActive: _numVal(r.faultActive),
+            sumDur: _numVal(r.sumDur),
+            descriptionofFault: _strVal(r.descriptionofFault),
+            recommendedActions: _strVal(r.recommendedActions),
+            sparksLink: _strVal(r.sparksLink),
+            _raw: r,
+            severity: _sevFromScore(_numVal(r.sevNorm))
           };
+        }).filter(function (f) {
+          return selDis && f.equipment === selDis;
         }).sort(function (a, b) {
           var ord = { critical: 0, warning: 1, info: 2 };
           return (ord[a.severity] || 2) - (ord[b.severity] || 2);
@@ -833,19 +854,36 @@ window.mbcxDashboard.components.EquipmentView = (function () {
     } else if (!f.length) {
       body = '<div class="eq-empty-center"><span class="eq-check">✓</span><div class="eq-empty-msg">No active faults.</div></div>';
     } else {
-      body = f.map(function (fault) {
-        return '<div class="eq-fault-row">' +
+      body = f.map(function (fault, i) {
+        var pct = typeof fault.faultActive === 'number' ? fault.faultActive.toFixed(0) + '%' : '';
+        return '<div class="eq-fault-row eq-fault-row--link" data-eqfault="' + i + '" title="Open fault detail">' +
           '<span class="eq-fault-dot" style="background:' + (SEV_COLORS[fault.severity] || '#9ca3af') + '"></span>' +
-          '<div class="eq-fault-info"><div class="eq-fault-name">' + fault.name + '</div>' +
-            (fault.point ? '<div class="eq-fault-point">' + fault.point + '</div>' : '') +
+          '<div class="eq-fault-info"><div class="eq-fault-name">' + fault.faultName + '</div>' +
+            (pct ? '<div class="eq-fault-point">' + pct + ' active</div>' : '') +
           '</div>' +
-          (fault.dur !== null ? '<div class="eq-fault-dur">' + parseFloat(fault.dur).toFixed(0) + 'h</div>' : '') +
+          (fault.sumDur !== null ? '<div class="eq-fault-dur">' + parseFloat(fault.sumDur).toFixed(0) + 'h</div>' : '') +
         '</div>';
       }).join('');
     }
     var count = f && f.length ? f.length : 0;
     el.innerHTML = '<div class="eq-card-header"><div class="eq-section-title">Active Faults</div>' +
       (f && f.length ? '<span class="eq-fault-badge">' + count + '</span>' : '') + '</div>' + body;
+
+    // Open the full Fault Detail; Back returns to this equipment page.
+    el.querySelectorAll('[data-eqfault]').forEach(function (rowEl) {
+      rowEl.addEventListener('click', function () {
+        var fault = _lastFaults[parseInt(rowEl.getAttribute('data-eqfault'), 10)];
+        var NSd = window.mbcxDashboard;
+        var appRoot = document.getElementById('mbcxDashboard');
+        if (!fault || !NSd.App || !NSd.App.showFaultDetail || !appRoot) return;
+        NSd.App.showFaultDetail(appRoot, fault, NSd.Components, {
+          backLabel: '&#8592; Equipment',
+          onBack: function () {
+            NSd.App._showTab(appRoot, 'equipment', NSd.Components, NSd.App._lastData, NSd.App._lastCtx);
+          }
+        });
+      });
+    });
   }
 
   function _showNoEquip() {
@@ -866,6 +904,11 @@ window.mbcxDashboard.components.EquipmentView = (function () {
     _selectedId = null;
   }
 
-  return { renderPage: renderPage, initLive: initLive, destroy: destroy };
+  return {
+    renderPage: renderPage,
+    initLive: initLive,
+    destroy: destroy,
+    preselect: function (dis) { _preselectDis = dis || null; }
+  };
 
 })();

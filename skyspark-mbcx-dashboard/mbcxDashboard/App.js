@@ -135,7 +135,35 @@ window.mbcxDashboard = window.mbcxDashboard || {};
     _lastData:  null,
     _lastCtx:   null,
     _activeTab: null,
+    _activeFault: null,
+    _history:   [],   // in-tool back stack: [{tab, fault?}]
+    _navBack:   false,
     _config: _getConfig(),
+
+    _refreshBackBtn: function (container) {
+      var b = container.querySelector('#mbcxTopBack');
+      if (b) b.style.display = NS.App._history.length ? '' : 'none';
+    },
+
+    // Record the current view before navigating away, so the Back button
+    // can walk in-tool view history.
+    _pushHistory: function () {
+      if (NS.App._navBack) return;
+      var t = NS.App._activeTab;
+      if (!t) return;
+      var entry;
+      if (t === 'fault-detail' && NS.App._activeFault) {
+        entry = { tab: 'fault-detail', fault: NS.App._activeFault };
+      } else if (t === 'cup-plant-detail' || t === 'cup-equip-detail') {
+        entry = { tab: 'summary' };
+      } else {
+        entry = { tab: (t === 'fault-list' || t === 'fault-log') ? 'faults' : t };
+      }
+      var h = NS.App._history;
+      if (h.length && h[h.length - 1].tab === entry.tab && entry.tab !== 'fault-detail') return;
+      h.push(entry);
+      if (h.length > 25) h.shift();
+    },
 
     _syncConfigFromServer: function (container) {
       var ctx = NS.App._lastCtx;
@@ -237,6 +265,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         '<div class="dash-main">',
 
         '  <div class="dash-topbar" style="background:#1e2337 !important;">',
+        '    <button class="dash-topbar-back" id="mbcxTopBack" style="display:none" title="Back to previous view">&#8592; Back</button>',
         '    <div class="dash-topbar-title" id="mbcxDashTitleSite" style="color:#fff !important;">',
         '      ' + titleTxt,
         '      <span class="dash-topbar-spinner" id="mbcxSpinner" style="display:none" aria-label="Loading"></span>',
@@ -268,6 +297,28 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         selectedLabel: ctx.siteName || '— Select site —',
         onChange: function () { doLoad(); }
       });
+
+      // ── In-tool Back (topbar) ─────────────────────────────────────────
+      // Walks view history; only visible when there is somewhere to go.
+      // The hover-reveal escape button stays a pure exit to SkySpark.
+      NS.App._history = [];
+      var topBack = container.querySelector('#mbcxTopBack');
+      if (topBack) {
+        topBack.addEventListener('click', function () {
+          var h = NS.App._history;
+          if (!h.length) return;
+          var entry = h.pop();
+          NS.App._navBack = true;
+          try {
+            if (entry.tab === 'fault-detail' && entry.fault) {
+              NS.App.showFaultDetail(container, entry.fault, NS.Components);
+            } else {
+              NS.App._showTab(container, entry.tab, NS.Components, NS.App._lastData, NS.App._lastCtx);
+            }
+          } finally { NS.App._navBack = false; }
+          NS.App._refreshBackBtn(container);
+        });
+      }
 
       // ── Sidebar collapse ──────────────────────────────────────────────
       if (collapseBtn) {
@@ -443,6 +494,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
     },
 
     showCupPlantDetail: function (container, systemKey, co, data, ctx) {
+      NS.App._pushHistory();
       if (NS.App._activeTab === 'trends'       && co.TrendingView) co.TrendingView.destroy();
       if (NS.App._activeTab === 'fault-detail' && co.FaultDetail)  co.FaultDetail.destroy();
       if (NS.App._activeTab === 'meetings'     && co.MeetingView)  co.MeetingView.destroy(co);
@@ -453,9 +505,11 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       if (co.CUPPlantDetail) {
         co.CUPPlantDetail.show(container, systemKey, co, data, ctx);
       }
+      NS.App._refreshBackBtn(container);
     },
 
     showCupEquipDetail: function (container, equipName, systemKey, co, data, ctx) {
+      NS.App._pushHistory();
       if (NS.App._activeTab === 'trends'       && co.TrendingView) co.TrendingView.destroy();
       if (NS.App._activeTab === 'fault-detail' && co.FaultDetail)  co.FaultDetail.destroy();
       if (NS.App._activeTab === 'meetings'     && co.MeetingView)  co.MeetingView.destroy(co);
@@ -466,26 +520,39 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       if (co.CUPEquipDetail) {
         co.CUPEquipDetail.show(container, equipName, systemKey, co, data, ctx);
       }
+      NS.App._refreshBackBtn(container);
     },
 
-    showFaultDetail: function (container, fault, co) {
+    showFaultDetail: function (container, fault, co, opts) {
+      opts = opts || {};
+      NS.App._pushHistory();
       if (NS.App._activeTab === 'trends' && co.TrendingView) co.TrendingView.destroy();
       if (NS.App._activeTab === 'fault-detail' && co.FaultDetail) co.FaultDetail.destroy();
       NS.App._activeTab = 'fault-detail';
+      NS.App._activeFault = fault;
       container.querySelectorAll('.dash-sb-nav-item').forEach(function (btn) {
         btn.classList.toggle('active', btn.getAttribute('data-tab') === 'faults');
       });
       var content = container.querySelector('#mbcxContent');
+      // Remember the fault-list scroll position and the opened fault so
+      // Back returns to the same place with the viewed row highlighted.
+      if (co.FaultList) {
+        co.FaultList._returnScroll = content.scrollTop;
+        co.FaultList._returnFid = fault.id;
+      }
       content.classList.remove('dash-content--fixed');
       var allFaults = co.FaultList && co.FaultList._state ? co.FaultList._state.rows : [];
       if (co.FaultDetail) {
-        co.FaultDetail.show(content, fault, allFaults, NS.App._lastCtx, function () {
+        co.FaultDetail.show(content, fault, allFaults, NS.App._lastCtx, opts.onBack || function () {
           NS.App._showTab(container, 'faults', co, NS.App._lastData, NS.App._lastCtx);
-        });
+        }, opts.backLabel ? { backLabel: opts.backLabel } : undefined);
       }
+      NS.App._refreshBackBtn(container);
     },
 
     _showTab: function (container, tab, co, data, ctx) {
+      NS.App._pushHistory();
+      NS.App._activeFault = null;
       if (NS.App._activeTab === 'trends' && co.TrendingView && co.TrendingView.destroy) {
         co.TrendingView.destroy();
       }
@@ -611,6 +678,8 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         content.innerHTML = NS.App._renderConfigPage(ctx);
         NS.App._initConfigPage(container, content, co, data, ctx);
       }
+
+      NS.App._refreshBackBtn(container);
     },
 
     _applyTabVisibility: function (container) {

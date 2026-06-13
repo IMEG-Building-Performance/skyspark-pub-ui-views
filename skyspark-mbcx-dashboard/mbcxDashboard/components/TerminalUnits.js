@@ -8,6 +8,7 @@ var TU_COL_LABELS = {
   areaserved:       'Area Served',
   zoneTempAvg:      'Zone Temp Avg',
   zoneTempSPDiff:   'Zone Temp SP Diff',
+  zoneTempSP:       'Zone Temp SP',
   satAvg:           'SAT Avg',
   reheatValveAvg:   'Reheat Valve Avg',
   airflowAvg:       'Airflow Avg',
@@ -208,6 +209,18 @@ window.mbcxDashboard.components.TerminalUnits = {
     var reheatCol    = _tuFindCol(cols, ['reheat']);
     var datCol       = _tuFindCol(cols, ['dathis', 'datavg', 'dat']);
 
+    // Derived Zone Temp SP column = zoneTemp − SP diff. Assumes the diff
+    // column is signed (zoneTemp - setpoint); if the server view ever
+    // exports a real setpoint column, prefer that and drop this.
+    if (zoneTempCol && spDiffCol && cols.indexOf('zoneTempSP') === -1) {
+      rows.forEach(function (r) {
+        var z = +r[zoneTempCol], d = +r[spDiffCol];
+        r.zoneTempSP = (!isNaN(z) && !isNaN(d)) ? +(z - d).toFixed(1) : null;
+      });
+      cols = cols.slice();
+      cols.splice(cols.indexOf(spDiffCol) + 1, 0, 'zoneTempSP');
+    }
+
     var cfCols = { zoneTemp: zoneTempCol, spDiff: spDiffCol, damper: damperCol, reheat: reheatCol, dat: datCol };
     this._state = {
       rows: rows, cols: cols, sortCol: null, sortDir: 1, filter: '',
@@ -275,6 +288,22 @@ window.mbcxDashboard.components.TerminalUnits = {
       });
     }
 
+    // VAV name → Equipment page
+    var tbodyEl = container.querySelector('#tuTbody');
+    if (tbodyEl) {
+      tbodyEl.addEventListener('click', function (e) {
+        var link = e.target.closest('.tu-vav-link');
+        if (!link) return;
+        var NSd = window.mbcxDashboard;
+        if (NSd.components.EquipmentView && NSd.components.EquipmentView.preselect) {
+          NSd.components.EquipmentView.preselect(link.getAttribute('data-vavequip'));
+        }
+        if (NSd.App && NSd.App._showTab) {
+          NSd.App._showTab(container, 'equipment', NSd.Components, NSd.App._lastData, NSd.App._lastCtx);
+        }
+      });
+    }
+
     var condBar = container.querySelector('#tuCondBar');
     if (condBar) {
       condBar.addEventListener('click', function (e) {
@@ -315,6 +344,14 @@ window.mbcxDashboard.components.TerminalUnits = {
         var val = row[k];
         if (val && typeof val === 'object' && val.dis) val = val.dis;
         var cls = i === 0 ? 'tu-td tu-td-name' : 'tu-td';
+
+        // VAV name links to the Equipment page
+        if (i === 0 && val !== null && val !== undefined) {
+          var nameEsc = String(val).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+          return '<td class="' + cls + '"><button class="tu-vav-link" data-vavequip="' +
+            nameEsc + '" title="Open in Equipment view">' + nameEsc + '</button></td>';
+        }
         var style = '';
         var num = (val !== null && val !== undefined) ? +val : NaN;
 

@@ -8,14 +8,40 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
   var _agenda = []; // [{ fault, discussed, addedAt }]
   var _nextId  = 9000; // IDs for manually-added items
 
+  // Persist the agenda so a refresh mid-prep (or mid-meeting) doesn't lose
+  // it. _raw grid rows are stripped from storage to keep it small — trend
+  // fetches fall back to ctx dates without them.
+  // TODO(data): move to an mbcxMeeting rec alongside the prep draft.
+  var AGENDA_KEY = 'mbcxMeetingAgenda';
+  function _saveAgenda() {
+    try {
+      localStorage.setItem(AGENDA_KEY, JSON.stringify(_agenda, function (k, v) {
+        return k === '_raw' ? undefined : v;
+      }));
+    } catch (e) {}
+  }
+  (function _loadAgenda() {
+    try {
+      var s = localStorage.getItem(AGENDA_KEY);
+      if (s) {
+        var saved = JSON.parse(s);
+        if (Object.prototype.toString.call(saved) === '[object Array]') {
+          _agenda = saved.filter(function (i) { return i && i.fault; });
+        }
+      }
+    } catch (e) {}
+  })();
+
   NS.meeting = {
     add: function (fault) {
       if (_agenda.some(function (i) { return i.fault.id === fault.id; })) return;
       _agenda.push({ fault: fault, discussed: false, addedAt: Date.now() });
+      _saveAgenda();
       _refreshBadge();
     },
     remove: function (faultId) {
       _agenda = _agenda.filter(function (i) { return i.fault.id !== faultId; });
+      _saveAgenda();
       _refreshBadge();
     },
     has: function (faultId) {
@@ -29,6 +55,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       var j = idx + delta;
       if (idx === -1 || j < 0 || j >= _agenda.length) return;
       var tmp = _agenda[idx]; _agenda[idx] = _agenda[j]; _agenda[j] = tmp;
+      _saveAgenda();
     }
   };
 
@@ -69,9 +96,16 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       '  </div>',
       '  <div class="mtg-hd-actions">',
       '    <button class="mtg-add-btn" id="mtgAddBtn">+ Add Item</button>',
+      (_agenda.length && ctx && ctx.attestKey)
+        ? '<button class="mtg-add-btn mtg-end-btn" id="mtgEndBtn" title="Save this agenda as a meeting record in SkySpark and start the next cycle">End Meeting &amp; Save</button>' : '',
       _agenda.length ? '<button class="mtg-clear-btn" id="mtgClearBtn">Clear All</button>' : '',
+      (ctx && ctx.attestKey)
+        ? '<button class="mtg-clear-btn" id="mtgPastBtn" title="Browse saved meeting records for this site">Past Meetings</button>' : '',
       '  </div>',
       '</div>',
+
+      // Past meetings browser (collapsed)
+      '<div class="mtg-past" id="mtgPastArea" style="display:none;"></div>',
 
       // Inline add form (hidden by default)
       '<div class="mtg-add-area" id="mtgAddArea" style="display:none;">',
@@ -156,8 +190,163 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       if (clearBtn) {
         clearBtn.addEventListener('click', function () {
           _agenda = [];
+          _saveAgenda();
           _refreshBadge();
           _showAgenda(contentEl, ctx, co);
+        });
+      }
+
+      // End Meeting & Save — commit this meeting (agenda + prep draft) as a
+      // unique mbcxMeeting rec, then reset for the next cycle. Prep skips
+      // are kept (they persist across meetings by design).
+      // TODO(auth): server-side role check before this ships to clients.
+      // TODO(data): once meeting recs drive Meeting Prep, "last meeting"
+      // dates and the carried-items queue should read from these records.
+      var endBtn = contentEl.querySelector('#mtgEndBtn');
+      if (endBtn) {
+        endBtn.addEventListener('click', function () {
+          if (!window.confirm('Save this agenda as a meeting record and clear it for the next cycle?')) return;
+          var agendaJson = JSON.stringify(_agenda, function (k, v) {
+            return k === '_raw' ? undefined : v;
+          });
+          var prepJson = '';
+          try { prepJson = localStorage.getItem('mbcxMeetingPrep_draft') || ''; } catch (e) {}
+          function q(s) {
+            return '"' + String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+          }
+          var discussed = _agenda.filter(function (i) { return i.discussed; }).length;
+          var common = ', mbcxStatus: "held"' +
+            ', mbcxUser: context()->username' +
+            ', mbcxItemCount: ' + _agenda.length +
+            ', mbcxDiscussedCount: ' + discussed +
+            ', mbcxAgenda: ' + q(agendaJson) +
+            (prepJson ? ', mbcxPrepDraft: ' + q(prepJson) : '');
+          // Prefer updating the active draft rec (created on the Meeting
+          // Prep landing page) so each meeting stays one unique record.
+          var active = NS.activeMeeting || null;
+          var axon;
+          if (active && active.id) {
+            axon = 'commit(diff(readById(@' + String(active.id).replace(/^@/, '') + ')' +
+              ', {date: today()' + common + '}))';
+          } else {
+            axon = 'commit(diff(null, {mbcxMeeting' +
+              ', dis: ' + q('MBCx Meeting ' + new Date().toISOString().slice(0, 10) + (ctx.siteName ? ' — ' + ctx.siteName : '')) +
+              ', date: today()' +
+              (ctx.siteRef ? ', siteRef: ' + ctx.siteRef : '') +
+              common + '}, {add}))';
+          }
+          endBtn.disabled = true;
+          endBtn.textContent = 'Saving…';
+          NS.api.evalAxon(ctx.attestKey, ctx.projectName, axon)
+            .then(function () {
+              _agenda = [];
+              _saveAgenda();
+              _refreshBadge();
+              // New cycle: clear prep review progress, keep persistent skips
+              try {
+                var draft = JSON.parse(localStorage.getItem('mbcxMeetingPrep_draft')) || {};
+                draft.reviewed = {};
+                localStorage.setItem('mbcxMeetingPrep_draft', JSON.stringify(draft));
+              } catch (e) {}
+              NS.activeMeeting = null;
+              if (NS.meetingSavedHook) { NS.meetingSavedHook(); return; }
+              _showAgenda(contentEl, ctx, co);
+            })
+            .catch(function (err) {
+              console.warn('[MeetingView] Meeting record save failed:', err);
+              endBtn.disabled = false;
+              endBtn.textContent = 'End Meeting & Save';
+              window.alert('Could not save the meeting record — check permissions (details in console).');
+            });
+        });
+      }
+
+      // Past Meetings — read-only browser over saved mbcxMeeting recs
+      var pastBtn = contentEl.querySelector('#mtgPastBtn');
+      if (pastBtn) {
+        pastBtn.addEventListener('click', function () {
+          var area = contentEl.querySelector('#mtgPastArea');
+          if (!area) return;
+          if (area.style.display !== 'none') { area.style.display = 'none'; return; }
+          area.style.display = '';
+          area.innerHTML = '<div class="eq-loading">Loading past meetings…</div>';
+
+          var esc = function (s) {
+            return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+          };
+          // No server-side site filter: older recs may lack siteRef, and the
+          // current ref form can differ — filter leniently client-side.
+          var axon = 'readAll(mbcxMeeting)';
+          NS.api.evalAxon(ctx.attestKey, ctx.projectName, axon)
+            .then(function (grid) {
+              var parsed = NS.haystackParser.parseGrid(grid);
+              var siteVal = String(ctx.siteRef || '').replace(/^@/, '');
+              function refVal(v) {
+                if (!v) return '';
+                if (typeof v === 'string') return v.replace(/^@/, '');
+                return String(v.id || v.val || '').replace(/^@/, '');
+              }
+              var recs = parsed.rows.map(function (r) {
+                var dateVal = (r.date && typeof r.date === 'object') ? (r.date.val || '') : (r.date || '');
+                return {
+                  dis: r.dis || '',
+                  date: String(dateVal),
+                  user: r.mbcxUser || '',
+                  status: r.mbcxStatus || 'held',
+                  site: refVal(r.siteRef),
+                  items: r.mbcxItemCount,
+                  discussed: r.mbcxDiscussedCount,
+                  agenda: r.mbcxAgenda || ''
+                };
+              }).filter(function (m) {
+                return m.status !== 'draft' && (!siteVal || !m.site || m.site === siteVal);
+              }).sort(function (a, b) { return b.date.localeCompare(a.date); }).slice(0, 20);
+              console.info('[MeetingView] mbcxMeeting recs:', parsed.rows.length, '→ shown:', recs.length);
+
+              if (!recs.length) {
+                area.innerHTML = '<div class="mtg-past-empty">No saved meeting records for this site yet.</div>';
+                return;
+              }
+              area.innerHTML = recs.map(function (m, i) {
+                return '<div class="mtg-past-item">' +
+                  '<button class="mtg-past-hd" data-past="' + i + '">' +
+                  '  <span class="mtg-past-date">' + esc(m.date) + '</span>' +
+                  '  <span class="mtg-past-meta">' +
+                       (m.items != null && m.items !== '' ? m.items + ' items' : '') +
+                       (m.discussed != null && m.discussed !== '' ? ' · ' + m.discussed + ' discussed' : '') +
+                       (m.user ? ' · ' + esc(m.user) : '') +
+                  '  </span>' +
+                  '</button>' +
+                  '<div class="mtg-past-body" id="mtgPastBody' + i + '" style="display:none;"></div>' +
+                  '</div>';
+              }).join('');
+
+              area.querySelectorAll('[data-past]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                  var i = btn.getAttribute('data-past');
+                  var body = area.querySelector('#mtgPastBody' + i);
+                  if (!body) return;
+                  if (body.style.display !== 'none') { body.style.display = 'none'; return; }
+                  body.style.display = '';
+                  if (!body.innerHTML) {
+                    var items = [];
+                    try { items = JSON.parse(recs[i].agenda) || []; } catch (e) {}
+                    body.innerHTML = items.length ? items.map(function (it, n) {
+                      var f = (it && it.fault) || {};
+                      return '<div class="mtg-past-row">' + (n + 1) + '. ' +
+                        esc(f.equip || f.equipment || '') + ' — ' + esc(f.fault || f.faultName || '') +
+                        (it.discussed ? ' <span class="mtg-disc-tag">Discussed</span>' : '') +
+                        '</div>';
+                    }).join('') : '<div class="mtg-past-row">No items recorded.</div>';
+                  }
+                });
+              });
+            })
+            .catch(function (err) {
+              console.warn('[MeetingView] Past meetings load failed:', err);
+              area.innerHTML = '<div class="mtg-past-empty">Could not load past meetings (details in console).</div>';
+            });
         });
       }
 
@@ -239,6 +428,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         if (!isNaN(ridx)) {
           var removed = _agenda[ridx];
           _agenda.splice(ridx, 1);
+          _saveAgenda();
           // keep NS.meeting store in sync for non-manual items
           if (removed && !removed.fault._manual) NS.meeting.remove(removed.fault.id);
           else _refreshBadge();
@@ -309,6 +499,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         if (isNaN(toIdx) || toIdx === draggingIdx) return;
         var moved = _agenda.splice(draggingIdx, 1)[0];
         _agenda.splice(toIdx, 0, moved);
+        _saveAgenda();
         draggingIdx = null;
         _showAgenda(contentEl, ctx, co);
       });
@@ -338,6 +529,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
             : null,
           onMarkDiscussed: function () {
             _agenda[idx].discussed = !_agenda[idx].discussed;
+            _saveAgenda();
             _refreshBadge();
             _present(contentEl, idx, ctx, co);
           }

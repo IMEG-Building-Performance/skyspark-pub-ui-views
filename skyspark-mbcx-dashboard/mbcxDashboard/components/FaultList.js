@@ -21,10 +21,35 @@ var FL_COLS = ['faultName', 'equipment', 'sumDur', 'sevNorm', 'faultActive'];
 var FL_LABELS = { faultName:'Fault Name', equipment:'Equipment', sumDur:'Duration (hours)', sevNorm:'Severity', faultActive:'Fault Active %' };
 
 var FL_CONDITIONS = [
-  { id: 'sevHigh',  label: 'Severity ≥ 7',  test: function (r) { return typeof r.sevNorm === 'number' && r.sevNorm >= 7; }, color: '#FEE2E2', activeColor: '#DC2626', activeText: '#fff' },
-  { id: 'sevMed',   label: 'Severity 4–6',  test: function (r) { return typeof r.sevNorm === 'number' && r.sevNorm >= 4 && r.sevNorm <= 6; }, color: '#FEF3C7', activeColor: '#D97706', activeText: '#fff' },
-  { id: 'pctHigh',  label: '% ≥ 75',        test: function (r) { return typeof r.faultActive === 'number' && r.faultActive >= 75; }, color: '#FEE2E2', activeColor: '#DC2626', activeText: '#fff' },
+  { id: 'sevHigh',  label: 'Severity ≥ 7',  test: function (r) { return typeof r.sevNorm === 'number' && r.sevNorm >= 7; }, color: '#FEE2E2', activeColor: '#DC2626', activeText: '#fff',
+    tip: 'Faults with normalized severity 7 or higher' },
+  { id: 'sevMed',   label: 'Severity 4–6',  test: function (r) { return typeof r.sevNorm === 'number' && r.sevNorm >= 4 && r.sevNorm <= 6; }, color: '#FEF3C7', activeColor: '#D97706', activeText: '#fff',
+    tip: 'Faults with normalized severity between 4 and 6' },
+  { id: 'pctHigh',  label: '% ≥ 75',        test: function (r) { return typeof r.faultActive === 'number' && r.faultActive >= 75; }, color: '#FEE2E2', activeColor: '#DC2626', activeText: '#fff',
+    tip: 'Faults active for at least 75% of the report period' },
+  { id: 'isNew',    label: 'New',           test: function (r) { return !!r._isNew; },  color: '#DBEAFE', activeColor: '#2563EB', activeText: '#fff',
+    tip: 'Not present in the previous report period (the same-length window immediately before the current date range)' },
+  { id: 'recent',   label: 'Recent',        test: function (r) { return !!r._recent; }, color: '#DBEAFE', activeColor: '#2563EB', activeText: '#fff',
+    tip: 'At least 75% of this fault\'s hours occurred within the last 2 weeks' },
 ];
+
+// Same-length window immediately before the current range — matches the
+// Fault Summaries "Change from Last Report" convention.
+function _flPrevDateArg(ctx) {
+  if (!ctx.datesStart || !ctx.datesEnd) return null;
+  var s = new Date(ctx.datesStart + 'T00:00:00');
+  var e = new Date(ctx.datesEnd + 'T00:00:00');
+  if (isNaN(s) || isNaN(e)) return null;
+  var spanMs = e.getTime() - s.getTime();
+  var prevEnd = new Date(s.getTime() - 86400000); // day before start
+  var prevStart = new Date(prevEnd.getTime() - spanMs);
+  function fmt(d) {
+    return d.getFullYear() + '-' +
+      (d.getMonth() < 9 ? '0' : '') + (d.getMonth() + 1) + '-' +
+      (d.getDate() < 10 ? '0' : '') + d.getDate();
+  }
+  return fmt(prevStart) + '..' + fmt(prevEnd);
+}
 
 function _flFormatHours(v) {
   if (typeof v === 'number') return v.toFixed(0) + 'h';
@@ -177,11 +202,37 @@ window.mbcxDashboard.components.FaultList = {
       var tbody = container.querySelector('#flTbody');
       var thead = container.querySelector('#flThead');
       if (thead) thead.innerHTML = '';
-      if (tbody) tbody.innerHTML = '<tr><td style="padding:24px;color:#9CA3AF;font-size:12px;text-align:center;">Loading faults…</td></tr>';
+      if (tbody) tbody.innerHTML = '<tr><td class="fl-td-loading" style="padding:24px;color:#9CA3AF;font-size:12px;text-align:center;">Loading faults…</td></tr>';
       this._fetchLive(container, ctx);
     } else {
       this._populate(container, FL_DEMO_FAULTS);
     }
+  },
+
+  // Annotate rows with:
+  //  _isNew   — absent from the previous report period (the same-length
+  //             window before the current range, fetched live)
+  //  _recent  — the fault's duration mostly just occurred: its trailing
+  //             2-week duration is >= 75% of its full-range duration
+  _annotateNewRecent: function (rows, recentDur, prevKeys) {
+    try {
+      if (prevKeys) {
+        rows.forEach(function (r) {
+          r._isNew = !prevKeys[r.equipment + '::' + r.faultName];
+        });
+      }
+      if (recentDur) {
+        rows.forEach(function (r) {
+          var d2 = recentDur[r.equipment + '::' + r.faultName];
+          if (typeof d2 === 'number' && typeof r.sumDur === 'number' && r.sumDur > 0 &&
+              d2 / r.sumDur >= 0.75) {
+            r._recent = true;
+            r._recentTip = Math.round(d2) + ' of ' + Math.round(r.sumDur) +
+              ' fault hours occurred within the last 2 weeks';
+          }
+        });
+      }
+    } catch (e) { /* annotation is best-effort */ }
   },
 
   _populate: function (container, faults) {
@@ -195,6 +246,14 @@ window.mbcxDashboard.components.FaultList = {
     });
     this._state = { rows: sorted, sortCol: 'faultName', sortDir: 1, filter: '' };
     this._buildTable(container);
+
+    // Restore the scroll position saved when a fault detail was opened.
+    var sc = this._returnScroll;
+    if (sc) {
+      this._returnScroll = null;
+      var scroller = container.querySelector('#mbcxContent') || container;
+      requestAnimationFrame(function () { scroller.scrollTop = sc; });
+    }
   },
 
   _fetchLive: function (container, ctx) {
@@ -223,15 +282,68 @@ window.mbcxDashboard.components.FaultList = {
       ctx.siteRef + ', ' + dateArg +
       ', 10%, @nav:rule.all, "Fault List", "", "Show All")';
 
-    API.evalAxon(ctx.attestKey, ctx.projectName, axon)
-      .then(function (grid) {
-        var parsed = HP.parseGrid(grid);
+    // Trailing 2-week window — used to flag "recent" faults (faults whose
+    // duration mostly just occurred). Only fetched when the report window
+    // is meaningfully longer than the slice.
+    function isoDaysAgo(n) {
+      var d = new Date(); d.setDate(d.getDate() - n);
+      return d.toISOString().slice(0, 10);
+    }
+    var rangeStart = Date.parse(String(ctx.datesStart || '').slice(0, 10));
+    var wantRecent = !isNaN(rangeStart) && (Date.now() - rangeStart) > 21 * 86400000;
+    var recentPromise = wantRecent
+      ? API.evalAxon(ctx.attestKey, ctx.projectName,
+          'view_MBCxReport_CustomerView_Output(' + ctx.siteRef + ', ' +
+          isoDaysAgo(13) + '..' + isoDaysAgo(0) +
+          ', 10%, @nav:rule.all, "Fault List", "", "Show All")')
+        .catch(function (err) {
+          console.warn('[FaultList] Recent-window fetch failed (Recent flags skipped):', err);
+          return null;
+        })
+      : Promise.resolve(null);
+
+    // Previous report period (same-length window before the current range) —
+    // used for "New" flags, matching the Fault Summaries change column.
+    var prevDateArg = _flPrevDateArg(ctx);
+    var prevPromise = prevDateArg
+      ? API.evalAxon(ctx.attestKey, ctx.projectName,
+          'view_MBCxReport_CustomerView_Output(' + ctx.siteRef + ', ' + prevDateArg +
+          ', 10%, @nav:rule.all, "Fault List", "", "Show All")')
+        .catch(function (err) {
+          console.warn('[FaultList] Previous-period fetch failed (New flags skipped):', err);
+          return null;
+        })
+      : Promise.resolve(null);
+
+    Promise.all([API.evalAxon(ctx.attestKey, ctx.projectName, axon), recentPromise, prevPromise])
+      .then(function (results) {
+        var parsed = HP.parseGrid(results[0]);
         if (!parsed.rows.length) {
           var tbody = container.querySelector('#flTbody');
           if (tbody) tbody.innerHTML = '<tr><td style="padding:24px;color:#9CA3AF;font-size:12px;text-align:center;">No faults returned for this site and date range.</td></tr>';
           return;
         }
-        self._populate(container, self._mapLiveRows(parsed.rows, parsed.cols));
+        var rows = self._mapLiveRows(parsed.rows, parsed.cols);
+        var recentDur = null;
+        if (results[1]) {
+          recentDur = {};
+          var rparsed = HP.parseGrid(results[1]);
+          self._mapLiveRows(rparsed.rows, rparsed.cols).forEach(function (r) {
+            if (typeof r.sumDur === 'number') {
+              recentDur[r.equipment + '::' + r.faultName] = r.sumDur;
+            }
+          });
+        }
+        var prevKeys = null;
+        if (results[2]) {
+          var pparsed = HP.parseGrid(results[2]);
+          prevKeys = {};
+          self._mapLiveRows(pparsed.rows, pparsed.cols).forEach(function (r) {
+            prevKeys[r.equipment + '::' + r.faultName] = true;
+          });
+        }
+        self._annotateNewRecent(rows, recentDur, prevKeys);
+        self._populate(container, rows);
       })
       .catch(function (err) {
         console.error('[FaultList] Live fetch failed:', err);
@@ -314,6 +426,7 @@ window.mbcxDashboard.components.FaultList = {
     var chipHtml = FL_CONDITIONS.map(function (c) {
       if (!condCounts[c.id]) return '';
       return '<button class="tu-cond-chip" data-cond="' + c.id + '"'
+        + (c.tip ? ' title="' + c.tip + '"' : '')
         + ' data-color="' + c.color + '" data-active-color="' + c.activeColor + '" data-active-text="' + c.activeText + '"'
         + ' style="background:' + c.color + ';">'
         + c.label + '<span class="tu-cond-count">' + condCounts[c.id] + '</span></button>';
@@ -446,9 +559,13 @@ window.mbcxDashboard.components.FaultList = {
 
     var tbody = container.querySelector('#flTbody');
     if (!tbody) return;
+    var lastFid = this._returnFid;
     tbody.innerHTML = rows.map(function(r){
       var inAgenda = !!(window.mbcxDashboard && window.mbcxDashboard.meeting && window.mbcxDashboard.meeting.has(r.id));
-      return '<tr class="fl-row fl-row-clickable" data-fid="' + r.id + '">' +
+      var rowCls = 'fl-row fl-row-clickable' + (r._recent ? ' fl-row-recent' : '') +
+        (lastFid !== undefined && lastFid !== null && r.id === lastFid ? ' fl-row-last' : '');
+      var rowTitle = r._recentTip ? ' title="' + r._recentTip + '"' : '';
+      return '<tr class="' + rowCls + '" data-fid="' + r.id + '"' + rowTitle + '>' +
         FL_COLS.map(function (k) {
           var val = r[k];
           if (val && typeof val === 'object' && val.dis) val = val.dis;
@@ -464,7 +581,11 @@ window.mbcxDashboard.components.FaultList = {
           }
           if (k === 'sumDur') display = _flFormatHours(val);
 
-          return '<td class="' + cls + cf + '">' + (display !== null && display !== undefined && display !== '' ? display : '—') + '</td>';
+          var cellHtml = (display !== null && display !== undefined && display !== '' ? display : '—');
+          if (k === 'faultName' && r._isNew) {
+            cellHtml += ' <span class="fl-new-badge" title="Not present in the previous report period">New</span>';
+          }
+          return '<td class="' + cls + cf + '">' + cellHtml + '</td>';
         }).join('') +
         '<td class="tu-td fl-td-act"><button class="fl-agenda-btn' + (inAgenda ? ' fl-agenda-btn-in' : '') + '" data-fid="' + r.id + '" title="' + (inAgenda ? 'Remove from Meeting Agenda' : 'Add to Meeting Agenda') + '">' + (inAgenda ? '&#10003;' : '+') + '</button></td>' +
         '</tr>';
