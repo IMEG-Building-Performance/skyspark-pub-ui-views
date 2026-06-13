@@ -528,19 +528,35 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
             '</div></div>';
         }).join('') : '<div class="mp-rail-empty">No drafts — start a new meeting above.</div>';
 
-        pastEl.innerHTML = _landRecs.held.length ? _landRecs.held.map(function (m, i) {
-          return '<div class="mtg-past-item"><div class="mtg-past-line">' +
-            '<button class="mtg-past-hd" data-pastexp="' + i + '">' +
-            '<span class="mtg-past-date">' + _esc(m.date) + '</span>' +
-            '<span class="mtg-past-meta">' + _esc(m.dis) +
-              (m.items != null && m.items !== '' ? ' · ' + m.items + ' items' : '') +
-              (m.discussed != null && m.discussed !== '' ? ' · ' + m.discussed + ' discussed' : '') +
-              (m.user ? ' · ' + _esc(m.user) : '') + '</span>' +
-            '</button>' + actBtns(m, true) +
-            '</div>' +
-            '<div class="mtg-past-body" id="mpPastBody' + i + '" style="display:none;"></div>' +
-            '</div>';
-        }).join('') : '<div class="mp-rail-empty">No past meetings yet.</div>';
+        if (_landRecs.held.length) {
+          var rows = _landRecs.held.map(function (m, i) {
+            return '<tr class="mtg-ptbl-row" data-pastexp="' + i + '">' +
+              '<td class="mtg-ptbl-td mtg-ptbl-date">' + _esc(m.date) + '</td>' +
+              '<td class="mtg-ptbl-td mtg-ptbl-name"><button class="mtg-past-hd" data-pastexp="' + i + '">' + _esc(m.dis) + '</button></td>' +
+              '<td class="mtg-ptbl-td mtg-ptbl-by">' + _esc(m.user || '—') + '</td>' +
+              '<td class="mtg-ptbl-td mtg-ptbl-counts">' +
+                (m.items != null && m.items !== '' ? m.items + ' items' : '—') +
+                (m.discussed != null && m.discussed !== '' ? ' / ' + m.discussed + ' discussed' : '') +
+              '</td>' +
+              '<td class="mtg-ptbl-td mtg-ptbl-acts">' + actBtns(m, true) + '</td>' +
+              '</tr>' +
+              '<tr class="mtg-ptbl-body-row" id="mpPastBodyRow' + i + '" style="display:none;">' +
+                '<td colspan="5"><div class="mtg-past-body" id="mpPastBody' + i + '"></div></td>' +
+              '</tr>';
+          }).join('');
+          pastEl.innerHTML = '<table class="mtg-ptbl">' +
+            '<thead><tr>' +
+              '<th class="mtg-ptbl-th">Date</th>' +
+              '<th class="mtg-ptbl-th">Meeting</th>' +
+              '<th class="mtg-ptbl-th">Created by</th>' +
+              '<th class="mtg-ptbl-th">Coverage</th>' +
+              '<th class="mtg-ptbl-th"></th>' +
+            '</tr></thead>' +
+            '<tbody>' + rows + '</tbody>' +
+          '</table>';
+        } else {
+          pastEl.innerHTML = '<div class="mp-rail-empty">No past meetings yet.</div>';
+        }
       })
       .catch(function (err) {
         console.warn('[MeetingPrep] Meeting list load failed:', err);
@@ -895,9 +911,16 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         var pastIdx = btn.getAttribute('data-pastexp');
         if (pastIdx !== null && pastIdx !== undefined) {
           var pbody = contentEl.querySelector('#mpPastBody' + pastIdx);
+          var pbodyRow = contentEl.querySelector('#mpPastBodyRow' + pastIdx);
           var rec = _landRecs.held[parseInt(pastIdx, 10)];
           if (!pbody || !rec) return;
-          if (pbody.style.display !== 'none') { pbody.style.display = 'none'; return; }
+          var isOpen = pbodyRow ? pbodyRow.style.display !== 'none' : pbody.style.display !== 'none';
+          if (isOpen) {
+            if (pbodyRow) pbodyRow.style.display = 'none';
+            else pbody.style.display = 'none';
+            return;
+          }
+          if (pbodyRow) pbodyRow.style.display = '';
           pbody.style.display = '';
           if (!pbody.innerHTML) {
             var items = [];
