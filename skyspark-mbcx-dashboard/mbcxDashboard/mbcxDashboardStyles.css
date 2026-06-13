@@ -3559,3 +3559,25 @@
 }
 #mbcxDashboard .mp-meeting-name { font-size: 13px; font-weight: 700; color: var(--card-fg); }
 #mbcxDashboard .mp-meeting-date { font-size: 11.5px; color: var(--muted); }
+
+/* Meeting record CRUD actions (landing lists) */
+#mbcxDashboard .mtg-past-line { display: flex; align-items: center; }
+#mbcxDashboard .mtg-past-line .mtg-past-hd { flex: 1; min-width: 0; }
+#mbcxDashboard .mtg-past-acts {
+  display: flex;
+  gap: 2px;
+  padding-right: 10px;
+  flex-shrink: 0;
+}
+#mbcxDashboard .mp-rec-act {
+  background: none;
+  border: none;
+  color: var(--gray-400);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 5px;
+  border-radius: 5px;
+}
+#mbcxDashboard .mp-rec-act:hover { color: var(--primary); background: var(--gray-50); }
+#mbcxDashboard .mp-rec-act--del:hover { color: var(--imeg-red); }

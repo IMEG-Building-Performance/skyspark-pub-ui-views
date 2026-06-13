@@ -506,25 +506,38 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         _landRecs.held = recs.filter(function (m) { return m.status !== 'draft'; })
           .sort(function (a, b) { return b.date.localeCompare(a.date); }).slice(0, 20);
 
+        // CRUD affordances: ✎ edit name/notes, ↺ reopen (held → draft),
+        // × delete. Action buttons sit beside (not inside) the main button.
+        function actBtns(m, isHeld) {
+          return '<span class="mtg-past-acts">' +
+            '<button class="mp-rec-act" data-pmedit="' + _esc(m.id) + '" title="Edit name / notes">&#9998;</button>' +
+            (isHeld ? '<button class="mp-rec-act" data-pmreopen="' + _esc(m.id) + '" title="Reopen as draft">&#8634;</button>' : '') +
+            '<button class="mp-rec-act mp-rec-act--del" data-pmdel="' + _esc(m.id) + '" title="Delete record">&times;</button>' +
+            '</span>';
+        }
+
         draftsEl.innerHTML = _landRecs.drafts.length ? _landRecs.drafts.map(function (m) {
-          return '<div class="mtg-past-item"><button class="mtg-past-hd" data-draft="' + _esc(m.id) + '">' +
+          return '<div class="mtg-past-item"><div class="mtg-past-line">' +
+            '<button class="mtg-past-hd" data-draft="' + _esc(m.id) + '">' +
             '<span class="mtg-past-date">' + _esc(m.date) + '</span>' +
             '<span class="mtg-past-meta">' + _esc(m.dis) +
               (m.user ? ' · ' + _esc(m.user) : '') +
               (m.notes ? ' · ' + _esc(m.notes) : '') + '</span>' +
             '<span class="mp-resume">Resume prep &#8594;</span>' +
-            '</button></div>';
+            '</button>' + actBtns(m, false) +
+            '</div></div>';
         }).join('') : '<div class="mp-rail-empty">No drafts — start a new meeting above.</div>';
 
         pastEl.innerHTML = _landRecs.held.length ? _landRecs.held.map(function (m, i) {
-          return '<div class="mtg-past-item">' +
+          return '<div class="mtg-past-item"><div class="mtg-past-line">' +
             '<button class="mtg-past-hd" data-pastexp="' + i + '">' +
             '<span class="mtg-past-date">' + _esc(m.date) + '</span>' +
             '<span class="mtg-past-meta">' + _esc(m.dis) +
               (m.items != null && m.items !== '' ? ' · ' + m.items + ' items' : '') +
               (m.discussed != null && m.discussed !== '' ? ' · ' + m.discussed + ' discussed' : '') +
               (m.user ? ' · ' + _esc(m.user) : '') + '</span>' +
-            '</button>' +
+            '</button>' + actBtns(m, true) +
+            '</div>' +
             '<div class="mtg-past-body" id="mpPastBody' + i + '" style="display:none;"></div>' +
             '</div>';
         }).join('') : '<div class="mp-rail-empty">No past meetings yet.</div>';
@@ -536,6 +549,42 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       });
   }
 
+  function _findRec(id) {
+    return _landRecs.drafts.filter(function (m) { return m.id === id; })[0] ||
+           _landRecs.held.filter(function (m) { return m.id === id; })[0] || null;
+  }
+
+  // TODO(auth): all meeting-record writes rely on SkySpark permissions until
+  // role checks are added server-side.
+  function _commitMeeting(ctx, axon, refresh) {
+    NS.api.evalAxon(ctx.attestKey, ctx.projectName, axon)
+      .then(refresh)
+      .catch(function (err) {
+        console.warn('[MeetingPrep] Meeting record write failed:', err, '\nExpr:', axon);
+        window.alert('Could not update the meeting record — check permissions (details in console).');
+      });
+  }
+
+  function _editMeetingRec(rec, ctx, refresh) {
+    var name = window.prompt('Meeting name:', rec.dis || '');
+    if (name == null) return;
+    var notes = window.prompt('Notes:', rec.notes || '');
+    if (notes == null) return;
+    name = name.trim() || rec.dis;
+    notes = notes.trim();
+    _commitMeeting(ctx, 'commit(diff(readById(@' + rec.id + '), {dis: ' + _q(name) +
+      ', mbcxNotes: ' + (notes ? _q(notes) : 'removeMarker()') + '}))', refresh);
+  }
+
+  function _deleteMeetingRec(rec, ctx, refresh) {
+    if (!window.confirm('Delete "' + (rec.dis || rec.date) + '"? This removes the record from SkySpark.')) return;
+    _commitMeeting(ctx, 'commit(diff(readById(@' + rec.id + '), null, {remove}))', refresh);
+  }
+
+  function _reopenMeetingRec(rec, ctx, refresh) {
+    _commitMeeting(ctx, 'commit(diff(readById(@' + rec.id + '), {mbcxStatus: "draft"}))', refresh);
+  }
+
   function _createMeeting(contentEl, ctx, done) {
     var name  = ((contentEl.querySelector('#mpNewName')  || {}).value || '').trim() ||
       ('MBCx Meeting ' + new Date().toISOString().slice(0, 10));
@@ -544,9 +593,11 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     var dateOk = /^\d{4}-\d{2}-\d{2}$/.test(date);
 
     function start(id) {
+      console.info('[MeetingPrep] Starting prep for "' + name + '"' + (id ? ' (rec @' + id + ')' : ' (unsaved)'));
       _meeting = { id: id || '', dis: name, date: dateOk ? date : '', notes: notes };
       NS.activeMeeting = _meeting;
       // Fresh cycle: clear review progress; persistent skips are kept.
+      if (!_state) _loadState();
       _state.reviewed = {};
       _saveState();
       _stage = 1;
@@ -554,6 +605,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     }
 
     if (!(ctx && ctx.attestKey && ctx.projectName)) { start(''); return; } // demo
+    console.info('[MeetingPrep] Creating draft meeting rec…');
 
     // TODO(auth): server-side role check before clients can create records.
     var axon = 'commit(diff(null, {mbcxMeeting, mbcxStatus: "draft"' +
@@ -798,7 +850,35 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
           return;
         }
         if (btn.getAttribute('data-createmeeting')) {
-          _createMeeting(contentEl, ctx, rerenderStage);
+          btn.disabled = true;
+          btn.textContent = 'Creating…';
+          try {
+            _createMeeting(contentEl, ctx, rerenderStage);
+          } catch (err) {
+            console.error('[MeetingPrep] Create meeting failed:', err);
+            btn.disabled = false;
+            btn.textContent = 'Create & Start Prep →';
+          }
+          return;
+        }
+
+        // Meeting record CRUD (landing page)
+        var editId = btn.getAttribute('data-pmedit');
+        if (editId) {
+          var er = _findRec(editId);
+          if (er) _editMeetingRec(er, ctx, function () { _loadMeetingLists(contentEl, ctx); });
+          return;
+        }
+        var delId = btn.getAttribute('data-pmdel');
+        if (delId) {
+          var dr = _findRec(delId);
+          if (dr) _deleteMeetingRec(dr, ctx, function () { _loadMeetingLists(contentEl, ctx); });
+          return;
+        }
+        var reopenId = btn.getAttribute('data-pmreopen');
+        if (reopenId) {
+          var rr = _findRec(reopenId);
+          if (rr) _reopenMeetingRec(rr, ctx, function () { _loadMeetingLists(contentEl, ctx); });
           return;
         }
         var draftId = btn.getAttribute('data-draft');
