@@ -80,7 +80,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
   var _state = null;
   var _stage = 1;
   var _expanded = {};     // equipment key -> bool (in-memory)
-  var _q = '';            // search text (in-memory)
+  var _searchQ = '';            // search text (in-memory)
   var _typeFilter = '';   // '', 'AHU', 'VAV', 'CUP', 'Other'
   var _view = 'grouped';  // 'grouped' | 'flat'
   var _sortKey = 'sev';   // 'sev' | 'active' | 'seen' | 'equip'
@@ -261,8 +261,8 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
 
   function _matchesFilters(g) {
     if (_typeFilter && g.type !== _typeFilter) return false;
-    if (_q) {
-      var q = _q.toLowerCase();
+    if (_searchQ) {
+      var q = _searchQ.toLowerCase();
       var hit = g.equip.toLowerCase().indexOf(q) !== -1 ||
         g.faults.some(function (f) { return f.faultName.toLowerCase().indexOf(q) !== -1; });
       if (!hit) return false;
@@ -296,8 +296,8 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
 
   function _faultMatches(f) {
     if (_typeFilter && _equipType(f.equipment) !== _typeFilter) return false;
-    if (_q) {
-      var q = _q.toLowerCase();
+    if (_searchQ) {
+      var q = _searchQ.toLowerCase();
       if (f.equipment.toLowerCase().indexOf(q) === -1 &&
           f.faultName.toLowerCase().indexOf(q) === -1) return false;
     }
@@ -398,7 +398,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       '    <button class="mp-act mp-link" data-gotab="fault-log">Fault Log &#8599;</button>',
       '  </h3>',
       '  <div class="mp-triage-toolbar">',
-      '    <input type="text" class="mp-search" id="mpSearch" placeholder="Search equipment or fault&hellip;" value="' + _esc(_q) + '">',
+      '    <input type="text" class="mp-search" id="mpSearch" placeholder="Search equipment or fault&hellip;" value="' + _esc(_searchQ) + '">',
       '    <div class="mp-type-chips">',
       ['AHU', 'VAV', 'CUP', 'Other'].map(function (t) {
         return '<button class="mp-act mp-type-chip' + (_typeFilter === t ? ' mp-act--on' : '') + '" data-typefilter="' + t + '">' + t + '</button>';
@@ -692,7 +692,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     renderPage: function () {
       _loadState();
       _stage = _meeting ? (_allReviewed() ? 2 : 1) : 0;
-      _q = '';
+      _searchQ = '';
       _typeFilter = '';
       _view = 'grouped';
       _sortKey = 'sev';
@@ -807,7 +807,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
 
       contentEl.addEventListener('input', function (e) {
         if (e.target && e.target.id === 'mpSearch') {
-          _q = e.target.value;
+          _searchQ = e.target.value;
           var el = contentEl.querySelector('#mpQueue');
           if (el) el.innerHTML = _queueHtml();
         }
