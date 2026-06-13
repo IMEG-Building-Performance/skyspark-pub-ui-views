@@ -3581,3 +3581,41 @@
 }
 #mbcxDashboard .mp-rec-act:hover { color: var(--primary); background: var(--gray-50); }
 #mbcxDashboard .mp-rec-act--del:hover { color: var(--imeg-red); }
+
+/* ── Past Meetings table ─────────────────────────────────────────────── */
+#mbcxDashboard .mtg-ptbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+#mbcxDashboard .mtg-ptbl-th {
+  background: var(--gray-50);
+  border-bottom: 1px solid var(--card-border);
+  padding: 6px 10px;
+  text-align: left;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--muted);
+  white-space: nowrap;
+}
+#mbcxDashboard .mtg-ptbl-td {
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--gray-100);
+  vertical-align: middle;
+}
+#mbcxDashboard .mtg-ptbl-row:last-child .mtg-ptbl-td { border-bottom: none; }
+#mbcxDashboard .mtg-ptbl-row:hover .mtg-ptbl-td { background: var(--gray-50); }
+#mbcxDashboard .mtg-ptbl-date { white-space: nowrap; font-weight: 600; color: var(--card-fg); width: 90px; }
+#mbcxDashboard .mtg-ptbl-name .mtg-past-hd {
+  background: none; border: none; padding: 0;
+  color: var(--primary); font-size: 12.5px; font-weight: 500;
+  cursor: pointer; text-align: left;
+}
+#mbcxDashboard .mtg-ptbl-name .mtg-past-hd:hover { text-decoration: underline; }
+#mbcxDashboard .mtg-ptbl-by { color: var(--muted); }
+#mbcxDashboard .mtg-ptbl-counts { color: var(--muted); white-space: nowrap; }
+#mbcxDashboard .mtg-ptbl-acts { width: 1px; white-space: nowrap; }
+#mbcxDashboard .mtg-ptbl-body-row td { padding: 0 10px 8px 20px; }
+#mbcxDashboard .mtg-ptbl-body-row .mtg-past-body { padding-top: 4px; }
