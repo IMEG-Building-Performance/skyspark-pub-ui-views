@@ -91,6 +91,25 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
   var _loading = false;
   var _co = null;   // component registry, for embedded MeetingView teardown
 
+  // Active meeting (draft mbcxMeeting rec) and the landing-page lists.
+  // Lifecycle: New Meeting -> draft rec -> prep (stages 1-3) -> End Meeting
+  // & Save flips the same rec to mbcxStatus:"held".
+  var _meeting = null;                       // {id, dis, date, notes}
+  var _landRecs = { drafts: [], held: [] };
+
+  function _q(s) {
+    return '"' + String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+  }
+
+  // Parsed-grid ref values arrive as {id,dis} or bare strings.
+  function _refVal(v) {
+    if (!v) return '';
+    if (typeof v === 'string') return v.replace(/^@/, '');
+    if (v.id) return String(v.id).replace(/^@/, '');
+    if (v.val) return String(v.val).replace(/^@/, '');
+    return '';
+  }
+
   function _faults() {
     return _live || _DEMO.newFaults;
   }
@@ -406,12 +425,157 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
   }
 
   function _stageHtml() {
+    // Stage 0: landing — start a new meeting, resume drafts, browse past.
+    if (_stage === 0) return _landingHtml();
+    var bar = '<div class="mp-meeting-bar">' +
+      '<button class="mp-act mp-link" data-step="0">&#8592; All meetings</button>' +
+      (_meeting ? '<span class="mp-meeting-name">' + _esc(_meeting.dis || '') + '</span>' +
+        (_meeting.date ? '<span class="mp-meeting-date">' + _esc(String(_meeting.date)) + '</span>' : '') : '') +
+      '</div>';
     // Stage 3 hosts the full MeetingView agenda (add items, drag-reorder,
     // present mode) — mounted by initLive after the HTML lands.
     var body = _stage === 3 ? '<div class="mp-agenda-host" id="mpAgendaHost"></div>'
              : _stage === 2 ? _newStage()
              : _reviewStage();
-    return _stepper() + body;
+    return bar + _stepper() + body;
+  }
+
+  function _landingHtml() {
+    var today = new Date().toISOString().slice(0, 10);
+    return [
+      '<div class="mp-landing">',
+      '  <div class="mp-land-hd">',
+      '    <div class="mp-land-blurb">Start a new meeting, resume a draft, or review past meetings.</div>',
+      '    <button class="mp-btn mp-btn--primary" data-newmeeting="1">+ New Meeting</button>',
+      '  </div>',
+      '  <div class="mp-new-form" id="mpNewForm" style="display:none;">',
+      '    <input type="text" class="mp-search" id="mpNewName" placeholder="Meeting name" value="MBCx Meeting ' + today + '">',
+      '    <div class="mp-new-row">',
+      '      <input type="date" class="mp-search mp-new-date" id="mpNewDate" value="' + today + '">',
+      '      <input type="text" class="mp-search" id="mpNewNotes" placeholder="Notes (optional — attendees, focus areas…)">',
+      '    </div>',
+      '    <div class="mp-new-actions">',
+      '      <button class="mp-btn mp-btn--primary" data-createmeeting="1">Create &amp; Start Prep &#8594;</button>',
+      '      <button class="mp-btn" data-cancelnew="1">Cancel</button>',
+      '    </div>',
+      '  </div>',
+      '  <h3 class="mp-section-title">Drafts <span class="mp-section-sub">meetings being prepared</span></h3>',
+      '  <div id="mpDrafts"><div class="mp-rail-empty mp-loading">Loading&hellip;</div></div>',
+      '  <h3 class="mp-section-title" style="margin-top:18px;">Past Meetings</h3>',
+      '  <div id="mpPast"><div class="mp-rail-empty mp-loading">Loading&hellip;</div></div>',
+      '</div>'
+    ].join('\n');
+  }
+
+  function _loadMeetingLists(contentEl, ctx) {
+    var draftsEl = contentEl.querySelector('#mpDrafts');
+    var pastEl   = contentEl.querySelector('#mpPast');
+    if (!draftsEl || !pastEl) return;
+
+    if (!(ctx && ctx.attestKey && ctx.projectName)) {
+      draftsEl.innerHTML = '<div class="mp-rail-empty">Demo mode — meeting records need a SkySpark session.<br>Use + New Meeting to run an unsaved prep.</div>';
+      pastEl.innerHTML = '<div class="mp-rail-empty">&mdash;</div>';
+      return;
+    }
+
+    NS.api.evalAxon(ctx.attestKey, ctx.projectName, 'readAll(mbcxMeeting)')
+      .then(function (grid) {
+        var parsed = NS.haystackParser.parseGrid(grid);
+        var siteVal = String((ctx && ctx.siteRef) || '').replace(/^@/, '');
+        var recs = parsed.rows.map(function (r) {
+          var dateVal = (r.date && typeof r.date === 'object') ? (r.date.val || '') : (r.date || '');
+          return {
+            id: _refVal(r.id),
+            dis: r.dis || '',
+            status: r.mbcxStatus || 'held',
+            date: String(dateVal),
+            user: r.mbcxUser || '',
+            notes: r.mbcxNotes || '',
+            items: r.mbcxItemCount,
+            discussed: r.mbcxDiscussedCount,
+            agenda: r.mbcxAgenda || '',
+            site: _refVal(r.siteRef)
+          };
+        // Lenient site filter: keep records with no siteRef rather than
+        // hiding them (older saves may predate the tag).
+        }).filter(function (m) { return !siteVal || !m.site || m.site === siteVal; });
+        console.info('[MeetingPrep] mbcxMeeting recs:', parsed.rows.length, '→ for this site:', recs.length);
+
+        _landRecs.drafts = recs.filter(function (m) { return m.status === 'draft'; })
+          .sort(function (a, b) { return b.date.localeCompare(a.date); });
+        _landRecs.held = recs.filter(function (m) { return m.status !== 'draft'; })
+          .sort(function (a, b) { return b.date.localeCompare(a.date); }).slice(0, 20);
+
+        draftsEl.innerHTML = _landRecs.drafts.length ? _landRecs.drafts.map(function (m) {
+          return '<div class="mtg-past-item"><button class="mtg-past-hd" data-draft="' + _esc(m.id) + '">' +
+            '<span class="mtg-past-date">' + _esc(m.date) + '</span>' +
+            '<span class="mtg-past-meta">' + _esc(m.dis) +
+              (m.user ? ' · ' + _esc(m.user) : '') +
+              (m.notes ? ' · ' + _esc(m.notes) : '') + '</span>' +
+            '<span class="mp-resume">Resume prep &#8594;</span>' +
+            '</button></div>';
+        }).join('') : '<div class="mp-rail-empty">No drafts — start a new meeting above.</div>';
+
+        pastEl.innerHTML = _landRecs.held.length ? _landRecs.held.map(function (m, i) {
+          return '<div class="mtg-past-item">' +
+            '<button class="mtg-past-hd" data-pastexp="' + i + '">' +
+            '<span class="mtg-past-date">' + _esc(m.date) + '</span>' +
+            '<span class="mtg-past-meta">' + _esc(m.dis) +
+              (m.items != null && m.items !== '' ? ' · ' + m.items + ' items' : '') +
+              (m.discussed != null && m.discussed !== '' ? ' · ' + m.discussed + ' discussed' : '') +
+              (m.user ? ' · ' + _esc(m.user) : '') + '</span>' +
+            '</button>' +
+            '<div class="mtg-past-body" id="mpPastBody' + i + '" style="display:none;"></div>' +
+            '</div>';
+        }).join('') : '<div class="mp-rail-empty">No past meetings yet.</div>';
+      })
+      .catch(function (err) {
+        console.warn('[MeetingPrep] Meeting list load failed:', err);
+        draftsEl.innerHTML = '<div class="mp-rail-empty">Could not load meetings (details in console).</div>';
+        pastEl.innerHTML = '';
+      });
+  }
+
+  function _createMeeting(contentEl, ctx, done) {
+    var name  = ((contentEl.querySelector('#mpNewName')  || {}).value || '').trim() ||
+      ('MBCx Meeting ' + new Date().toISOString().slice(0, 10));
+    var date  = ((contentEl.querySelector('#mpNewDate')  || {}).value || '').trim();
+    var notes = ((contentEl.querySelector('#mpNewNotes') || {}).value || '').trim();
+    var dateOk = /^\d{4}-\d{2}-\d{2}$/.test(date);
+
+    function start(id) {
+      _meeting = { id: id || '', dis: name, date: dateOk ? date : '', notes: notes };
+      NS.activeMeeting = _meeting;
+      // Fresh cycle: clear review progress; persistent skips are kept.
+      _state.reviewed = {};
+      _saveState();
+      _stage = 1;
+      done();
+    }
+
+    if (!(ctx && ctx.attestKey && ctx.projectName)) { start(''); return; } // demo
+
+    // TODO(auth): server-side role check before clients can create records.
+    var axon = 'commit(diff(null, {mbcxMeeting, mbcxStatus: "draft"' +
+      ', dis: ' + _q(name) +
+      ', date: ' + (dateOk ? date : 'today()') +
+      (notes ? ', mbcxNotes: ' + _q(notes) : '') +
+      (ctx.siteRef ? ', siteRef: ' + ctx.siteRef : '') +
+      ', mbcxUser: context()->username}, {add}))';
+    NS.api.evalAxon(ctx.attestKey, ctx.projectName, axon)
+      .then(function (grid) {
+        var id = '';
+        try {
+          var rid = grid.rows && grid.rows[0] && grid.rows[0].id;
+          id = (rid && rid.val) ? rid.val : _refVal(rid);
+        } catch (e) {}
+        if (!id) console.warn('[MeetingPrep] Draft created but id not parsed — End Meeting will save a new rec.');
+        start(id);
+      })
+      .catch(function (err) {
+        console.warn('[MeetingPrep] Draft meeting create failed — continuing unsaved:', err);
+        start('');
+      });
   }
 
   // ── Agenda rail ───────────────────────────────────────────────────────────
@@ -475,7 +639,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
 
     renderPage: function () {
       _loadState();
-      _stage = _allReviewed() ? 2 : 1;
+      _stage = _meeting ? (_allReviewed() ? 2 : 1) : 0;
       _q = '';
       _typeFilter = '';
       _view = 'grouped';
@@ -556,16 +720,26 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       function rerenderStage() {
         var el = contentEl.querySelector('#mpStage');
         if (el) el.innerHTML = _stageHtml();
-        // Stage 3 embeds the full Meetings agenda; the rail would be a
-        // duplicate of it, so hide it there.
+        // Stage 3 embeds the full Meetings agenda (rail would duplicate it)
+        // and stage 0 is the landing page — hide the rail on both.
         var rail = contentEl.querySelector('#mpRail');
-        if (rail) rail.style.display = _stage === 3 ? 'none' : '';
+        if (rail) rail.style.display = (_stage === 3 || _stage === 0) ? 'none' : '';
+        if (_stage === 0) _loadMeetingLists(contentEl, ctx);
         if (_stage === 3 && co && co.MeetingView) {
           var host = contentEl.querySelector('#mpAgendaHost');
           if (host) co.MeetingView.showInContent(host, ctx || {}, co);
         }
         rerenderRail();
       }
+
+      // When End Meeting & Save completes inside the embedded agenda,
+      // return to the landing page.
+      NS.meetingSavedHook = function () {
+        _meeting = null;
+        NS.activeMeeting = null;
+        _stage = 0;
+        rerenderStage();
+      };
 
       // Queue-only refresh preserves the search box focus/value.
       function rerenderQueue() {
@@ -606,8 +780,55 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         if (step) {
           var newStage = parseInt(step, 10);
           if (_stage === 3 && newStage !== 3 && co && co.MeetingView) co.MeetingView.destroy(co);
+          if (newStage === 0) { _meeting = null; NS.activeMeeting = null; }
           _stage = newStage;
           rerenderStage();
+          return;
+        }
+
+        // ── Landing page actions ──────────────────────────────────────
+        if (btn.getAttribute('data-newmeeting')) {
+          var nf = contentEl.querySelector('#mpNewForm');
+          if (nf) { nf.style.display = ''; var ni = nf.querySelector('#mpNewName'); if (ni) ni.focus(); }
+          return;
+        }
+        if (btn.getAttribute('data-cancelnew')) {
+          var nf2 = contentEl.querySelector('#mpNewForm');
+          if (nf2) nf2.style.display = 'none';
+          return;
+        }
+        if (btn.getAttribute('data-createmeeting')) {
+          _createMeeting(contentEl, ctx, rerenderStage);
+          return;
+        }
+        var draftId = btn.getAttribute('data-draft');
+        if (draftId) {
+          var d = _landRecs.drafts.filter(function (m) { return m.id === draftId; })[0];
+          if (d) {
+            _meeting = d;
+            NS.activeMeeting = d;
+            _stage = _allReviewed() ? 2 : 1;
+            rerenderStage();
+          }
+          return;
+        }
+        var pastIdx = btn.getAttribute('data-pastexp');
+        if (pastIdx !== null && pastIdx !== undefined) {
+          var pbody = contentEl.querySelector('#mpPastBody' + pastIdx);
+          var rec = _landRecs.held[parseInt(pastIdx, 10)];
+          if (!pbody || !rec) return;
+          if (pbody.style.display !== 'none') { pbody.style.display = 'none'; return; }
+          pbody.style.display = '';
+          if (!pbody.innerHTML) {
+            var items = [];
+            try { items = JSON.parse(rec.agenda) || []; } catch (e) {}
+            pbody.innerHTML = items.length ? items.map(function (it, n) {
+              var f = (it && it.fault) || {};
+              return '<div class="mtg-past-row">' + (n + 1) + '. ' +
+                _esc(f.equip || f.equipment || '') + ' — ' + _esc(f.fault || f.faultName || '') +
+                (it.discussed ? ' <span class="mtg-disc-tag">Discussed</span>' : '') + '</div>';
+            }).join('') : '<div class="mtg-past-row">No items recorded.</div>';
+          }
           return;
         }
 
@@ -763,11 +984,12 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         });
       }
 
-      wireRail();
+      rerenderStage(); // initial render: loads landing lists / mounts stage
     },
 
     destroy: function () {
       if (_stage === 3 && _co && _co.MeetingView) _co.MeetingView.destroy(_co);
+      NS.meetingSavedHook = null;
     }
   };
 

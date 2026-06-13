@@ -215,16 +215,26 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
             return '"' + String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
           }
           var discussed = _agenda.filter(function (i) { return i.discussed; }).length;
-          var axon = 'commit(diff(null, {mbcxMeeting' +
-            ', dis: ' + q('MBCx Meeting ' + new Date().toISOString().slice(0, 10) + (ctx.siteName ? ' — ' + ctx.siteName : '')) +
+          var common = ', mbcxStatus: "held"' +
             ', mbcxUser: context()->username' +
-            ', date: today()' +
-            (ctx.siteRef ? ', siteRef: ' + ctx.siteRef : '') +
             ', mbcxItemCount: ' + _agenda.length +
             ', mbcxDiscussedCount: ' + discussed +
             ', mbcxAgenda: ' + q(agendaJson) +
-            (prepJson ? ', mbcxPrepDraft: ' + q(prepJson) : '') +
-            '}, {add}))';
+            (prepJson ? ', mbcxPrepDraft: ' + q(prepJson) : '');
+          // Prefer updating the active draft rec (created on the Meeting
+          // Prep landing page) so each meeting stays one unique record.
+          var active = NS.activeMeeting || null;
+          var axon;
+          if (active && active.id) {
+            axon = 'commit(diff(readById(@' + String(active.id).replace(/^@/, '') + ')' +
+              ', {date: today()' + common + '}))';
+          } else {
+            axon = 'commit(diff(null, {mbcxMeeting' +
+              ', dis: ' + q('MBCx Meeting ' + new Date().toISOString().slice(0, 10) + (ctx.siteName ? ' — ' + ctx.siteName : '')) +
+              ', date: today()' +
+              (ctx.siteRef ? ', siteRef: ' + ctx.siteRef : '') +
+              common + '}, {add}))';
+          }
           endBtn.disabled = true;
           endBtn.textContent = 'Saving…';
           NS.api.evalAxon(ctx.attestKey, ctx.projectName, axon)
@@ -238,6 +248,8 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
                 draft.reviewed = {};
                 localStorage.setItem('mbcxMeetingPrep_draft', JSON.stringify(draft));
               } catch (e) {}
+              NS.activeMeeting = null;
+              if (NS.meetingSavedHook) { NS.meetingSavedHook(); return; }
               _showAgenda(contentEl, ctx, co);
             })
             .catch(function (err) {
@@ -263,21 +275,34 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
             return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
               .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
           };
-          var axon = 'readAll(mbcxMeeting' + (ctx.siteRef ? ' and siteRef==' + ctx.siteRef : '') + ')';
+          // No server-side site filter: older recs may lack siteRef, and the
+          // current ref form can differ — filter leniently client-side.
+          var axon = 'readAll(mbcxMeeting)';
           NS.api.evalAxon(ctx.attestKey, ctx.projectName, axon)
             .then(function (grid) {
               var parsed = NS.haystackParser.parseGrid(grid);
+              var siteVal = String(ctx.siteRef || '').replace(/^@/, '');
+              function refVal(v) {
+                if (!v) return '';
+                if (typeof v === 'string') return v.replace(/^@/, '');
+                return String(v.id || v.val || '').replace(/^@/, '');
+              }
               var recs = parsed.rows.map(function (r) {
                 var dateVal = (r.date && typeof r.date === 'object') ? (r.date.val || '') : (r.date || '');
                 return {
                   dis: r.dis || '',
                   date: String(dateVal),
                   user: r.mbcxUser || '',
+                  status: r.mbcxStatus || 'held',
+                  site: refVal(r.siteRef),
                   items: r.mbcxItemCount,
                   discussed: r.mbcxDiscussedCount,
                   agenda: r.mbcxAgenda || ''
                 };
+              }).filter(function (m) {
+                return m.status !== 'draft' && (!siteVal || !m.site || m.site === siteVal);
               }).sort(function (a, b) { return b.date.localeCompare(a.date); }).slice(0, 20);
+              console.info('[MeetingView] mbcxMeeting recs:', parsed.rows.length, '→ shown:', recs.length);
 
               if (!recs.length) {
                 area.innerHTML = '<div class="mtg-past-empty">No saved meeting records for this site yet.</div>';
