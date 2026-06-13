@@ -1,5 +1,22 @@
 // mbcxDashboardUI.js
 // Bootstrap module — loads CSS, reads SkySpark session, fetches data, renders app.
+//
+// TODO(links): shareable deep links — design notes (2026-06-12, on hold).
+// The app lives inside SkySpark's view shell, so the URL belongs to SkySpark.
+// Options considered, in preference order:
+//   1. View vars (recommended). The trio already declares site/datesStart/
+//      datesEnd and SkySpark natively deep-links views with var values.
+//      Add one more var (e.g. viewState: Str) carrying a compact encoded
+//      state ("tab=equipment;equip=VAV 2-1 AW" or a fault key
+//      equipment::faultName), parse it in onUpdate below where the other
+//      vars are read, and add a "Copy link" button that builds the SkySpark
+//      view URL from the current vars. Robust; survives SkySpark routing;
+//      also covers "open this exact fault from a meeting record".
+//   2. URL hash fragment — simplest, but SkySpark's UI uses hash routing
+//      itself; collision risk must be tested before committing.
+//   3. mbcxLink recs — "Copy link" commits a rec holding the state JSON and
+//      shares a short id (?mbcxLink=<id>). Nicest URLs, most future-proof,
+//      but adds server writes and link management.
 window.mbcxDashboard = window.mbcxDashboard || {};
 
 (function (NS) {
