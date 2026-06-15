@@ -12,6 +12,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
     meetings:   '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/></svg>',
     prep:       '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/></svg>',
     chevron:    '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>',
+    tenantAlloc:'<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4zm14 5H2v5a2 2 0 002 2h12a2 2 0 002-2V9zm-5 2a1 1 0 100 2h3a1 1 0 100-2h-3z"/></svg>',
     config:     '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path d="M5 4a1 1 0 00-2 0v7.268a2 2 0 000 3.464V16a1 1 0 102 0v-1.268a2 2 0 000-3.464V4zm6 0a1 1 0 10-2 0v1.268a2 2 0 000 3.464V16a1 1 0 102 0V8.732a2 2 0 000-3.464V4zm5 2a1 1 0 112 0v7.268a2 2 0 010 3.464V16a1 1 0 11-2 0v-.268a2 2 0 010-3.464V6z"/></svg>'
   };
 
@@ -36,6 +37,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
     { key: 'equipment',  label: 'Equipment' },
     { key: 'trends',     label: 'Trends' },
     { key: 'meetings',   label: 'Meetings' },
+    { key: 'tenant-allocation', label: 'Tenant Usage Allocation' },
     // TODO(auth): meeting-prep is an internal view — once user roles are
     // available, hide it for non-elevated users instead of listing it here.
     { key: 'meeting-prep', label: 'Meeting Prep' }
@@ -226,6 +228,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         TrendingView:   window.mbcxDashboard.components.TrendingView,
         Compliance:     window.mbcxDashboard.components.Compliance,
         FaultLog:       window.mbcxDashboard.components.FaultLog,
+        TenantAllocation: window.mbcxDashboard.components.TenantAllocation,
         Footer:         window.mbcxDashboard.components.Footer
       };
       NS.Components = co;
@@ -265,6 +268,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         '    <button class="dash-sb-nav-item" data-tab="equipment">'  + _icons.equipment  + '<span>Equipment</span></button>',
         '    <button class="dash-sb-nav-item" data-tab="trends">'   + _icons.trends   + '<span>Trends</span></button>',
         '    <button class="dash-sb-nav-item" data-tab="meetings">' + _icons.meetings + '<span>Meetings</span></button>',
+        '    <button class="dash-sb-nav-item" data-tab="tenant-allocation">' + _icons.tenantAlloc + '<span>Tenant Usage Allocation</span></button>',
         // TODO(auth): only render Meeting Prep for elevated users — and
         // enforce the role server-side in any Axon funcs the view calls.
         '    <button class="dash-sb-nav-item" data-tab="meeting-prep">' + _icons.prep + '<span>Meeting Prep</span></button>',
@@ -601,6 +605,9 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       if (NS.App._activeTab === 'meeting-prep' && co.MeetingPrep && co.MeetingPrep.destroy) {
         co.MeetingPrep.destroy();
       }
+      if (NS.App._activeTab === 'tenant-allocation' && co.TenantAllocation && co.TenantAllocation.destroy) {
+        co.TenantAllocation.destroy();
+      }
       NS.App._activeTab = tab;
       NS.App._persistState();
 
@@ -705,6 +712,14 @@ window.mbcxDashboard = window.mbcxDashboard || {};
           co.EquipmentView.initLive(content, ctx || null);
         } else {
           content.innerHTML = '<div class="page" style="padding:32px;color:#9ca3af;">Equipment view not loaded.</div>';
+        }
+      }
+      else if (tab === 'tenant-allocation') {
+        if (co.TenantAllocation) {
+          content.innerHTML = co.TenantAllocation.renderPage();
+          co.TenantAllocation.initLive(content, ctx || null);
+        } else {
+          content.innerHTML = '<div class="page" style="padding:32px;color:#9ca3af;">Tenant Usage Allocation not loaded.</div>';
         }
       }
       else if (tab === 'config') {
