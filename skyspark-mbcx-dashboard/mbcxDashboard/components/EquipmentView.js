@@ -257,7 +257,12 @@ window.mbcxDashboard.components.EquipmentView = (function () {
   function _loadEquipList() {
     var API = window.mbcxDashboard.api;
     var HP  = window.mbcxDashboard.haystackParser;
-    var axon = 'readAll(equip and siteRef==@' + _ctx.siteRef.replace(/^@/, '') + ')';
+    var _evRefs = (_ctx.siteRefs && _ctx.siteRefs.length && _ctx.siteRefs[0] !== '__all__')
+      ? _ctx.siteRefs
+      : (_ctx.siteRef ? [_ctx.siteRef] : []);
+    var axon = _evRefs.length > 1
+      ? 'readAll(equip and (' + _evRefs.map(function (r) { return 'siteRef==@' + r.replace(/^@/, ''); }).join(' or ') + '))'
+      : 'readAll(equip and siteRef==@' + (_evRefs[0] || _ctx.siteRef || '').replace(/^@/, '') + ')';
     API.evalAxon(_ctx.attestKey, _ctx.projectName, axon)
       .then(function (grid) {
         var parsed = HP.parseGrid(grid);
@@ -801,7 +806,8 @@ window.mbcxDashboard.components.EquipmentView = (function () {
     var dateArg = (_ctx.datesStart && _ctx.datesEnd) ? _ctx.datesStart + '..' + _ctx.datesEnd : 'today()';
     // Site-wide fault list filtered by equipment name — same source and
     // shape as the Faults tab, so rows can open the full Fault Detail.
-    var axon = 'view_MBCxReport_CustomerView_Output(' + _ctx.siteRef + ', ' + dateArg + ', 10%, @nav:rule.all, "Fault List", "", "Show All")';
+    var _evSiteArg = window.mbcxDashboard.siteAxonArg ? window.mbcxDashboard.siteAxonArg(_ctx) : _ctx.siteRef;
+    var axon = 'view_MBCxReport_CustomerView_Output(' + _evSiteArg + ', ' + dateArg + ', 10%, @nav:rule.all, "Fault List", "", "Show All")';
     API.evalAxon(_ctx.attestKey, _ctx.projectName, axon)
       .then(function (grid) {
         var parsed = HP.parseGrid(grid);

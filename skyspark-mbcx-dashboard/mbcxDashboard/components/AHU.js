@@ -73,7 +73,8 @@ window.mbcxDashboard.components.AHU = {
       });
     }
 
-    window.mbcxDashboard.evals.loadAllAhuMetrics(ctx.attestKey, ctx.projectName, ctx.siteRef)
+    var _siteArg = window.mbcxDashboard.siteAxonArg ? window.mbcxDashboard.siteAxonArg(ctx) : ctx.siteRef;
+    window.mbcxDashboard.evals.loadAllAhuMetrics(ctx.attestKey, ctx.projectName, _siteArg)
       .then(function (results) {
         self._renderAll(contentEl, results);
       })

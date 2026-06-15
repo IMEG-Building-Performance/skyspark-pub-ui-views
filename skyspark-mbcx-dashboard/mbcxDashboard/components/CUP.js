@@ -344,10 +344,11 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       _renderInner(mountEl, _plantData);
 
       // Load real chart data when credentials are available
-      var _hasCredentials = !!(ctx && ctx.attestKey && ctx.projectName && ctx.siteRef);
+      var _hasCredentials = !!(ctx && ctx.attestKey && ctx.projectName && (ctx.siteRef || (ctx.siteRefs && ctx.siteRefs.length)));
       var _hasLoader      = !!(NS.evals && NS.evals.loadCupSummary);
       if (_hasCredentials && _hasLoader) {
-        NS.evals.loadCupSummary(ctx.attestKey, ctx.projectName, ctx.siteRef)
+        var _siteArg = window.mbcxDashboard.siteAxonArg ? window.mbcxDashboard.siteAxonArg(ctx) : ctx.siteRef;
+        NS.evals.loadCupSummary(ctx.attestKey, ctx.projectName, _siteArg)
           .then(function (chartData) {
             var el = document.querySelector('#cupCard');
 
