@@ -178,8 +178,22 @@ window.mbcxDashboard = window.mbcxDashboard || {};
 
     if (saved) {
       if (!siteRef && saved.siteRef) {
-        console.info('[mbcxDashboard] Restoring siteRef from saved state:', saved.siteRef);
-        siteRef = saved.siteRef;
+        // Validate the saved ref belongs to THIS project.
+        // Project-qualified refs look like @p:projectName:r:uuid — reject
+        // any ref whose embedded project doesn't match.
+        var savedProject = null;
+        var pMatch = String(saved.siteRef).match(/^@p:([^:]+):/);
+        if (pMatch) savedProject = pMatch[1];
+
+        if (savedProject && projectName && savedProject !== projectName) {
+          console.warn('[mbcxDashboard] Rejecting cross-project siteRef:', saved.siteRef,
+            '(belongs to', savedProject + ', current project is', projectName + ')');
+          // Wipe the corrupted saved state so it doesn't keep reappearing
+          try { sessionStorage.removeItem(_stateKey(projectName)); } catch (e) {}
+        } else {
+          console.info('[mbcxDashboard] Restoring siteRef from saved state:', saved.siteRef);
+          siteRef = saved.siteRef;
+        }
       }
       if (!datesStart && saved.datesStart) datesStart = saved.datesStart;
       if (!datesEnd && saved.datesEnd) datesEnd = saved.datesEnd;
