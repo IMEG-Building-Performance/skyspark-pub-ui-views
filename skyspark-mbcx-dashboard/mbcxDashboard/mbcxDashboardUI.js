@@ -119,27 +119,34 @@ window.mbcxDashboard = window.mbcxDashboard || {};
     }
 
     // Purge legacy unscoped state key that could carry a foreign siteRef
-    try { sessionStorage.removeItem('mbcxDashboard_state'); } catch (e) {}
+    try {
+      var _oldState = sessionStorage.getItem('mbcxDashboard_state');
+      if (_oldState) console.info('[mbcxDashboard] Purging legacy unscoped state:', _oldState);
+      sessionStorage.removeItem('mbcxDashboard_state');
+    } catch (e) {}
+
+    console.info('[mbcxDashboard] projectName:', projectName, '| stateKey:', _stateKey(projectName));
 
     // Load state scoped to THIS project — never bleed across projects
     var saved = _loadState(projectName);
+    console.info('[mbcxDashboard] Saved state for project:', saved);
 
     // Read site view variable (Ref) — returns a Fantom proxy
     if (attestKey) {
       try {
         var siteVal = view.var('site');
+        console.info('[mbcxDashboard] view.var("site") raw:', siteVal,
+          '| toAxon:', typeof siteVal?.toAxon === 'function' ? siteVal.toAxon() : 'N/A',
+          '| toStr:', typeof siteVal?.toStr === 'function' ? siteVal.toStr() : String(siteVal));
         if (siteVal != null) {
           var _toAxon = typeof siteVal.toAxon === 'function' ? siteVal.toAxon() : null;
           var _toStr  = typeof siteVal.toStr  === 'function' ? siteVal.toStr()  : String(siteVal);
 
           if (_toAxon) {
-            // Decode @nav: refs to plain @p:project:r:uuid; pass others through.
             siteRef = _resolveNavRef(_toAxon);
+            console.info('[mbcxDashboard] siteRef from toAxon:', _toAxon, '-> resolved:', siteRef);
           } else {
-            // Fallback: toStr() returns Fantom bracket form "[nav:...]", "@id",
-            // plain "id", or the dis name. Normalize to "@ref" then resolve.
             var s = _toStr.trim();
-            // Fantom bracket notation "[nav:site.site.BASE64]" → "@nav:site.site.BASE64"
             if (s.charAt(0) === '[' && s.charAt(s.length - 1) === ']') {
               s = '@' + s.slice(1, s.length - 1);
             } else if (s.charAt(0) !== '@') {
@@ -148,12 +155,17 @@ window.mbcxDashboard = window.mbcxDashboard || {};
             var spaceIdx = s.indexOf(' ');
             if (spaceIdx !== -1) s = s.slice(0, spaceIdx);
             siteRef = _resolveNavRef(s);
+            console.info('[mbcxDashboard] siteRef from toStr fallback:', _toStr, '-> resolved:', siteRef);
           }
+        } else {
+          console.info('[mbcxDashboard] view.var("site") is null/undefined');
         }
       } catch (e) {
         console.warn('[mbcxDashboard] Could not read site var:', e);
       }
     }
+
+    console.info('[mbcxDashboard] siteRef after view.var:', siteRef);
 
     // Read date view variables
     var datesStart = null, datesEnd = null;
@@ -165,10 +177,22 @@ window.mbcxDashboard = window.mbcxDashboard || {};
     } catch (e) { /* not set */ }
 
     if (saved) {
-      if (!siteRef && saved.siteRef) siteRef = saved.siteRef;
+      if (!siteRef && saved.siteRef) {
+        console.info('[mbcxDashboard] Restoring siteRef from saved state:', saved.siteRef);
+        siteRef = saved.siteRef;
+      }
       if (!datesStart && saved.datesStart) datesStart = saved.datesStart;
       if (!datesEnd && saved.datesEnd) datesEnd = saved.datesEnd;
     }
+
+    console.info('[mbcxDashboard] Final siteRef:', siteRef, '| source:', siteRef ? (saved && saved.siteRef === siteRef ? 'saved-state' : 'view-var') : 'none');
+
+    // Dump all sessionStorage keys for debugging
+    try {
+      var _keys = [];
+      for (var _i = 0; _i < sessionStorage.length; _i++) _keys.push(sessionStorage.key(_i));
+      console.info('[mbcxDashboard] sessionStorage keys:', _keys.filter(function(k) { return k.indexOf('mbcx') !== -1; }));
+    } catch (e) {}
 
     var userName = null;
     try {
