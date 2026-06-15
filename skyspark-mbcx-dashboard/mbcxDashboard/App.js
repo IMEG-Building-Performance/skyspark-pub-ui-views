@@ -293,9 +293,13 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       var titleEl     = container.querySelector('#mbcxDashTitleSite');
       var content     = container.querySelector('#mbcxContent');
 
+      var initRefs = ctx.isAllSites ? ['__all__']
+        : ctx.siteRefs ? ctx.siteRefs.slice()
+        : ctx.siteRef  ? [ctx.siteRef]
+        : [];
       var siteSelector = NS.siteSelector.create({
         container:     siteMountEl,
-        selectedRefs:  ctx.siteRef ? [ctx.siteRef] : [],
+        selectedRefs:  initRefs,
         selectedLabel: ctx.siteName || '— Select site —',
         onChange: function () { doLoad(); }
       });

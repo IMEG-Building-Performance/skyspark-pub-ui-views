@@ -187,8 +187,9 @@ window.mbcxDashboard.siteSelector = (function () {
         if (!selectedRefs.length && ctxRef) {
           selectedRefs = [ctxRef];
           pendingRefs  = [ctxRef];
-          btnLabel.textContent = _selectionLabel(selectedRefs, sites);
         }
+        // Recalculate label now that we have the full site list
+        btnLabel.textContent = _selectionLabel(selectedRefs, sites);
         if (open) renderList(searchInput.value);
       },
       setLabel: function (label) {
