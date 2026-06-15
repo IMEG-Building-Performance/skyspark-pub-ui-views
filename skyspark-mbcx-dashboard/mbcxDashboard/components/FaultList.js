@@ -197,7 +197,7 @@ window.mbcxDashboard.components.FaultList = {
       });
     }
 
-    if (ctx && ctx.attestKey && ctx.siteRef) {
+    if (ctx && ctx.attestKey && (ctx.siteRef || (ctx.siteRefs && ctx.siteRefs.length))) {
       // Loading state
       var tbody = container.querySelector('#flTbody');
       var thead = container.querySelector('#flThead');
@@ -260,6 +260,9 @@ window.mbcxDashboard.components.FaultList = {
     var self = this;
     var API  = window.mbcxDashboard.api;
     var HP   = window.mbcxDashboard.haystackParser;
+    var siteArg = window.mbcxDashboard.siteAxonArg
+      ? window.mbcxDashboard.siteAxonArg(ctx)
+      : ctx.siteRef;
 
     var dateArg = (ctx.datesStart && ctx.datesEnd)
       ? ctx.datesStart + '..' + ctx.datesEnd
@@ -267,7 +270,7 @@ window.mbcxDashboard.components.FaultList = {
 
     // Fetch summary info (KPIs)
     var infoAxon = 'view_MBCxRandomInfo_CustomerView_Output(' +
-      ctx.siteRef + ', ' + dateArg +
+      siteArg + ', ' + dateArg +
       ', 10%, @nav:rule.all, "Fault List", "", "Show All")';
     API.evalAxonVal(ctx.attestKey, ctx.projectName, infoAxon)
       .then(function (val) {
@@ -279,7 +282,7 @@ window.mbcxDashboard.components.FaultList = {
 
     // Fetch fault list
     var axon = 'view_MBCxReport_CustomerView_Output(' +
-      ctx.siteRef + ', ' + dateArg +
+      siteArg + ', ' + dateArg +
       ', 10%, @nav:rule.all, "Fault List", "", "Show All")';
 
     // Trailing 2-week window — used to flag "recent" faults (faults whose
@@ -293,7 +296,7 @@ window.mbcxDashboard.components.FaultList = {
     var wantRecent = !isNaN(rangeStart) && (Date.now() - rangeStart) > 21 * 86400000;
     var recentPromise = wantRecent
       ? API.evalAxon(ctx.attestKey, ctx.projectName,
-          'view_MBCxReport_CustomerView_Output(' + ctx.siteRef + ', ' +
+          'view_MBCxReport_CustomerView_Output(' + siteArg + ', ' +
           isoDaysAgo(13) + '..' + isoDaysAgo(0) +
           ', 10%, @nav:rule.all, "Fault List", "", "Show All")')
         .catch(function (err) {
@@ -307,7 +310,7 @@ window.mbcxDashboard.components.FaultList = {
     var prevDateArg = _flPrevDateArg(ctx);
     var prevPromise = prevDateArg
       ? API.evalAxon(ctx.attestKey, ctx.projectName,
-          'view_MBCxReport_CustomerView_Output(' + ctx.siteRef + ', ' + prevDateArg +
+          'view_MBCxReport_CustomerView_Output(' + siteArg + ', ' + prevDateArg +
           ', 10%, @nav:rule.all, "Fault List", "", "Show All")')
         .catch(function (err) {
           console.warn('[FaultList] Previous-period fetch failed (New flags skipped):', err);
