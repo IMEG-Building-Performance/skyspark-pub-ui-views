@@ -323,6 +323,8 @@ window.mbcxDashboard.components.FaultList = {
     Promise.all([API.evalAxon(ctx.attestKey, ctx.projectName, axon), recentPromise, prevPromise])
       .then(function (results) {
         var parsed = HP.parseGrid(results[0]);
+        console.info('[FaultList] grid cols:', parsed.cols, '| first row keys:', parsed.rows[0] ? Object.keys(parsed.rows[0]) : '(empty)');
+        if (parsed.rows[0]) console.info('[FaultList] first row:', JSON.stringify(parsed.rows[0]).slice(0, 500));
         if (!parsed.rows.length) {
           var tbody = container.querySelector('#flTbody');
           if (tbody) tbody.innerHTML = '<tr><td style="padding:24px;color:#9CA3AF;font-size:12px;text-align:center;">No faults returned for this site and date range.</td></tr>';
