@@ -3,22 +3,22 @@ window.mbcxDashboard = window.mbcxDashboard || {};
 window.mbcxDashboard.components = window.mbcxDashboard.components || {};
 
 var FL_DEMO_FAULTS = [
-  { id:1,  equipment:'AHU-1',     faultName:'Cooling valve stuck open',                   sevNorm:8, sumDur:98,   faultActive:68 },
-  { id:2,  equipment:'VAV-L1-02', faultName:'Faulty reheat coil — SAT 95°F',              sevNorm:9, sumDur:136,  faultActive:94 },
-  { id:3,  equipment:'CUP-CHW-1', faultName:'Differential pressure not at setpoint',       sevNorm:7, sumDur:255,  faultActive:88 },
-  { id:4,  equipment:'VAV-L1-05', faultName:'Faulty reheat coil — SAT 88°F',              sevNorm:6, sumDur:72,   faultActive:50 },
-  { id:5,  equipment:'AHU-2',     faultName:'OA damper not responding to setpoint',        sevNorm:5, sumDur:167,  faultActive:58 },
-  { id:6,  equipment:'VAV-L2-04', faultName:'Leaking reheat valve',                        sevNorm:4, sumDur:64,   faultActive:22 },
-  { id:7,  equipment:'AHU-2',     faultName:'Discharge air temp elevated',                 sevNorm:3, sumDur:42,   faultActive:15 },
-  { id:8,  equipment:'VAV-L1-01', faultName:'Zone temp above setpoint >2h occupied',       sevNorm:5, sumDur:61,   faultActive:21 },
-  { id:9,  equipment:'AHU-3',     faultName:'Supply air temp sensor drift',                sevNorm:2, sumDur:223,  faultActive:77 },
-  { id:10, equipment:'AHU-1',     faultName:'VFD speed oscillation >15%',                  sevNorm:2, sumDur:193,  faultActive:67 },
-  { id:11, equipment:'VAV-L2-06', faultName:'Damper at minimum — low airflow',             sevNorm:4, sumDur:24,   faultActive:8 },
-  { id:12, equipment:'CUP-HW-1',  faultName:'HW supply temp below setpoint',               sevNorm:1, sumDur:340,  faultActive:47 },
+  { id:1,  equipment:'AHU-1',     site:'Demo Site A', faultName:'Cooling valve stuck open',                   sevNorm:8, sumDur:98,   faultActive:68 },
+  { id:2,  equipment:'VAV-L1-02', site:'Demo Site A', faultName:'Faulty reheat coil — SAT 95°F',   sevNorm:9, sumDur:136,  faultActive:94 },
+  { id:3,  equipment:'CUP-CHW-1', site:'Demo Site B', faultName:'Differential pressure not at setpoint',      sevNorm:7, sumDur:255,  faultActive:88 },
+  { id:4,  equipment:'VAV-L1-05', site:'Demo Site A', faultName:'Faulty reheat coil — SAT 88°F',   sevNorm:6, sumDur:72,   faultActive:50 },
+  { id:5,  equipment:'AHU-2',     site:'Demo Site B', faultName:'OA damper not responding to setpoint',       sevNorm:5, sumDur:167,  faultActive:58 },
+  { id:6,  equipment:'VAV-L2-04', site:'Demo Site B', faultName:'Leaking reheat valve',                       sevNorm:4, sumDur:64,   faultActive:22 },
+  { id:7,  equipment:'AHU-2',     site:'Demo Site A', faultName:'Discharge air temp elevated',                sevNorm:3, sumDur:42,   faultActive:15 },
+  { id:8,  equipment:'VAV-L1-01', site:'Demo Site A', faultName:'Zone temp above setpoint >2h occupied',      sevNorm:5, sumDur:61,   faultActive:21 },
+  { id:9,  equipment:'AHU-3',     site:'Demo Site B', faultName:'Supply air temp sensor drift',               sevNorm:2, sumDur:223,  faultActive:77 },
+  { id:10, equipment:'AHU-1',     site:'Demo Site A', faultName:'VFD speed oscillation >15%',                 sevNorm:2, sumDur:193,  faultActive:67 },
+  { id:11, equipment:'VAV-L2-06', site:'Demo Site B', faultName:'Damper at minimum — low airflow',       sevNorm:4, sumDur:24,   faultActive:8 },
+  { id:12, equipment:'CUP-HW-1',  site:'Demo Site B', faultName:'HW supply temp below setpoint',              sevNorm:1, sumDur:340,  faultActive:47 },
 ];
 
-var FL_COLS = ['faultName', 'equipment', 'sumDur', 'sevNorm', 'faultActive'];
-var FL_LABELS = { faultName:'Fault Name', equipment:'Equipment', sumDur:'Duration (hours)', sevNorm:'Severity', faultActive:'Fault Active %' };
+var FL_COLS = ['faultName', 'equipment', 'site', 'sumDur', 'sevNorm', 'faultActive'];
+var FL_LABELS = { faultName:'Fault Name', equipment:'Equipment', site:'Site', sumDur:'Duration (hours)', sevNorm:'Severity', faultActive:'Fault Active %' };
 
 var FL_CONDITIONS = [
   { id: 'sevHigh',  label: 'Severity ≥ 7',  test: function (r) { return typeof r.sevNorm === 'number' && r.sevNorm >= 7; }, color: '#FEE2E2', activeColor: '#DC2626', activeText: '#fff',
@@ -264,6 +264,8 @@ window.mbcxDashboard.components.FaultList = {
       ? window.mbcxDashboard.siteAxonArg(ctx)
       : ctx.siteRef;
 
+    console.info('[FaultList] siteArg:', siteArg, '| siteRefs:', ctx.siteRefs, '| isAllSites:', ctx.isAllSites);
+
     var dateArg = (ctx.datesStart && ctx.datesEnd)
       ? ctx.datesStart + '..' + ctx.datesEnd
       : 'today()';
@@ -399,10 +401,13 @@ window.mbcxDashboard.components.FaultList = {
         return String(v);
       }
 
+      var siteDisVal = strVal('siteDis') || strVal('site');
+
       return {
         id:            i,
         equipment:     strVal('equipment'),
         faultName:     strVal('faultName'),
+        site:          siteDisVal,
         sevNorm:       numVal('sevNorm'),
         sumDur:        numVal('sumDur'),
         faultActive:   numVal('faultActive'),
