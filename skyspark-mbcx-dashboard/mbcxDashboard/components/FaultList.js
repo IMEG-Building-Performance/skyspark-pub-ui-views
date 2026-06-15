@@ -286,6 +286,7 @@ window.mbcxDashboard.components.FaultList = {
     var axon = 'view_MBCxReport_CustomerView_Output(' +
       siteArg + ', ' + dateArg +
       ', 10%, @nav:rule.all, "Fault List", "", "Show All")';
+    console.info('[FaultList] axon query:', axon);
 
     // Trailing 2-week window — used to flag "recent" faults (faults whose
     // duration mostly just occurred). Only fetched when the report window
@@ -403,7 +404,12 @@ window.mbcxDashboard.components.FaultList = {
         return String(v);
       }
 
-      var siteDisVal = strVal('siteDis') || strVal('site');
+      var siteDisVal = '';
+      try {
+        var _idObj = r.id;
+        if (_idObj && _idObj.siteRef && _idObj.siteRef.dis) siteDisVal = _idObj.siteRef.dis;
+      } catch (e) {}
+      if (!siteDisVal) siteDisVal = strVal('siteRef');
 
       return {
         id:            i,
