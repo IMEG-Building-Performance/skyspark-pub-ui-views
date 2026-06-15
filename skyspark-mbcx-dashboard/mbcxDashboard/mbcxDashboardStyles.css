@@ -766,6 +766,23 @@
   padding:16px 12px; font-size:12px; color:var(--gray-400); text-align:center;
 }
 
+/* Multi-select additions */
+#mbcxDashboard .ss-item { display:flex; align-items:center; gap:7px; }
+#mbcxDashboard .ss-ck { font-size:14px; color:var(--gray-400); flex-shrink:0; line-height:1; }
+#mbcxDashboard .ss-item--checked .ss-ck { color:var(--imeg-blue); }
+#mbcxDashboard .ss-item--checked { background:var(--imeg-blue-lt); color:var(--imeg-blue); font-weight:600; }
+#mbcxDashboard .ss-item--all { font-weight:600; }
+#mbcxDashboard .ss-divider { height:1px; background:var(--gray-100); margin:4px 0; }
+#mbcxDashboard .ss-footer {
+  border-top:1px solid var(--gray-100); padding:6px 8px; display:flex; justify-content:flex-end;
+}
+#mbcxDashboard .ss-apply-btn {
+  background:var(--imeg-blue); color:#fff; border:none; border-radius:5px;
+  padding:5px 14px; font-size:12px; font-family:inherit; font-weight:600;
+  cursor:pointer; transition:background 0.15s;
+}
+#mbcxDashboard .ss-apply-btn:hover { background:var(--primary-d); }
+
 /* ── Date range picker mount point ── */
 #mbcxDashboard .dash-topbar-daterange { display: flex; align-items: center; }
 

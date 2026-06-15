@@ -292,8 +292,8 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       var content     = container.querySelector('#mbcxContent');
 
       var siteSelector = NS.siteSelector.create({
-        container:    siteMountEl,
-        selectedRef:  ctx.siteRef || '',
+        container:     siteMountEl,
+        selectedRefs:  ctx.siteRef ? [ctx.siteRef] : [],
         selectedLabel: ctx.siteName || '— Select site —',
         onChange: function () { doLoad(); }
       });
@@ -365,11 +365,12 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       var picker; // assigned after doLoad is defined
 
       function doLoad() {
-        var newSiteRef = siteSelector.getSelectedRef();
-        var newStart   = picker ? picker.getStartDate() : startVal;
-        var newEnd     = picker ? picker.getEndDate()   : endVal;
+        var newSiteRefs = siteSelector.getSelectedRefs ? siteSelector.getSelectedRefs() : [siteSelector.getSelectedRef()];
+        var newSiteRef  = newSiteRefs[0] || '';   // first ref (legacy single-site; Step 2 will use the full array)
+        var newStart    = picker ? picker.getStartDate() : startVal;
+        var newEnd      = picker ? picker.getEndDate()   : endVal;
 
-        if (!newSiteRef) {
+        if (!newSiteRefs.length) {
           _showNoSitePrompt(content);
           return;
         }
@@ -380,6 +381,8 @@ window.mbcxDashboard = window.mbcxDashboard || {};
           attestKey:   ctx && ctx.attestKey,
           projectName: ctx && ctx.projectName,
           siteRef:     newSiteRef || (ctx && ctx.siteRef),
+          siteRefs:    newSiteRefs,                // multi-site array (Step 2 consumers)
+          isAllSites:  siteSelector.isAllSites ? siteSelector.isAllSites() : false,
           datesStart:  newStart   || (ctx && ctx.datesStart),
           datesEnd:    newEnd     || (ctx && ctx.datesEnd),
           siteName:    siteSelector.getSelectedDis() || (ctx && ctx.siteName)
