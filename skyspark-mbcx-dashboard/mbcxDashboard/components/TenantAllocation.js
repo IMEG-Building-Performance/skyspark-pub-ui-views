@@ -20,7 +20,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     Flow:    { color: '#5b8c6f', light: '#e0ede6', label: 'Flow',    icon: _svg.Flow    }
   };
   var UTIL_KEYS = ['Cooling', 'Heating', 'Flow'];
-  var HEADER_BG = '#3d4f7c';
+  var ACCENT = '#4A6FA5';
 
   // ── State ────────────────────────────────────────────────────────────────────
   var _state = {};
@@ -194,7 +194,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     var hasSummaryData = UTIL_KEYS.some(function (u) { return summary[u] != null; });
 
     var kpiCards = [
-      { label: 'Total Plant Cost', value: hasSummaryData ? fmtCost(grandCost) : '—', color: HEADER_BG },
+      { label: 'Total Plant Cost', value: hasSummaryData ? fmtCost(grandCost) : '—', color: ACCENT },
       { label: 'Cooling Cost',  value: summary.Cooling ? fmtCost(summary.Cooling.cost) : '—', color: UTILS.Cooling.color },
       { label: 'Heating Cost',  value: summary.Heating ? fmtCost(summary.Heating.cost) : '—', color: UTILS.Heating.color },
       { label: 'Flow Cost',     value: summary.Flow    ? fmtCost(summary.Flow.cost)    : '—', color: UTILS.Flow.color }
@@ -236,7 +236,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
           tenantNames.map(function (name) {
             var isActive = name === selected;
             return '<button class="ma-util-pill' + (isActive ? ' is-active' : '') + '" data-tenant-tab="' + _esc(name) + '" ' +
-              'style="' + (isActive ? 'background:' + HEADER_BG + ';color:#fff;border-color:' + HEADER_BG + ';' : '') + '">' +
+              'style="' + (isActive ? 'background:' + ACCENT + ';color:#fff;border-color:' + ACCENT + ';' : '') + '">' +
               _esc(name) + '</button>';
           }).join('') + '</div>';
 
@@ -271,7 +271,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
             '<th class="ma-recon-head right">Cost</th></tr></thead>' +
           '<tbody>' + detailRows + '</tbody>' +
           '<tfoot><tr>' +
-            '<td class="ma-recon-util ma-sum-foot" style="color:#374151">Total</td>' +
+            '<td class="ma-recon-util ma-sum-foot">Total</td>' +
             '<td class="ma-recon-num ma-sum-foot">—</td>' +
             '<td class="ma-recon-num ma-sum-foot">—</td>' +
             '<td class="ma-recon-num ma-sum-foot">' + (hasCost ? fmtCost(totalCost) : '—') + '</td>' +
@@ -358,13 +358,13 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     var stepRows = stepDefs.map(function (s, i) {
       var d = data[s.key];
       return '<tr class="ma-recon-row' + (i % 2 === 0 ? '' : ' stripe') + '">' +
-        '<td class="ma-recon-util" style="color:#374151;font-weight:600">' + s.label + '</td>' +
+        '<td class="ma-recon-util ma-recon-util--label">' + s.label + '</td>' +
         '<td style="padding:10px 16px;color:#9ca3af;font-size:11px;font-family:monospace">' + s.expr + '</td>' +
         '<td class="ma-recon-num" style="color:' + cfg.color + ';font-weight:600">' +
           (d ? fmtBtu(d.val, d.unit) + '<small>&nbsp;' + btuUnit(d.unit) + '</small>' : '—') + '</td></tr>';
     }).join('');
     var totalRow = '<tr style="border-top:2px solid #e5e7eb">' +
-      '<td class="ma-recon-util" style="color:#1a1a1a;font-weight:700">Residential Total</td>' +
+      '<td class="ma-recon-util ma-recon-util--total">Residential Total</td>' +
       '<td style="padding:10px 16px;color:#9ca3af;font-size:11px;font-family:monospace">group1Plus2 + group3Minus5 + group4Minus5Minus6</td>' +
       '<td class="ma-recon-num" style="color:' + cfg.color + ';font-weight:700;font-size:15px">' +
         (resD ? fmtBtu(resD.val, resD.unit) + '<small>&nbsp;' + btuUnit(resD.unit) + '</small>' : '—') + '</td></tr>';
@@ -383,14 +383,14 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       var rows  = meters.map(function (m, i) {
         var name = _shortName(m.name, _state.siteName);
         return '<tr class="ma-recon-row' + (i % 2 === 0 ? '' : ' stripe') + '">' +
-          '<td class="ma-recon-util" style="color:#374151">' + _esc(name) + '</td>' +
+          '<td class="ma-recon-util">' + _esc(name) + '</td>' +
           '<td class="ma-recon-num">' + fmtBtu(m.usage, m.unit) + '<small>&nbsp;' + btuUnit(m.unit) + '</small></td></tr>';
       }).join('');
       return '<table class="ma-recon-table"><thead><tr>' +
         '<th class="ma-recon-head">Meter</th>' +
         '<th class="ma-recon-head right" style="color:' + cfg.color + '">Usage</th></tr></thead>' +
         '<tbody>' + rows + '</tbody>' +
-        '<tfoot><tr><td class="ma-recon-util ma-sum-foot" style="color:#374151">Total</td>' +
+        '<tfoot><tr><td class="ma-recon-util ma-sum-foot">Total</td>' +
           '<td class="ma-recon-num ma-sum-foot">' + fmtBtu(total, unit) + '<small>&nbsp;' + btuUnit(unit) + '</small></td></tr></tfoot></table>';
     }
 
@@ -417,32 +417,17 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       '<div class="ma-footer">Residential&nbsp;Total&nbsp;=&nbsp;(G1+G2)&nbsp;+&nbsp;(G3&#8722;G5)&nbsp;+&nbsp;(G4&#8722;G5&#8722;G6)&nbsp;&nbsp;&middot;&nbsp;&nbsp;SkySpark&nbsp;pUb</div></div>';
   }
 
-  // ── Internal header (page tabs within the tab) ───────────────────────────────
-  function _renderInternalHeader() {
-    var dateLabel = _state.dateLabel || '';
-
+  // ── Sub-tabs (Summary / Details / Residential) ───────────────────────────────
+  function _renderSubTabs() {
     var pageTabs = [
       { id: 'summary',     lbl: 'Summary'     },
       { id: 'details',     lbl: 'Details'      },
       { id: 'residential', lbl: 'Residential'  }
     ].map(function (p) {
       var isActive = _state.page === p.id;
-      return '<button class="ma-page-tab' + (isActive ? ' is-active' : '') + '" data-page="' + p.id + '">' + p.lbl + '</button>';
+      return '<button class="ma-page-tab' + (isActive ? ' ma-page-tab--active' : '') + '" data-page="' + p.id + '">' + p.lbl + '</button>';
     }).join('');
-
-    return '<div class="ma-header" style="background:' + HEADER_BG + '">' +
-      '<div class="ma-header-top">' +
-        '<div class="ma-header-left">' +
-          '<div class="ma-header-site">' + _esc(_state.siteName || '') + '</div>' +
-          '<div class="ma-header-subtitle">Tenant Meter Allocation</div>' +
-        '</div>' +
-        (dateLabel ? '<div class="ma-header-date-badge">' +
-          '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;opacity:0.8">' +
-            '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>' +
-          '<span>' + _esc(dateLabel) + '</span></div>' : '') +
-      '</div>' +
-      '<div class="ma-header-nav"><div class="ma-page-tabs">' + pageTabs + '</div></div>' +
-    '</div>';
+    return '<div class="ma-page-tabs">' + pageTabs + '</div>';
   }
 
   // ── Body dispatch ────────────────────────────────────────────────────────────
@@ -469,7 +454,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
   }
 
   function _renderAll() {
-    _container.innerHTML = _renderInternalHeader() + '<div id="ma-body"></div>';
+    _container.innerHTML = _renderSubTabs() + '<div id="ma-body"></div>';
     _renderBody();
   }
 
@@ -520,27 +505,15 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     });
   }
 
-  // ── Load CSS (idempotent) ────────────────────────────────────────────────────
-  function _loadCSS() {
-    var id = 'meterAllocationCSS_mbcx';
-    if (document.getElementById(id)) return;
-    var link  = document.createElement('link');
-    link.id   = id;
-    link.rel  = 'stylesheet';
-    link.href = '/pub/ui/mbcxDashboard/meterAllocationStyles.css?_v=' + Date.now();
-    document.head.appendChild(link);
-  }
-
   // ── Public component API ─────────────────────────────────────────────────────
   NS.TenantAllocation = {
 
     renderPage: function () {
-      return '<div id="meterAllocationRoot" style="height:100%;overflow:auto"></div>';
+      return '<div class="ma-outer"></div>';
     },
 
     initLive: function (contentEl, ctx) {
-      _loadCSS();
-      var root = contentEl.querySelector('#meterAllocationRoot') || contentEl;
+      var root = contentEl.querySelector('.ma-outer') || contentEl;
       _container = root;
 
       var siteRef   = window.mbcxDashboard.siteAxonArg(ctx);
@@ -555,10 +528,10 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         siteName: ctx.siteName || '', dateLabel: dateLabel
       };
 
-      root.innerHTML = '<div style="padding:2rem;color:#888">Loading tenant allocation data…</div>';
+      root.innerHTML = '<div class="ma-loading">Loading tenant allocation data…</div>';
 
       if (!ctx.attestKey || !ctx.projectName || !siteRef) {
-        root.innerHTML = '<div style="padding:2rem;color:#888">No site selected — choose a site from the selector above.</div>';
+        root.innerHTML = '<div class="ma-loading">No site selected — choose a site from the selector above.</div>';
         return;
       }
 
@@ -598,7 +571,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         _attachListeners();
       }).catch(function (err) {
         if (gen !== _fetchGen) return;
-        root.innerHTML = '<div style="padding:2rem;color:#b91c1c">Failed to load tenant allocation data: ' + _esc(err.message || String(err)) + '</div>';
+        root.innerHTML = '<div class="ma-loading ma-loading--error">Failed to load tenant allocation data: ' + _esc(err.message || String(err)) + '</div>';
       });
     },
 
