@@ -180,7 +180,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
     _persistState: function () {
       var c = NS.App._lastCtx;
       if (!c) return;
-      var key = c.projectName ? 'mbcxDashboard_state_' + c.projectName : 'mbcxDashboard_state';
+      var key = 'mbcxDashboard_state_' + (c.projectName || 'unknown');
       try {
         sessionStorage.setItem(key, JSON.stringify({
           projectName: c.projectName, siteRef: c.siteRef,

@@ -26,7 +26,8 @@ window.mbcxDashboard = window.mbcxDashboard || {};
   var STATE_KEY_PREFIX = 'mbcxDashboard_state';
 
   function _stateKey(projectName) {
-    return projectName ? STATE_KEY_PREFIX + '_' + projectName : STATE_KEY_PREFIX;
+    // Always require a project name — refuse to use the unscoped key
+    return STATE_KEY_PREFIX + (projectName ? '_' + projectName : '_unknown');
   }
 
   function loadStyles() {
@@ -116,6 +117,9 @@ window.mbcxDashboard = window.mbcxDashboard || {};
     } catch (e) {
       console.warn('[mbcxDashboard] No SkySpark session — using demo data.');
     }
+
+    // Purge legacy unscoped state key that could carry a foreign siteRef
+    try { sessionStorage.removeItem('mbcxDashboard_state'); } catch (e) {}
 
     // Load state scoped to THIS project — never bleed across projects
     var saved = _loadState(projectName);
