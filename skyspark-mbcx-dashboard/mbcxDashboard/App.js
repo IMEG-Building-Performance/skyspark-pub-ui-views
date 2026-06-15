@@ -136,14 +136,14 @@ window.mbcxDashboard = window.mbcxDashboard || {};
   // Multi-site   → "[@ref1, @ref2]"  (Axon list literal)
   NS.siteAxonArg = function (ctx) {
     var refs = ctx.siteRefs;
-    if (!refs || !refs.length) return ctx.siteRef || '';
-    if (refs.length === 1 && refs[0] !== '__all__') return refs[0];
-    // __all__ should already be resolved to concrete refs by doLoad,
-    // but guard just in case
+    if (!refs || !refs.length) { console.info('[siteAxonArg] no siteRefs, using siteRef:', ctx.siteRef); return ctx.siteRef || ''; }
+    if (refs.length === 1 && refs[0] !== '__all__') { console.info('[siteAxonArg] single ref:', refs[0]); return refs[0]; }
     var concrete = refs.filter(function (r) { return r !== '__all__'; });
-    if (!concrete.length) return ctx.siteRef || '';
-    if (concrete.length === 1) return concrete[0];
-    return '[' + concrete.join(', ') + ']';
+    if (!concrete.length) { console.info('[siteAxonArg] no concrete, using siteRef:', ctx.siteRef); return ctx.siteRef || ''; }
+    if (concrete.length === 1) { console.info('[siteAxonArg] one concrete:', concrete[0]); return concrete[0]; }
+    var result = '[' + concrete.join(', ') + ']';
+    console.info('[siteAxonArg] multi:', result);
+    return result;
   };
 
   NS.App = {
