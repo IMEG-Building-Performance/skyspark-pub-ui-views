@@ -300,13 +300,16 @@ window.mbcxDashboard.components.FaultSummaries = (function () {
       });
     }
 
-    if (!ctx || !ctx.attestKey || !ctx.siteRef) {
+    if (!ctx || !ctx.attestKey || !(ctx.siteRef || (ctx.siteRefs && ctx.siteRefs.length))) {
       _populate(container, []);
       return;
     }
 
     var API = window.mbcxDashboard.api;
     var HP  = window.mbcxDashboard.haystackParser;
+    var siteArg = window.mbcxDashboard.siteAxonArg
+      ? window.mbcxDashboard.siteAxonArg(ctx)
+      : ctx.siteRef;
     var dateArg = (ctx.datesStart && ctx.datesEnd)
       ? ctx.datesStart + '..' + ctx.datesEnd
       : 'today()';
@@ -315,7 +318,7 @@ window.mbcxDashboard.components.FaultSummaries = (function () {
     if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="padding:24px;color:#9CA3AF;font-size:12px;text-align:center;">Loading fault summaries…</td></tr>';
 
     var axon = 'view_MBCxReport_CustomerView_Output(' +
-      ctx.siteRef + ', ' + dateArg +
+      siteArg + ', ' + dateArg +
       ', 10%, @nav:rule.all, "Fault Summaries", "", "Show All")';
 
     // Also fetch previous period for "Change" column
@@ -323,7 +326,7 @@ window.mbcxDashboard.components.FaultSummaries = (function () {
     var prevPromise;
     if (prevDateArg) {
       var prevAxon = 'view_MBCxReport_CustomerView_Output(' +
-        ctx.siteRef + ', ' + prevDateArg +
+        siteArg + ', ' + prevDateArg +
         ', 10%, @nav:rule.all, "Fault Summaries", "", "Show All")';
       prevPromise = API.evalAxon(ctx.attestKey, ctx.projectName, prevAxon)
         .then(function (grid) { return HP.parseGrid(grid); })

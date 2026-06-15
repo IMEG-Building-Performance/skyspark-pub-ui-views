@@ -131,6 +131,21 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       }).catch(function () { return null; });
   }
 
+  // Build the Axon site argument from ctx.
+  // Single site  → "@ref"
+  // Multi-site   → "[@ref1, @ref2]"  (Axon list literal)
+  NS.siteAxonArg = function (ctx) {
+    var refs = ctx.siteRefs;
+    if (!refs || !refs.length) { console.info('[siteAxonArg] no siteRefs, using siteRef:', ctx.siteRef); return ctx.siteRef || ''; }
+    if (refs.length === 1 && refs[0] !== '__all__') { console.info('[siteAxonArg] single ref:', refs[0]); return refs[0]; }
+    var concrete = refs.filter(function (r) { return r !== '__all__'; });
+    if (!concrete.length) { console.info('[siteAxonArg] no concrete, using siteRef:', ctx.siteRef); return ctx.siteRef || ''; }
+    if (concrete.length === 1) { console.info('[siteAxonArg] one concrete:', concrete[0]); return concrete[0]; }
+    var result = '[' + concrete.join(', ') + ']';
+    console.info('[siteAxonArg] multi:', result);
+    return result;
+  };
+
   NS.App = {
     _lastData:  null,
     _lastCtx:   null,
@@ -180,9 +195,11 @@ window.mbcxDashboard = window.mbcxDashboard || {};
     _persistState: function () {
       var c = NS.App._lastCtx;
       if (!c) return;
+      var key = 'mbcxDashboard_state_' + (c.projectName || 'unknown');
       try {
-        sessionStorage.setItem('mbcxDashboard_state', JSON.stringify({
-          siteRef: c.siteRef, datesStart: c.datesStart, datesEnd: c.datesEnd,
+        sessionStorage.setItem(key, JSON.stringify({
+          projectName: c.projectName, siteRef: c.siteRef,
+          datesStart: c.datesStart, datesEnd: c.datesEnd,
           siteName: c.siteName, tab: NS.App._activeTab
         }));
       } catch (e) {}
@@ -291,9 +308,13 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       var titleEl     = container.querySelector('#mbcxDashTitleSite');
       var content     = container.querySelector('#mbcxContent');
 
+      var initRefs = ctx.isAllSites ? ['__all__']
+        : ctx.siteRefs ? ctx.siteRefs.slice()
+        : ctx.siteRef  ? [ctx.siteRef]
+        : [];
       var siteSelector = NS.siteSelector.create({
-        container:    siteMountEl,
-        selectedRef:  ctx.siteRef || '',
+        container:     siteMountEl,
+        selectedRefs:  initRefs,
         selectedLabel: ctx.siteName || '— Select site —',
         onChange: function () { doLoad(); }
       });
@@ -349,11 +370,14 @@ window.mbcxDashboard = window.mbcxDashboard || {};
               var dis = row.dis || (refObj && (refObj.dis || refObj.val)) || refStr || '?';
               return { ref: '@' + refStr, dis: String(dis) };
             });
+            // Store all site refs so "All Sites" can resolve at query time
+            NS.App._allSiteRefs = siteList.map(function (s) { return s.ref; });
             siteSelector.setSites(siteList, ctx.siteRef);
           })
           .catch(function (err) {
             console.warn('[mbcxDashboard] Could not load site list:', err);
             if (ctx.siteRef) {
+              NS.App._allSiteRefs = [ctx.siteRef];
               siteSelector.setSites([{ ref: ctx.siteRef, dis: ctx.siteName || ctx.siteRef }], ctx.siteRef);
             }
           });
@@ -365,21 +389,30 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       var picker; // assigned after doLoad is defined
 
       function doLoad() {
-        var newSiteRef = siteSelector.getSelectedRef();
-        var newStart   = picker ? picker.getStartDate() : startVal;
-        var newEnd     = picker ? picker.getEndDate()   : endVal;
+        var newSiteRefs = siteSelector.getSelectedRefs ? siteSelector.getSelectedRefs() : [siteSelector.getSelectedRef()];
+        var newSiteRef  = newSiteRefs[0] || '';   // first ref (legacy single-site; Step 2 will use the full array)
+        var newStart    = picker ? picker.getStartDate() : startVal;
+        var newEnd      = picker ? picker.getEndDate()   : endVal;
 
-        if (!newSiteRef) {
+        if (!newSiteRefs.length) {
           _showNoSitePrompt(content);
           return;
         }
 
         if (spinner) spinner.style.display = 'inline-block';
 
+        // Resolve "All Sites" to concrete refs for query building
+        var resolvedRefs = newSiteRefs;
+        var isAll = siteSelector.isAllSites ? siteSelector.isAllSites() : false;
+        if (isAll && NS.App._allSiteRefs) resolvedRefs = NS.App._allSiteRefs;
+
         var newCtx = {
           attestKey:   ctx && ctx.attestKey,
           projectName: ctx && ctx.projectName,
           siteRef:     newSiteRef || (ctx && ctx.siteRef),
+          siteRefs:    resolvedRefs,               // concrete refs (never __all__)
+          isAllSites:  isAll,
+          allSiteRefs: NS.App._allSiteRefs || [],  // full site list for reference
           datesStart:  newStart   || (ctx && ctx.datesStart),
           datesEnd:    newEnd     || (ctx && ctx.datesEnd),
           siteName:    siteSelector.getSelectedDis() || (ctx && ctx.siteName)

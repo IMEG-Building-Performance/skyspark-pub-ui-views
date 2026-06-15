@@ -23,7 +23,12 @@ window.mbcxDashboard = window.mbcxDashboard || {};
   var CSS_ID   = 'mbcxDashboardCSS';
   var CSS_PATH = '/pub/ui/mbcxDashboard/mbcxDashboardStyles.css';
   var _fetchGen = 0;
-  var STATE_KEY = 'mbcxDashboard_state';
+  var STATE_KEY_PREFIX = 'mbcxDashboard_state';
+
+  function _stateKey(projectName) {
+    // Always require a project name — refuse to use the unscoped key
+    return STATE_KEY_PREFIX + (projectName ? '_' + projectName : '_unknown');
+  }
 
   function loadStyles() {
     if (document.getElementById(CSS_ID)) return;
@@ -34,14 +39,18 @@ window.mbcxDashboard = window.mbcxDashboard || {};
     document.head.appendChild(link);
   }
 
-  function _saveState(obj) {
-    try { sessionStorage.setItem(STATE_KEY, JSON.stringify(obj)); } catch (e) {}
+  function _saveState(obj, projectName) {
+    try { sessionStorage.setItem(_stateKey(projectName), JSON.stringify(obj)); } catch (e) {}
   }
 
-  function _loadState() {
+  function _loadState(projectName) {
     try {
-      var s = sessionStorage.getItem(STATE_KEY);
-      return s ? JSON.parse(s) : null;
+      var s = sessionStorage.getItem(_stateKey(projectName));
+      if (!s) return null;
+      var parsed = JSON.parse(s);
+      // Guard: never restore state from a different project
+      if (parsed && parsed.projectName && projectName && parsed.projectName !== projectName) return null;
+      return parsed;
     } catch (e) { return null; }
   }
 
@@ -99,8 +108,6 @@ window.mbcxDashboard = window.mbcxDashboard || {};
 
     _showLoadingOverlay(container);
 
-    var saved = _loadState();
-
     // Attempt SkySpark session
     var attestKey = null, projectName = null, siteRef = null;
     try {
@@ -111,22 +118,35 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       console.warn('[mbcxDashboard] No SkySpark session — using demo data.');
     }
 
+    // Purge legacy unscoped state key that could carry a foreign siteRef
+    try {
+      var _oldState = sessionStorage.getItem('mbcxDashboard_state');
+      if (_oldState) console.info('[mbcxDashboard] Purging legacy unscoped state:', _oldState);
+      sessionStorage.removeItem('mbcxDashboard_state');
+    } catch (e) {}
+
+    console.info('[mbcxDashboard] projectName:', projectName, '| stateKey:', _stateKey(projectName));
+
+    // Load state scoped to THIS project — never bleed across projects
+    var saved = _loadState(projectName);
+    console.info('[mbcxDashboard] Saved state for project:', saved);
+
     // Read site view variable (Ref) — returns a Fantom proxy
     if (attestKey) {
       try {
         var siteVal = view.var('site');
+        console.info('[mbcxDashboard] view.var("site") raw:', siteVal,
+          '| toAxon:', typeof siteVal?.toAxon === 'function' ? siteVal.toAxon() : 'N/A',
+          '| toStr:', typeof siteVal?.toStr === 'function' ? siteVal.toStr() : String(siteVal));
         if (siteVal != null) {
           var _toAxon = typeof siteVal.toAxon === 'function' ? siteVal.toAxon() : null;
           var _toStr  = typeof siteVal.toStr  === 'function' ? siteVal.toStr()  : String(siteVal);
 
           if (_toAxon) {
-            // Decode @nav: refs to plain @p:project:r:uuid; pass others through.
             siteRef = _resolveNavRef(_toAxon);
+            console.info('[mbcxDashboard] siteRef from toAxon:', _toAxon, '-> resolved:', siteRef);
           } else {
-            // Fallback: toStr() returns Fantom bracket form "[nav:...]", "@id",
-            // plain "id", or the dis name. Normalize to "@ref" then resolve.
             var s = _toStr.trim();
-            // Fantom bracket notation "[nav:site.site.BASE64]" → "@nav:site.site.BASE64"
             if (s.charAt(0) === '[' && s.charAt(s.length - 1) === ']') {
               s = '@' + s.slice(1, s.length - 1);
             } else if (s.charAt(0) !== '@') {
@@ -135,12 +155,17 @@ window.mbcxDashboard = window.mbcxDashboard || {};
             var spaceIdx = s.indexOf(' ');
             if (spaceIdx !== -1) s = s.slice(0, spaceIdx);
             siteRef = _resolveNavRef(s);
+            console.info('[mbcxDashboard] siteRef from toStr fallback:', _toStr, '-> resolved:', siteRef);
           }
+        } else {
+          console.info('[mbcxDashboard] view.var("site") is null/undefined');
         }
       } catch (e) {
         console.warn('[mbcxDashboard] Could not read site var:', e);
       }
     }
+
+    console.info('[mbcxDashboard] siteRef after view.var:', siteRef);
 
     // Read date view variables
     var datesStart = null, datesEnd = null;
@@ -152,10 +177,36 @@ window.mbcxDashboard = window.mbcxDashboard || {};
     } catch (e) { /* not set */ }
 
     if (saved) {
-      if (!siteRef && saved.siteRef) siteRef = saved.siteRef;
+      if (!siteRef && saved.siteRef) {
+        // Validate the saved ref belongs to THIS project.
+        // Project-qualified refs look like @p:projectName:r:uuid — reject
+        // any ref whose embedded project doesn't match.
+        var savedProject = null;
+        var pMatch = String(saved.siteRef).match(/^@p:([^:]+):/);
+        if (pMatch) savedProject = pMatch[1];
+
+        if (savedProject && projectName && savedProject !== projectName) {
+          console.warn('[mbcxDashboard] Rejecting cross-project siteRef:', saved.siteRef,
+            '(belongs to', savedProject + ', current project is', projectName + ')');
+          // Wipe the corrupted saved state so it doesn't keep reappearing
+          try { sessionStorage.removeItem(_stateKey(projectName)); } catch (e) {}
+        } else {
+          console.info('[mbcxDashboard] Restoring siteRef from saved state:', saved.siteRef);
+          siteRef = saved.siteRef;
+        }
+      }
       if (!datesStart && saved.datesStart) datesStart = saved.datesStart;
       if (!datesEnd && saved.datesEnd) datesEnd = saved.datesEnd;
     }
+
+    console.info('[mbcxDashboard] Final siteRef:', siteRef, '| source:', siteRef ? (saved && saved.siteRef === siteRef ? 'saved-state' : 'view-var') : 'none');
+
+    // Dump all sessionStorage keys for debugging
+    try {
+      var _keys = [];
+      for (var _i = 0; _i < sessionStorage.length; _i++) _keys.push(sessionStorage.key(_i));
+      console.info('[mbcxDashboard] sessionStorage keys:', _keys.filter(function(k) { return k.indexOf('mbcx') !== -1; }));
+    } catch (e) {}
 
     var userName = null;
     try {
@@ -186,7 +237,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
               ctx.siteName = dis;
               var el = container.querySelector('#mbcxDashTitleSite');
               if (el) el.textContent = 'MBCx Dashboard — ' + dis;
-              _saveState({ siteRef: ctx.siteRef, datesStart: ctx.datesStart, datesEnd: ctx.datesEnd, siteName: dis, tab: NS.App._activeTab });
+              _saveState({ projectName: projectName, siteRef: ctx.siteRef, datesStart: ctx.datesStart, datesEnd: ctx.datesEnd, siteName: dis, tab: NS.App._activeTab }, projectName);
             }
           })
           .catch(function () {});

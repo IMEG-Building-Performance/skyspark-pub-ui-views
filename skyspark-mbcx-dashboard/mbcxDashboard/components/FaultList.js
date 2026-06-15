@@ -3,22 +3,22 @@ window.mbcxDashboard = window.mbcxDashboard || {};
 window.mbcxDashboard.components = window.mbcxDashboard.components || {};
 
 var FL_DEMO_FAULTS = [
-  { id:1,  equipment:'AHU-1',     faultName:'Cooling valve stuck open',                   sevNorm:8, sumDur:98,   faultActive:68 },
-  { id:2,  equipment:'VAV-L1-02', faultName:'Faulty reheat coil — SAT 95°F',              sevNorm:9, sumDur:136,  faultActive:94 },
-  { id:3,  equipment:'CUP-CHW-1', faultName:'Differential pressure not at setpoint',       sevNorm:7, sumDur:255,  faultActive:88 },
-  { id:4,  equipment:'VAV-L1-05', faultName:'Faulty reheat coil — SAT 88°F',              sevNorm:6, sumDur:72,   faultActive:50 },
-  { id:5,  equipment:'AHU-2',     faultName:'OA damper not responding to setpoint',        sevNorm:5, sumDur:167,  faultActive:58 },
-  { id:6,  equipment:'VAV-L2-04', faultName:'Leaking reheat valve',                        sevNorm:4, sumDur:64,   faultActive:22 },
-  { id:7,  equipment:'AHU-2',     faultName:'Discharge air temp elevated',                 sevNorm:3, sumDur:42,   faultActive:15 },
-  { id:8,  equipment:'VAV-L1-01', faultName:'Zone temp above setpoint >2h occupied',       sevNorm:5, sumDur:61,   faultActive:21 },
-  { id:9,  equipment:'AHU-3',     faultName:'Supply air temp sensor drift',                sevNorm:2, sumDur:223,  faultActive:77 },
-  { id:10, equipment:'AHU-1',     faultName:'VFD speed oscillation >15%',                  sevNorm:2, sumDur:193,  faultActive:67 },
-  { id:11, equipment:'VAV-L2-06', faultName:'Damper at minimum — low airflow',             sevNorm:4, sumDur:24,   faultActive:8 },
-  { id:12, equipment:'CUP-HW-1',  faultName:'HW supply temp below setpoint',               sevNorm:1, sumDur:340,  faultActive:47 },
+  { id:1,  equipment:'AHU-1',     site:'Demo Site A', faultName:'Cooling valve stuck open',                   sevNorm:8, sumDur:98,   faultActive:68 },
+  { id:2,  equipment:'VAV-L1-02', site:'Demo Site A', faultName:'Faulty reheat coil — SAT 95°F',   sevNorm:9, sumDur:136,  faultActive:94 },
+  { id:3,  equipment:'CUP-CHW-1', site:'Demo Site B', faultName:'Differential pressure not at setpoint',      sevNorm:7, sumDur:255,  faultActive:88 },
+  { id:4,  equipment:'VAV-L1-05', site:'Demo Site A', faultName:'Faulty reheat coil — SAT 88°F',   sevNorm:6, sumDur:72,   faultActive:50 },
+  { id:5,  equipment:'AHU-2',     site:'Demo Site B', faultName:'OA damper not responding to setpoint',       sevNorm:5, sumDur:167,  faultActive:58 },
+  { id:6,  equipment:'VAV-L2-04', site:'Demo Site B', faultName:'Leaking reheat valve',                       sevNorm:4, sumDur:64,   faultActive:22 },
+  { id:7,  equipment:'AHU-2',     site:'Demo Site A', faultName:'Discharge air temp elevated',                sevNorm:3, sumDur:42,   faultActive:15 },
+  { id:8,  equipment:'VAV-L1-01', site:'Demo Site A', faultName:'Zone temp above setpoint >2h occupied',      sevNorm:5, sumDur:61,   faultActive:21 },
+  { id:9,  equipment:'AHU-3',     site:'Demo Site B', faultName:'Supply air temp sensor drift',               sevNorm:2, sumDur:223,  faultActive:77 },
+  { id:10, equipment:'AHU-1',     site:'Demo Site A', faultName:'VFD speed oscillation >15%',                 sevNorm:2, sumDur:193,  faultActive:67 },
+  { id:11, equipment:'VAV-L2-06', site:'Demo Site B', faultName:'Damper at minimum — low airflow',       sevNorm:4, sumDur:24,   faultActive:8 },
+  { id:12, equipment:'CUP-HW-1',  site:'Demo Site B', faultName:'HW supply temp below setpoint',              sevNorm:1, sumDur:340,  faultActive:47 },
 ];
 
-var FL_COLS = ['faultName', 'equipment', 'sumDur', 'sevNorm', 'faultActive'];
-var FL_LABELS = { faultName:'Fault Name', equipment:'Equipment', sumDur:'Duration (hours)', sevNorm:'Severity', faultActive:'Fault Active %' };
+var FL_COLS = ['faultName', 'equipment', 'site', 'sumDur', 'sevNorm', 'faultActive'];
+var FL_LABELS = { faultName:'Fault Name', equipment:'Equipment', site:'Site', sumDur:'Duration (hours)', sevNorm:'Severity', faultActive:'Fault Active %' };
 
 var FL_CONDITIONS = [
   { id: 'sevHigh',  label: 'Severity ≥ 7',  test: function (r) { return typeof r.sevNorm === 'number' && r.sevNorm >= 7; }, color: '#FEE2E2', activeColor: '#DC2626', activeText: '#fff',
@@ -197,7 +197,7 @@ window.mbcxDashboard.components.FaultList = {
       });
     }
 
-    if (ctx && ctx.attestKey && ctx.siteRef) {
+    if (ctx && ctx.attestKey && (ctx.siteRef || (ctx.siteRefs && ctx.siteRefs.length))) {
       // Loading state
       var tbody = container.querySelector('#flTbody');
       var thead = container.querySelector('#flThead');
@@ -260,6 +260,11 @@ window.mbcxDashboard.components.FaultList = {
     var self = this;
     var API  = window.mbcxDashboard.api;
     var HP   = window.mbcxDashboard.haystackParser;
+    var siteArg = window.mbcxDashboard.siteAxonArg
+      ? window.mbcxDashboard.siteAxonArg(ctx)
+      : ctx.siteRef;
+
+    console.info('[FaultList] siteArg:', siteArg, '| siteRefs:', JSON.stringify(ctx.siteRefs), '| isAllSites:', ctx.isAllSites);
 
     var dateArg = (ctx.datesStart && ctx.datesEnd)
       ? ctx.datesStart + '..' + ctx.datesEnd
@@ -267,7 +272,7 @@ window.mbcxDashboard.components.FaultList = {
 
     // Fetch summary info (KPIs)
     var infoAxon = 'view_MBCxRandomInfo_CustomerView_Output(' +
-      ctx.siteRef + ', ' + dateArg +
+      siteArg + ', ' + dateArg +
       ', 10%, @nav:rule.all, "Fault List", "", "Show All")';
     API.evalAxonVal(ctx.attestKey, ctx.projectName, infoAxon)
       .then(function (val) {
@@ -279,8 +284,9 @@ window.mbcxDashboard.components.FaultList = {
 
     // Fetch fault list
     var axon = 'view_MBCxReport_CustomerView_Output(' +
-      ctx.siteRef + ', ' + dateArg +
+      siteArg + ', ' + dateArg +
       ', 10%, @nav:rule.all, "Fault List", "", "Show All")';
+    console.info('[FaultList] axon query:', axon);
 
     // Trailing 2-week window — used to flag "recent" faults (faults whose
     // duration mostly just occurred). Only fetched when the report window
@@ -293,7 +299,7 @@ window.mbcxDashboard.components.FaultList = {
     var wantRecent = !isNaN(rangeStart) && (Date.now() - rangeStart) > 21 * 86400000;
     var recentPromise = wantRecent
       ? API.evalAxon(ctx.attestKey, ctx.projectName,
-          'view_MBCxReport_CustomerView_Output(' + ctx.siteRef + ', ' +
+          'view_MBCxReport_CustomerView_Output(' + siteArg + ', ' +
           isoDaysAgo(13) + '..' + isoDaysAgo(0) +
           ', 10%, @nav:rule.all, "Fault List", "", "Show All")')
         .catch(function (err) {
@@ -307,7 +313,7 @@ window.mbcxDashboard.components.FaultList = {
     var prevDateArg = _flPrevDateArg(ctx);
     var prevPromise = prevDateArg
       ? API.evalAxon(ctx.attestKey, ctx.projectName,
-          'view_MBCxReport_CustomerView_Output(' + ctx.siteRef + ', ' + prevDateArg +
+          'view_MBCxReport_CustomerView_Output(' + siteArg + ', ' + prevDateArg +
           ', 10%, @nav:rule.all, "Fault List", "", "Show All")')
         .catch(function (err) {
           console.warn('[FaultList] Previous-period fetch failed (New flags skipped):', err);
@@ -318,6 +324,8 @@ window.mbcxDashboard.components.FaultList = {
     Promise.all([API.evalAxon(ctx.attestKey, ctx.projectName, axon), recentPromise, prevPromise])
       .then(function (results) {
         var parsed = HP.parseGrid(results[0]);
+        console.info('[FaultList] grid cols:', JSON.stringify(parsed.cols));
+        if (parsed.rows[0]) console.info('[FaultList] first row full:', JSON.stringify(parsed.rows[0]));
         if (!parsed.rows.length) {
           var tbody = container.querySelector('#flTbody');
           if (tbody) tbody.innerHTML = '<tr><td style="padding:24px;color:#9CA3AF;font-size:12px;text-align:center;">No faults returned for this site and date range.</td></tr>';
@@ -396,10 +404,18 @@ window.mbcxDashboard.components.FaultList = {
         return String(v);
       }
 
+      var siteDisVal = '';
+      try {
+        var _idObj = r.id;
+        if (_idObj && _idObj.siteRef && _idObj.siteRef.dis) siteDisVal = _idObj.siteRef.dis;
+      } catch (e) {}
+      if (!siteDisVal) siteDisVal = strVal('siteRef');
+
       return {
         id:            i,
         equipment:     strVal('equipment'),
         faultName:     strVal('faultName'),
+        site:          siteDisVal,
         sevNorm:       numVal('sevNorm'),
         sumDur:        numVal('sumDur'),
         faultActive:   numVal('faultActive'),

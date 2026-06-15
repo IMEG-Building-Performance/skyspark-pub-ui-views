@@ -160,7 +160,8 @@ window.mbcxDashboard.components.TerminalUnits = {
     var dateArg = (ctx.datesStart && ctx.datesEnd)
       ? ctx.datesStart + '..' + ctx.datesEnd
       : 'today()';
-    var expr = 'view_pub_mbcxDashboard_VAVs_table(' + ctx.siteRef + ', ' + dateArg + ')';
+    var _siteArg = window.mbcxDashboard.siteAxonArg ? window.mbcxDashboard.siteAxonArg(ctx) : ctx.siteRef;
+    var expr = 'view_pub_mbcxDashboard_VAVs_table(' + _siteArg + ', ' + dateArg + ')';
 
     API.evalAxon(ctx.attestKey, ctx.projectName, expr)
       .then(function (grid) {
