@@ -69,8 +69,10 @@ window.mbcxDashboard.siteSelector = (function () {
 
       // "All Sites" row (always shown, hidden when filtering)
       if (!q) {
-        var allRow = el('div', 'ss-item ss-item--all' + (pendingRefs[0] === '__all__' ? ' ss-item--checked' : ''));
-        var allCk  = el('span', 'ss-ck', pendingRefs[0] === '__all__' ? '☑' : '☐');
+        var allChecked = pendingRefs[0] === '__all__';
+        var allRow = el('div', 'ss-item ss-item--all' + (allChecked ? ' ss-item--checked' : ''));
+        var allCk  = el('span', 'ss-ck');
+        allCk.innerHTML = allChecked ? '&#9745;' : '&#9744;';
         var allLbl = el('span', '', 'All Sites');
         allRow.appendChild(allCk);
         allRow.appendChild(allLbl);
@@ -101,7 +103,8 @@ window.mbcxDashboard.siteSelector = (function () {
       filtered.forEach(function (s) {
         var checked = isAllSelected || pendingRefs.indexOf(s.ref) !== -1;
         var item = el('div', 'ss-item' + (checked ? ' ss-item--checked' : ''));
-        var ck   = el('span', 'ss-ck', checked ? '☑' : '☐');
+        var ck   = el('span', 'ss-ck');
+        ck.innerHTML = checked ? '&#9745;' : '&#9744;';
         var lbl  = el('span', '', s.dis);
         item.appendChild(ck);
         item.appendChild(lbl);

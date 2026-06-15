@@ -23,7 +23,11 @@ window.mbcxDashboard = window.mbcxDashboard || {};
   var CSS_ID   = 'mbcxDashboardCSS';
   var CSS_PATH = '/pub/ui/mbcxDashboard/mbcxDashboardStyles.css';
   var _fetchGen = 0;
-  var STATE_KEY = 'mbcxDashboard_state';
+  var STATE_KEY_PREFIX = 'mbcxDashboard_state';
+
+  function _stateKey(projectName) {
+    return projectName ? STATE_KEY_PREFIX + '_' + projectName : STATE_KEY_PREFIX;
+  }
 
   function loadStyles() {
     if (document.getElementById(CSS_ID)) return;
@@ -34,14 +38,18 @@ window.mbcxDashboard = window.mbcxDashboard || {};
     document.head.appendChild(link);
   }
 
-  function _saveState(obj) {
-    try { sessionStorage.setItem(STATE_KEY, JSON.stringify(obj)); } catch (e) {}
+  function _saveState(obj, projectName) {
+    try { sessionStorage.setItem(_stateKey(projectName), JSON.stringify(obj)); } catch (e) {}
   }
 
-  function _loadState() {
+  function _loadState(projectName) {
     try {
-      var s = sessionStorage.getItem(STATE_KEY);
-      return s ? JSON.parse(s) : null;
+      var s = sessionStorage.getItem(_stateKey(projectName));
+      if (!s) return null;
+      var parsed = JSON.parse(s);
+      // Guard: never restore state from a different project
+      if (parsed && parsed.projectName && projectName && parsed.projectName !== projectName) return null;
+      return parsed;
     } catch (e) { return null; }
   }
 
@@ -99,8 +107,6 @@ window.mbcxDashboard = window.mbcxDashboard || {};
 
     _showLoadingOverlay(container);
 
-    var saved = _loadState();
-
     // Attempt SkySpark session
     var attestKey = null, projectName = null, siteRef = null;
     try {
@@ -110,6 +116,9 @@ window.mbcxDashboard = window.mbcxDashboard || {};
     } catch (e) {
       console.warn('[mbcxDashboard] No SkySpark session — using demo data.');
     }
+
+    // Load state scoped to THIS project — never bleed across projects
+    var saved = _loadState(projectName);
 
     // Read site view variable (Ref) — returns a Fantom proxy
     if (attestKey) {
@@ -186,7 +195,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
               ctx.siteName = dis;
               var el = container.querySelector('#mbcxDashTitleSite');
               if (el) el.textContent = 'MBCx Dashboard — ' + dis;
-              _saveState({ siteRef: ctx.siteRef, datesStart: ctx.datesStart, datesEnd: ctx.datesEnd, siteName: dis, tab: NS.App._activeTab });
+              _saveState({ projectName: projectName, siteRef: ctx.siteRef, datesStart: ctx.datesStart, datesEnd: ctx.datesEnd, siteName: dis, tab: NS.App._activeTab }, projectName);
             }
           })
           .catch(function () {});
