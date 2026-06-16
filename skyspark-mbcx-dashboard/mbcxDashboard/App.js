@@ -11,6 +11,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
     trends:     '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L8 10.414l1.293 1.293a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>',
     meetings:   '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/></svg>',
     prep:       '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/></svg>',
+    tenant:     '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z"/><path fill-rule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clip-rule="evenodd"/></svg>',
     chevron:    '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>',
     config:     '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path d="M5 4a1 1 0 00-2 0v7.268a2 2 0 000 3.464V16a1 1 0 102 0v-1.268a2 2 0 000-3.464V4zm6 0a1 1 0 10-2 0v1.268a2 2 0 000 3.464V16a1 1 0 102 0V8.732a2 2 0 000-3.464V4zm5 2a1 1 0 112 0v7.268a2 2 0 010 3.464V16a1 1 0 11-2 0v-.268a2 2 0 010-3.464V6z"/></svg>'
   };
@@ -38,7 +39,8 @@ window.mbcxDashboard = window.mbcxDashboard || {};
     { key: 'meetings',   label: 'Meetings' },
     // TODO(auth): meeting-prep is an internal view — once user roles are
     // available, hide it for non-elevated users instead of listing it here.
-    { key: 'meeting-prep', label: 'Meeting Prep' }
+    { key: 'meeting-prep', label: 'Meeting Prep' },
+    { key: 'tenant-allocation', label: 'Tenant Allocation' }
   ];
 
   var _dateRangeOptions = [
@@ -229,6 +231,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         MeetingPrep:    window.mbcxDashboard.components.MeetingPrep,
         TrendingView:   window.mbcxDashboard.components.TrendingView,
         Compliance:     window.mbcxDashboard.components.Compliance,
+        TenantAllocation: window.mbcxDashboard.components.TenantAllocation,
         FaultLog:       window.mbcxDashboard.components.FaultLog,
         Footer:         window.mbcxDashboard.components.Footer
       };
@@ -709,6 +712,12 @@ window.mbcxDashboard = window.mbcxDashboard || {};
           co.EquipmentView.initLive(content, ctx || null);
         } else {
           content.innerHTML = '<div class="page" style="padding:32px;color:#9ca3af;">Equipment view not loaded.</div>';
+        }
+      }
+      else if (tab === 'tenant-allocation') {
+        if (co.TenantAllocation) {
+          content.innerHTML = co.TenantAllocation.renderPage();
+          co.TenantAllocation.initLive(content, ctx || null);
         }
       }
       else if (tab === 'config') {
