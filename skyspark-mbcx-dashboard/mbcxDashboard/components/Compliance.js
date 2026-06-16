@@ -961,46 +961,46 @@ window.mbcxDashboard.components.Compliance = (function () {
     var API = NS.api;
     var dates = _ctx.datesStart + '..' + _ctx.datesEnd;
     var navRef = _siteArgForCompliance(_ctx);
-    var axon = 'try view_complianceSummary_Equiptable(' + navRef + ', ' + dates + ') catch (ex) toGrid([{errMsg: ex->msg}])';
+    var axon = 'view_complianceSummary_Equiptable(' + navRef + ', ' + dates + ')';
 
-    var attempts = 0;
-    var maxAttempts = 3;
-    return new Promise(function (resolve) {
-      function attempt() {
-        attempts++;
-        API.evalAxon(_ctx.attestKey, _ctx.projectName, axon)
-          .then(function (grid) {
-            if (!grid || !grid.rows || !grid.rows.length) {
-              if (attempts < maxAttempts) {
-                setTimeout(attempt, 1500 * attempts);
-                return;
-              }
-              _showEquipEmpty();
-              resolve();
-              return;
-            }
-            // Server-side Axon error caught via try/catch wrapper
-            if (grid.rows.length === 1 && grid.rows[0].errMsg != null) {
-              var msg = String(grid.rows[0].errMsg);
-              console.warn('[Compliance] Equiptable server error:', msg);
-              _showEquipError(new Error(msg));
-              resolve();
-              return;
-            }
-            _parseEquipGrid(grid);
-            _renderEquipButtons();
-            _updateOverviewStats();
-            _onSelectAll();
-            resolve();
-          })
-          .catch(function (err) {
-            if (attempts < maxAttempts) {
-              setTimeout(attempt, 1500 * attempts);
-              return;
-            }
-            console.warn('[Compliance] Equipment table fetch failed:', err);
-            _showEquipError(err);
-            resolve();
+    console.info('[Compliance] Equiptable axon:', axon);
+
+    // Direct fetch to capture raw response for diagnosis
+    var body = 'ver: "3.0"\nexpr\n"' + axon.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+    return fetch('/api/' + _ctx.projectName + '/eval', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'text/zinc',
+        'Accept': 'application/json',
+        'Attest-Key': _ctx.attestKey
+      },
+      body: body
+    }).then(function (r) {
+      console.info('[Compliance] Equiptable HTTP status:', r.status, 'headers:', r.headers.get('Content-Type'), 'Content-Length:', r.headers.get('Content-Length'));
+      return r.text();
+    }).then(function (txt) {
+      console.info('[Compliance] Equiptable raw response length:', txt.length, 'first 500 chars:', txt.slice(0, 500));
+      if (!txt) {
+        _showEquipError(new Error('Empty response from server'));
+        return;
+      }
+      var data;
+      try { data = JSON.parse(txt); }
+      catch (e) { _showEquipError(new Error('Invalid JSON: ' + txt.slice(0, 200))); return; }
+
+      var grid = API.unwrapGrid(data);
+      if (!grid || !grid.rows || !grid.rows.length) {
+        _showEquipEmpty();
+        return;
+      }
+      _parseEquipGrid(grid);
+      _renderEquipButtons();
+      _updateOverviewStats();
+      _onSelectAll();
+    }).catch(function (err) {
+      console.warn('[Compliance] Equipment table fetch failed:', err);
+      _showEquipError(err);
           });
       }
       attempt();
