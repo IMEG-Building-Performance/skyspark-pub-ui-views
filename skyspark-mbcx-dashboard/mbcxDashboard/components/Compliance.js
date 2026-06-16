@@ -957,7 +957,7 @@ window.mbcxDashboard.components.Compliance = (function () {
   }
 
   function _loadEquipTable() {
-    if (!_ctx || !_ctx.attestKey) return;
+    if (!_ctx || !_ctx.attestKey) return Promise.resolve();
     var API = NS.api;
     var dates = _ctx.datesStart + '..' + _ctx.datesEnd;
     var navRef = _siteArgForCompliance(_ctx);
@@ -965,33 +965,38 @@ window.mbcxDashboard.components.Compliance = (function () {
 
     var attempts = 0;
     var maxAttempts = 3;
-    function attempt() {
-      attempts++;
-      API.evalAxon(_ctx.attestKey, _ctx.projectName, axon)
-        .then(function (grid) {
-          if (!grid || !grid.rows || !grid.rows.length) {
+    return new Promise(function (resolve) {
+      function attempt() {
+        attempts++;
+        API.evalAxon(_ctx.attestKey, _ctx.projectName, axon)
+          .then(function (grid) {
+            if (!grid || !grid.rows || !grid.rows.length) {
+              if (attempts < maxAttempts) {
+                setTimeout(attempt, 1500 * attempts);
+                return;
+              }
+              _showEquipEmpty();
+              resolve();
+              return;
+            }
+            _parseEquipGrid(grid);
+            _renderEquipButtons();
+            _updateOverviewStats();
+            _onSelectAll();
+            resolve();
+          })
+          .catch(function (err) {
             if (attempts < maxAttempts) {
               setTimeout(attempt, 1500 * attempts);
               return;
             }
-            _showEquipEmpty();
-            return;
-          }
-          _parseEquipGrid(grid);
-          _renderEquipButtons();
-          _updateOverviewStats();
-          _onSelectAll();
-        })
-        .catch(function (err) {
-          if (attempts < maxAttempts) {
-            setTimeout(attempt, 1500 * attempts);
-            return;
-          }
-          console.warn('[Compliance] Equipment table fetch failed:', err);
-          _showEquipError(err);
-        });
-    }
-    attempt();
+            console.warn('[Compliance] Equipment table fetch failed:', err);
+            _showEquipError(err);
+            resolve();
+          });
+      }
+      attempt();
+    });
   }
 
   function _parseEquipGrid(grid) {
@@ -1646,8 +1651,11 @@ window.mbcxDashboard.components.Compliance = (function () {
     _bindScrollHint();
 
     _loadComplianceCards().then(function () {
-      _loadEquipTable();
-      _loadAuditReport();
+      _loadEquipTable().then(function () {
+        _loadAuditReport();
+      }).catch(function () {
+        _loadAuditReport();
+      });
     });
   }
 
