@@ -111,7 +111,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
   }
 
   function _faults() {
-    return _live || _DEMO.newFaults;
+    return _live !== null ? _live : _DEMO.newFaults;
   }
 
   function _defaultState() {
@@ -393,7 +393,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     return [
       '<div class="mp-section">',
       '  <h3 class="mp-section-title">New faults <span class="mp-section-sub">' +
-           (_live ? 'live fault list &middot; dashboard date range' : 'sample data &middot; since ' + _DEMO.lastMeeting) + '</span>',
+           (_live !== null ? 'live fault list &middot; dashboard date range' : 'sample data &middot; since ' + _DEMO.lastMeeting) + '</span>',
       '    <button class="mp-act mp-link" data-gotab="fault-list">Full Fault List &#8599;</button>',
       '    <button class="mp-act mp-link" data-gotab="fault-log">Fault Log &#8599;</button>',
       '  </h3>',
@@ -725,7 +725,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         '      </div>',
         '      <div class="mp-badges">',
         '        <span class="mp-badge mp-badge--internal" title="Role gating not yet implemented — see TODO(auth) in MeetingPrep.js">Internal &middot; superuser only</span>',
-        '        <span class="mp-badge mp-badge--demo" title="All data on this page is sample data">Demo data</span>',
+        (_live !== null ? '' : '        <span class="mp-badge mp-badge--demo" title="All data on this page is sample data">Demo data</span>'),
         '      </div>',
         '    </div>',
         '    <div id="mpStage">' + _stageHtml() + '</div>',
@@ -742,13 +742,15 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       // Falls back to demo data when there's no session or the call fails.
       // TODO(data): the range should be "since the last meeting" once
       // meeting recs exist; for now it follows the dashboard date range.
-      if (ctx && ctx.attestKey && ctx.projectName && ctx.siteRef && !_live) {
+      var _hasSite = ctx && (ctx.siteRef || (ctx.siteRefs && ctx.siteRefs.length));
+      if (ctx && ctx.attestKey && ctx.projectName && _hasSite && !_live) {
         _loading = true;
+        var _siteArg = NS.siteAxonArg ? NS.siteAxonArg(ctx) : ctx.siteRef;
         var dateArg = (ctx.datesStart && ctx.datesEnd)
           ? ctx.datesStart + '..' + ctx.datesEnd
           : 'today()';
         var axon = 'view_MBCxReport_CustomerView_Output(' +
-          ctx.siteRef + ', ' + dateArg +
+          _siteArg + ', ' + dateArg +
           ', 10%, @nav:rule.all, "Fault List", "", "Show All")';
         NS.api.evalAxon(ctx.attestKey, ctx.projectName, axon)
           .then(function (grid) {
@@ -774,7 +776,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
                 _raw: r
               };
             }).filter(function (f) { return f.equipment || f.faultName; });
-            _live = faults.length ? faults : null;
+            _live = faults.length ? faults : [];
             _loading = false;
             rerenderStage();
           })

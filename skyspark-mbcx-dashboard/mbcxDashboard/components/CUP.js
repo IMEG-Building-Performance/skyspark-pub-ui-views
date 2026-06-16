@@ -346,9 +346,11 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       // Load real chart data when credentials are available
       var _hasCredentials = !!(ctx && ctx.attestKey && ctx.projectName && (ctx.siteRef || (ctx.siteRefs && ctx.siteRefs.length)));
       var _hasLoader      = !!(NS.evals && NS.evals.loadCupSummary);
-      var _isMultiSite    = ctx && ctx.siteRefs && ctx.siteRefs.length > 1 && !ctx.isAllSites
-        ? ctx.siteRefs.length > 1
-        : (ctx && ctx.isAllSites);
+      var _concreteSites = (ctx && ctx.siteRefs)
+        ? ctx.siteRefs.filter(function (r) { return r !== '__all__'; })
+        : [];
+      if (ctx && ctx.isAllSites && ctx.allSiteRefs) _concreteSites = ctx.allSiteRefs;
+      var _isMultiSite = _concreteSites.length > 1;
       if (_hasCredentials && _hasLoader) {
         if (_isMultiSite) {
           var _cupEl = document.querySelector('#cupCard');
