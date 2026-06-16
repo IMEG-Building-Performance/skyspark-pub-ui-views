@@ -67,17 +67,21 @@ window.mbcxDashboard = window.mbcxDashboard || {};
     try { localStorage.setItem('mbcxDashboard_config', JSON.stringify(cfg)); } catch (e) {}
   }
 
+  var _defaultVisibleTabs = { summary: true, faults: true, equipment: true };
+
   function _applyDefaults(cfg) {
     if (!cfg.tabVisibility) {
       cfg.tabVisibility = {};
-      _defaultTabOrder.forEach(function (t) { cfg.tabVisibility[t.key] = true; });
+      _defaultTabOrder.forEach(function (t) {
+        cfg.tabVisibility[t.key] = !!_defaultVisibleTabs[t.key];
+      });
     }
     if (!cfg.tabOrder) cfg.tabOrder = _defaultTabOrder.map(function (t) { return t.key; });
     // Merge in tabs added after the user's config was saved (e.g. a new
     // view) so they appear in the sidebar and on the Configuration page.
     _defaultTabOrder.forEach(function (t) {
       if (cfg.tabOrder.indexOf(t.key) === -1) cfg.tabOrder.push(t.key);
-      if (cfg.tabVisibility[t.key] === undefined) cfg.tabVisibility[t.key] = true;
+      if (cfg.tabVisibility[t.key] === undefined) cfg.tabVisibility[t.key] = !!_defaultVisibleTabs[t.key];
     });
     if (!cfg.defaultTab) cfg.defaultTab = 'summary';
     if (!cfg.dateRange) cfg.dateRange = 30;
@@ -846,6 +850,15 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         '</div>'
       ].join('\n');
 
+      var superSection = [
+        '<div class="cfg-section">',
+        '  <h3 class="cfg-section-title">Superuser</h3>',
+        '  <p class="cfg-section-desc">Push your current configuration to every user in this project.</p>',
+        '  <button class="cfg-btn cfg-btn-warn" id="cfgUpdateAllUsers">Update for All Users</button>',
+        '  <span id="cfgUpdateAllStatus" style="margin-left:8px;font-size:0.85em;"></span>',
+        '</div>'
+      ].join('\n');
+
       return [
         '<div class="page cfg-page">',
         '  <h2 class="cfg-title">Configuration</h2>',
@@ -854,6 +867,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         landingSection,
         dateSection,
         themeSection,
+        superSection,
         '</div>'
       ].join('\n');
     },
@@ -915,6 +929,37 @@ window.mbcxDashboard = window.mbcxDashboard || {};
           NS.App._config.theme = themeSelect.value;
           _saveConfig(NS.App._config);
           NS.App._applyTheme(container);
+        });
+      }
+
+      // Update for All Users button
+      var updateAllBtn = content.querySelector('#cfgUpdateAllUsers');
+      var updateAllStatus = content.querySelector('#cfgUpdateAllStatus');
+      if (updateAllBtn) {
+        updateAllBtn.addEventListener('click', function () {
+          if (!confirm('This will overwrite every user's configuration with your current settings. Continue?')) return;
+          updateAllBtn.disabled = true;
+          updateAllStatus.textContent = 'Updating…';
+          var cfgCtx = NS.App._lastCtx;
+          if (!cfgCtx || !cfgCtx.attestKey) {
+            updateAllStatus.textContent = 'No session context.';
+            updateAllBtn.disabled = false;
+            return;
+          }
+          var json = JSON.stringify(NS.App._config).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+          var axon = 'do ' +
+            'recs: readAll(mbcxUserConfig); ' +
+            'recs.each(rec => commit(diff(rec, {mbcxPrefs: "' + json + '"}))); ' +
+            'recs.size ' +
+            'end';
+          NS.api.evalAxon(cfgCtx.attestKey, cfgCtx.projectName, axon).then(function () {
+            updateAllStatus.textContent = 'Done — all users updated.';
+            updateAllBtn.disabled = false;
+          }).catch(function (e) {
+            console.warn('[mbcxDashboard] Update all users failed:', e);
+            updateAllStatus.textContent = 'Failed: ' + e.message;
+            updateAllBtn.disabled = false;
+          });
         });
       }
     }

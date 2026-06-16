@@ -2341,6 +2341,17 @@
 }
 #mbcxDashboard .cfg-select:focus { outline: none; border-color: var(--imeg-blue); }
 
+#mbcxDashboard .cfg-btn {
+  display: inline-block; padding: 8px 18px; border-radius: 6px;
+  font-size: .85rem; font-family: inherit; font-weight: 500;
+  border: none; cursor: pointer; transition: background 0.15s, opacity 0.15s;
+}
+#mbcxDashboard .cfg-btn:disabled { opacity: .5; cursor: default; }
+#mbcxDashboard .cfg-btn-warn {
+  background: #f59e0b; color: #fff;
+}
+#mbcxDashboard .cfg-btn-warn:hover:not(:disabled) { background: #d97706; }
+
 /* ── Compliance ─────────────────────────────────────────────────────── */
 #mbcxDashboard .comp-page {
   padding: 20px 24px 32px; box-sizing: border-box;
