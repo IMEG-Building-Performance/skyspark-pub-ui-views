@@ -346,7 +346,23 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       // Load real chart data when credentials are available
       var _hasCredentials = !!(ctx && ctx.attestKey && ctx.projectName && (ctx.siteRef || (ctx.siteRefs && ctx.siteRefs.length)));
       var _hasLoader      = !!(NS.evals && NS.evals.loadCupSummary);
+      var _isMultiSite    = ctx && ctx.siteRefs && ctx.siteRefs.length > 1 && !ctx.isAllSites
+        ? ctx.siteRefs.length > 1
+        : (ctx && ctx.isAllSites);
       if (_hasCredentials && _hasLoader) {
+        if (_isMultiSite) {
+          var _cupEl = document.querySelector('#cupCard');
+          if (_cupEl) {
+            var _notice = _cupEl.querySelector('.cup-multi-site-notice');
+            if (!_notice) {
+              _notice = document.createElement('div');
+              _notice.className = 'cup-multi-site-notice';
+              _notice.style.cssText = 'margin:12px 0;padding:10px 14px;background:#FEF3C7;border:1px solid #D97706;border-radius:6px;font-size:12px;color:#92400E;';
+              _notice.textContent = 'Central Utility Plant data is only available for a single site. Please select one site to view CUP charts.';
+              _cupEl.insertBefore(_notice, _cupEl.firstChild);
+            }
+          }
+        } else {
         var _siteArg = window.mbcxDashboard.siteAxonArg ? window.mbcxDashboard.siteAxonArg(ctx) : ctx.siteRef;
         NS.evals.loadCupSummary(ctx.attestKey, ctx.projectName, _siteArg)
           .then(function (chartData) {
@@ -382,6 +398,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
           .catch(function (err) {
             console.warn('[mbcxDashboard] CUP chart load failed:', err);
           });
+        } // end else (single site)
       }
     }
   };
