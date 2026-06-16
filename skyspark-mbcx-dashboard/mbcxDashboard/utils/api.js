@@ -58,8 +58,8 @@ window.mbcxDashboard.api = window.mbcxDashboard.api || {};
   // The eval endpoint wraps results in a single-row grid with a 'val' column.
   API.unwrapGrid = function (data) {
     if (data.meta && data.meta.err) {
-      console.warn('[mbcxDashboard] Haystack error grid:', data.meta.dis || data.meta.err);
-      return { cols: [], rows: [] };
+      var msg = data.meta.dis || data.meta.err || 'Haystack error grid';
+      throw new Error(String(msg));
     }
     if (
       data.rows && data.rows.length === 1 &&
@@ -68,8 +68,8 @@ window.mbcxDashboard.api = window.mbcxDashboard.api || {};
     ) {
       var inner = data.rows[0].val;
       if (inner && inner.meta && inner.meta.err) {
-        console.warn('[mbcxDashboard] Haystack error grid (inner):', inner.meta.dis || inner.meta.err);
-        return { cols: [], rows: [] };
+        var innerMsg = inner.meta.dis || inner.meta.err || 'Haystack error grid';
+        throw new Error(String(innerMsg));
       }
       if (inner && inner.rows && inner.cols) return inner;
       return { cols: [], rows: [] };

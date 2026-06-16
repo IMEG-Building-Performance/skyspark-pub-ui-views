@@ -961,7 +961,7 @@ window.mbcxDashboard.components.Compliance = (function () {
     var API = NS.api;
     var dates = _ctx.datesStart + '..' + _ctx.datesEnd;
     var navRef = _siteArgForCompliance(_ctx);
-    var axon = 'do try view_complianceSummary_Equiptable(' + navRef + ', ' + dates + ') catch(ex) toGrid([{errMsg: ex.toStr}]) end';
+    var axon = 'try view_complianceSummary_Equiptable(' + navRef + ', ' + dates + ') catch (ex) toGrid([{errMsg: ex->msg}])';
 
     var attempts = 0;
     var maxAttempts = 3;
