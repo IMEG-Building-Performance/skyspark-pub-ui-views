@@ -275,6 +275,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         // TODO(auth): only render Meeting Prep for elevated users — and
         // enforce the role server-side in any Axon funcs the view calls.
         '    <button class="dash-sb-nav-item" data-tab="meeting-prep">' + _icons.prep + '<span>Meeting Prep</span></button>',
+        '    <button class="dash-sb-nav-item" data-tab="tenant-allocation">' + _icons.tenant + '<span>Tenant Allocation</span></button>',
         '  </nav>',
 
         '  <div class="dash-sb-footer">',
