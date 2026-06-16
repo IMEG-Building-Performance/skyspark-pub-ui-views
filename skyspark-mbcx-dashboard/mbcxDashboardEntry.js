@@ -17,6 +17,7 @@ var mbcxDashboardHandler = {};
     { src: 'evals/loadData.js' },
     { src: 'evals/loadAhuData.js' },
     { src: 'evals/loadCupData.js' },
+    { src: 'evals/loadMeterAllocationData.js' },
     { src: 'components/Header.js' },
     { src: 'components/BuildingMeters.js' },
     { src: 'components/CUP.js' },
@@ -37,6 +38,7 @@ var mbcxDashboardHandler = {};
     { src: 'components/SiteSelector.js' },
     { src: 'components/Compliance.js' },
     { src: 'components/FaultLog.js' },
+    { src: 'components/TenantAllocation.js' },
     { src: 'App.js' },
     { src: 'mbcxDashboardUI.js' }
   ];
