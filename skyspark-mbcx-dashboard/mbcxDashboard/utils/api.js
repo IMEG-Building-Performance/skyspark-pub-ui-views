@@ -22,7 +22,11 @@ window.mbcxDashboard.api = window.mbcxDashboard.api || {};
           throw new Error('HTTP ' + r.status + ' — ' + body.slice(0, 300));
         });
       }
-      return r.json();
+      return r.text().then(function (txt) {
+        if (!txt) throw new Error('Empty response from server');
+        try { return JSON.parse(txt); }
+        catch (e) { throw new Error('Invalid JSON: ' + txt.slice(0, 200)); }
+      });
     });
   }
 

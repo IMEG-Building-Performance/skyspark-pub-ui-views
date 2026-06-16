@@ -969,8 +969,6 @@ window.mbcxDashboard.components.Compliance = (function () {
     var dates = _ctx.datesStart + '..' + _ctx.datesEnd;
 
     var navRef = _siteArgForCompliance(_ctx);
-    var navRefOld = _siteNavRef(_ctx.siteRef);
-    console.info('[Compliance] Equiptable navRef new:', navRef, '| old:', navRefOld, '| match:', navRef === navRefOld);
     var axon = 'view_complianceSummary_Equiptable(' + navRef + ', ' + dates + ')';
     API.evalAxon(_ctx.attestKey, _ctx.projectName, axon)
       .then(function (grid) {
