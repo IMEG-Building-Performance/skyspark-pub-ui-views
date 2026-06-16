@@ -970,6 +970,7 @@ window.mbcxDashboard.components.Compliance = (function () {
 
     var navRef = _siteArgForCompliance(_ctx);
     var axon = 'view_complianceSummary_Equiptable(' + navRef + ', ' + dates + ')';
+    console.info('[Compliance] Equiptable axon:', axon);
     API.evalAxon(_ctx.attestKey, _ctx.projectName, axon)
       .then(function (grid) {
         if (!grid || !grid.rows || !grid.rows.length) {
