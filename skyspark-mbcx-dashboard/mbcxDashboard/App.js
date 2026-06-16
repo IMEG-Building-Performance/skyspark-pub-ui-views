@@ -937,9 +937,9 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       var updateAllStatus = content.querySelector('#cfgUpdateAllStatus');
       if (updateAllBtn) {
         updateAllBtn.addEventListener('click', function () {
-          if (!confirm('This will overwrite every user's configuration with your current settings. Continue?')) return;
+          if (!confirm("This will overwrite every user\u0027s configuration with your current settings. Continue?")) return;
           updateAllBtn.disabled = true;
-          updateAllStatus.textContent = 'Updating…';
+          updateAllStatus.textContent = 'Updating...';
           var cfgCtx = NS.App._lastCtx;
           if (!cfgCtx || !cfgCtx.attestKey) {
             updateAllStatus.textContent = 'No session context.';
@@ -953,7 +953,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
             'recs.size ' +
             'end';
           NS.api.evalAxon(cfgCtx.attestKey, cfgCtx.projectName, axon).then(function () {
-            updateAllStatus.textContent = 'Done — all users updated.';
+            updateAllStatus.textContent = 'Done - all users updated.';
             updateAllBtn.disabled = false;
           }).catch(function (e) {
             console.warn('[mbcxDashboard] Update all users failed:', e);
