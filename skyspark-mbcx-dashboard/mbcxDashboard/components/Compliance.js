@@ -960,24 +960,38 @@ window.mbcxDashboard.components.Compliance = (function () {
     if (!_ctx || !_ctx.attestKey) return;
     var API = NS.api;
     var dates = _ctx.datesStart + '..' + _ctx.datesEnd;
-
     var navRef = _siteArgForCompliance(_ctx);
     var axon = 'view_complianceSummary_Equiptable(' + navRef + ', ' + dates + ')';
-    API.evalAxon(_ctx.attestKey, _ctx.projectName, axon)
-      .then(function (grid) {
-        if (!grid || !grid.rows || !grid.rows.length) {
-          _showEquipEmpty();
-          return;
-        }
-        _parseEquipGrid(grid);
-        _renderEquipButtons();
-        _updateOverviewStats();
-        _onSelectAll();
-      })
-      .catch(function (err) {
-        console.warn('[Compliance] Equipment table fetch failed:', err);
-        _showEquipError(err);
-      });
+
+    var attempts = 0;
+    var maxAttempts = 3;
+    function attempt() {
+      attempts++;
+      API.evalAxon(_ctx.attestKey, _ctx.projectName, axon)
+        .then(function (grid) {
+          if (!grid || !grid.rows || !grid.rows.length) {
+            if (attempts < maxAttempts) {
+              setTimeout(attempt, 1500 * attempts);
+              return;
+            }
+            _showEquipEmpty();
+            return;
+          }
+          _parseEquipGrid(grid);
+          _renderEquipButtons();
+          _updateOverviewStats();
+          _onSelectAll();
+        })
+        .catch(function (err) {
+          if (attempts < maxAttempts) {
+            setTimeout(attempt, 1500 * attempts);
+            return;
+          }
+          console.warn('[Compliance] Equipment table fetch failed:', err);
+          _showEquipError(err);
+        });
+    }
+    attempt();
   }
 
   function _parseEquipGrid(grid) {
