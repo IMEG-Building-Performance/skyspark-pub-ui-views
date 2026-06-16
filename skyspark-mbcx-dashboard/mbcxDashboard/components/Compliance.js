@@ -961,7 +961,7 @@ window.mbcxDashboard.components.Compliance = (function () {
     var API = NS.api;
     var dates = _ctx.datesStart + '..' + _ctx.datesEnd;
     var navRef = _siteArgForCompliance(_ctx);
-    var axon = 'view_complianceSummary_Equiptable(' + navRef + ', ' + dates + ')';
+    var axon = 'do try view_complianceSummary_Equiptable(' + navRef + ', ' + dates + ') catch(ex) toGrid([{errMsg: ex.toStr}]) end';
 
     var attempts = 0;
     var maxAttempts = 3;
@@ -976,6 +976,14 @@ window.mbcxDashboard.components.Compliance = (function () {
                 return;
               }
               _showEquipEmpty();
+              resolve();
+              return;
+            }
+            // Server-side Axon error caught via try/catch wrapper
+            if (grid.rows.length === 1 && grid.rows[0].errMsg != null) {
+              var msg = String(grid.rows[0].errMsg);
+              console.warn('[Compliance] Equiptable server error:', msg);
+              _showEquipError(new Error(msg));
               resolve();
               return;
             }
