@@ -29,6 +29,14 @@ window.mbcxDashboard.components.Compliance = (function () {
     }
   }
 
+  function _siteArgForCompliance(ctx) {
+    var refs = ctx.siteRefs;
+    if (!refs || refs.length <= 1) return _siteNavRef(ctx.siteRef);
+    var concrete = refs.filter(function (r) { return r !== '__all__'; });
+    if (concrete.length <= 1) return _siteNavRef(concrete[0] || ctx.siteRef);
+    return '[' + concrete.map(function (r) { return _siteNavRef(r); }).join(', ') + ']';
+  }
+
   var CONSTRUCTION_SVG = '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' +
     '<path d="M2 20h20"/>' +
     '<path d="M5 20V8l7-5 7 5v12"/>' +
@@ -589,7 +597,7 @@ window.mbcxDashboard.components.Compliance = (function () {
   function _loadComplianceCards() {
     if (!_ctx || !_ctx.attestKey) return;
     var API = NS.api;
-    var navRef = _siteNavRef(_ctx.siteRef);
+    var navRef = _siteArgForCompliance(_ctx);
     var dates = _ctx.datesStart + '..' + _ctx.datesEnd;
 
     API.evalAxon(_ctx.attestKey, _ctx.projectName,
@@ -670,7 +678,7 @@ window.mbcxDashboard.components.Compliance = (function () {
   function _loadPieChart(equipRef) {
     if (!_ctx || !_ctx.attestKey) return;
     var API = NS.api;
-    var navRef = _siteNavRef(_ctx.siteRef);
+    var navRef = _siteArgForCompliance(_ctx);
     var dates = _ctx.datesStart + '..' + _ctx.datesEnd;
     var equipArg = equipRef || 'null';
 
@@ -797,7 +805,7 @@ window.mbcxDashboard.components.Compliance = (function () {
   function _loadAuditReport() {
     if (!_ctx || !_ctx.attestKey) return;
     var API = NS.api;
-    var navRef = _siteNavRef(_ctx.siteRef);
+    var navRef = _siteArgForCompliance(_ctx);
     var dates = _ctx.datesStart + '..' + _ctx.datesEnd;
 
     var axon = 'view_ReportOR_Xq(' + navRef + ', ' + dates + ', 1hr)';
@@ -958,10 +966,9 @@ window.mbcxDashboard.components.Compliance = (function () {
   function _loadEquipTable() {
     if (!_ctx || !_ctx.attestKey) return;
     var API = NS.api;
-    var siteRef = _ctx.siteRef;
     var dates = _ctx.datesStart + '..' + _ctx.datesEnd;
 
-    var navRef = _siteNavRef(siteRef);
+    var navRef = _siteArgForCompliance(_ctx);
     var axon = 'view_complianceSummary_Equiptable(' + navRef + ', ' + dates + ')';
     API.evalAxon(_ctx.attestKey, _ctx.projectName, axon)
       .then(function (grid) {
@@ -1028,12 +1035,11 @@ window.mbcxDashboard.components.Compliance = (function () {
     var chartsEl = _container.querySelector('#compCharts');
     if (chartsEl) chartsEl.innerHTML = '<div class="comp-loading">Loading charts…</div>';
 
-    var siteRef = _ctx.siteRef;
     var dates = _ctx.datesStart + '..' + _ctx.datesEnd;
     var equipName = sp.equip.replace(/"/g, '\\"');
     var rollup = _plotRollup;
 
-    var navRef = _siteNavRef(siteRef);
+    var navRef = _siteArgForCompliance(_ctx);
     var equipArg = sp.equipRef || ('"' + equipName + '"');
     var axon = 'view_complianceDashboard_equipPlot(' + navRef + ', ' + dates + ', ' + equipArg + ', "Compliance by Space", ' + rollup + ')';
     _destroyLineCharts();
@@ -1363,7 +1369,7 @@ window.mbcxDashboard.components.Compliance = (function () {
 
     if (!_ctx || !_ctx.attestKey) return;
     var API = NS.api;
-    var navRef = _siteNavRef(_ctx.siteRef);
+    var navRef = _siteArgForCompliance(_ctx);
     var dates = _ctx.datesStart + '..' + _ctx.datesEnd;
 
     var gen = ++_allChartsGen;
