@@ -595,28 +595,21 @@ window.mbcxDashboard.components.Compliance = (function () {
   // ── Equipment list from Axon ───────────────────────────────────────
 
   function _loadComplianceCards() {
-    if (!_ctx || !_ctx.attestKey) return;
+    if (!_ctx || !_ctx.attestKey) return Promise.resolve();
     var API = NS.api;
     var navRef = _siteArgForCompliance(_ctx);
     var dates = _ctx.datesStart + '..' + _ctx.datesEnd;
 
-    API.evalAxon(_ctx.attestKey, _ctx.projectName,
-      'view_complianceSummary_complianceCard(' + navRef + ', ' + dates + ', 1)')
-      .then(function (grid) {
-        _updateKpiCard('Current', grid);
-      })
-      .catch(function (err) {
-        console.warn('[Compliance] Current card failed:', err);
-      });
-
-    API.evalAxon(_ctx.attestKey, _ctx.projectName,
-      'view_complianceSummary_complianceCard(' + navRef + ', ' + dates + ', 2)')
-      .then(function (grid) {
-        _updateKpiCard('Previous', grid);
-      })
-      .catch(function (err) {
-        console.warn('[Compliance] Previous card failed:', err);
-      });
+    return Promise.all([
+      API.evalAxon(_ctx.attestKey, _ctx.projectName,
+        'view_complianceSummary_complianceCard(' + navRef + ', ' + dates + ', 1)')
+        .then(function (grid) { _updateKpiCard('Current', grid); })
+        .catch(function (err) { console.warn('[Compliance] Current card failed:', err); }),
+      API.evalAxon(_ctx.attestKey, _ctx.projectName,
+        'view_complianceSummary_complianceCard(' + navRef + ', ' + dates + ', 2)')
+        .then(function (grid) { _updateKpiCard('Previous', grid); })
+        .catch(function (err) { console.warn('[Compliance] Previous card failed:', err); })
+    ]);
   }
 
   function _updateKpiCard(which, grid) {
@@ -1638,9 +1631,10 @@ window.mbcxDashboard.components.Compliance = (function () {
     window.addEventListener('resize', _onResize);
     _bindScrollHint();
 
-    _loadEquipTable();
-    _loadComplianceCards();
-    _loadAuditReport();
+    _loadComplianceCards().then(function () {
+      _loadEquipTable();
+      _loadAuditReport();
+    });
   }
 
   function _onResize() { _sizeBody(false); }
