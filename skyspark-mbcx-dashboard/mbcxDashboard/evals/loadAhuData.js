@@ -19,8 +19,8 @@ window.mbcxDashboard.evals = window.mbcxDashboard.evals || {};
     var API = window.mbcxDashboard.api;
 
     return Promise.all(NS.AHU_METRICS.map(function (m) {
-      var plotExpr  = 'view_pub_mbcxDashboard_AHUs(' + siteRef + ',' + m.id + ',false,false)';
-      var tableExpr = 'view_pub_mbcxDashboard_AHUs(' + siteRef + ',' + m.id + ',false,true)';
+      var plotExpr  = 'view_pub_mbcxDashboard_AHUs(' + siteRef + ',' + m.id + ',true,false)';
+      var tableExpr = 'view_pub_mbcxDashboard_AHUs(' + siteRef + ',' + m.id + ',true,true)';
 
       return Promise.all([
         API.evalAxon(attestKey, projectName, plotExpr),

@@ -270,7 +270,8 @@ window.mbcxDashboard.components.EquipmentView = (function () {
           var id = r.id && r.id.val ? r.id.val : (r.id || '');
           var dis = _strVal(r.navName) || _strVal(r.dis) || (r.id && r.id.dis ? r.id.dis : '') || id;
           var equipType = r.equipType ? _strVal(r.equipType) : _inferType(dis);
-          return { id: id, dis: dis, type: equipType, _raw: r };
+          var sparksLink = _strVal(r.sparksLink) || '';
+          return { id: id, dis: dis, type: equipType, sparksLink: sparksLink, _raw: r };
         }).filter(function (e) { return e.id; });
         _equipList.sort(function (a, b) { return a.dis.localeCompare(b.dis); });
         if (_equipList.length) {
@@ -318,7 +319,9 @@ window.mbcxDashboard.components.EquipmentView = (function () {
       '<button class="eq-selector-btn" id="eqSelectorBtn"><span>' + selDis + '</span><span class="eq-selector-arrow">▼</span></button>' +
       dropHtml +
     '</div>' +
-    (equip ? '<div class="eq-title">' + equip.dis + '</div><div class="eq-subtitle">' + (equip.type || '') + '</div>' : '<div class="eq-title">—</div>');
+    (equip ? '<div class="eq-title">' + equip.dis +
+      (equip.sparksLink ? ' <a class="fd-sparks-link fd-sparks-link-sm" href="' + equip.sparksLink + '" target="_blank" title="Open in SkySpark">SkySpark &#8599;</a>' : '') +
+      '</div><div class="eq-subtitle">' + (equip.type || '') + '</div>' : '<div class="eq-title">—</div>');
 
     var btn = el.querySelector('#eqSelectorBtn');
     if (btn) btn.addEventListener('click', function (e) {
