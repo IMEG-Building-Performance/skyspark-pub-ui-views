@@ -83,7 +83,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
     // view) so they appear in the sidebar and on the Configuration page.
     _defaultTabOrder.forEach(function (t) {
       if (cfg.tabOrder.indexOf(t.key) === -1) cfg.tabOrder.push(t.key);
-      if (cfg.tabVisibility[t.key] === undefined) cfg.tabVisibility[t.key] = !!_defaultVisibleTabs[t.key];
+      if (cfg.tabVisibility[t.key] === undefined) cfg.tabVisibility[t.key] = true;
     });
     if (!cfg.defaultTab) cfg.defaultTab = 'summary';
     if (!cfg.dateRange) cfg.dateRange = 30;
