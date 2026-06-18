@@ -989,7 +989,8 @@ window.mbcxDashboard.components.Compliance = (function () {
       }
       var area = _extractStr(row.areaserved || row.areaServed || row.area || '');
       var pct = _extractNum(row.percentCompliant || row.pct || row.compliance);
-      return { equip: equipDis, equipRef: equipRef, area: area, pct: pct, _raw: row };
+      var sparksLink = _extractStr(row.sparksLink || '');
+      return { equip: equipDis, equipRef: equipRef, area: area, pct: pct, sparksLink: sparksLink, _raw: row };
     });
   }
 
@@ -1023,7 +1024,10 @@ window.mbcxDashboard.components.Compliance = (function () {
     if (!sp) return;
 
     var heading = _container.querySelector('#compChartHeading');
-    if (heading) heading.textContent = sp.equip + (sp.area ? ' — ' + sp.area : '');
+    if (heading) {
+      heading.innerHTML = (sp.equip + (sp.area ? ' — ' + sp.area : '')) +
+        (sp.sparksLink ? ' <a class="fd-sparks-link fd-sparks-link-sm" href="' + sp.sparksLink + '" target="_blank" title="Open in SkySpark">SkySpark &#8599;</a>' : '');
+    }
 
     var chartsEl = _container.querySelector('#compCharts');
     if (chartsEl) chartsEl.innerHTML = '<div class="comp-loading">Loading charts…</div>';
