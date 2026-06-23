@@ -183,21 +183,29 @@ window.mbcxDashboard.components.AHU = {
       return;
     }
 
+    console.log('[AHU ' + metric.id + '] tsCol:', tsCol, ' dataCols:', dataCols, ' rows:', rows.length);
+    console.log('[AHU ' + metric.id + '] first 3 rows:', JSON.stringify(rows.slice(0, 3), null, 2));
+
     // Group by (year, month), fleet average; values ÷ 100 so 1.0 = 100%
     var byYear = {};
     var accum  = {};
-    rows.forEach(function (r) {
+    var _skipped = { noTs: 0, badDate: 0, noNumeric: 0 };
+    rows.forEach(function (r, ri) {
       var tsVal = tsCol ? r[tsCol] : null;
-      if (!tsVal) return;
+      if (!tsVal) { _skipped.noTs++; return; }
       // Strip trailing Haystack tz name (e.g. " New_York") before parsing
-      var cleaned = String(tsVal).replace(/\s+[A-Z][A-Za-z_\/]+$/, '');
+      var raw = typeof tsVal === 'object' ? JSON.stringify(tsVal) : String(tsVal);
+      var cleaned = raw.replace(/\s+[A-Z][A-Za-z_\/]+$/, '');
       var d = new Date(cleaned);
       if (isNaN(d.getTime())) {
-        // Try extracting just YYYY-MM-DD
-        var m = String(tsVal).match(/^(\d{4})-(\d{2})-(\d{2})/);
+        var m = raw.match(/(\d{4})-(\d{2})-(\d{2})/);
         if (m) d = new Date(+m[1], +m[2] - 1, +m[3]);
       }
-      if (isNaN(d.getTime())) return;
+      if (isNaN(d.getTime())) {
+        _skipped.badDate++;
+        if (_skipped.badDate <= 3) console.warn('[AHU ' + metric.id + '] unparseable ts at row ' + ri + ':', tsVal, typeof tsVal);
+        return;
+      }
 
       var yr  = String(d.getFullYear());
       var mon = d.getMonth() + 1;
@@ -206,12 +214,16 @@ window.mbcxDashboard.components.AHU = {
         var v = r[c];
         if (v !== null && v !== undefined && typeof v === 'number') { sum += v; n++; }
       });
+      if (ri < 3 || mon === 6) {
+        console.log('[AHU ' + metric.id + '] row ' + ri + ': ts=' + raw + ' → ' + yr + '-' + mon + '  sum=' + sum + ' n=' + n);
+      }
       if (n > 0) {
         if (!byYear[yr]) { byYear[yr] = {}; accum[yr] = {}; }
-        var key = yr + '-' + mon;
         if (!accum[yr][mon]) accum[yr][mon] = { sum: 0, n: 0 };
         accum[yr][mon].sum += sum / n;
         accum[yr][mon].n   += 1;
+      } else {
+        _skipped.noNumeric++;
       }
     });
     Object.keys(accum).forEach(function (yr) {
@@ -220,6 +232,7 @@ window.mbcxDashboard.components.AHU = {
         byYear[yr][+mon] = +(a.sum / a.n / 100).toFixed(4);
       });
     });
+    console.log('[AHU ' + metric.id + '] skipped:', _skipped, ' byYear:', JSON.stringify(byYear));
 
     var years = Object.keys(byYear).sort();
     var prevPalette = { bg: 'rgba(156,163,175,0.45)', border: 'rgba(156,163,175,0.7)' };
