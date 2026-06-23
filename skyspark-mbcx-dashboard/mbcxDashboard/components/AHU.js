@@ -164,7 +164,7 @@ window.mbcxDashboard.components.AHU = {
       if (col === 'ts') { tsCol = col; return; }
       for (var i = 0; i < rows.length; i++) {
         var v = rows[i][col];
-        if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(v)) { tsCol = col; return; }
+        if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}/.test(v)) { tsCol = col; return; }
       }
     });
 
@@ -189,7 +189,14 @@ window.mbcxDashboard.components.AHU = {
     rows.forEach(function (r) {
       var tsVal = tsCol ? r[tsCol] : null;
       if (!tsVal) return;
-      var d = new Date(tsVal);
+      // Strip trailing Haystack tz name (e.g. " New_York") before parsing
+      var cleaned = String(tsVal).replace(/\s+[A-Z][A-Za-z_\/]+$/, '');
+      var d = new Date(cleaned);
+      if (isNaN(d.getTime())) {
+        // Try extracting just YYYY-MM-DD
+        var m = String(tsVal).match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (m) d = new Date(+m[1], +m[2] - 1, +m[3]);
+      }
       if (isNaN(d.getTime())) return;
 
       var yr  = String(d.getFullYear());
