@@ -48,11 +48,12 @@ window.mbcxDashboard.components.Compliance = (function () {
 
   function _skysparkEquipLink(equipRef) {
     if (!_ctx || !_ctx.projectName || !equipRef) return '';
-    try {
-      var navRef = '@nav:point.equip.' + btoa('id:' + equipRef.replace(/^@@/, '@'));
-      var state = btoa('{points:[' + navRef + ']}');
-      return '/ui/' + _ctx.projectName + '?view=hisChart&state=' + state;
-    } catch (e) { return ''; }
+    var ref = typeof equipRef === 'object' ? (equipRef.id || equipRef.val || '') : String(equipRef);
+    if (!ref) return '';
+    ref = ref.replace(/^@/, '');
+    var navRef = '@nav:point.equip.' + btoa('id:@' + ref);
+    var state = btoa('{points:[' + navRef + ']}');
+    return '/ui/' + _ctx.projectName + '?view=hisChart&state=' + state;
   }
 
   var CHART_COLORS = [
