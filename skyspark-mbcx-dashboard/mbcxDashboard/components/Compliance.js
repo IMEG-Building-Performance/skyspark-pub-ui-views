@@ -46,6 +46,15 @@ window.mbcxDashboard.components.Compliance = (function () {
     '<path d="M10 10V8"/><path d="M14 10V8"/>' +
     '</svg>';
 
+  function _skysparkEquipLink(equipRef) {
+    if (!_ctx || !_ctx.projectName || !equipRef) return '';
+    try {
+      var navRef = '@nav:point.equip.' + btoa('id:' + equipRef.replace(/^@@/, '@'));
+      var state = btoa('{points:[' + navRef + ']}');
+      return '/ui/' + _ctx.projectName + '?view=hisChart&state=' + state;
+    } catch (e) { return ''; }
+  }
+
   var CHART_COLORS = [
     '#2563EB', '#DC2626', '#059669', '#D97706', '#7C3AED',
     '#0891B2', '#BE185D', '#4F46E5', '#CA8A04', '#15803D'
@@ -1025,8 +1034,9 @@ window.mbcxDashboard.components.Compliance = (function () {
 
     var heading = _container.querySelector('#compChartHeading');
     if (heading) {
+      var ssLink = _skysparkEquipLink(sp.equipRef);
       heading.innerHTML = (sp.equip + (sp.area ? ' — ' + sp.area : '')) +
-        (sp.sparksLink ? ' <a class="fd-sparks-link fd-sparks-link-sm" href="' + sp.sparksLink + '" target="_blank" title="Open in SkySpark">SkySpark &#8599;</a>' : '');
+        (ssLink ? ' <a class="fd-sparks-link fd-sparks-link-sm" href="' + ssLink + '" target="_blank" title="Open in SkySpark">SkySpark &#8599;</a>' : '');
     }
 
     var chartsEl = _container.querySelector('#compCharts');
