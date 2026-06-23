@@ -195,13 +195,19 @@ window.mbcxDashboard.components.EquipmentView = (function () {
   }
 
   function _skysparkEquipLink(equipId) {
-    if (!_ctx || !_ctx.projectName || !equipId) return '';
+    if (!_ctx || !_ctx.projectName || !equipId) {
+      console.log('[EqView] skysparkEquipLink bail:', { ctx: !!_ctx, proj: _ctx && _ctx.projectName, equipId: equipId });
+      return '';
+    }
     var ref = typeof equipId === 'object' ? (equipId.id || equipId.val || '') : String(equipId);
+    console.log('[EqView] skysparkEquipLink equipId:', equipId, 'typeof:', typeof equipId, '→ ref:', ref);
     if (!ref) return '';
     ref = ref.replace(/^@/, '');
     var navRef = '@nav:point.equip.' + btoa('id:@' + ref);
     var state = btoa('{points:[' + navRef + ']}');
-    return '/ui/' + _ctx.projectName + '?view=hisChart&state=' + state;
+    var url = '/ui/' + _ctx.projectName + '?view=hisChart&state=' + state;
+    console.log('[EqView] skysparkEquipLink url:', url);
+    return url;
   }
 
   function _inferType(dis) {
