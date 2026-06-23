@@ -185,6 +185,7 @@ window.mbcxDashboard.components.AHU = {
 
     // Group by (year, month), fleet average; values ÷ 100 so 1.0 = 100%
     var byYear = {};
+    var accum  = {};
     rows.forEach(function (r) {
       var tsVal = tsCol ? r[tsCol] : null;
       if (!tsVal) return;
@@ -199,9 +200,18 @@ window.mbcxDashboard.components.AHU = {
         if (v !== null && v !== undefined && typeof v === 'number') { sum += v; n++; }
       });
       if (n > 0) {
-        if (!byYear[yr]) byYear[yr] = {};
-        byYear[yr][mon] = +(sum / n / 100).toFixed(4);
+        if (!byYear[yr]) { byYear[yr] = {}; accum[yr] = {}; }
+        var key = yr + '-' + mon;
+        if (!accum[yr][mon]) accum[yr][mon] = { sum: 0, n: 0 };
+        accum[yr][mon].sum += sum / n;
+        accum[yr][mon].n   += 1;
       }
+    });
+    Object.keys(accum).forEach(function (yr) {
+      Object.keys(accum[yr]).forEach(function (mon) {
+        var a = accum[yr][mon];
+        byYear[yr][+mon] = +(a.sum / a.n / 100).toFixed(4);
+      });
     });
 
     var years = Object.keys(byYear).sort();
