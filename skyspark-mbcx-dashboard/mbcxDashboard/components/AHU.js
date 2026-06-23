@@ -164,7 +164,7 @@ window.mbcxDashboard.components.AHU = {
       if (col === 'ts') { tsCol = col; return; }
       for (var i = 0; i < rows.length; i++) {
         var v = rows[i][col];
-        if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(v)) { tsCol = col; return; }
+        if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}/.test(v)) { tsCol = col; return; }
       }
     });
 
@@ -184,24 +184,34 @@ window.mbcxDashboard.components.AHU = {
     }
 
     // Group by (year, month), fleet average; values ÷ 100 so 1.0 = 100%
+    // Extract year/month directly from ISO string to avoid local-timezone shift
     var byYear = {};
+    var accum  = {};
     rows.forEach(function (r) {
       var tsVal = tsCol ? r[tsCol] : null;
       if (!tsVal) return;
-      var d = new Date(tsVal);
-      if (isNaN(d.getTime())) return;
+      var m = String(tsVal).match(/^(\d{4})-(\d{2})/);
+      if (!m) return;
+      var yr  = m[1];
+      var mon = parseInt(m[2], 10);
 
-      var yr  = String(d.getFullYear());
-      var mon = d.getMonth() + 1;
       var sum = 0, n = 0;
       dataCols.forEach(function (c) {
         var v = r[c];
         if (v !== null && v !== undefined && typeof v === 'number') { sum += v; n++; }
       });
       if (n > 0) {
-        if (!byYear[yr]) byYear[yr] = {};
-        byYear[yr][mon] = +(sum / n / 100).toFixed(4);
+        if (!byYear[yr]) { byYear[yr] = {}; accum[yr] = {}; }
+        if (!accum[yr][mon]) accum[yr][mon] = { sum: 0, n: 0 };
+        accum[yr][mon].sum += sum / n;
+        accum[yr][mon].n   += 1;
       }
+    });
+    Object.keys(accum).forEach(function (yr) {
+      Object.keys(accum[yr]).forEach(function (mon) {
+        var a = accum[yr][mon];
+        byYear[yr][+mon] = +(a.sum / a.n / 100).toFixed(4);
+      });
     });
 
     var years = Object.keys(byYear).sort();

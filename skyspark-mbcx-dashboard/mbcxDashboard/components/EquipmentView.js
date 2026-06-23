@@ -194,6 +194,22 @@ window.mbcxDashboard.components.EquipmentView = (function () {
     return isNaN(n) ? null : n;
   }
 
+  function _skysparkEquipLink(equipId) {
+    if (!_ctx || !_ctx.projectName || !equipId) {
+      console.log('[EqView] skysparkEquipLink bail:', { ctx: !!_ctx, proj: _ctx && _ctx.projectName, equipId: equipId });
+      return '';
+    }
+    var ref = typeof equipId === 'object' ? (equipId.id || equipId.val || '') : String(equipId);
+    console.log('[EqView] skysparkEquipLink equipId:', equipId, 'typeof:', typeof equipId, '→ ref:', ref);
+    if (!ref) return '';
+    ref = ref.replace(/^@/, '');
+    var navRef = '@nav:point.equip.' + btoa('id:@' + ref);
+    var state = btoa('{points:[' + navRef + ']}');
+    var url = '/ui/' + _ctx.projectName + '?view=hisChart&state=' + state;
+    console.log('[EqView] skysparkEquipLink url:', url);
+    return url;
+  }
+
   function _inferType(dis) {
     var d = (dis || '').toLowerCase();
     if (d.indexOf('ahu') !== -1) return 'AHU';
@@ -319,9 +335,12 @@ window.mbcxDashboard.components.EquipmentView = (function () {
       '<button class="eq-selector-btn" id="eqSelectorBtn"><span>' + selDis + '</span><span class="eq-selector-arrow">▼</span></button>' +
       dropHtml +
     '</div>' +
-    (equip ? '<div class="eq-title">' + equip.dis +
-      (equip.sparksLink ? ' <a class="fd-sparks-link fd-sparks-link-sm" href="' + equip.sparksLink + '" target="_blank" title="Open in SkySpark">SkySpark &#8599;</a>' : '') +
-      '</div><div class="eq-subtitle">' + (equip.type || '') + '</div>' : '<div class="eq-title">—</div>');
+    (equip ? (function () {
+      var ssLink = _skysparkEquipLink(equip.id);
+      return '<div class="eq-title">' + equip.dis +
+        (ssLink ? ' <a class="fd-sparks-link fd-sparks-link-sm" href="' + ssLink + '" target="_blank" title="Open in SkySpark">SkySpark &#8599;</a>' : '') +
+        '</div><div class="eq-subtitle">' + (equip.type || '') + '</div>';
+    })() : '<div class="eq-title">—</div>');
 
     var btn = el.querySelector('#eqSelectorBtn');
     if (btn) btn.addEventListener('click', function (e) {
