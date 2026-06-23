@@ -98,11 +98,19 @@ window.mbcxDashboard.components.AHU = {
       }).join('') +
     '</div>';
 
+    // Find the first metric that loaded successfully to show by default
+    var firstOk = -1;
+    for (var fi = 0; fi < results.length; fi++) { if (!results[fi].error) { firstOk = fi; break; } }
+
     // Metric blocks — chart left, table right
     var blocksHtml = results.map(function (r, i) {
+      var hidden = i === firstOk ? '' : ' ahu-metric-block--hidden';
+      if (r.error) {
+        return '<div class="ahu-metric-block' + hidden + '" data-ahu-block="' + r.metric.id + '">' +
+          '<div class="ahu-no-data">Data unavailable for ' + _esc(r.metric.label) + '.</div></div>';
+      }
       var canvasId = 'mbcxAhuChart-' + r.metric.id;
       var tParsed  = HP.parseGrid(r.tableGrid);
-      var hidden   = i === 0 ? '' : ' ahu-metric-block--hidden';
       return [
         '<div class="ahu-metric-block' + hidden + '" data-ahu-block="' + r.metric.id + '">',
         '  <div class="ahu-chart-wrap">',
@@ -117,12 +125,21 @@ window.mbcxDashboard.components.AHU = {
 
     contentEl.innerHTML = toggleHtml + blocksHtml;
 
-    // Update AHU count from first result's table row count
+    // Dim toggle buttons for failed metrics
+    results.forEach(function (r) {
+      if (!r.error) return;
+      var btn = contentEl.querySelector('[data-ahu-metric="' + r.metric.id + '"]');
+      if (btn) btn.style.opacity = '0.45';
+    });
+
+    // Update AHU count from first successful result's table row count
     var countEl = document.getElementById('mbcxAhuCount');
-    if (countEl && results.length) {
-      var HP2 = window.mbcxDashboard.haystackParser;
-      var firstTable = HP2.parseGrid(results[0].tableGrid);
-      if (firstTable.rows.length) countEl.textContent = firstTable.rows.length + ' AHUs';
+    if (countEl) {
+      for (var ci = 0; ci < results.length; ci++) {
+        if (results[ci].error) continue;
+        var firstTable = HP.parseGrid(results[ci].tableGrid);
+        if (firstTable.rows.length) { countEl.textContent = firstTable.rows.length + ' AHUs'; break; }
+      }
     }
 
     // Toggle click handler
@@ -140,9 +157,16 @@ window.mbcxDashboard.components.AHU = {
       });
     }
 
+    // Activate first successful toggle button
+    if (firstOk >= 0) {
+      contentEl.querySelectorAll('.ahu-toggle-btn').forEach(function (b, i) {
+        b.classList.toggle('ahu-toggle-btn--active', i === firstOk);
+      });
+    }
+
     // Init each chart after DOM is set
     results.forEach(function (r) {
-      if (!C) return;
+      if (!C || r.error) return;
       var parsed   = HP.parseGrid(r.plotGrid);
       var canvasId = 'mbcxAhuChart-' + r.metric.id;
       var canvas   = contentEl.querySelector('#' + canvasId);

@@ -23,10 +23,16 @@ window.mbcxDashboard.evals = window.mbcxDashboard.evals || {};
       var tableExpr = 'view_pub_mbcxDashboard_AHUs(' + siteRef + ',' + m.id + ',true,true)';
 
       return Promise.all([
-        API.evalAxon(attestKey, projectName, plotExpr),
-        API.evalAxon(attestKey, projectName, tableExpr)
+        API.evalAxon(attestKey, projectName, plotExpr).catch(function (e) {
+          console.warn('[AHU] plot fetch failed for ' + m.label + ':', e);
+          return null;
+        }),
+        API.evalAxon(attestKey, projectName, tableExpr).catch(function (e) {
+          console.warn('[AHU] table fetch failed for ' + m.label + ':', e);
+          return null;
+        })
       ]).then(function (results) {
-        return { metric: m, plotGrid: results[0], tableGrid: results[1] };
+        return { metric: m, plotGrid: results[0], tableGrid: results[1], error: !results[0] && !results[1] };
       });
     }));
   };
