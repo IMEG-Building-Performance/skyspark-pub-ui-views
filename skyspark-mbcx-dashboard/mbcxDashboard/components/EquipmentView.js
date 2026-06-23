@@ -195,19 +195,7 @@ window.mbcxDashboard.components.EquipmentView = (function () {
   }
 
   function _skysparkEquipLink(equipId) {
-    if (!_ctx || !_ctx.projectName || !equipId) {
-      console.log('[EqView] skysparkEquipLink bail:', { ctx: !!_ctx, proj: _ctx && _ctx.projectName, equipId: equipId });
-      return '';
-    }
-    var ref = typeof equipId === 'object' ? (equipId.id || equipId.val || '') : String(equipId);
-    console.log('[EqView] skysparkEquipLink equipId:', equipId, 'typeof:', typeof equipId, '→ ref:', ref);
-    if (!ref) return '';
-    ref = ref.replace(/^@/, '');
-    var navRef = '@nav:point.equip.' + btoa('id:@' + ref);
-    var state = btoa('{points:[' + navRef + ']}');
-    var url = '/ui/' + _ctx.projectName + '?view=hisChart&state=' + state;
-    console.log('[EqView] skysparkEquipLink url:', url);
-    return url;
+    return '';
   }
 
   function _inferType(dis) {
@@ -276,9 +264,10 @@ window.mbcxDashboard.components.EquipmentView = (function () {
     var _evRefs = (_ctx.siteRefs && _ctx.siteRefs.length && _ctx.siteRefs[0] !== '__all__')
       ? _ctx.siteRefs
       : (_ctx.siteRef ? [_ctx.siteRef] : []);
+    var addLink = '.addCol("sparksLink", r => uiLink({view:"sparkEquip", state:{equip:r->id}}))';
     var axon = _evRefs.length > 1
-      ? 'readAll(equip and (' + _evRefs.map(function (r) { return 'siteRef==@' + r.replace(/^@/, ''); }).join(' or ') + '))'
-      : 'readAll(equip and siteRef==@' + (_evRefs[0] || _ctx.siteRef || '').replace(/^@/, '') + ')';
+      ? 'readAll(equip and (' + _evRefs.map(function (r) { return 'siteRef==@' + r.replace(/^@/, ''); }).join(' or ') + '))' + addLink
+      : 'readAll(equip and siteRef==@' + (_evRefs[0] || _ctx.siteRef || '').replace(/^@/, '') + ')' + addLink;
     API.evalAxon(_ctx.attestKey, _ctx.projectName, axon)
       .then(function (grid) {
         var parsed = HP.parseGrid(grid);
@@ -335,12 +324,9 @@ window.mbcxDashboard.components.EquipmentView = (function () {
       '<button class="eq-selector-btn" id="eqSelectorBtn"><span>' + selDis + '</span><span class="eq-selector-arrow">▼</span></button>' +
       dropHtml +
     '</div>' +
-    (equip ? (function () {
-      var ssLink = _skysparkEquipLink(equip.id);
-      return '<div class="eq-title">' + equip.dis +
-        (ssLink ? ' <a class="fd-sparks-link fd-sparks-link-sm" href="' + ssLink + '" target="_blank" title="Open in SkySpark">SkySpark &#8599;</a>' : '') +
-        '</div><div class="eq-subtitle">' + (equip.type || '') + '</div>';
-    })() : '<div class="eq-title">—</div>');
+    (equip ? '<div class="eq-title">' + equip.dis +
+      (equip.sparksLink ? ' <a class="fd-sparks-link fd-sparks-link-sm" href="' + equip.sparksLink + '" target="_blank" title="Open in SkySpark">SkySpark &#8599;</a>' : '') +
+      '</div><div class="eq-subtitle">' + (equip.type || '') + '</div>' : '<div class="eq-title">—</div>');
 
     var btn = el.querySelector('#eqSelectorBtn');
     if (btn) btn.addEventListener('click', function (e) {
