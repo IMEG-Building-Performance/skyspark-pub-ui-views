@@ -211,6 +211,24 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       } catch (e) {}
     },
 
+    _loadDefOfSuccess: function (container, ctx) {
+      var el = container.querySelector('#mbcxDosBanner');
+      if (!el || !ctx || !ctx.attestKey || !ctx.siteRef) return;
+      var API = NS.api;
+      var siteRef = '@' + (ctx.siteRef || '').replace(/^@/, '');
+      API.evalAxon(ctx.attestKey, ctx.projectName, 'readById(' + siteRef + ')->defOfSuccess')
+        .then(function (grid) {
+          var HP = NS.haystackParser;
+          var parsed = HP.parseGrid(grid);
+          var val = parsed.rows.length ? parsed.rows[0][parsed.cols[0]] : null;
+          if (val && typeof val === 'string' && val.trim()) {
+            el.innerHTML = '<div class="dos-card"><div class="dos-label">Definition of Success</div><div class="dos-text">' +
+              val.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div></div>';
+          }
+        })
+        .catch(function () {});
+    },
+
     init: function (container, data, ctx) {
       NS.App._lastData  = data;
       NS.App._lastCtx   = ctx;
@@ -634,13 +652,13 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       if (tab === 'summary') {
         content.innerHTML = [
           '<div class="page">',
-          co.BuildingMeters ? co.BuildingMeters.render(data) : '',
+          '<div class="dos-banner" id="mbcxDosBanner"></div>',
           co.CUP            ? co.CUP.render(data)            : '',
           co.AHU            ? co.AHU.render(data)            : '',
           co.TerminalUnits  ? co.TerminalUnits.render()      : '',
           '</div>'
         ].join('\n');
-        if (co.BuildingMeters && co.BuildingMeters.initLive) co.BuildingMeters.initLive(container, ctx || null);
+        NS.App._loadDefOfSuccess(container, ctx);
         if (co.CUP && co.CUP.initCard) co.CUP.initCard(content, container, co, data, ctx || null);
         if (co.AHU)                     co.AHU.initLive(container, ctx || null);
         if (co.TerminalUnits)           co.TerminalUnits.initLive(container, ctx || null);

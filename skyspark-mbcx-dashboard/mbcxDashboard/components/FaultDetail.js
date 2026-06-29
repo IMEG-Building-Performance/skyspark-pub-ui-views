@@ -573,8 +573,14 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         '      <span class="fd-dur">' + durVal + '</span>',
         pctVal ? '<span class="fd-pct">' + pctVal + '</span>' : '',
         sparksHtml,
-        !nav ? '<button class="fd-agenda-toggle' + (inAgenda ? ' fd-agenda-in' : '') + '" id="fdAgendaToggle">' +
-               (inAgenda ? '&#10003; In Agenda' : '+ Add to Meeting') + '</button>' : '',
+        !nav ? (inAgenda
+          ? '<button class="fd-agenda-toggle fd-agenda-in" id="fdAgendaToggle">&#10003; In Meeting Agenda</button>'
+          : '<div class="fd-agenda-wrap" id="fdAgendaWrap">' +
+            '<button class="fd-agenda-toggle" id="fdAgendaToggle">+ Add to Meeting &#9662;</button>' +
+            '<div class="fd-agenda-dropdown" id="fdAgendaDropdown" style="display:none">' +
+            '<button class="fd-agenda-dd-item" data-action="queue">Add to Queue</button>' +
+            '<button class="fd-agenda-dd-item" data-action="existing">Add to Current Agenda</button>' +
+            '</div></div>') : '',
         '    </div>',
         '  </div>',
 
@@ -658,22 +664,42 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         });
       }
 
-      // "Add to Meeting" toggle
+      // "Add to Meeting" toggle / dropdown
       if (!nav) {
         var agBtn = contentEl.querySelector('#fdAgendaToggle');
-        if (agBtn) {
-          agBtn.addEventListener('click', function () {
-            if (!NS.meeting) return;
-            if (NS.meeting.has(fault.id)) {
+        var agDrop = contentEl.querySelector('#fdAgendaDropdown');
+        if (agBtn && NS.meeting) {
+          if (NS.meeting.has(fault.id)) {
+            agBtn.addEventListener('click', function () {
               NS.meeting.remove(fault.id);
               agBtn.textContent = '+ Add to Meeting';
               agBtn.classList.remove('fd-agenda-in');
-            } else {
-              NS.meeting.add(fault);
-              agBtn.textContent = '✓ In Agenda';
-              agBtn.classList.add('fd-agenda-in');
-            }
-          });
+            });
+          } else if (agDrop) {
+            agBtn.addEventListener('click', function (e) {
+              e.stopPropagation();
+              agDrop.style.display = agDrop.style.display === 'none' ? 'flex' : 'none';
+            });
+            agDrop.querySelectorAll('.fd-agenda-dd-item').forEach(function (item) {
+              item.addEventListener('click', function (e) {
+                e.stopPropagation();
+                agDrop.style.display = 'none';
+                NS.meeting.add(fault);
+                var wrap = contentEl.querySelector('#fdAgendaWrap');
+                if (wrap) {
+                  wrap.innerHTML = '<button class="fd-agenda-toggle fd-agenda-in" id="fdAgendaToggle">&#10003; In Meeting Agenda</button>';
+                  wrap.querySelector('#fdAgendaToggle').addEventListener('click', function () {
+                    NS.meeting.remove(fault.id);
+                    wrap.innerHTML = '<button class="fd-agenda-toggle">+ Add to Meeting</button>';
+                  });
+                }
+              });
+            });
+            document.addEventListener('click', function _closeDrop() {
+              if (agDrop) agDrop.style.display = 'none';
+              document.removeEventListener('click', _closeDrop);
+            });
+          }
         }
       }
 

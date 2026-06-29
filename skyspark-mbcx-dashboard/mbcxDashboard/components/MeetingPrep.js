@@ -431,6 +431,8 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       '<button class="mp-act mp-link" data-step="0">&#8592; All meetings</button>' +
       (_meeting ? '<span class="mp-meeting-name">' + _esc(_meeting.dis || '') + '</span>' +
         (_meeting.date ? '<span class="mp-meeting-date">' + _esc(String(_meeting.date)) + '</span>' : '') : '') +
+      '<span class="mp-draft-chip">Draft &mdash; auto-saved</span>' +
+      '<button class="mp-btn mp-save-close" data-step="0">Save &amp; Close</button>' +
       '</div>';
     // Stage 3 hosts the full MeetingView agenda (add items, drag-reorder,
     // present mode) — mounted by initLive after the HTML lands.
@@ -517,7 +519,8 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         }
 
         draftsEl.innerHTML = _landRecs.drafts.length ? _landRecs.drafts.map(function (m) {
-          return '<div class="mtg-past-item"><div class="mtg-past-line">' +
+          return '<div class="mtg-draft-card"><div class="mtg-past-line">' +
+            '<span class="mtg-draft-badge">DRAFT</span>' +
             '<button class="mtg-past-hd" data-draft="' + _esc(m.id) + '">' +
             '<span class="mtg-past-date">' + _esc(m.date) + '</span>' +
             '<span class="mtg-past-meta">' + _esc(m.dis) +

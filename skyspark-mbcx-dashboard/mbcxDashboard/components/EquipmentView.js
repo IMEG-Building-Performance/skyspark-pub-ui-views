@@ -236,6 +236,18 @@ window.mbcxDashboard.components.EquipmentView = (function () {
 
   // ── Init ───────────────────────────────────────────────────────────
 
+  var EQ_SEL_KEY = 'mbcxEquipView_selectedId';
+
+  function _saveSelectedId() {
+    if (_selectedId) {
+      try { sessionStorage.setItem(EQ_SEL_KEY, typeof _selectedId === 'object' ? JSON.stringify(_selectedId) : _selectedId); } catch (e) {}
+    }
+  }
+
+  function _restoreSelectedId() {
+    try { return sessionStorage.getItem(EQ_SEL_KEY) || null; } catch (e) { return null; }
+  }
+
   function initLive(container, ctx) {
     _container = container;
     _ctx = ctx;
@@ -289,6 +301,12 @@ window.mbcxDashboard.components.EquipmentView = (function () {
                       _equipList.filter(function (e) { return e.dis.toLowerCase().indexOf(want) !== -1; })[0];
             if (hit) _selectedId = hit.id;
             _preselectDis = null;
+          } else {
+            var saved = _restoreSelectedId();
+            if (saved) {
+              var match = _equipList.filter(function (e) { return e.id === saved; })[0];
+              if (match) _selectedId = match.id;
+            }
           }
           _renderHeader();
           _loadEquipDetail();
@@ -337,6 +355,7 @@ window.mbcxDashboard.components.EquipmentView = (function () {
     el.querySelectorAll('.eq-selector-opt[data-eid]').forEach(function (opt) {
       opt.addEventListener('click', function () {
         _selectedId = opt.getAttribute('data-eid');
+        _saveSelectedId();
         _selectorOpen = false;
         _lastPoints = [];
         _lastFaults = null;
