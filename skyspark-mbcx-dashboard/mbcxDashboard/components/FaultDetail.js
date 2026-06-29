@@ -575,6 +575,8 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         sparksHtml,
         !nav ? (inAgenda
           ? '<button class="fd-agenda-toggle fd-agenda-in" id="fdAgendaToggle">&#10003; In Meeting Agenda</button>'
+          : (NS.queue && NS.queue.has(fault.id))
+          ? '<div class="fd-agenda-wrap" id="fdAgendaWrap"><button class="fd-agenda-toggle fd-agenda-queued" id="fdAgendaToggle">&#10003; In Queue</button></div>'
           : '<div class="fd-agenda-wrap" id="fdAgendaWrap">' +
             '<button class="fd-agenda-toggle" id="fdAgendaToggle">+ Add to Meeting &#9662;</button>' +
             '<div class="fd-agenda-dropdown" id="fdAgendaDropdown" style="display:none">' +
@@ -684,14 +686,27 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
               item.addEventListener('click', function (e) {
                 e.stopPropagation();
                 agDrop.style.display = 'none';
-                NS.meeting.add(fault);
-                var wrap = contentEl.querySelector('#fdAgendaWrap');
-                if (wrap) {
-                  wrap.innerHTML = '<button class="fd-agenda-toggle fd-agenda-in" id="fdAgendaToggle">&#10003; In Meeting Agenda</button>';
-                  wrap.querySelector('#fdAgendaToggle').addEventListener('click', function () {
-                    NS.meeting.remove(fault.id);
-                    wrap.innerHTML = '<button class="fd-agenda-toggle">+ Add to Meeting</button>';
-                  });
+                var action = item.getAttribute('data-action');
+                if (action === 'queue' && NS.queue) {
+                  NS.queue.add(fault);
+                  var wrap = contentEl.querySelector('#fdAgendaWrap');
+                  if (wrap) {
+                    wrap.innerHTML = '<button class="fd-agenda-toggle fd-agenda-queued" id="fdAgendaToggle">&#10003; In Queue</button>';
+                    wrap.querySelector('#fdAgendaToggle').addEventListener('click', function () {
+                      NS.queue.remove(fault.id);
+                      wrap.innerHTML = '<button class="fd-agenda-toggle">+ Add to Meeting</button>';
+                    });
+                  }
+                } else {
+                  NS.meeting.add(fault);
+                  var wrap2 = contentEl.querySelector('#fdAgendaWrap');
+                  if (wrap2) {
+                    wrap2.innerHTML = '<button class="fd-agenda-toggle fd-agenda-in" id="fdAgendaToggle">&#10003; In Meeting Agenda</button>';
+                    wrap2.querySelector('#fdAgendaToggle').addEventListener('click', function () {
+                      NS.meeting.remove(fault.id);
+                      wrap2.innerHTML = '<button class="fd-agenda-toggle">+ Add to Meeting</button>';
+                    });
+                  }
                 }
               });
             });

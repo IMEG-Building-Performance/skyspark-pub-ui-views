@@ -511,10 +511,17 @@ window.mbcxDashboard.components.FaultList = {
           var row3 = self._state && self._state.rows
             ? self._state.rows.filter(function (f) { return f.id === fid3; })[0]
             : null;
-          if (row3 && window.mbcxDashboard && window.mbcxDashboard.meeting) {
-            window.mbcxDashboard.meeting.add(row3);
-            var btn3 = dd.parentElement.querySelector('.fl-agenda-btn');
-            if (btn3) { btn3.textContent = '✓'; btn3.title = 'Remove from Meeting Agenda'; btn3.classList.add('fl-agenda-btn-in'); }
+          if (row3 && window.mbcxDashboard) {
+            var action3 = ddItem.getAttribute('data-action');
+            if (action3 === 'queue' && window.mbcxDashboard.queue) {
+              window.mbcxDashboard.queue.add(row3);
+              var btn3q = dd.parentElement.querySelector('.fl-agenda-btn');
+              if (btn3q) { btn3q.textContent = 'Q'; btn3q.title = 'In Queue — click to remove'; btn3q.classList.add('fl-agenda-btn-queued'); }
+            } else if (window.mbcxDashboard.meeting) {
+              window.mbcxDashboard.meeting.add(row3);
+              var btn3 = dd.parentElement.querySelector('.fl-agenda-btn');
+              if (btn3) { btn3.textContent = '✓'; btn3.title = 'Remove from Meeting Agenda'; btn3.classList.add('fl-agenda-btn-in'); }
+            }
             dd.style.display = 'none';
           }
           return;
@@ -527,14 +534,20 @@ window.mbcxDashboard.components.FaultList = {
           var row2 = self._state && self._state.rows
             ? self._state.rows.filter(function (f) { return f.id === fid2; })[0]
             : null;
-          if (row2 && window.mbcxDashboard && window.mbcxDashboard.meeting) {
+          if (row2 && window.mbcxDashboard) {
             var mtg = window.mbcxDashboard.meeting;
-            if (mtg.has(fid2)) {
+            var qu = window.mbcxDashboard.queue;
+            if (mtg && mtg.has(fid2)) {
               mtg.remove(fid2);
               agendaBtn.textContent = '+';
               agendaBtn.title = 'Add to Meeting Agenda';
               agendaBtn.classList.remove('fl-agenda-btn-in');
-            } else {
+            } else if (qu && qu.has(fid2)) {
+              qu.remove(fid2);
+              agendaBtn.textContent = '+';
+              agendaBtn.title = 'Add to Meeting Agenda';
+              agendaBtn.classList.remove('fl-agenda-btn-queued');
+            } else if (mtg) {
               var dd2 = agendaBtn.parentElement.querySelector('.fl-agenda-dd');
               if (dd2) {
                 e.stopPropagation();
@@ -634,8 +647,13 @@ window.mbcxDashboard.components.FaultList = {
           return '<td class="' + cls + cf + '">' + cellHtml + '</td>';
         }).join('') +
         '<td class="tu-td fl-td-act"><div class="fl-agenda-cell">' +
-          '<button class="fl-agenda-btn' + (inAgenda ? ' fl-agenda-btn-in' : '') + '" data-fid="' + r.id + '" title="' + (inAgenda ? 'Remove from Meeting Agenda' : 'Add to Meeting Agenda') + '">' + (inAgenda ? '&#10003;' : '+') + '</button>' +
-          (!inAgenda ? '<div class="fl-agenda-dd" data-fid="' + r.id + '" style="display:none"><button class="fd-agenda-dd-item" data-action="queue">Queue</button><button class="fd-agenda-dd-item" data-action="existing">Current Agenda</button></div>' : '') +
+          (function () {
+            var inQ = window.mbcxDashboard && window.mbcxDashboard.queue && window.mbcxDashboard.queue.has(r.id);
+            if (inAgenda) return '<button class="fl-agenda-btn fl-agenda-btn-in" data-fid="' + r.id + '" title="Remove from Meeting Agenda">&#10003;</button>';
+            if (inQ) return '<button class="fl-agenda-btn fl-agenda-btn-queued" data-fid="' + r.id + '" title="In Queue — click to remove">Q</button>';
+            return '<button class="fl-agenda-btn" data-fid="' + r.id + '" title="Add to Meeting Agenda">+</button>' +
+              '<div class="fl-agenda-dd" data-fid="' + r.id + '" style="display:none"><button class="fd-agenda-dd-item" data-action="queue">Queue</button><button class="fd-agenda-dd-item" data-action="existing">Current Agenda</button></div>';
+          })() +
           '</div></td>' +
         '</tr>';
     }).join('');

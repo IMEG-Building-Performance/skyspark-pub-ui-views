@@ -432,7 +432,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       (_meeting ? '<span class="mp-meeting-name">' + _esc(_meeting.dis || '') + '</span>' +
         (_meeting.date ? '<span class="mp-meeting-date">' + _esc(String(_meeting.date)) + '</span>' : '') : '') +
       '<span class="mp-draft-chip">Draft &mdash; auto-saved</span>' +
-      '<button class="mp-btn mp-save-close" data-step="0">Save &amp; Close</button>' +
+      '<button class="mp-btn mp-save-close" data-saveclose="1">Save &amp; Close</button>' +
       '</div>';
     // Stage 3 hosts the full MeetingView agenda (add items, drag-reorder,
     // present mode) — mounted by initLive after the HTML lands.
@@ -848,6 +848,13 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       contentEl.addEventListener('click', function (e) {
         var btn = e.target.closest('button');
         if (!btn || btn.disabled) return;
+
+        if (btn.getAttribute('data-saveclose')) {
+          if (_stage === 3 && co && co.MeetingView) co.MeetingView.destroy(co);
+          _stage = 0;
+          rerenderStage();
+          return;
+        }
 
         var step = btn.getAttribute('data-step');
         if (step) {

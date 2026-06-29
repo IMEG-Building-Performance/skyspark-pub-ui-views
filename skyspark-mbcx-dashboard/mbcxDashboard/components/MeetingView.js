@@ -59,6 +59,61 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     }
   };
 
+  // ── Fault queue store ────────────────────────────────────────────────────
+  var _queue = [];
+  var QUEUE_KEY = 'mbcxFaultQueue';
+  function _saveQueue() {
+    try {
+      localStorage.setItem(QUEUE_KEY, JSON.stringify(_queue, function (k, v) {
+        return k === '_raw' ? undefined : v;
+      }));
+    } catch (e) {}
+  }
+  (function _loadQueue() {
+    try {
+      var s = localStorage.getItem(QUEUE_KEY);
+      if (s) {
+        var saved = JSON.parse(s);
+        if (Object.prototype.toString.call(saved) === '[object Array]') {
+          _queue = saved.filter(function (i) { return i && i.fault; });
+        }
+      }
+    } catch (e) {}
+  })();
+
+  NS.queue = {
+    add: function (fault) {
+      if (_queue.some(function (i) { return i.fault.id === fault.id; })) return;
+      _queue.push({ fault: fault, addedAt: Date.now() });
+      _saveQueue();
+    },
+    remove: function (faultId) {
+      _queue = _queue.filter(function (i) { return i.fault.id !== faultId; });
+      _saveQueue();
+    },
+    has: function (faultId) {
+      return _queue.some(function (i) { return i.fault.id === faultId; });
+    },
+    count: function () { return _queue.length; },
+    list:  function () { return _queue.slice(); },
+    moveToAgenda: function (faultId) {
+      var item = null;
+      _queue = _queue.filter(function (i) {
+        if (i.fault.id === faultId) { item = i; return false; }
+        return true;
+      });
+      if (item) {
+        NS.meeting.add(item.fault);
+        _saveQueue();
+      }
+    },
+    moveAllToAgenda: function () {
+      _queue.forEach(function (i) { NS.meeting.add(i.fault); });
+      _queue = [];
+      _saveQueue();
+    }
+  };
+
   function _refreshBadge() {
     var btn = document.querySelector('#mbcxDashboard .dash-sb-nav-item[data-tab="meetings"]');
     if (!btn) return;
