@@ -628,17 +628,17 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     if (notes == null) return;
     name = name.trim() || rec.dis;
     notes = notes.trim();
-    _commitMeeting(ctx, 'commit(diff(readById(@' + rec.id + '), {dis: ' + _q(name) +
-      ', mbcxNotes: ' + (notes ? _q(notes) : 'removeMarker()') + '}))', refresh);
+    _commitMeeting(ctx, 'do r: read(mbcxMeeting and id==@' + rec.id + ', false); if (r != null) commit(diff(r, {dis: ' + _q(name) +
+      ', mbcxNotes: ' + (notes ? _q(notes) : 'removeMarker()') + '})) end', refresh);
   }
 
   function _deleteMeetingRec(rec, ctx, refresh) {
     if (!window.confirm('Delete "' + (rec.dis || rec.date) + '"? This removes the record from SkySpark.')) return;
-    _commitMeeting(ctx, 'commit(diff(readById(@' + rec.id + '), null, {remove}))', refresh);
+    _commitMeeting(ctx, 'do r: read(mbcxMeeting and id==@' + rec.id + ', false); if (r != null) commit(diff(r, null, {remove})) end', refresh);
   }
 
   function _reopenMeetingRec(rec, ctx, refresh) {
-    _commitMeeting(ctx, 'commit(diff(readById(@' + rec.id + '), {mbcxStatus: "draft"}))', refresh);
+    _commitMeeting(ctx, 'do r: read(mbcxMeeting and id==@' + rec.id + ', false); if (r != null) commit(diff(r, {mbcxStatus: "draft"})) end', refresh);
   }
 
   function _createMeeting(contentEl, ctx, done) {

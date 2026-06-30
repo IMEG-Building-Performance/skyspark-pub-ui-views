@@ -252,7 +252,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
           saveBtn.disabled = true;
           saveBtn.textContent = 'Saving…';
           var q = '"' + newVal.replace(/\\/g,'\\\\').replace(/"/g,'\\"').replace(/\n/g,'\\n') + '"';
-          var axon = 'do rec: read(id==' + siteRef + '); commit(diff(rec, {defOfSuccess: ' + q + '})); end';
+          var axon = 'do s: read(site and id==' + siteRef + ', false); if (s != null) commit(diff(s, {defOfSuccess: ' + q + '})) end';
           API.evalAxon(ctx.attestKey, ctx.projectName, axon)
             .then(function () { renderCard(newVal); })
             .catch(function (err) {
@@ -264,7 +264,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         });
       }
 
-      API.evalAxon(ctx.attestKey, ctx.projectName, 'readById(' + siteRef + ')->defOfSuccess')
+      API.evalAxon(ctx.attestKey, ctx.projectName, 'do s: read(site and id==' + siteRef + ', false); if (s != null) s->defOfSuccess else null end')
         .then(function (grid) {
           var HP = NS.haystackParser;
           var parsed = HP.parseGrid(grid);

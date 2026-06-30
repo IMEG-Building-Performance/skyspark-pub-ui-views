@@ -281,8 +281,9 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
           var active = NS.activeMeeting || null;
           var axon;
           if (active && active.id) {
-            axon = 'commit(diff(readById(@' + String(active.id).replace(/^@/, '') + ')' +
-              ', {date: today()' + common + '}))';
+            var rid = String(active.id).replace(/^@/, '');
+            axon = 'do r: read(mbcxMeeting and id==@' + rid + ', false); if (r != null) commit(diff(r' +
+              ', {date: today()' + common + '})) end';
           } else {
             axon = 'commit(diff(null, {mbcxMeeting' +
               ', dis: ' + q('MBCx Meeting ' + new Date().toISOString().slice(0, 10) + (ctx.siteName ? ' — ' + ctx.siteName : '')) +
