@@ -283,9 +283,14 @@ window.mbcxDashboard = window.mbcxDashboard || {};
           saveBtn.textContent = 'Saving…';
           var q = '"' + newVal.replace(/\\/g,'\\\\').replace(/"/g,'\\"').replace(/\n/g,'\\n') + '"';
           var axon = 'do s: read(site and id==' + siteRef + ', false); if (s != null) commit(diff(s, {defOfSuccess: ' + q + '})) end';
+          console.info('[DoS] Save axon:', axon);
           API.evalAxon(ctx.attestKey, ctx.projectName, axon)
             .then(function (grid) {
-              console.info('[DoS] Save succeeded:', grid);
+              console.info('[DoS] Save response:', grid);
+              // Verify the tag persisted
+              API.evalAxon(ctx.attestKey, ctx.projectName, 'do s: read(site and id==' + siteRef + ', false); if (s != null) s.toGrid end')
+                .then(function (vg) { console.info('[DoS] Verify after save:', vg); })
+                .catch(function (ve) { console.warn('[DoS] Verify failed:', ve); });
               renderCard(newVal);
             })
             .catch(function (err) {
