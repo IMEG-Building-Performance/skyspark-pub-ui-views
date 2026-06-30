@@ -213,9 +213,16 @@ window.mbcxDashboard = window.mbcxDashboard || {};
 
     _loadDefOfSuccess: function (container, ctx) {
       var el = container.querySelector('#mbcxDosBanner');
-      if (!el || !ctx || !ctx.attestKey || !ctx.siteRef) return;
+      if (!el || !ctx || !ctx.attestKey) return;
       var API = NS.api;
-      var siteRef = '@' + (ctx.siteRef || '').replace(/^@/, '');
+      var rawRef = ctx.siteRef || '';
+      if (rawRef === '__all__' || !rawRef) {
+        if (ctx.siteRefs && ctx.siteRefs.length) {
+          rawRef = ctx.siteRefs.filter(function (r) { return r !== '__all__'; })[0] || '';
+        }
+        if (!rawRef || rawRef === '__all__') return;
+      }
+      var siteRef = '@' + rawRef.replace(/^@/, '');
 
       function esc(s) {
         return String(s == null ? '' : s)

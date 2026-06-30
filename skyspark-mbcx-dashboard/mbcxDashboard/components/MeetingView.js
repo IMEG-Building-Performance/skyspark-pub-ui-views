@@ -288,7 +288,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
             axon = 'commit(diff(null, {mbcxMeeting' +
               ', dis: ' + q('MBCx Meeting ' + new Date().toISOString().slice(0, 10) + (ctx.siteName ? ' — ' + ctx.siteName : '')) +
               ', date: today()' +
-              (ctx.siteRef ? ', siteRef: ' + ctx.siteRef : '') +
+              (ctx.siteRef && ctx.siteRef !== '__all__' ? ', siteRef: ' + ctx.siteRef : '') +
               common + '}, {add}))';
           }
           endBtn.disabled = true;

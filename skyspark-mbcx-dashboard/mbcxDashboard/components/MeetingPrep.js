@@ -668,7 +668,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       ', dis: ' + _q(name) +
       ', date: ' + (dateOk ? date : 'today()') +
       (notes ? ', mbcxNotes: ' + _q(notes) : '') +
-      (ctx.siteRef ? ', siteRef: ' + ctx.siteRef : '') +
+      (ctx.siteRef && ctx.siteRef !== '__all__' ? ', siteRef: ' + ctx.siteRef : '') +
       ', mbcxUser: context()->username}, {add}))';
     NS.api.evalAxon(ctx.attestKey, ctx.projectName, axon)
       .then(function (grid) {
