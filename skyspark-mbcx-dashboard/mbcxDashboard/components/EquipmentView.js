@@ -852,10 +852,20 @@ window.mbcxDashboard.components.EquipmentView = (function () {
       .then(function (val) {
         var b64 = (val && typeof val === 'object') ? (val.val || '') : (val || '');
         if (!b64) {
-          el.innerHTML = '<div class="eq-empty-msg">PDF file not found or empty.</div>';
+          el.innerHTML = '<div class="eq-empty-msg">File not found or empty.</div>';
           return;
         }
-        el.innerHTML = '<iframe class="eq-soo-iframe" src="data:application/pdf;base64,' + b64 + '"></iframe>';
+        var ext = filePath.split('.').pop().toLowerCase();
+        var mime = ext === 'png' ? 'image/png'
+          : ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg'
+          : ext === 'gif' ? 'image/gif'
+          : ext === 'svg' ? 'image/svg+xml'
+          : 'application/pdf';
+        if (mime.indexOf('image/') === 0) {
+          el.innerHTML = '<img class="eq-soo-img" src="data:' + mime + ';base64,' + b64 + '" alt="Sequence of Operation">';
+        } else {
+          el.innerHTML = '<iframe class="eq-soo-iframe" src="data:' + mime + ';base64,' + b64 + '"></iframe>';
+        }
       })
       .catch(function (err) {
         console.warn('[EquipmentView] SOO PDF load failed:', err);
