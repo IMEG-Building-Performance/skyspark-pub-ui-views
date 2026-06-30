@@ -302,8 +302,11 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         });
       }
 
-      API.evalAxon(ctx.attestKey, ctx.projectName, 'do s: read(site and id==' + siteRef + ', false); if (s != null and s.has("defOfSuccess")) s["defOfSuccess"] else null end')
+      var loadAxon = 'do s: read(site and id==' + siteRef + ', false); if (s != null) s["defOfSuccess"] else null end';
+      console.info('[DoS] Load axon:', loadAxon, '| siteRef:', siteRef);
+      API.evalAxon(ctx.attestKey, ctx.projectName, loadAxon)
         .then(function (grid) {
+          console.info('[DoS] Load raw grid:', grid);
           var HP = NS.haystackParser;
           var parsed = HP.parseGrid(grid);
           var val = parsed.rows.length ? parsed.rows[0][parsed.cols[0]] : null;
