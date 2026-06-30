@@ -3587,6 +3587,39 @@
 }
 #mbcxDashboard .mp-meeting-name { font-size: 13px; font-weight: 700; color: var(--card-fg); }
 #mbcxDashboard .mp-meeting-date { font-size: 11.5px; color: var(--muted); }
+#mbcxDashboard .mp-draft-chip {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--amber);
+  background: var(--amber-lt);
+  border: 1px solid #fcd34d;
+  border-radius: 4px;
+  padding: 2px 8px;
+  letter-spacing: .03em;
+  margin-left: auto;
+}
+#mbcxDashboard .mp-save-close {
+  font-size: 11.5px;
+  padding: 4px 12px;
+  flex-shrink: 0;
+}
+
+/* Draft meeting cards */
+#mbcxDashboard .mtg-draft-card {
+  background: var(--amber-lt);
+  border: 1px solid #fcd34d;
+  border-radius: 8px;
+  padding: 4px 10px;
+  margin-bottom: 6px;
+}
+#mbcxDashboard .mtg-draft-badge {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--amber);
+  letter-spacing: .08em;
+  padding: 1px 6px;
+  flex-shrink: 0;
+}
 
 /* Meeting record CRUD actions (landing lists) */
 #mbcxDashboard .mtg-past-line { display: flex; align-items: center; }
@@ -4429,4 +4462,145 @@
 
 #mbcxDashboard .dash-theme-dark .ma-loading--error {
   color: #fca5a5;
+}
+
+/* ── Definition of Success banner ─────────────────────────────── */
+#mbcxDashboard .dos-card {
+  background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+}
+#mbcxDashboard .dos-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #15803d;
+  margin-bottom: 6px;
+}
+#mbcxDashboard .dos-text {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #1e293b;
+}
+#mbcxDashboard .dash-theme-dark .dos-card {
+  background: linear-gradient(135deg, #052e16, #064e3b);
+  border-color: #166534;
+}
+#mbcxDashboard .dash-theme-dark .dos-label { color: #86efac; }
+#mbcxDashboard .dash-theme-dark .dos-text { color: #e2e8f0; }
+#mbcxDashboard .dos-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+#mbcxDashboard .dos-hd .dos-label { margin-bottom: 0; }
+#mbcxDashboard .dos-edit-btn {
+  background: none; border: 1px solid #bbf7d0; border-radius: 5px;
+  color: #15803d; font-size: 11px; font-weight: 600; cursor: pointer;
+  padding: 2px 10px;
+}
+#mbcxDashboard .dos-edit-btn:hover { background: #dcfce7; }
+#mbcxDashboard .dos-empty { font-size: 13px; color: var(--muted); font-style: italic; }
+#mbcxDashboard .dos-list {
+  margin: 4px 0 4px 20px; padding: 0;
+  font-size: 14px; line-height: 1.6; color: #1e293b;
+}
+#mbcxDashboard .dos-list li { margin-bottom: 2px; }
+#mbcxDashboard .dos-para { margin: 4px 0; font-size: 14px; line-height: 1.5; color: #1e293b; }
+#mbcxDashboard .dash-theme-dark .dos-list,
+#mbcxDashboard .dash-theme-dark .dos-para { color: #e2e8f0; }
+#mbcxDashboard .dos-textarea {
+  width: 100%; border: 1px solid #bbf7d0; border-radius: 6px;
+  padding: 8px 10px; font-size: 13px; font-family: inherit;
+  resize: vertical; background: #fff; color: var(--card-fg);
+  margin-bottom: 8px;
+}
+#mbcxDashboard .dos-edit-actions { display: flex; gap: 8px; }
+#mbcxDashboard .dos-save-btn {
+  background: #15803d; color: #fff; border: none; border-radius: 5px;
+  padding: 5px 14px; font-size: 12px; font-weight: 600; cursor: pointer;
+}
+#mbcxDashboard .dos-save-btn:hover { background: #166534; }
+#mbcxDashboard .dos-save-btn:disabled { opacity: .6; cursor: default; }
+#mbcxDashboard .dos-cancel-btn {
+  background: none; border: 1px solid var(--card-border); border-radius: 5px;
+  padding: 5px 14px; font-size: 12px; cursor: pointer; color: var(--muted);
+}
+#mbcxDashboard .dos-cancel-btn:hover { background: var(--gray-50); }
+#mbcxDashboard .dash-theme-dark .dos-edit-btn { color: #86efac; border-color: #166534; }
+#mbcxDashboard .dash-theme-dark .dos-edit-btn:hover { background: #064e3b; }
+#mbcxDashboard .dash-theme-dark .dos-textarea { background: #1e293b; color: #e2e8f0; border-color: #166534; }
+#mbcxDashboard .dash-theme-dark .dos-save-btn { background: #166534; }
+#mbcxDashboard .dash-theme-dark .dos-cancel-btn { border-color: #334155; color: #94a3b8; }
+#mbcxDashboard .fd-agenda-queued { background: var(--amber-lt); color: var(--amber); border-color: #fcd34d; }
+#mbcxDashboard .fl-agenda-btn-queued { background: var(--amber-lt) !important; color: var(--amber) !important; border-color: #fcd34d !important; }
+
+/* Queue landing section */
+#mbcxDashboard .mp-queue-list { display: flex; flex-direction: column; gap: 4px; }
+#mbcxDashboard .mp-queue-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; background: var(--amber-lt); border: 1px solid #fcd34d;
+  border-radius: 8px; font-size: 12.5px;
+}
+#mbcxDashboard .mp-queue-num { font-weight: 700; color: var(--amber); min-width: 18px; text-align: center; }
+#mbcxDashboard .mp-queue-item-main { flex: 1; min-width: 0; }
+#mbcxDashboard .mp-queue-item-equip { font-weight: 600; color: var(--card-fg); }
+#mbcxDashboard .mp-queue-item-fault { font-size: 11.5px; color: var(--muted); }
+#mbcxDashboard .mp-queue-remove { color: var(--gray-400); }
+#mbcxDashboard .mp-queue-remove:hover { color: var(--imeg-red); }
+#mbcxDashboard .mp-queue-actions { margin-top: 8px; display: flex; justify-content: flex-end; }
+
+/* ── Agenda dropdown (FaultDetail + FaultList) ────────────────── */
+#mbcxDashboard .fd-agenda-wrap { position: relative; display: inline-block; }
+#mbcxDashboard .fd-agenda-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  min-width: 170px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.12);
+  padding: 4px;
+  margin-top: 4px;
+}
+#mbcxDashboard .fd-agenda-dd-item {
+  all: unset;
+  cursor: pointer;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: #374151;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+#mbcxDashboard .fd-agenda-dd-item:hover { background: #f3f4f6; }
+#mbcxDashboard .dash-theme-dark .fd-agenda-dropdown {
+  background: #1f2937;
+  border-color: #374151;
+  box-shadow: 0 4px 12px rgba(0,0,0,.35);
+}
+#mbcxDashboard .dash-theme-dark .fd-agenda-dd-item { color: #e5e7eb; }
+#mbcxDashboard .dash-theme-dark .fd-agenda-dd-item:hover { background: #374151; }
+
+#mbcxDashboard .fl-agenda-cell { position: relative; display: inline-block; }
+#mbcxDashboard .fl-agenda-dd {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  min-width: 140px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.12);
+  padding: 4px;
+  margin-bottom: 4px;
+}
+#mbcxDashboard .dash-theme-dark .fl-agenda-dd {
+  background: #1f2937;
+  border-color: #374151;
 }

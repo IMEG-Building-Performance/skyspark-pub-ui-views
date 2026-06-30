@@ -211,6 +211,99 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       } catch (e) {}
     },
 
+    _loadDefOfSuccess: function (container, ctx) {
+      var el = container.querySelector('#mbcxDosBanner');
+      if (!el || !ctx || !ctx.attestKey) return;
+      var API = NS.api;
+      var rawRef = ctx.siteRef || '';
+      if (rawRef === '__all__' || !rawRef) {
+        if (ctx.siteRefs && ctx.siteRefs.length) {
+          rawRef = ctx.siteRefs.filter(function (r) { return r !== '__all__'; })[0] || '';
+        }
+        if (!rawRef || rawRef === '__all__') return;
+      }
+      var siteRef = '@' + rawRef.replace(/^@/, '');
+
+      function esc(s) {
+        return String(s == null ? '' : s)
+          .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      }
+
+      function formatDos(raw) {
+        var lines = esc(raw).split(/\n/);
+        var html = '';
+        var inList = false;
+        for (var i = 0; i < lines.length; i++) {
+          var line = lines[i];
+          var bullet = line.match(/^\s*[-•●∙]\s+(.*)/);
+          var numbered = line.match(/^\s*(\d+)[.)]\s+(.*)/);
+          if (bullet) {
+            if (!inList) { html += '<ul class="dos-list">'; inList = true; }
+            html += '<li>' + bullet[1] + '</li>';
+          } else if (numbered) {
+            if (!inList) { html += '<ol class="dos-list">'; inList = true; }
+            html += '<li>' + numbered[2] + '</li>';
+          } else {
+            if (inList) { html += inList === 'ol' ? '</ol>' : '</ul>'; inList = false; }
+            if (line.trim()) html += '<p class="dos-para">' + line + '</p>';
+          }
+        }
+        if (inList) html += '</ul>';
+        return html;
+      }
+
+      function renderCard(val) {
+        var hasVal = val && typeof val === 'string' && val.trim();
+        el.innerHTML = '<div class="dos-card">' +
+          '<div class="dos-hd"><div class="dos-label">Definition of Success</div>' +
+          '<button class="dos-edit-btn" id="dosEditBtn">' + (hasVal ? '&#9998; Edit' : '+ Add') + '</button></div>' +
+          (hasVal ? '<div class="dos-text">' + formatDos(val) + '</div>'
+                  : '<div class="dos-empty">No definition of success set for this site.</div>') +
+          '</div>';
+        var editBtn = el.querySelector('#dosEditBtn');
+        if (editBtn) editBtn.addEventListener('click', function () { showEditor(val || ''); });
+      }
+
+      function showEditor(current) {
+        el.innerHTML = '<div class="dos-card dos-card--editing">' +
+          '<div class="dos-label">Definition of Success</div>' +
+          '<textarea class="dos-textarea" id="dosTextarea" rows="3" placeholder="Enter the definition of success for this site&hellip;">' + esc(current) + '</textarea>' +
+          '<div class="dos-edit-actions">' +
+          '<button class="dos-save-btn" id="dosSaveBtn">Save to SkySpark</button>' +
+          '<button class="dos-cancel-btn" id="dosCancelBtn">Cancel</button>' +
+          '</div></div>';
+        var ta = el.querySelector('#dosTextarea');
+        if (ta) ta.focus();
+        var cancelBtn = el.querySelector('#dosCancelBtn');
+        if (cancelBtn) cancelBtn.addEventListener('click', function () { renderCard(current); });
+        var saveBtn = el.querySelector('#dosSaveBtn');
+        if (saveBtn) saveBtn.addEventListener('click', function () {
+          var newVal = (ta ? ta.value : '').trim();
+          saveBtn.disabled = true;
+          saveBtn.textContent = 'Saving…';
+          var q = '"' + newVal.replace(/\\/g,'\\\\').replace(/"/g,'\\"').replace(/\n/g,'\\n') + '"';
+          var axon = 'do s: read(site and id==' + siteRef + ', false); if (s != null) commit(diff(s, {defOfSuccess: ' + q + '})) end';
+          API.evalAxon(ctx.attestKey, ctx.projectName, axon)
+            .then(function () { renderCard(newVal); })
+            .catch(function (err) {
+              console.warn('[DoS] Save failed:', err);
+              window.alert('Could not save — check permissions (details in console).');
+              saveBtn.disabled = false;
+              saveBtn.textContent = 'Save to SkySpark';
+            });
+        });
+      }
+
+      var loadAxon = 'do s: read(site and id==' + siteRef + ', false); if (s != null) s["defOfSuccess"] else null end';
+      API.evalAxonVal(ctx.attestKey, ctx.projectName, loadAxon)
+        .then(function (val) {
+          var str = (val && typeof val === 'object') ? (val.val || val.dis || '') : (val || '');
+          if (typeof str === 'string') str = str.trim();
+          renderCard(str || '');
+        })
+        .catch(function () { renderCard(''); });
+    },
+
     init: function (container, data, ctx) {
       NS.App._lastData  = data;
       NS.App._lastCtx   = ctx;
@@ -634,13 +727,13 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       if (tab === 'summary') {
         content.innerHTML = [
           '<div class="page">',
-          co.BuildingMeters ? co.BuildingMeters.render(data) : '',
+          '<div class="dos-banner" id="mbcxDosBanner"></div>',
           co.CUP            ? co.CUP.render(data)            : '',
           co.AHU            ? co.AHU.render(data)            : '',
           co.TerminalUnits  ? co.TerminalUnits.render()      : '',
           '</div>'
         ].join('\n');
-        if (co.BuildingMeters && co.BuildingMeters.initLive) co.BuildingMeters.initLive(container, ctx || null);
+        NS.App._loadDefOfSuccess(container, ctx);
         if (co.CUP && co.CUP.initCard) co.CUP.initCard(content, container, co, data, ctx || null);
         if (co.AHU)                     co.AHU.initLive(container, ctx || null);
         if (co.TerminalUnits)           co.TerminalUnits.initLive(container, ctx || null);

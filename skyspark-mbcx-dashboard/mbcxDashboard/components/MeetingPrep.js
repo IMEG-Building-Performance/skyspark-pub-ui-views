@@ -431,6 +431,8 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       '<button class="mp-act mp-link" data-step="0">&#8592; All meetings</button>' +
       (_meeting ? '<span class="mp-meeting-name">' + _esc(_meeting.dis || '') + '</span>' +
         (_meeting.date ? '<span class="mp-meeting-date">' + _esc(String(_meeting.date)) + '</span>' : '') : '') +
+      '<span class="mp-draft-chip">Draft &mdash; auto-saved</span>' +
+      '<button class="mp-btn mp-save-close" data-saveclose="1">Save &amp; Close</button>' +
       '</div>';
     // Stage 3 hosts the full MeetingView agenda (add items, drag-reorder,
     // present mode) — mounted by initLive after the HTML lands.
@@ -438,6 +440,26 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
              : _stage === 2 ? _newStage()
              : _reviewStage();
     return bar + _stepper() + body;
+  }
+
+  function _queueLandingHtml() {
+    var items = NS.queue ? NS.queue.list() : [];
+    if (!items.length) return '<div class="mp-rail-empty">No faults in queue. Use "Add to Queue" from the Fault List or a fault detail page.</div>';
+    return '<div class="mp-queue-list">' +
+      items.map(function (it, i) {
+        var f = it.fault || {};
+        return '<div class="mp-queue-item">' +
+          '<span class="mp-queue-num">' + (i + 1) + '</span>' +
+          '<div class="mp-queue-item-main">' +
+          '<div class="mp-queue-item-equip">' + _esc(f.equipment || '') + '</div>' +
+          '<div class="mp-queue-item-fault">' + _esc(f.faultName || '') + '</div>' +
+          '</div>' +
+          '<button class="mp-act mp-act--primary" data-q2agenda="' + _esc(String(f.id)) + '">+ Agenda</button>' +
+          '<button class="mp-act mp-queue-remove" data-qremove="' + _esc(String(f.id)) + '">&times;</button>' +
+          '</div>';
+      }).join('') +
+      (items.length > 1 ? '<div class="mp-queue-actions"><button class="mp-btn" data-qaddall="1">Add all to current agenda</button></div>' : '') +
+      '</div>';
   }
 
   function _landingHtml() {
@@ -459,7 +481,9 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       '      <button class="mp-btn" data-cancelnew="1">Cancel</button>',
       '    </div>',
       '  </div>',
-      '  <h3 class="mp-section-title">Drafts <span class="mp-section-sub">meetings being prepared</span></h3>',
+      '  <h3 class="mp-section-title">Fault Queue <span class="mp-section-sub">faults saved for future meetings</span></h3>',
+      '  <div id="mpQueue2">' + _queueLandingHtml() + '</div>',
+      '  <h3 class="mp-section-title" style="margin-top:18px;">Drafts <span class="mp-section-sub">meetings being prepared</span></h3>',
       '  <div id="mpDrafts"><div class="mp-rail-empty mp-loading">Loading&hellip;</div></div>',
       '  <h3 class="mp-section-title" style="margin-top:18px;">Past Meetings</h3>',
       '  <div id="mpPast"><div class="mp-rail-empty mp-loading">Loading&hellip;</div></div>',
@@ -472,8 +496,20 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     var pastEl   = contentEl.querySelector('#mpPast');
     if (!draftsEl || !pastEl) return;
 
+    function _activeDraftHtml() {
+      if (!_meeting) return '';
+      return '<div class="mtg-draft-card"><div class="mtg-past-line">' +
+        '<span class="mtg-draft-badge">DRAFT</span>' +
+        '<button class="mtg-past-hd" data-resumeactive="1">' +
+        '<span class="mtg-past-date">' + _esc(_meeting.date || '') + '</span>' +
+        '<span class="mtg-past-meta">' + _esc(_meeting.dis || 'Untitled meeting') + '</span>' +
+        '<span class="mp-resume">Resume prep &#8594;</span>' +
+        '</button></div></div>';
+    }
+
     if (!(ctx && ctx.attestKey && ctx.projectName)) {
-      draftsEl.innerHTML = '<div class="mp-rail-empty">Demo mode — meeting records need a SkySpark session.<br>Use + New Meeting to run an unsaved prep.</div>';
+      draftsEl.innerHTML = _activeDraftHtml() ||
+        '<div class="mp-rail-empty">No drafts — start a new meeting above.</div>';
       pastEl.innerHTML = '<div class="mp-rail-empty">&mdash;</div>';
       return;
     }
@@ -516,8 +552,12 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
             '</span>';
         }
 
-        draftsEl.innerHTML = _landRecs.drafts.length ? _landRecs.drafts.map(function (m) {
-          return '<div class="mtg-past-item"><div class="mtg-past-line">' +
+        var activeHtml = _activeDraftHtml();
+        var activeId = _meeting ? _meeting.id : null;
+        var serverDrafts = _landRecs.drafts.filter(function (m) { return !activeId || m.id !== activeId; });
+        draftsEl.innerHTML = (activeHtml || '') + (serverDrafts.length ? serverDrafts.map(function (m) {
+          return '<div class="mtg-draft-card"><div class="mtg-past-line">' +
+            '<span class="mtg-draft-badge">DRAFT</span>' +
             '<button class="mtg-past-hd" data-draft="' + _esc(m.id) + '">' +
             '<span class="mtg-past-date">' + _esc(m.date) + '</span>' +
             '<span class="mtg-past-meta">' + _esc(m.dis) +
@@ -526,7 +566,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
             '<span class="mp-resume">Resume prep &#8594;</span>' +
             '</button>' + actBtns(m, false) +
             '</div></div>';
-        }).join('') : '<div class="mp-rail-empty">No drafts — start a new meeting above.</div>';
+        }).join('') : '') || (!activeHtml ? '<div class="mp-rail-empty">No drafts — start a new meeting above.</div>' : '');
 
         if (_landRecs.held.length) {
           var rows = _landRecs.held.map(function (m, i) {
@@ -588,17 +628,17 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
     if (notes == null) return;
     name = name.trim() || rec.dis;
     notes = notes.trim();
-    _commitMeeting(ctx, 'commit(diff(readById(@' + rec.id + '), {dis: ' + _q(name) +
-      ', mbcxNotes: ' + (notes ? _q(notes) : 'removeMarker()') + '}))', refresh);
+    _commitMeeting(ctx, 'do r: read(mbcxMeeting and id==@' + rec.id + ', false); if (r != null) commit(diff(r, {dis: ' + _q(name) +
+      ', mbcxNotes: ' + (notes ? _q(notes) : 'removeMarker()') + '})) end', refresh);
   }
 
   function _deleteMeetingRec(rec, ctx, refresh) {
     if (!window.confirm('Delete "' + (rec.dis || rec.date) + '"? This removes the record from SkySpark.')) return;
-    _commitMeeting(ctx, 'commit(diff(readById(@' + rec.id + '), null, {remove}))', refresh);
+    _commitMeeting(ctx, 'do r: read(mbcxMeeting and id==@' + rec.id + ', false); if (r != null) commit(diff(r, null, {remove})) end', refresh);
   }
 
   function _reopenMeetingRec(rec, ctx, refresh) {
-    _commitMeeting(ctx, 'commit(diff(readById(@' + rec.id + '), {mbcxStatus: "draft"}))', refresh);
+    _commitMeeting(ctx, 'do r: read(mbcxMeeting and id==@' + rec.id + ', false); if (r != null) commit(diff(r, {mbcxStatus: "draft"})) end', refresh);
   }
 
   function _createMeeting(contentEl, ctx, done) {
@@ -628,7 +668,7 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
       ', dis: ' + _q(name) +
       ', date: ' + (dateOk ? date : 'today()') +
       (notes ? ', mbcxNotes: ' + _q(notes) : '') +
-      (ctx.siteRef ? ', siteRef: ' + ctx.siteRef : '') +
+      (ctx.siteRef && ctx.siteRef !== '__all__' ? ', siteRef: ' + ctx.siteRef : '') +
       ', mbcxUser: context()->username}, {add}))';
     NS.api.evalAxon(ctx.attestKey, ctx.projectName, axon)
       .then(function (grid) {
@@ -846,6 +886,13 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         var btn = e.target.closest('button');
         if (!btn || btn.disabled) return;
 
+        if (btn.getAttribute('data-saveclose')) {
+          if (_stage === 3 && co && co.MeetingView) co.MeetingView.destroy(co);
+          _stage = 0;
+          rerenderStage();
+          return;
+        }
+
         var step = btn.getAttribute('data-step');
         if (step) {
           var newStage = parseInt(step, 10);
@@ -897,6 +944,32 @@ window.mbcxDashboard.components = window.mbcxDashboard.components || {};
         if (reopenId) {
           var rr = _findRec(reopenId);
           if (rr) _reopenMeetingRec(rr, ctx, function () { _loadMeetingLists(contentEl, ctx); });
+          return;
+        }
+        var qRemove = btn.getAttribute('data-qremove');
+        if (qRemove && NS.queue) {
+          NS.queue.remove(isNaN(Number(qRemove)) ? qRemove : Number(qRemove));
+          var q2el = contentEl.querySelector('#mpQueue2');
+          if (q2el) q2el.innerHTML = _queueLandingHtml();
+          return;
+        }
+        var q2a = btn.getAttribute('data-q2agenda');
+        if (q2a && NS.queue) {
+          NS.queue.moveToAgenda(isNaN(Number(q2a)) ? q2a : Number(q2a));
+          var q2el2 = contentEl.querySelector('#mpQueue2');
+          if (q2el2) q2el2.innerHTML = _queueLandingHtml();
+          return;
+        }
+        if (btn.getAttribute('data-qaddall') && NS.queue) {
+          NS.queue.moveAllToAgenda();
+          var q2el3 = contentEl.querySelector('#mpQueue2');
+          if (q2el3) q2el3.innerHTML = _queueLandingHtml();
+          return;
+        }
+        if (btn.getAttribute('data-resumeactive') && _meeting) {
+          NS.activeMeeting = _meeting;
+          _stage = _allReviewed() ? 2 : 1;
+          rerenderStage();
           return;
         }
         var draftId = btn.getAttribute('data-draft');
