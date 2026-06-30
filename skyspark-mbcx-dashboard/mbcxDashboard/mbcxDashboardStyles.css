@@ -4500,6 +4500,14 @@
 }
 #mbcxDashboard .dos-edit-btn:hover { background: #dcfce7; }
 #mbcxDashboard .dos-empty { font-size: 13px; color: var(--muted); font-style: italic; }
+#mbcxDashboard .dos-list {
+  margin: 4px 0 4px 20px; padding: 0;
+  font-size: 14px; line-height: 1.6; color: #1e293b;
+}
+#mbcxDashboard .dos-list li { margin-bottom: 2px; }
+#mbcxDashboard .dos-para { margin: 4px 0; font-size: 14px; line-height: 1.5; color: #1e293b; }
+#mbcxDashboard .dash-theme-dark .dos-list,
+#mbcxDashboard .dash-theme-dark .dos-para { color: #e2e8f0; }
 #mbcxDashboard .dos-textarea {
   width: 100%; border: 1px solid #bbf7d0; border-radius: 6px;
   padding: 8px 10px; font-size: 13px; font-family: inherit;

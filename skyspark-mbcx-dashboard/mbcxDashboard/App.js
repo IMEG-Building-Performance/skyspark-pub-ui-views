@@ -229,12 +229,35 @@ window.mbcxDashboard = window.mbcxDashboard || {};
           .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
       }
 
+      function formatDos(raw) {
+        var lines = esc(raw).split(/\n/);
+        var html = '';
+        var inList = false;
+        for (var i = 0; i < lines.length; i++) {
+          var line = lines[i];
+          var bullet = line.match(/^\s*[-•●∙]\s+(.*)/);
+          var numbered = line.match(/^\s*(\d+)[.)]\s+(.*)/);
+          if (bullet) {
+            if (!inList) { html += '<ul class="dos-list">'; inList = true; }
+            html += '<li>' + bullet[1] + '</li>';
+          } else if (numbered) {
+            if (!inList) { html += '<ol class="dos-list">'; inList = true; }
+            html += '<li>' + numbered[2] + '</li>';
+          } else {
+            if (inList) { html += inList === 'ol' ? '</ol>' : '</ul>'; inList = false; }
+            if (line.trim()) html += '<p class="dos-para">' + line + '</p>';
+          }
+        }
+        if (inList) html += '</ul>';
+        return html;
+      }
+
       function renderCard(val) {
         var hasVal = val && typeof val === 'string' && val.trim();
         el.innerHTML = '<div class="dos-card">' +
           '<div class="dos-hd"><div class="dos-label">Definition of Success</div>' +
           '<button class="dos-edit-btn" id="dosEditBtn">' + (hasVal ? '&#9998; Edit' : '+ Add') + '</button></div>' +
-          (hasVal ? '<div class="dos-text">' + esc(val) + '</div>'
+          (hasVal ? '<div class="dos-text">' + formatDos(val) + '</div>'
                   : '<div class="dos-empty">No definition of success set for this site.</div>') +
           '</div>';
         var editBtn = el.querySelector('#dosEditBtn');
