@@ -847,15 +847,20 @@ window.mbcxDashboard.components.EquipmentView = (function () {
     var el = _container ? _container.querySelector('#eqSooBody') : null;
     if (!el || !_ctx || !_ctx.attestKey) return;
     var API = window.mbcxDashboard.api;
-    var axon = 'ioReadBin(`' + filePath.replace(/`/g, '') + '`).toBase64';
-    API.evalAxonVal(_ctx.attestKey, _ctx.projectName, axon)
+    var cleanPath = filePath.replace(/`/g, '');
+    var checkAxon = 'do f: ioDir(`' + cleanPath.substring(0, cleanPath.lastIndexOf('/') + 1) + '`); ' +
+      'f.colNames.contains("name") ? f.find(r => r->name == "' + cleanPath.split('/').pop() + '") != null : false end';
+    var readAxon = 'ioReadBin(`' + cleanPath + '`).toBase64';
+    console.info('[SOO] Loading file:', cleanPath);
+    API.evalAxonVal(_ctx.attestKey, _ctx.projectName, readAxon)
       .then(function (val) {
         var b64 = (val && typeof val === 'object') ? (val.val || '') : (val || '');
-        if (!b64) {
-          el.innerHTML = '<div class="eq-empty-msg">File not found or empty.</div>';
+        console.info('[SOO] Read result length:', b64 ? b64.length : 0);
+        if (!b64 || b64.length < 20) {
+          el.innerHTML = '<div class="eq-empty-msg">File not found or empty.<br><code>' + cleanPath + '</code></div>';
           return;
         }
-        var ext = filePath.split('.').pop().toLowerCase();
+        var ext = cleanPath.split('.').pop().toLowerCase();
         var mime = ext === 'png' ? 'image/png'
           : ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg'
           : ext === 'gif' ? 'image/gif'
@@ -868,9 +873,9 @@ window.mbcxDashboard.components.EquipmentView = (function () {
         }
       })
       .catch(function (err) {
-        console.warn('[EquipmentView] SOO PDF load failed:', err);
-        el.innerHTML = '<div class="eq-empty-msg">Could not load PDF — check the file path and permissions.<br><code>' +
-          filePath + '</code></div>';
+        console.warn('[SOO] File load failed:', err);
+        el.innerHTML = '<div class="eq-empty-msg">Could not load file — check the path and permissions.<br><code>' +
+          cleanPath + '</code></div>';
       });
   }
 
