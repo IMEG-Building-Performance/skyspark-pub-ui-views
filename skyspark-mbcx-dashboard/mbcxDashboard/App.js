@@ -284,7 +284,10 @@ window.mbcxDashboard = window.mbcxDashboard || {};
           var q = '"' + newVal.replace(/\\/g,'\\\\').replace(/"/g,'\\"').replace(/\n/g,'\\n') + '"';
           var axon = 'do s: read(site and id==' + siteRef + ', false); if (s != null) commit(diff(s, {defOfSuccess: ' + q + '})) end';
           API.evalAxon(ctx.attestKey, ctx.projectName, axon)
-            .then(function () { renderCard(newVal); })
+            .then(function (grid) {
+              console.info('[DoS] Save succeeded:', grid);
+              renderCard(newVal);
+            })
             .catch(function (err) {
               console.warn('[DoS] Save failed:', err);
               window.alert('Could not save — check permissions (details in console).');
@@ -294,14 +297,18 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         });
       }
 
-      API.evalAxon(ctx.attestKey, ctx.projectName, 'do s: read(site and id==' + siteRef + ', false); if (s != null) s->defOfSuccess else null end')
+      API.evalAxon(ctx.attestKey, ctx.projectName, 'do s: read(site and id==' + siteRef + ', false); if (s != null and s.has("defOfSuccess")) s["defOfSuccess"] else null end')
         .then(function (grid) {
           var HP = NS.haystackParser;
           var parsed = HP.parseGrid(grid);
           var val = parsed.rows.length ? parsed.rows[0][parsed.cols[0]] : null;
+          console.info('[DoS] Loaded defOfSuccess:', val);
           renderCard(val);
         })
-        .catch(function () { renderCard(''); });
+        .catch(function (err) {
+          console.warn('[DoS] Load failed:', err);
+          renderCard('');
+        });
     },
 
     init: function (container, data, ctx) {
