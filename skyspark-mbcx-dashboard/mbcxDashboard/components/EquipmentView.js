@@ -224,6 +224,7 @@ window.mbcxDashboard.components.EquipmentView = (function () {
       '<div class="eq-curval-card" id="eqCurvalCard"></div>' +
       '<div class="eq-trend-card" id="eqTrendCard"></div>' +
       '<div class="eq-faults-card" id="eqFaultsCard"></div>' +
+      '<div class="eq-soo-card" id="eqSooCard" style="display:none"></div>' +
       '<div class="eq-notes-card">' +
         '<div class="eq-construction-banner">🚧 In Construction</div>' +
         '<div class="eq-notes-body">' +
@@ -288,7 +289,8 @@ window.mbcxDashboard.components.EquipmentView = (function () {
           var dis = _strVal(r.navName) || _strVal(r.dis) || (r.id && r.id.dis ? r.id.dis : '') || id;
           var equipType = r.equipType ? _strVal(r.equipType) : _inferType(dis);
           var sparksLink = _strVal(r.sparksLink) || '';
-          return { id: id, dis: dis, type: equipType, sparksLink: sparksLink, _raw: r };
+          var sooPath = _strVal(r.seqOfOpPath) || '';
+          return { id: id, dis: dis, type: equipType, sparksLink: sparksLink, seqOfOpPath: sooPath, _raw: r };
         }).filter(function (e) { return e.id; });
         _equipList.sort(function (a, b) { return a.dis.localeCompare(b.dis); });
         if (_equipList.length) {
@@ -309,6 +311,7 @@ window.mbcxDashboard.components.EquipmentView = (function () {
             }
           }
           _renderHeader();
+          _renderSoo();
           _loadEquipDetail();
         } else {
           _showNoEquip();
@@ -364,6 +367,7 @@ window.mbcxDashboard.components.EquipmentView = (function () {
         _renderCurvals();
         _renderTrend();
         _renderFaults();
+        _renderSoo();
         _loadEquipDetail();
       });
     });
@@ -820,6 +824,44 @@ window.mbcxDashboard.components.EquipmentView = (function () {
     wrap.appendChild(legend);
 
     area.appendChild(wrap);
+  }
+
+  // ── Sequence of Operation card ──────────────────────────────────────
+
+  function _renderSoo() {
+    var el = _container ? _container.querySelector('#eqSooCard') : null;
+    if (!el) return;
+    var equip = _equipList.filter(function (e) { return e.id === _selectedId; })[0];
+    if (!equip || !equip.seqOfOpPath) {
+      el.style.display = 'none';
+      return;
+    }
+    el.style.display = '';
+    el.innerHTML = '<div class="eq-card-header"><div class="eq-section-title">Sequence of Operation</div>' +
+      '<span class="eq-soo-path" title="' + equip.seqOfOpPath + '">' + equip.seqOfOpPath.split('/').pop() + '</span></div>' +
+      '<div class="eq-soo-body" id="eqSooBody"><div class="eq-loading">Loading PDF…</div></div>';
+    _loadSooPdf(equip.seqOfOpPath);
+  }
+
+  function _loadSooPdf(filePath) {
+    var el = _container ? _container.querySelector('#eqSooBody') : null;
+    if (!el || !_ctx || !_ctx.attestKey) return;
+    var API = window.mbcxDashboard.api;
+    var axon = 'ioReadBin(`' + filePath.replace(/`/g, '') + '`).toBase64';
+    API.evalAxonVal(_ctx.attestKey, _ctx.projectName, axon)
+      .then(function (val) {
+        var b64 = (val && typeof val === 'object') ? (val.val || '') : (val || '');
+        if (!b64) {
+          el.innerHTML = '<div class="eq-empty-msg">PDF file not found or empty.</div>';
+          return;
+        }
+        el.innerHTML = '<iframe class="eq-soo-iframe" src="data:application/pdf;base64,' + b64 + '"></iframe>';
+      })
+      .catch(function (err) {
+        console.warn('[EquipmentView] SOO PDF load failed:', err);
+        el.innerHTML = '<div class="eq-empty-msg">Could not load PDF — check the file path and permissions.<br><code>' +
+          filePath + '</code></div>';
+      });
   }
 
   // ── Faults card ────────────────────────────────────────────────────
