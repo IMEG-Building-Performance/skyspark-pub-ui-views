@@ -252,7 +252,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
           saveBtn.disabled = true;
           saveBtn.textContent = 'Saving…';
           var q = '"' + newVal.replace(/\\/g,'\\\\').replace(/"/g,'\\"').replace(/\n/g,'\\n') + '"';
-          var axon = 'commit(diff(readById(' + siteRef + '), {defOfSuccess: ' + q + '}))';
+          var axon = 'do rec: read(id==' + siteRef + '); commit(diff(rec, {defOfSuccess: ' + q + '})); end';
           API.evalAxon(ctx.attestKey, ctx.projectName, axon)
             .then(function () { renderCard(newVal); })
             .catch(function (err) {
