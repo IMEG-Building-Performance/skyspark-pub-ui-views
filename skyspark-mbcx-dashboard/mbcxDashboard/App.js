@@ -303,20 +303,13 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       }
 
       var loadAxon = 'do s: read(site and id==' + siteRef + ', false); if (s != null) s["defOfSuccess"] else null end';
-      console.info('[DoS] Load axon:', loadAxon, '| siteRef:', siteRef);
-      API.evalAxon(ctx.attestKey, ctx.projectName, loadAxon)
-        .then(function (grid) {
-          console.info('[DoS] Load raw grid:', grid);
-          var HP = NS.haystackParser;
-          var parsed = HP.parseGrid(grid);
-          var val = parsed.rows.length ? parsed.rows[0][parsed.cols[0]] : null;
-          console.info('[DoS] Loaded defOfSuccess:', val);
-          renderCard(val);
+      API.evalAxonVal(ctx.attestKey, ctx.projectName, loadAxon)
+        .then(function (val) {
+          var str = (val && typeof val === 'object') ? (val.val || val.dis || '') : (val || '');
+          if (typeof str === 'string') str = str.trim();
+          renderCard(str || '');
         })
-        .catch(function (err) {
-          console.warn('[DoS] Load failed:', err);
-          renderCard('');
-        });
+        .catch(function () { renderCard(''); });
     },
 
     init: function (container, data, ctx) {
