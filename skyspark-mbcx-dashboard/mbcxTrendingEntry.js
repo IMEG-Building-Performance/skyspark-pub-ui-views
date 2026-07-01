@@ -9,7 +9,7 @@ var mbcxTrendingHandler = {};
   var BUST = '?_v=' + Date.now();
 
   var modules = [
-    { src: 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js', abs: true },
+    { src: '../mbcxDashboard/vendor/chart.umd.min.js' },
     { src: 'constants/demoData.js' },
     { src: 'utils/api.js' },
     { src: 'utils/haystackParser.js' },
