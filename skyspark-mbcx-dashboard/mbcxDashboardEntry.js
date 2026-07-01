@@ -12,8 +12,10 @@ var mbcxDashboardHandler = {};
   var modules = [
     { src: 'vendor/chart.umd.min.js' },
     { src: 'constants/demoData.js' },
+    { src: 'utils/escape.js' },
     { src: 'utils/api.js' },
     { src: 'utils/haystackParser.js' },
+    { src: 'core/tabRegistry.js' },
     { src: 'evals/loadData.js' },
     { src: 'evals/loadAhuData.js' },
     { src: 'evals/loadCupData.js' },
