@@ -4419,3 +4419,551 @@
 #mbcxDashboard .dash-theme-dark .ma-loading--error {
   color: #fca5a5;
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   EVENT COST TRACKING — Sub-tab bar + Component Styles
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ── Sub-tab bar (inside event cost tab) ─────────────────────────── */
+#mbcxDashboard .ec-outer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+#mbcxDashboard .ec-page-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 12px 24px 0;
+  border-bottom: 2px solid var(--card-border, #E5E7EB);
+  flex-shrink: 0;
+  background: var(--card-bg, #fff);
+}
+
+#mbcxDashboard .ec-page-tab {
+  padding: 9px 20px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--muted, #6B7280);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  margin-bottom: -2px;
+  transition: color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+#mbcxDashboard .ec-page-tab:hover {
+  color: var(--card-fg, #1F2937);
+}
+
+#mbcxDashboard .ec-page-tab--active {
+  color: var(--imeg-blue, #4A6FA5);
+  border-bottom-color: var(--imeg-blue, #4A6FA5);
+}
+
+#mbcxDashboard .ec-page-tab--disabled {
+  opacity: 0.35;
+  cursor: default;
+  pointer-events: none;
+}
+
+#mbcxDashboard #ecTabContent {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* ── Summary Cards (eap-*) ───────────────────────────────────────── */
+#mbcxDashboard .eap-summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+#mbcxDashboard .eap-summary-card {
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--card-border, #E5E7EB);
+  border-radius: 8px;
+  padding: 16px 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+#mbcxDashboard .eap-summary-card-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted, #9CA3AF);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+#mbcxDashboard .eap-summary-card-value {
+  font-size: 26px;
+  font-weight: 700;
+  color: #2563EB;
+  letter-spacing: -0.02em;
+}
+
+#mbcxDashboard .eap-summary-card-sub {
+  font-size: 11px;
+  color: var(--muted, #9CA3AF);
+  margin-top: 4px;
+}
+
+#mbcxDashboard .eap-summary-card-value--dark  { color: var(--card-fg, #1F2937) !important; }
+#mbcxDashboard .eap-summary-card-value--green { color: #16A34A !important; }
+#mbcxDashboard .eap-summary-card-value--amber { color: #D97706 !important; }
+#mbcxDashboard .eap-summary-card-value--red   { color: #DC2626 !important; }
+#mbcxDashboard .eap-summary-card-value--blue  { color: #2563EB !important; }
+
+/* ── Spinner (edb-*) ─────────────────────────────────────────────── */
+#mbcxDashboard .edb-spinner {
+  border: 3px solid var(--card-border, #E5E7EB);
+  border-top-color: var(--imeg-blue, #4A6FA5);
+  border-radius: 50%;
+  animation: edb-spin 0.8s linear infinite;
+}
+
+@keyframes edb-spin { to { transform: rotate(360deg); } }
+
+/* ── Monthly Overview (mo-*) ─────────────────────────────────────── */
+#mbcxDashboard .mo-picker {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+#mbcxDashboard .mo-picker-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted, #6B7280);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+
+#mbcxDashboard .mo-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+#mbcxDashboard .mo-nav-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  border: 1px solid var(--card-border, #E5E7EB);
+  background: var(--card-bg, #fff);
+  color: var(--muted, #6B7280);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.12s;
+  padding: 0;
+}
+
+#mbcxDashboard .mo-nav-btn:hover:not(:disabled) { border-color: var(--imeg-blue, #4A6FA5); color: var(--imeg-blue, #4A6FA5); }
+#mbcxDashboard .mo-nav-btn:disabled { opacity: 0.35; cursor: default; }
+
+#mbcxDashboard .mo-current {
+  padding: 6px 18px;
+  border-radius: 6px;
+  background: var(--imeg-blue, #4A6FA5);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  min-width: 160px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+#mbcxDashboard .mo-tab-row { display: flex; gap: 4px; flex-wrap: wrap; }
+
+#mbcxDashboard .mo-month-tab {
+  padding: 5px 12px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid var(--card-border, #E5E7EB);
+  background: var(--card-bg, #fff);
+  color: var(--muted, #6B7280);
+  cursor: pointer;
+  transition: all 0.12s;
+  white-space: nowrap;
+}
+
+#mbcxDashboard .mo-month-tab:hover { border-color: var(--imeg-blue, #4A6FA5); color: var(--imeg-blue, #4A6FA5); }
+#mbcxDashboard .mo-month-tab--active { background: #374151; color: #fff !important; border-color: #374151; }
+
+#mbcxDashboard .mo-chart-card {
+  background: var(--card-bg, #fff);
+  border-radius: 8px;
+  border: 1px solid var(--card-border, #E5E7EB);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  padding: 20px 24px 0;
+  margin-bottom: 20px;
+}
+
+#mbcxDashboard .mo-chart-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+#mbcxDashboard .mo-chart-card-title { font-size: 14px; font-weight: 700; color: var(--card-fg, #1F2937); }
+
+#mbcxDashboard .mo-chart-legend { display: flex; gap: 14px; font-size: 11px; color: var(--muted, #6B7280); flex-wrap: wrap; }
+#mbcxDashboard .mo-legend-item { display: flex; align-items: center; gap: 5px; }
+#mbcxDashboard .mo-legend-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+#mbcxDashboard .mo-event-card {
+  background: var(--card-bg, #fff);
+  border-radius: 8px;
+  border: 1px solid var(--card-border, #E5E7EB);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+#mbcxDashboard .mo-table-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--card-border, #E5E7EB);
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+#mbcxDashboard .mo-toolbar-left { display: flex; align-items: center; gap: 10px; }
+#mbcxDashboard .mo-table-title { font-size: 14px; font-weight: 700; color: var(--card-fg, #1F2937); }
+#mbcxDashboard .mo-table-count { font-size: 11px; font-weight: 600; color: var(--muted, #9CA3AF); background: var(--card-border, #F3F4F6); padding: 2px 8px; border-radius: 10px; }
+
+#mbcxDashboard .mo-search {
+  padding: 7px 14px;
+  border: 1px solid var(--card-border, #E5E7EB);
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: inherit;
+  width: 220px;
+  outline: none;
+  transition: border-color 0.15s;
+  background: var(--card-bg, #fff);
+  color: var(--card-fg, #374151);
+}
+
+#mbcxDashboard .mo-search:focus { border-color: var(--imeg-blue, #4A6FA5); }
+
+#mbcxDashboard .mo-event-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+
+#mbcxDashboard .mo-event-table thead th {
+  text-align: left;
+  padding: 10px 16px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted, #6B7280);
+  background: var(--card-bg, #F9FAFB);
+  border-bottom: 1px solid var(--card-border, #E5E7EB);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  transition: color 0.12s;
+}
+
+#mbcxDashboard .mo-event-table thead th:hover  { color: var(--imeg-blue, #4A6FA5); }
+#mbcxDashboard .mo-event-table thead th.right  { text-align: right; }
+#mbcxDashboard .mo-event-table thead th.center { text-align: center; cursor: default; }
+
+#mbcxDashboard .mo-event-table tbody td {
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--card-border, #F3F4F6);
+  color: var(--card-fg, #374151);
+}
+
+#mbcxDashboard .mo-event-table tbody td.right  { text-align: right; font-variant-numeric: tabular-nums; }
+#mbcxDashboard .mo-event-table tbody td.center { text-align: center; }
+#mbcxDashboard .mo-event-table tbody tr { transition: background 0.1s; }
+#mbcxDashboard .mo-event-table tbody tr:hover { background: rgba(74,111,165,0.06); }
+#mbcxDashboard .mo-event-table tbody tr:last-child td { border-bottom: none; }
+#mbcxDashboard .mo-event-table tbody tr.mo-future td { color: var(--muted, #9CA3AF); }
+
+#mbcxDashboard .mo-event-name { font-weight: 600; color: var(--card-fg, #1F2937); }
+#mbcxDashboard .mo-future .mo-event-name { color: var(--muted, #6B7280); }
+#mbcxDashboard .mo-event-id { font-size: 11px; color: var(--muted, #9CA3AF); font-family: "SF Mono", "Fira Code", Consolas, monospace; }
+
+#mbcxDashboard .mo-util-pills { display: flex; gap: 3px; justify-content: center; }
+#mbcxDashboard .mo-util-pill { width: 6px; height: 14px; border-radius: 2px; }
+
+#mbcxDashboard .mo-quality-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+#mbcxDashboard .mo-qdot-green { background: #16A34A; }
+#mbcxDashboard .mo-qdot-amber { background: #D97706; }
+#mbcxDashboard .mo-qdot-red   { background: #DC2626; }
+#mbcxDashboard .mo-qdot-gray  { background: #D1D5DB; }
+
+#mbcxDashboard .mo-pending {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--card-border, #F3F4F6);
+  color: var(--muted, #9CA3AF);
+  letter-spacing: 0.03em;
+}
+
+/* ── Utility Reconciliation (ur-*) ───────────────────────────────── */
+#mbcxDashboard .ur-chart-card {
+  background: var(--card-bg, #fff);
+  border-radius: 8px;
+  border: 1px solid var(--card-border, #E5E7EB);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  padding: 20px 24px 0;
+  margin-bottom: 20px;
+}
+
+#mbcxDashboard .ur-chart-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
+#mbcxDashboard .ur-chart-card-title { font-size: 14px; font-weight: 700; color: var(--card-fg, #1F2937); }
+#mbcxDashboard .ur-chart-legend { display: flex; gap: 14px; font-size: 11px; color: var(--muted, #6B7280); flex-wrap: wrap; }
+#mbcxDashboard .ur-legend-item { display: flex; align-items: center; gap: 5px; }
+#mbcxDashboard .ur-legend-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+#mbcxDashboard .ur-legend-dot--pct { border-radius: 50%; background: #DC2626; }
+
+#mbcxDashboard .ur-rate-card {
+  background: var(--card-bg, #fff);
+  border-radius: 8px;
+  border: 1px solid var(--card-border, #E5E7EB);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  padding: 20px 24px;
+  margin-bottom: 20px;
+}
+
+#mbcxDashboard .ur-rate-card-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; gap: 12px; flex-wrap: wrap; }
+#mbcxDashboard .ur-rate-card-title { font-size: 14px; font-weight: 700; color: var(--card-fg, #1F2937); }
+#mbcxDashboard .ur-rate-card-sub { font-size: 11px; color: var(--muted, #9CA3AF); margin-top: 3px; }
+#mbcxDashboard .ur-rate-year-tabs { display: flex; gap: 4px; flex-shrink: 0; }
+
+#mbcxDashboard .ur-rate-year-tab {
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid var(--card-border, #E5E7EB);
+  background: var(--card-bg, #fff);
+  color: var(--muted, #6B7280);
+  cursor: pointer;
+  transition: all 0.12s;
+}
+
+#mbcxDashboard .ur-rate-year-tab:hover { border-color: var(--imeg-blue, #4A6FA5); color: var(--imeg-blue, #4A6FA5); }
+#mbcxDashboard .ur-rate-year-tab--active { background: var(--imeg-blue, #4A6FA5); color: #fff !important; border-color: var(--imeg-blue, #4A6FA5); }
+
+#mbcxDashboard .ur-rate-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+@media (max-width: 900px) { #mbcxDashboard .ur-rate-grid { grid-template-columns: repeat(3, 1fr); } }
+
+#mbcxDashboard .ur-rate-tile {
+  background: var(--card-bg, #F9FAFB);
+  border-radius: 6px;
+  padding: 14px 16px;
+  text-align: center;
+  border: 1px solid var(--card-border, #F3F4F6);
+  transition: border-color 0.12s;
+}
+
+#mbcxDashboard .ur-rate-tile:hover { border-color: #D1D5DB; }
+#mbcxDashboard .ur-rt-utility { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+#mbcxDashboard .ur-rt-elec  { color: #4CAF50; }
+#mbcxDashboard .ur-rt-chw   { color: #2196F3; }
+#mbcxDashboard .ur-rt-steam { color: #FF9800; }
+#mbcxDashboard .ur-rt-gas   { color: #F44336; }
+#mbcxDashboard .ur-rt-water { color: #5DADE2; }
+#mbcxDashboard .ur-rt-rate { font-size: 22px; font-weight: 800; color: var(--card-fg, #1F2937); line-height: 1; margin-bottom: 3px; }
+#mbcxDashboard .ur-rt-unit { font-size: 10px; color: var(--muted, #9CA3AF); }
+#mbcxDashboard .ur-rate-trend { margin-top: 6px; font-size: 10px; font-weight: 600; }
+#mbcxDashboard .ur-trend-up   { color: #DC2626; }
+#mbcxDashboard .ur-trend-down { color: #16A34A; }
+#mbcxDashboard .ur-trend-flat { color: var(--muted, #9CA3AF); }
+
+#mbcxDashboard .ur-detail-card {
+  background: var(--card-bg, #fff);
+  border-radius: 8px;
+  border: 1px solid var(--card-border, #E5E7EB);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+#mbcxDashboard .ur-detail-card-header { padding: 16px 24px; border-bottom: 1px solid var(--card-border, #E5E7EB); }
+#mbcxDashboard .ur-detail-card-title { font-size: 14px; font-weight: 700; color: var(--card-fg, #1F2937); }
+
+#mbcxDashboard .ur-detail-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+#mbcxDashboard .ur-detail-table thead th {
+  text-align: left;
+  padding: 10px 16px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted, #6B7280);
+  background: var(--card-bg, #F9FAFB);
+  border-bottom: 1px solid var(--card-border, #E5E7EB);
+  white-space: nowrap;
+}
+#mbcxDashboard .ur-detail-table thead th.right { text-align: right; }
+#mbcxDashboard .ur-detail-table tbody td { padding: 11px 16px; border-bottom: 1px solid var(--card-border, #F3F4F6); color: var(--card-fg, #374151); }
+#mbcxDashboard .ur-detail-table tbody td.right { text-align: right; font-variant-numeric: tabular-nums; }
+#mbcxDashboard .ur-detail-table tbody td.bold { font-weight: 700; }
+#mbcxDashboard .ur-detail-table tbody tr:hover { background: rgba(74,111,165,0.06); }
+#mbcxDashboard .ur-detail-table tbody tr:last-child td { border-bottom: none; }
+#mbcxDashboard .ur-detail-table tfoot td { padding: 12px 16px; font-weight: 700; color: var(--card-fg, #1F2937); background: var(--card-bg, #F9FAFB); border-top: 2px solid var(--card-border, #E5E7EB); }
+#mbcxDashboard .ur-detail-table tfoot td.right { text-align: right; font-variant-numeric: tabular-nums; }
+
+#mbcxDashboard .ur-recovery-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; }
+#mbcxDashboard .ur-recovery-high { background: #D1FAE5; color: #065F46; }
+#mbcxDashboard .ur-recovery-mid  { background: #FEF3C7; color: #92400E; }
+#mbcxDashboard .ur-recovery-low  { background: #FEE2E2; color: #991B1B; }
+
+/* ── Site Status (ss-*) ──────────────────────────────────────────── */
+#mbcxDashboard .ss-plot-card {
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--card-border, #E5E7EB);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+#mbcxDashboard .ss-plot-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--card-border, #E5E7EB);
+  gap: 12px;
+}
+
+#mbcxDashboard .ss-plot-title { font-size: 14px; font-weight: 700; color: var(--card-fg, #1F2937); }
+#mbcxDashboard .ss-header-btns { display: flex; gap: 6px; }
+
+#mbcxDashboard .ss-header-btn {
+  padding: 5px 14px;
+  border: 1px solid var(--card-border, #E5E7EB);
+  border-radius: 6px;
+  background: var(--card-bg, #fff);
+  color: var(--muted, #6B7280);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.12s, color 0.12s;
+}
+
+#mbcxDashboard .ss-header-btn:hover { border-color: var(--imeg-blue, #4A6FA5); color: var(--imeg-blue, #4A6FA5); }
+#mbcxDashboard .ss-plot-body { padding: 16px 20px; }
+
+#mbcxDashboard .ss-expand-btn {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--card-border, #E5E7EB);
+  border-radius: 6px;
+  background: var(--card-bg, #fff);
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  color: var(--muted, #6B7280);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  padding: 0;
+}
+
+#mbcxDashboard .ss-expand-btn:hover { background: #EFF6FF; color: var(--imeg-blue, #4A6FA5); border-color: var(--imeg-blue, #4A6FA5); }
+
+#mbcxDashboard .ss-timeline-header { display: flex; align-items: center; justify-content: space-between; padding: 4px 4px 2px; cursor: pointer; }
+#mbcxDashboard .ss-timeline-label { font-size: 10px; font-weight: 700; color: var(--muted, #9CA3AF); text-transform: uppercase; letter-spacing: 0.05em; }
+
+#mbcxDashboard .ss-timeline-toggle {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted, #9CA3AF);
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: color 0.12s;
+  font-family: inherit;
+}
+
+#mbcxDashboard .ss-timeline-toggle:hover { color: var(--imeg-blue, #4A6FA5); }
+
+#mbcxDashboard .ss-placeholder { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
+#mbcxDashboard .ss-placeholder-icon { font-size: 32px; margin-bottom: 10px; line-height: 1; color: #D1D5DB; }
+#mbcxDashboard .ss-placeholder-text { font-size: 14px; font-weight: 600; color: var(--muted, #6B7280); }
+#mbcxDashboard .ss-loading { text-align: center; padding: 40px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+#mbcxDashboard .ss-loading-text { font-size: 14px; font-weight: 600; color: var(--muted, #6B7280); margin-top: 12px; }
+
+/* ── Expanded View animation ─────────────────────────────────────── */
+@keyframes expandFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes expandSlideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+/* ── Dark Theme — Event Cost overrides ───────────────────────────── */
+#mbcxDashboard .dash-theme-dark .ec-page-tabs { background: var(--card-bg); border-bottom-color: var(--card-border); }
+#mbcxDashboard .dash-theme-dark .ec-page-tab { color: var(--muted); }
+#mbcxDashboard .dash-theme-dark .ec-page-tab:hover { color: var(--card-fg); }
+#mbcxDashboard .dash-theme-dark .ec-page-tab--active { color: #60a5fa; border-bottom-color: #60a5fa; }
+
+#mbcxDashboard .dash-theme-dark .eap-summary-card { background: var(--card-bg); border-color: var(--card-border); }
+#mbcxDashboard .dash-theme-dark .eap-summary-card-label { color: var(--muted); }
+#mbcxDashboard .dash-theme-dark .eap-summary-card-value { color: #60a5fa; }
+#mbcxDashboard .dash-theme-dark .eap-summary-card-value--dark { color: var(--card-fg) !important; }
+
+#mbcxDashboard .dash-theme-dark .mo-chart-card,
+#mbcxDashboard .dash-theme-dark .mo-event-card,
+#mbcxDashboard .dash-theme-dark .ur-chart-card,
+#mbcxDashboard .dash-theme-dark .ur-rate-card,
+#mbcxDashboard .dash-theme-dark .ur-detail-card,
+#mbcxDashboard .dash-theme-dark .ss-plot-card {
+  background: var(--card-bg);
+  border-color: var(--card-border);
+}
+
+#mbcxDashboard .dash-theme-dark .mo-event-table thead th,
+#mbcxDashboard .dash-theme-dark .ur-detail-table thead th {
+  background: #1e293b;
+  color: var(--muted);
+  border-color: var(--card-border);
+}
+
+#mbcxDashboard .dash-theme-dark .mo-event-table tbody td,
+#mbcxDashboard .dash-theme-dark .ur-detail-table tbody td {
+  color: var(--card-fg);
+  border-color: var(--card-border);
+}
+
+#mbcxDashboard .dash-theme-dark .mo-event-table tbody tr:hover,
+#mbcxDashboard .dash-theme-dark .ur-detail-table tbody tr:hover {
+  background: rgba(96,165,250,0.08);
+}
+
+#mbcxDashboard .dash-theme-dark .mo-month-tab--active { background: #475569; border-color: #475569; }
+#mbcxDashboard .dash-theme-dark .ur-rate-tile { background: #1e293b; border-color: var(--card-border); }
+#mbcxDashboard .dash-theme-dark .ur-rt-rate { color: var(--card-fg); }
+#mbcxDashboard .dash-theme-dark .mo-search { background: #1e293b; border-color: var(--card-border); color: var(--card-fg); }
+#mbcxDashboard .dash-theme-dark .mo-search:focus { border-color: #60a5fa; }

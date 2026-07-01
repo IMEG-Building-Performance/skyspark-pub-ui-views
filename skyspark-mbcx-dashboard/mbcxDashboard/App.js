@@ -13,6 +13,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
     prep:       '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/></svg>',
     chevron:    '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>',
     tenantAlloc:'<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4zm14 5H2v5a2 2 0 002 2h12a2 2 0 002-2V9zm-5 2a1 1 0 100 2h3a1 1 0 100-2h-3z"/></svg>',
+    eventCost:  '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 1a1 1 0 100 2h.01a1 1 0 100-2H12zm-2 1a1 1 0 011-1h.01a1 1 0 110 2H11a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>',
     config:     '<svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path d="M5 4a1 1 0 00-2 0v7.268a2 2 0 000 3.464V16a1 1 0 102 0v-1.268a2 2 0 000-3.464V4zm6 0a1 1 0 10-2 0v1.268a2 2 0 000 3.464V16a1 1 0 102 0V8.732a2 2 0 000-3.464V4zm5 2a1 1 0 112 0v7.268a2 2 0 010 3.464V16a1 1 0 11-2 0v-.268a2 2 0 010-3.464V6z"/></svg>'
   };
 
@@ -38,6 +39,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
     { key: 'trends',     label: 'Trends' },
     { key: 'meetings',   label: 'Meetings' },
     { key: 'tenant-allocation', label: 'Tenant Usage Allocation' },
+    { key: 'event-cost', label: 'Event Cost Tracking' },
     // TODO(auth): meeting-prep is an internal view — once user roles are
     // available, hide it for non-elevated users instead of listing it here.
     { key: 'meeting-prep', label: 'Meeting Prep' }
@@ -229,6 +231,7 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         Compliance:     window.mbcxDashboard.components.Compliance,
         FaultLog:       window.mbcxDashboard.components.FaultLog,
         TenantAllocation: window.mbcxDashboard.components.TenantAllocation,
+        EventCostCalc:  window.mbcxDashboard.components.EventCostCalc,
         Footer:         window.mbcxDashboard.components.Footer
       };
       NS.Components = co;
@@ -269,6 +272,14 @@ window.mbcxDashboard = window.mbcxDashboard || {};
         '    <button class="dash-sb-nav-item" data-tab="trends">'   + _icons.trends   + '<span>Trends</span></button>',
         '    <button class="dash-sb-nav-item" data-tab="meetings">' + _icons.meetings + '<span>Meetings</span></button>',
         '    <button class="dash-sb-nav-item" data-tab="tenant-allocation">' + _icons.tenantAlloc + '<span>Tenant Usage Allocation</span></button>',
+        '    <button class="dash-sb-nav-item" data-tab="event-cost">' + _icons.eventCost + '<span>Event Cost Tracking</span></button>',
+        '    <div class="dash-sb-sub" data-parent="event-cost">',
+        '      <button class="dash-sb-sub-item" data-tab="event-cost-monthly">Monthly Overview</button>',
+        '      <button class="dash-sb-sub-item" data-tab="event-cost-reconciliation">Utility Reconciliation</button>',
+        '      <button class="dash-sb-sub-item" data-tab="event-cost-detail">Event Detail</button>',
+        '      <button class="dash-sb-sub-item" data-tab="event-cost-sitestatus">Site Status</button>',
+        '      <button class="dash-sb-sub-item" data-tab="event-cost-docs">Documentation</button>',
+        '    </div>',
         // TODO(auth): only render Meeting Prep for elevated users — and
         // enforce the role server-side in any Axon funcs the view calls.
         '    <button class="dash-sb-nav-item" data-tab="meeting-prep">' + _icons.prep + '<span>Meeting Prep</span></button>',
@@ -608,6 +619,9 @@ window.mbcxDashboard = window.mbcxDashboard || {};
       if (NS.App._activeTab === 'tenant-allocation' && co.TenantAllocation && co.TenantAllocation.destroy) {
         co.TenantAllocation.destroy();
       }
+      if ((NS.App._activeTab === 'event-cost' || (NS.App._activeTab && NS.App._activeTab.indexOf('event-cost-') === 0)) && co.EventCostCalc && co.EventCostCalc.destroy) {
+        co.EventCostCalc.destroy();
+      }
       NS.App._activeTab = tab;
       NS.App._persistState();
 
@@ -720,6 +734,23 @@ window.mbcxDashboard = window.mbcxDashboard || {};
           co.TenantAllocation.initLive(content, ctx || null);
         } else {
           content.innerHTML = '<div class="page" style="padding:32px;color:#9ca3af;">Tenant Usage Allocation not loaded.</div>';
+        }
+      }
+      else if (tab === 'event-cost' || tab.indexOf('event-cost-') === 0) {
+        var ecTabs = ['event-cost', 'event-cost-monthly', 'event-cost-reconciliation', 'event-cost-detail', 'event-cost-sitestatus', 'event-cost-docs'];
+        var isEventCostTab = ecTabs.indexOf(tab) !== -1;
+        container.querySelectorAll('.dash-sb-nav-item').forEach(function (btn) {
+          var t = btn.getAttribute('data-tab');
+          btn.classList.toggle('active', t === 'event-cost' && isEventCostTab);
+        });
+        var ecSub = container.querySelector('.dash-sb-sub[data-parent="event-cost"]');
+        if (ecSub) ecSub.classList.toggle('dash-sb-sub--open', isEventCostTab);
+
+        if (co.EventCostCalc) {
+          content.innerHTML = co.EventCostCalc.renderPage();
+          co.EventCostCalc.initLive(content, ctx || null);
+        } else {
+          content.innerHTML = '<div class="page" style="padding:32px;color:#9ca3af;">Event Cost Tracking not loaded.</div>';
         }
       }
       else if (tab === 'config') {
