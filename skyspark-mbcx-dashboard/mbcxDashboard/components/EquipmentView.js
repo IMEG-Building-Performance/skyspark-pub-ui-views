@@ -224,6 +224,7 @@ window.mbcxDashboard.components.EquipmentView = (function () {
       '<div class="eq-curval-card" id="eqCurvalCard"></div>' +
       '<div class="eq-trend-card" id="eqTrendCard"></div>' +
       '<div class="eq-faults-card" id="eqFaultsCard"></div>' +
+      '<div class="eq-soo-card" id="eqSooCard" style="display:none"></div>' +
       '<div class="eq-notes-card">' +
         '<div class="eq-construction-banner">🚧 In Construction</div>' +
         '<div class="eq-notes-body">' +
@@ -288,7 +289,8 @@ window.mbcxDashboard.components.EquipmentView = (function () {
           var dis = _strVal(r.navName) || _strVal(r.dis) || (r.id && r.id.dis ? r.id.dis : '') || id;
           var equipType = r.equipType ? _strVal(r.equipType) : _inferType(dis);
           var sparksLink = _strVal(r.sparksLink) || '';
-          return { id: id, dis: dis, type: equipType, sparksLink: sparksLink, _raw: r };
+          var sooPath = _strVal(r.seqOfOpPath) || '';
+          return { id: id, dis: dis, type: equipType, sparksLink: sparksLink, seqOfOpPath: sooPath, _raw: r };
         }).filter(function (e) { return e.id; });
         _equipList.sort(function (a, b) { return a.dis.localeCompare(b.dis); });
         if (_equipList.length) {
@@ -309,6 +311,7 @@ window.mbcxDashboard.components.EquipmentView = (function () {
             }
           }
           _renderHeader();
+          _renderSoo();
           _loadEquipDetail();
         } else {
           _showNoEquip();
@@ -364,6 +367,7 @@ window.mbcxDashboard.components.EquipmentView = (function () {
         _renderCurvals();
         _renderTrend();
         _renderFaults();
+        _renderSoo();
         _loadEquipDetail();
       });
     });
@@ -820,6 +824,59 @@ window.mbcxDashboard.components.EquipmentView = (function () {
     wrap.appendChild(legend);
 
     area.appendChild(wrap);
+  }
+
+  // ── Sequence of Operation card ──────────────────────────────────────
+
+  function _renderSoo() {
+    var el = _container ? _container.querySelector('#eqSooCard') : null;
+    if (!el) return;
+    var equip = _equipList.filter(function (e) { return e.id === _selectedId; })[0];
+    if (!equip || !equip.seqOfOpPath) {
+      el.style.display = 'none';
+      return;
+    }
+    el.style.display = '';
+    el.innerHTML = '<div class="eq-card-header"><div class="eq-section-title">Sequence of Operation</div>' +
+      '<span class="eq-soo-path" title="' + equip.seqOfOpPath + '">' + equip.seqOfOpPath.split('/').pop() + '</span></div>' +
+      '<div class="eq-soo-body" id="eqSooBody"><div class="eq-loading">Loading PDF…</div></div>';
+    _loadSooPdf(equip.seqOfOpPath);
+  }
+
+  function _loadSooPdf(filePath) {
+    var el = _container ? _container.querySelector('#eqSooBody') : null;
+    if (!el || !_ctx || !_ctx.attestKey) return;
+    var API = window.mbcxDashboard.api;
+    var cleanPath = filePath.replace(/`/g, '');
+    var checkAxon = 'do f: ioDir(`' + cleanPath.substring(0, cleanPath.lastIndexOf('/') + 1) + '`); ' +
+      'f.colNames.contains("name") ? f.find(r => r->name == "' + cleanPath.split('/').pop() + '") != null : false end';
+    var readAxon = 'ioReadBin(`' + cleanPath + '`).toBase64';
+    console.info('[SOO] Loading file:', cleanPath);
+    API.evalAxonVal(_ctx.attestKey, _ctx.projectName, readAxon)
+      .then(function (val) {
+        var b64 = (val && typeof val === 'object') ? (val.val || '') : (val || '');
+        console.info('[SOO] Read result length:', b64 ? b64.length : 0);
+        if (!b64 || b64.length < 20) {
+          el.innerHTML = '<div class="eq-empty-msg">File not found or empty.<br><code>' + cleanPath + '</code></div>';
+          return;
+        }
+        var ext = cleanPath.split('.').pop().toLowerCase();
+        var mime = ext === 'png' ? 'image/png'
+          : ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg'
+          : ext === 'gif' ? 'image/gif'
+          : ext === 'svg' ? 'image/svg+xml'
+          : 'application/pdf';
+        if (mime.indexOf('image/') === 0) {
+          el.innerHTML = '<img class="eq-soo-img" src="data:' + mime + ';base64,' + b64 + '" alt="Sequence of Operation">';
+        } else {
+          el.innerHTML = '<iframe class="eq-soo-iframe" src="data:' + mime + ';base64,' + b64 + '"></iframe>';
+        }
+      })
+      .catch(function (err) {
+        console.warn('[SOO] File load failed:', err);
+        el.innerHTML = '<div class="eq-empty-msg">Could not load file — check the path and permissions.<br><code>' +
+          cleanPath + '</code></div>';
+      });
   }
 
   // ── Faults card ────────────────────────────────────────────────────
